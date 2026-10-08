@@ -61,3 +61,4 @@ echo '--- regras de acesso ---'
 psql -d aion -f "$RAIZ/supabase/testes/02_regras_de_acesso.sql"
 psql -d aion -f "$RAIZ/supabase/testes/03_validade.sql"
 psql -d aion -f "$RAIZ/supabase/testes/04_cronograma.sql"
+psql -d aion -f "$RAIZ/supabase/testes/05_financeiro.sql"
