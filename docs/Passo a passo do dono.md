@@ -128,3 +128,33 @@ Abrir a aula com vídeo no aplicativo.
 Token, chave, `jwk` e código de acesso **nunca** passam por conversa,
 nem por mensagem, nem entram no repositório. Vão do lugar onde nascem
 direto para o lugar onde moram — os segredos das Edge Functions.
+
+---
+
+## ETAPA 4 — Ligar o painel novo (souaion.com/admin)
+
+**Fazer as três partes em seguida, nesta ordem.** O painel novo e a área
+da aluna nova dependem do banco novo.
+
+### 4.1 Banco (5 minutos)
+
+1. Abrir `https://supabase.com/dashboard/project/crcclhmamknqkamvavyp/sql/new`
+2. Colar o arquivo inteiro `supabase/migrations/0040_painel_da_maquete.sql`
+   (a 0039 já está aplicada)
+3. **Run**. Tem de terminar com *Success. No rows returned*.
+
+### 4.2 Edge Functions (2 minutos)
+
+Supabase → **Edge Functions** → abrir cada uma → **Edit** → colar o
+arquivo do repositório → **Deploy**:
+
+- `cadastrar-aluna` ← `supabase/functions/cadastrar-aluna/index.ts`
+- `cadastrar-colaborador` ← `supabase/functions/cadastrar-colaborador/index.ts`
+
+Não mexer na `entrar`.
+
+### 4.3 Site
+
+Publicar o branch `claude/new-session-3krqjt` na Cloudflare Pages
+(projeto `mentoria-aion`). Depois abrir `souaion.com/admin`, entrar com o
+login e o código do dono, e conferir as abas.
