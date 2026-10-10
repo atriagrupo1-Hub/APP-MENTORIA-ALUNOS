@@ -131,6 +131,7 @@ export function TelaAula() {
   const secaoComentarios = useRef<HTMLElement>(null);
   const [mostrarFechar, setMostrarFechar] = useState(true);
   const [rascunho, setRascunho] = useState("");
+  const [semNome, setSemNome] = useState(false);
   const [saindo, setSaindo] = useState(false);
   const [comentarios, setComentarios] = useState<ComentarioPublico[]>([]);
   /*
@@ -436,8 +437,13 @@ export function TelaAula() {
     );
 
     try {
-      await api.comentar(aulaId, texto, segundoAtual, respostaA);
+      await api.comentar(aulaId, texto, segundoAtual, respostaA, semNome);
       setComentarios(await api.comentariosDaAula(aulaId));
+      // Comentário de aluna espera a moderação (0040): sem este aviso, ele
+      // sumiria da tela sem explicação.
+      if (!["dono", "admin", "suporte"].includes(estado.aluna?.papel ?? "")) {
+        aviso.mostrar("Recebemos seu comentário. Ele aparece aqui assim que a equipe aprovar.");
+      }
       return true;
     } catch {
       setComentarios((atuais) => atuais.filter((c) => c.id !== provisorio.id));
@@ -921,9 +927,15 @@ export function TelaAula() {
           </form>
 
           <div className="mt-3 flex items-center">
-            <span className="flex-1 text-apoio" style={{ color: SUAVE }}>
-              Seu nome aparecerá no comentário
-            </span>
+            <label className="flex flex-1 cursor-pointer items-center gap-2 text-apoio" style={{ color: SUAVE }}>
+              <input
+                type="checkbox"
+                checked={semNome}
+                onChange={(e) => setSemNome(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#ffffff" }}
+              />
+              {semNome ? "Seu nome não aparecerá no comentário" : "Seu nome aparecerá no comentário — marque para ficar anônima"}
+            </label>
             {comentarios.length > 0 ? (
               <button
                 onClick={() => setComentariosAbertos((v) => !v)}

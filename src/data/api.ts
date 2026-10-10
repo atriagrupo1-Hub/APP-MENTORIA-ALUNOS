@@ -618,6 +618,7 @@ export async function comentar(
   texto: string,
   posicaoSegundos: number,
   respostaA?: string,
+  semNome = false,
 ): Promise<void> {
   const { data: sessao } = await supabase.auth.getUser();
   if (!sessao.user) throw new Error("sem sessão");
@@ -627,6 +628,9 @@ export async function comentar(
     texto,
     posicao_segundos: Math.round(posicaoSegundos),
     resposta_a: respostaA ?? null,
+    // A aluna escolhe ficar anônima (0040). Sem escolha, vale o padrão
+    // do banco, que mostra o nome.
+    ...(semNome ? { nome_visivel: false } : {}),
   });
   if (error) throw new Error(`comentar: ${error.message}`);
 }
