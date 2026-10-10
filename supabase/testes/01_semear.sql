@@ -35,7 +35,7 @@ from aulas a join modulos m on m.id = a.modulo_id
 where m.numero = 0;
 
 -- Um comentário da Maria na primeira aula do Módulo 0.
-insert into comentarios (aula_id, autora_id, texto, posicao_segundos)
-select a.id, '22222222-2222-2222-2222-222222222222', 'Comentario da Maria', 272
+insert into comentarios (aula_id, autora_id, texto, posicao_segundos, status)
+select a.id, '22222222-2222-2222-2222-222222222222', 'Comentario da Maria', 272, 'publicado'
 from aulas a join modulos m on m.id = a.modulo_id
 where m.numero = 0 and a.numero = 1;

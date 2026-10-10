@@ -14,6 +14,8 @@ descartável.
 | `migrations/0003_comentarios_por_coluna.sql` | Anonimato dos comentários por privilégio de coluna, e a moderação |
 | `migrations/0004_catalogo.sql` | Os 11 módulos, as 50 aulas, as 11 aulas ao vivo e as 4 categorias |
 | `migrations/0005_limite_por_ip.sql` | Limite de tentativas de login por origem |
+| `migrations/0039_comentario_para_moderar.sql` | O estado `pendente` dos comentários |
+| `migrations/0040_painel_da_maquete.sql` | O banco do painel da maquete: moderação, liberada para todas, numeração pela posição, entrada, liberação em três níveis, cronograma por módulo, quem da equipe faz o quê |
 
 ## Projeto
 

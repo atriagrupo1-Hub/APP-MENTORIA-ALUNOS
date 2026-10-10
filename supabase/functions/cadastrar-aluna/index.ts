@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
   let login = "";
   let codigo = "";
   let celular = "";
+  let entrada = "";
+  let validade = "";
   try {
     const corpo = await req.json();
     nome = String(corpo?.nome ?? "").trim();
@@ -106,6 +108,8 @@ Deno.serve(async (req) => {
     // virar dois na hora de procurar, e o link do WhatsApp não aceita
     // pontuação de qualquer jeito.
     celular = String(corpo?.celular ?? "").replace(/\D/g, "");
+    entrada = String(corpo?.entrada ?? "").trim();
+    validade = String(corpo?.validade ?? "").trim();
   } catch {
     return resposta({ erro: "corpo_invalido" }, 400, origem);
   }
@@ -133,6 +137,27 @@ Deno.serve(async (req) => {
       origem,
     );
   }
+
+  // Entrada e validade (0040): datas AAAA-MM-DD. Sem entrada, hoje; sem
+  // validade, um ano depois da entrada. A validade é o último dia de
+  // acesso, até 23h59 no horário de Brasília.
+  const ehData = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(Date.parse(d + "T12:00:00Z"));
+  if (entrada === "") {
+    entrada = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+  }
+  if (validade === "") {
+    const d = new Date(entrada + "T12:00:00Z");
+    d.setUTCFullYear(d.getUTCFullYear() + 1);
+    validade = d.toISOString().slice(0, 10);
+  }
+  if (!ehData(entrada) || !ehData(validade) || validade < entrada) {
+    return resposta(
+      { erro: "data_invalida", mensagem: "Confira a entrada e a validade." },
+      400,
+      origem,
+    );
+  }
+  const fimDaValidade = new Date(validade + "T23:59:59-03:00").toISOString();
 
   if (!/^[0-9]{4,6}$/.test(codigo)) {
     return resposta(
@@ -183,6 +208,8 @@ Deno.serve(async (req) => {
       papel: "aluna",
       status: "ativa",
       celular: celular || null,
+      entrada,
+      acesso_ate: fimDaValidade,
     });
 
   if (erroPerfilNovo) {

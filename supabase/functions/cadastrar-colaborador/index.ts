@@ -79,14 +79,18 @@ Deno.serve(async (req) => {
     return resposta({ erro: "sessao_invalida" }, 401, origem);
   }
 
-  // É o dono mesmo? A resposta vem do banco.
+  // Quem está pedindo? A resposta vem do banco. O dono cria
+  // administrador e suporte; o administrador, só suporte (0040).
   const { data: perfil, error: erroPerfil } = await admin
     .from("profiles")
     .select("papel, status")
     .eq("id", quem.user.id)
     .single();
 
-  if (erroPerfil || perfil?.papel !== "dono" || perfil?.status !== "ativa") {
+  if (
+    erroPerfil || perfil?.status !== "ativa" ||
+    (perfil?.papel !== "dono" && perfil?.papel !== "admin")
+  ) {
     return resposta({ erro: "sem_permissao" }, 403, origem);
   }
 
@@ -110,6 +114,19 @@ Deno.serve(async (req) => {
       400,
       origem,
     );
+  }
+  if (perfil?.papel === "admin" && papel !== "suporte") {
+    return resposta(
+      { erro: "sem_permissao", mensagem: "Só o dono adiciona administradores." },
+      403,
+      origem,
+    );
+  }
+  // Sem código no pedido, o código nasce aqui, no servidor.
+  if (codigo === "") {
+    const sorteio = new Uint32Array(1);
+    crypto.getRandomValues(sorteio);
+    codigo = String(1000 + (sorteio[0] % 9000));
   }
   if (nome.length < 2 || nome.length > 80) {
     return resposta(
@@ -186,5 +203,5 @@ Deno.serve(async (req) => {
     return resposta({ erro: "indisponivel" }, 503, origem);
   }
 
-  return resposta({ id: conta.user.id, nome, login, papel }, 201, origem);
+  return resposta({ id: conta.user.id, nome, login, papel, codigo }, 201, origem);
 });
