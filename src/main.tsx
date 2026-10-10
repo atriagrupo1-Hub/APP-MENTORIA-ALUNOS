@@ -2,7 +2,6 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
-import { PainelAdmin } from "./admin/PainelAdmin";
 import { portaAtual } from "./enderecos";
 import { ProvedorEstado } from "./data/estado";
 import "./index.css";
@@ -33,10 +32,20 @@ if ("serviceWorker" in navigator) {
   });
 }
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <BrowserRouter basename={porta.base}>
-      <ProvedorEstado>{porta.ehPainel ? <PainelAdmin /> : <App />}</ProvedorEstado>
-    </BrowserRouter>
-  </StrictMode>,
-);
+const raiz = document.getElementById("root")!;
+
+// O painel da equipe é a maquete aprovada ligada ao banco, sem React:
+// carregado só nesta porta, para a área da aluna não levar o peso dele.
+if (porta.ehPainel) {
+  void import("./painel/painel").then((m) => m.montar(raiz));
+} else {
+  createRoot(raiz).render(
+    <StrictMode>
+      <BrowserRouter basename={porta.base}>
+        <ProvedorEstado>
+          <App />
+        </ProvedorEstado>
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}

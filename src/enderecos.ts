@@ -23,8 +23,8 @@
 
 /** Cada par é uma porta do painel e a porta da aluna que anda com ela. */
 const PORTAS = [
-  { painel: "/admappmentoria", aluna: "/appmentoria" },
   { painel: "/admin", aluna: "/" },
+  { painel: "/admappmentoria", aluna: "/appmentoria" },
 ] as const;
 
 export const CAMINHO_APP = PORTAS[0].aluna;

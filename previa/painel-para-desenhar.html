@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Painel AION — maquete para desenhar</title>
+<title>Painel AION — maquete funcional</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
@@ -13,7 +13,7 @@
 
   É uma cópia visual: as cores, as medidas e os textos são os mesmos do
   painel de verdade (`src/admin/estilos.ts`), e os dados são inventados.
-  Nada aqui salva, apaga ou fala com o banco.
+  Tudo funciona, mas só neste navegador (localStorage) — nada fala com o banco.
 
   Um arquivo só, sem dependência nenhuma além das fontes. Abre com dois
   cliques no navegador, e sobe em qualquer ferramenta de desenho.
@@ -231,414 +231,1017 @@
     .marca { padding: 12px 16px; }
     .aba { margin-right: 16px; }
   }
+
+  /* ---------- maquete funcional ---------- */
+  .modal-fundo { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 48px 16px; overflow-y: auto; background: rgba(0, 0, 0, 0.74); }
+  .modal { width: 100%; max-width: 640px; padding: 22px; background: var(--superficie-alta); border: 1px solid var(--linha-suave); border-radius: 12px; }
+  .modal h2 { margin: 0 0 6px; font-size: 22px; font-weight: 600; }
+  .modal .explica { margin: 0 0 18px; font-size: 13px; color: var(--texto-2); }
+  .rodape-modal { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
+  .botao.perigo { color: #000; background: var(--perigo); }
+  .botao:disabled, .botao-neutro:disabled { opacity: 0.35; cursor: default; }
+  .chip[aria-pressed="true"] { color: #000; background: var(--texto); border-color: var(--texto); }
+  .chip.arrastando { opacity: 0.35; }
+  .chip.alvo { outline: 2px dashed var(--ouro); outline-offset: 2px; }
+  .marcar { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; cursor: pointer; }
+  .marcar input { flex: 0 0 auto; width: 18px; height: 18px; accent-color: #ffffff; }
+  .vazio { padding: 24px; text-align: center; font-size: 14px; color: var(--texto-3); border: 1px dashed var(--linha-suave); border-radius: 12px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; z-index: 60; transform: translateX(-50%); max-width: calc(100vw - 32px); padding: 12px 18px; font-size: 14px; color: #000; background: var(--texto); border-radius: var(--raio); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6); }
+  .toast[hidden] { display: none; }
+  .resposta { margin: 0 0 14px; padding: 10px 12px; font-size: 14px; color: var(--texto-2); background: var(--superficie-alta); border: 1px solid var(--linha-suave); border-radius: var(--raio); }
+  .erro { margin: 10px 0 0; font-size: 13px; color: var(--perigo); }
+  input[type="date"].campo, input[type="number"].campo { color-scheme: dark; }
+  select.campo option { background: #0b0b0d; }
+
+  /* ---------- centralizado + temas ---------- */
+  .conteudo { max-width: 1180px; margin: 0 auto; }
+  .marca { padding-left: max(24px, calc((100% - 1180px) / 2 + 24px)); padding-right: max(24px, calc((100% - 1180px) / 2 + 24px)); }
+  :root { --contra: #000000; --comentario: rgba(255, 255, 255, 0.85); --fundo-modal: rgba(0, 0, 0, 0.74); color-scheme: dark; }
+  html[data-tema="claro"] {
+    --fundo: #f6f4f0;
+    --superficie: #ffffff;
+    --superficie-alta: #efece6;
+    --linha: rgba(20, 18, 14, 0.3);
+    --linha-suave: rgba(20, 18, 14, 0.1);
+    --texto: #16140f;
+    --texto-2: rgba(22, 20, 15, 0.66);
+    --texto-3: rgba(22, 20, 15, 0.56);
+    --perigo: #b8352d;
+    --perigo-linha: rgba(184, 53, 45, 0.7);
+    --contra: #ffffff;
+    --comentario: rgba(22, 20, 15, 0.86);
+    --fundo-modal: rgba(20, 18, 14, 0.45);
+    color-scheme: light;
+  }
+  .botao, .chip[aria-pressed="true"], .toast, .botao.perigo { color: var(--contra) !important; }
+  .modal-fundo { background: var(--fundo-modal) !important; }
+  .marcar input { accent-color: var(--texto) !important; }
+  input[type="date"].campo, input[type="number"].campo { color-scheme: inherit !important; }
+  select.campo option { background: var(--superficie) !important; color: var(--texto); }
+  html[data-tema="claro"] .etiqueta[style*="#9dc08b"] { color: #3f7a2a !important; }
+  html[data-tema="claro"] .etiqueta[style*="var(--ouro)"] { color: #8a6424 !important; }
+  .tema { display: inline-flex; align-items: center; gap: 8px; }
+  .tema .bola { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--linha); background: linear-gradient(90deg, var(--texto) 50%, transparent 50%); }
+  body { transition: background-color .25s ease, color .25s ease; }
 </style>
 </head>
 
 <body data-painel="sim">
-  <div class="marca">
-    <span class="selo">AION</span>
-    <span class="rotulo">Painel administrativo</span>
-    <span style="flex:1"></span>
-    <span style="font-size:13px;color:var(--texto-2)">Administradora · Dono</span>
-    <button class="botao-neutro">Sair</button>
-  </div>
+  <div id="app"></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <input type="file" id="arquivoCapa" accept="image/*" hidden />
+  <input type="file" id="arquivoExtra" hidden />
 
-  <div class="conteudo">
-    <div class="cabecalho">
-      <h1 id="tituloDaTela">Cursos e conteúdos</h1>
-      <span class="contagem" id="contagemDaTela">3 produtos · 12 módulos · 51 aulas</span>
+<script>
+(() => {
+  /* Maquete funcional do painel. Tudo fica salvo neste navegador (localStorage),
+     nada fala com o banco. As medidas e cores são as do painel de verdade. */
+  const K = "aion-maquete-v1";
+  const HOJE = new Date();
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const h = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  const br = s => { if (!s) return "—"; const [y, m, d] = s.split("-"); return d + "/" + m + "/" + y; };
+  const brCurto = s => { if (!s) return "—"; const [, m, d] = s.split("-"); return d + "/" + m; };
+  const maisAno = s => { const d = new Date(s + "T12:00:00"); d.setFullYear(d.getFullYear() + 1); return iso(d); };
+  const novoCodigo = () => String(Math.floor(1000 + Math.random() * 9000));
+  const p = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+  const vencida = a => !!a.validade && a.validade < iso(HOJE);
+
+  const MENTORIA = [
+    ["BOAS-VINDAS E DIAGNÓSTICO", ["Você não entrou em mais um curso", "Seu ponto de partida e a vida que deseja construir"]],
+    ["DESCOBRINDO O VERDADEIRO BLOQUEIO", ["Os frutos que você vê não são o começo", "O processo invisível por trás dos resultados", "O Ciclo da Escassez e o Ciclo da Prosperidade", "O mapa dos resultados que se repetem"]],
+    ["ENCONTRANDO A ORIGEM DOS BLOQUEIOS", ["Ninguém nasce acreditando tudo o que acredita hoje", "A Primeira Escrita da Vida: heranças e período pré-natal", "Antes das palavras: a fase pré-verbal", "Quando as palavras começaram a definir o mundo", "Quem e o que participou da sua formação"]],
+    ["DESCONSTRUINDO AS CRENÇAS LIMITANTES", ["O fato e o significado que você deu a ele", "Como uma interpretação se transforma em crença", "Os hábitos da mente e a identidade antiga", "Crenças de dinheiro, prosperidade e escassez", "Merecimento, culpa, sofrimento e abundância", "Relacionamentos, saúde e envelhecimento", "A verdade que enfraquece a crença antiga"]],
+    ["RESTAURANDO A FORMA CORRETA DE ORAR", ["O que sua oração revela sobre aquilo em que você acredita", "Fé, desespero, perseverança e insegurança", "Esperar em Deus sem abandonar sua responsabilidade", "Sua nova prática de oração"]],
+    ["CONSTRUINDO UMA NOVA IDENTIDADE", ["A identidade antiga não precisa continuar governando", "Nascer de novo: uma nova forma de pensar e viver", "Quem você decidiu se tornar", "Autorização interna para receber, crescer e administrar", "As primeiras evidências da nova identidade"]],
+    ["REPROGRAMANDO O AMBIENTE", ["Seu ambiente repete uma identidade todos os dias", "Ambiente físico e emocional", "Televisão, notícias e redes sociais", "Pessoas, limites e uma rotina que protege a mudança"]],
+    ["REPROGRAMANDO O VERBO", ["As três formas do verbo", "A linguagem da identidade antiga", "Reconhecer sem condenar e afirmar com coerência", "O verbo, a oração e o novo diálogo interior"]],
+    ["FORTALECENDO O ESTADO INTERIOR", ["O estado interior participa de suas respostas", "Paz, esperança e confiança", "Ansiedade e medo sem governo automático", "Frustração, culpa e disciplina emocional", "Imaginação e visualização do futuro"]],
+    ["TRANSFORMANDO A FÉ EM AÇÃO", ["Fé e responsabilidade caminham juntas", "A menor ação coerente e o poder da decisão", "Da ação ao hábito que confirma a nova identidade", "Ação nas finanças, organização, administração e trabalho", "Plano Integrado de Fé em Ação"]],
+    ["CONSOLIDANDO A NOVA VIDA", ["Consolidar não é terminar", "Sinais de retorno à identidade antiga", "O Protocolo de Retorno", "Seus ciclos de 21, 60 e 90 dias", "Administrando as novas bênçãos e seguindo com autonomia"]]
+  ];
+
+  function semente() {
+    const cats = [["mentoria", "Mentoria"], ["meditacoes", "Meditações guiadas"], ["ebooks", "Ebooks"], ["documentarios", "Documentários"], ["oracoes", "Orações da manhã"], ["bonus", "Bônus"]].map(([id, nome]) => ({ id, nome }));
+    const aula = (id, nome, extra) => Object.assign({ id, nome, video: "", capa: "", texto: "", acesso: "padrao", extras: [] }, extra || {});
+    const mentoria = {
+      id: "c-mentoria", nome: "Caminho do Desbloqueio para Bênçãos Ilimitadas", cat: "mentoria", visivel: true, inicio: 0,
+      descricao: "A mentoria completa, em módulos e aulas.", fundacao: "",
+      aviso: "Quer o PDF desta aula? Peça no seu grupo da mentoria.",
+      modulos: MENTORIA.map(([nome, aulas], i) => ({
+        id: "m" + i, nome, ativo: true, aberto: i === 0,
+        aulas: aulas.map((t, j) => aula("a" + i + "-" + j, t, {
+          capa: "modulo-" + i + "-aula-" + (j + 1) + ".png",
+          video: i === 0 && j === 0 ? "d3f1a9c2e7b84c01" : "",
+          texto: i === 0 && j === 0 ? "Seja bem-vinda. Esta não é mais uma aula para assistir e esquecer." : ""
+        }))
+      }))
+    };
+    const frequencias = {
+      id: "c-frequencias", nome: "17 Frequências Genuínas", cat: "meditacoes", visivel: true, inicio: 1,
+      descricao: "Meditações guiadas para ouvir com calma.", fundacao: "", aviso: "",
+      modulos: [{ id: "mf1", nome: "FREQUÊNCIAS", ativo: true, aberto: true, aulas: [aula("af1", "Frequência da paz")] }]
+    };
+    const manuscritos = {
+      id: "c-manuscritos", nome: "Manuscritos Sagrados", cat: "ebooks", visivel: true, inicio: 1,
+      descricao: "Ebooks da mentoria.", fundacao: "", aviso: "", modulos: []
+    };
+    const aluna = (id, nome, login, codigo, entrada, validade, bloqueada, acesso) => ({ id, nome, login, codigo, entrada, validade, bloqueada, acesso, cronograma: {} });
+    return {
+      sessao: { id: "e-admin" },
+      cats,
+      cursos: [mentoria, frequencias, manuscritos],
+      alunas: [
+        aluna("al-maria", "Maria das Graças", "maria", "4821", "2026-09-01", "2027-09-01", false, { cursos: ["c-mentoria"], modulos: [], aulas: [] }),
+        aluna("al-tere", "Terezinha Alves", "tere", "7310", "2026-09-02", "2027-09-02", false, { cursos: [], modulos: ["m0", "m1"], aulas: [] }),
+        aluna("al-cleide", "Cleide Nogueira", "cleide", "2659", "2025-09-03", "2026-09-03", true, { cursos: [], modulos: ["m0"], aulas: [] })
+      ],
+      comentarios: [
+        { id: "co1", autora: "Maria das Graças", aula: "a1-0", quando: "hoje, 09:14", texto: "Essa aula mexeu comigo. Fiz o exercício ontem à noite e chorei.", estado: "moderar", resposta: "" },
+        { id: "co2", autora: "Terezinha Alves", aula: "a0-1", quando: "ontem, 21:40", texto: "Não consegui abrir o vídeo pelo celular. Alguém mais?", estado: "moderar", resposta: "" },
+        { id: "co3", autora: "Maria das Graças", aula: "a0-0", quando: "02/09, 20:05", texto: "Comecei hoje. Que presente.", estado: "publicado", resposta: "Que bom ter você aqui, Maria." }
+      ],
+      equipe: [
+        { id: "e-admin", nome: "Administradora", login: "admin", codigo: "1234", papel: "Dono", bloqueada: false },
+        { id: "e-joana", nome: "Joana Suporte", login: "joana", codigo: "5577", papel: "Suporte", bloqueada: false }
+      ]
+    };
+  }
+
+  function carregar() { try { return JSON.parse(localStorage.getItem(K)); } catch (e) { return null; } }
+  function salvar() { try { localStorage.setItem(K, JSON.stringify(S)); } catch (e) {} }
+
+  let S = carregar() || semente();
+  const ui = { tab: "cursos", curso: null, aula: null, busca: "", filtroCom: "moderar", modal: null, editando: null, addAula: null, respondendo: null, extraTipo: "PDF / e-book", erroLogin: "", focar: null, arrasto: null };
+  const previas = {};
+  let pend = null;
+
+  const app = document.getElementById("app");
+
+  const KT = "aion-maquete-tema";
+  let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch (e) { return "escuro"; } })();
+  const aplicarTema = () => { document.documentElement.setAttribute("data-tema", tema); };
+  aplicarTema();
+  const botaoTema = () => `<button class="botao-neutro tema" data-a="tema" aria-label="Trocar para tema ${tema === "claro" ? "escuro" : "claro"}"><span class="bola"></span>${tema === "claro" ? "Tema escuro" : "Tema claro"}</button>`;
+
+  /* ---------- procurar ---------- */
+  const curso = id => S.cursos.find(c => c.id === id);
+  const aluna = id => S.alunas.find(a => a.id === id);
+  const pessoa = id => S.equipe.find(e => e.id === id);
+  const cat = id => S.cats.find(c => c.id === id);
+  function acharModulo(mid) {
+    for (const c of S.cursos) { const i = c.modulos.findIndex(m => m.id === mid); if (i >= 0) return { c, m: c.modulos[i], i }; }
+    return null;
+  }
+  function acharAula(aid) {
+    for (const c of S.cursos) for (let mi = 0; mi < c.modulos.length; mi++) {
+      const m = c.modulos[mi]; const ai = m.aulas.findIndex(a => a.id === aid);
+      if (ai >= 0) return { c, m, mi, a: m.aulas[ai], ai };
+    }
+    return null;
+  }
+  const numModulo = (c, i) => i + (c.inicio == null ? 1 : c.inicio);
+  const localAula = aid => { const x = acharAula(aid); return x ? "Módulo " + numModulo(x.c, x.mi) + " · Aula " + (x.ai + 1) : "Aula removida"; };
+  function mover(arr, i, d) { const j = i + d; if (j < 0 || j >= arr.length) return; const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+  const totalModulos = () => S.cursos.reduce((s, c) => s + c.modulos.length, 0);
+  const totalAulas = c => c.modulos.reduce((s, m) => s + m.aulas.length, 0);
+  function aulasLiberadas(al) {
+    const ac = al.acesso || { cursos: [], modulos: [], aulas: [] };
+    let n = 0;
+    S.cursos.forEach(c => c.modulos.forEach(m => m.aulas.forEach(a => {
+      if (ac.cursos.includes(c.id) || ac.modulos.includes(m.id) || ac.aulas.includes(a.id)) n++;
+    })));
+    return n;
+  }
+
+  /* ---------- avisos ---------- */
+  let tToast = null;
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(tToast); tToast = setTimeout(() => { t.hidden = true; }, 3400);
+  }
+  function confirmar(opts, fn) { pend = fn; ui.modal = Object.assign({ tipo: "confirmar" }, opts); ui.focar = "confirmaPalavra"; }
+
+  /* ---------- moldura ---------- */
+  const ABAS = [["alunas", "Alunas"], ["layout", "Categorias / Layout"], ["cursos", "Cursos e conteúdos"], ["comentarios", "Comentários"], ["equipe", "Equipe"]];
+
+  function titulo() {
+    const ativas = S.alunas.filter(a => !a.bloqueada && !vencida(a)).length;
+    const c = curso(ui.curso); const x = ui.aula && acharAula(ui.aula);
+    const moderar = S.comentarios.filter(k => k.estado === "moderar").length;
+    switch (ui.tab) {
+      case "alunas": return ["Alunas", p(S.alunas.length, "aluna", "alunas") + " · " + p(ativas, "ativa", "ativas")];
+      case "layout": return ["Categorias / Layout", p(S.cats.length, "categoria", "categorias")];
+      case "cursos": return ["Cursos e conteúdos", p(S.cursos.length, "produto", "produtos") + " · " + p(totalModulos(), "módulo", "módulos") + " · " + p(S.cursos.reduce((s, k) => s + totalAulas(k), 0), "aula", "aulas")];
+      case "curso": return c ? [c.nome, p(c.modulos.length, "módulo", "módulos") + " · " + p(totalAulas(c), "aula", "aulas")] : ["Curso aberto", "nenhum curso aberto"];
+      case "aula": return x ? [x.a.nome, localAula(x.a.id)] : ["Aula aberta", "nenhuma aula aberta"];
+      case "comentarios": return ["Comentários", p(moderar, "para moderar", "para moderar")];
+      case "equipe": return ["Equipe", p(S.equipe.length, "pessoa", "pessoas")];
+    }
+    return ["", ""];
+  }
+
+  function render() {
+    const ae = document.activeElement;
+    const fid = ae && ae.id;
+    const sel = fid && typeof ae.selectionStart === "number" ? [ae.selectionStart, ae.selectionEnd] : null;
+    app.innerHTML = S.sessao && pessoa(S.sessao.id) ? painel() : login();
+    const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
+    if (alvo) {
+      const el = document.getElementById(alvo);
+      if (el) { el.focus(); if (sel && !veioDeFora) { try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+    }
+  }
+
+  function login() {
+    return `
+    <div class="marca"><span class="selo">AION</span><span class="rotulo">Painel administrativo</span><span style="flex:1"></span>${botaoTema()}</div>
+    <div class="conteudo" style="max-width:460px;margin:48px auto 0">
+      <form data-f="entrar" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu login e o código de 4 números.</p>
+        <label class="grupo" style="margin-bottom:14px"><span class="rotulo">Login</span><input id="loginCampo" class="campo" name="login" autocomplete="username" required /></label>
+        <label class="grupo"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="4" autocomplete="off" required /></label>
+        ${ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : ""}
+        <button class="botao" style="width:100%;margin-top:20px">Entrar</button>
+        <p class="dica" style="margin:14px 0 0">Maquete: login <b>admin</b>, código <b>1234</b>.</p>
+      </form>
+    </div>`;
+  }
+
+  function painel() {
+    const eu = pessoa(S.sessao.id);
+    const [t, cont] = titulo();
+    const abas = ABAS.filter(([id]) => !(id === "equipe" && eu.papel === "Suporte"));
+    const telas = { alunas: telaAlunas, layout: telaLayout, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe };
+    return `
+    <div class="marca">
+      <span class="selo">AION</span>
+      <span class="rotulo">Painel administrativo</span>
+      <span style="flex:1"></span>
+      <span style="font-size:13px;color:var(--texto-2)">${h(eu.nome)} · ${h(eu.papel)}</span>
+      ${botaoTema()}
+      <button class="botao-neutro" data-a="sair">Sair</button>
     </div>
-
-    <div class="abas" role="tablist">
-      <button class="aba" role="tab" data-tela="alunas">Alunas</button>
-      <button class="aba" role="tab" data-tela="layout">Categorias / Layout</button>
-      <button class="aba" role="tab" aria-selected="true" data-tela="cursos">Cursos e conteúdos</button>
-      <button class="aba" role="tab" data-tela="curso">↳ Curso aberto</button>
-      <button class="aba" role="tab" data-tela="aula">↳ Aula aberta</button>
-      <button class="aba" role="tab" data-tela="comentarios">Comentários</button>
-      <button class="aba" role="tab" data-tela="equipe">Equipe</button>
+    <div class="conteudo">
+      <div class="cabecalho"><h1>${h(t)}</h1><span class="contagem">${h(cont)}</span></div>
+      <div class="abas" role="tablist">
+        ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")); return `<button class="aba" role="tab" data-a="aba" data-v="${id}" ${on ? 'aria-selected="true"' : ""}>${nome}</button>`; }).join("")}
+      </div>
+      ${(telas[ui.tab] || telaCursos)()}
+      <div class="aviso" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <span style="flex:1 1 320px">Maquete. Tudo o que você faz aqui fica salvo só neste navegador — nada fala com o banco.</span>
+        <button class="botao-neutro" data-a="restaurar">Restaurar dados de exemplo</button>
+      </div>
     </div>
+    ${modal()}`;
+  }
 
-    <!-- ============ ALUNAS ============ -->
-    <section class="tela" id="tela-alunas">
+  const etiqueta = (txt, cor) => `<span class="etiqueta" style="color:${cor}">${h(txt)}</span>`;
+  const VERDE = "#9dc08b", VERMELHO = "var(--perigo)", OURO = "var(--ouro)";
+  const botoesEdicao = rotulo => `<button class="botao-neutro">${rotulo}</button><button type="button" class="botao-neutro" data-a="cancelar-edicao">Cancelar</button>`;
+  const editando = (tipo, id) => ui.editando && ui.editando.tipo === tipo && ui.editando.id === id;
+
+  /* ---------- ALUNAS ---------- */
+  function telaAlunas() {
+    const q = ui.busca.trim().toLowerCase();
+    const lista = S.alunas.filter(a => (a.nome + " " + a.login).toLowerCase().includes(q));
+    return `
+    <section class="tela ativa">
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
-        <input class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar pelo nome" />
-        <button class="botao">Cadastrar aluna</button>
+        <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar pelo nome" value="${h(ui.busca)}" data-i="busca" />
+        <button class="botao" data-a="aluna-nova">Cadastrar aluna</button>
       </div>
+      ${lista.length ? lista.map(linhaAluna).join("") : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna com esse nome." : "Nenhuma aluna cadastrada ainda."}</div>`}
+    </section>`;
+  }
+  function linhaAluna(a) {
+    const venc = vencida(a);
+    const est = a.bloqueada ? etiqueta("Bloqueada", VERMELHO) : venc ? etiqueta("Vencida", VERMELHO) : etiqueta("Ativa", VERDE);
+    const lib = aulasLiberadas(a);
+    return `
+    <div class="linha">
+      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · entrou em ${brCurto(a.entrada)} · ${venc ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(lib, "aula liberada", "aulas liberadas")}</span></span>
+      ${est}
+      <span class="acoes">
+        <button class="botao-neutro" data-a="ficha" data-id="${a.id}">Ficha</button>
+        <button class="botao-neutro" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
+        <button class="botao-neutro" data-a="cronograma" data-id="${a.id}">Cronograma</button>
+        <button class="botao-neutro" data-a="renovar" data-id="${a.id}">Renovar</button>
+        ${a.bloqueada
+          ? `<button class="botao-neutro" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
+          : `<button class="botao-neutro botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}
+      </span>
+    </div>`;
+  }
 
-      <div class="linha">
-        <span class="nome"><b>Maria das Graças</b><span>maria · entrou em 01/09 · acesso até 01/09/2027</span></span>
-        <span class="etiqueta" style="color:#9dc08b">Ativa</span>
-        <span class="acoes">
-          <button class="botao-neutro">Ficha</button>
-          <button class="botao-neutro">Liberar conteúdo</button>
-          <button class="botao-neutro">Cronograma</button>
-          <button class="botao-neutro">Renovar</button>
-          <button class="botao-neutro botao-remover">Bloquear</button>
-        </span>
-      </div>
-      <div class="linha">
-        <span class="nome"><b>Terezinha Alves</b><span>tere · entrou em 02/09 · acesso até 02/09/2027</span></span>
-        <span class="etiqueta" style="color:#9dc08b">Ativa</span>
-        <span class="acoes">
-          <button class="botao-neutro">Ficha</button>
-          <button class="botao-neutro">Liberar conteúdo</button>
-          <button class="botao-neutro">Cronograma</button>
-          <button class="botao-neutro">Renovar</button>
-          <button class="botao-neutro botao-remover">Bloquear</button>
-        </span>
-      </div>
-      <div class="linha">
-        <span class="nome"><b>Cleide Nogueira</b><span>cleide · entrou em 03/09 · acesso vencido</span></span>
-        <span class="etiqueta" style="color:var(--perigo)">Bloqueada</span>
-        <span class="acoes">
-          <button class="botao-neutro">Ficha</button>
-          <button class="botao-neutro">Liberar conteúdo</button>
-          <button class="botao-neutro">Cronograma</button>
-          <button class="botao-neutro">Renovar</button>
-          <button class="botao-neutro">Desbloquear</button>
-        </span>
-      </div>
-    </section>
-
-    <!-- ============ CATEGORIAS / LAYOUT ============ -->
-    <section class="tela" id="tela-layout">
-      <p class="rotulo" style="margin:0 0 10px">A ordem em que a aluna vê</p>
+  /* ---------- CATEGORIAS ---------- */
+  function telaLayout() {
+    return `
+    <section class="tela ativa">
+      <p class="rotulo" style="margin:0 0 10px">A ordem em que a aluna vê — arraste para reordenar</p>
       <div class="chips" style="margin-bottom:22px">
-        <button class="chip">Mentoria</button>
-        <button class="chip">Meditações guiadas</button>
-        <button class="chip">Ebooks</button>
-        <button class="chip">Documentários</button>
-        <button class="chip">Orações da manhã</button>
-        <button class="chip">Bônus</button>
+        ${S.cats.map(k => `<button class="chip" draggable="true" data-arrasta="${k.id}">${h(k.nome)}</button>`).join("") || `<span style="font-size:13px;color:var(--texto-3)">Nenhuma categoria.</span>`}
       </div>
-
-      <div class="bloco-modulo">
-        <div class="cabecalho-modulo">
-          <span class="nome"><b>Mentoria</b><br /><span style="font-size:13px;color:var(--texto-3)">1 curso</span></span>
-          <span class="acoes">
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro botao-remover">Remover</button>
-          </span>
-        </div>
-      </div>
-      <div class="bloco-modulo">
-        <div class="cabecalho-modulo">
-          <span class="nome"><b>Meditações guiadas</b><br /><span style="font-size:13px;color:var(--texto-3)">2 cursos</span></span>
-          <span class="acoes">
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro botao-remover">Remover</button>
-          </span>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
-        <input class="campo" style="flex:1 1 260px;max-width:520px" placeholder="Nome da nova categoria" />
+      ${S.cats.map((k, i) => {
+        const n = S.cursos.filter(c => c.cat === k.id).length;
+        if (editando("cat", k.id)) return `
+        <div class="bloco-modulo">
+          <form data-f="cat-renomear" data-id="${k.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <input id="editarCampo" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" value="${h(k.nome)}" required />
+            ${botoesEdicao("Salvar")}
+          </form>
+        </div>`;
+        return `
+        <div class="bloco-modulo">
+          <div class="cabecalho-modulo">
+            <span class="nome"><b>${h(k.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(n, "curso", "cursos")}</span></span>
+            <span class="acoes">
+              <button class="botao-neutro" data-a="cat-editar" data-id="${k.id}">Editar</button>
+              <button class="botao-neutro" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="botao-neutro" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+              <button class="botao-neutro botao-remover" data-a="cat-remover" data-id="${k.id}">Remover</button>
+            </span>
+          </div>
+        </div>`;
+      }).join("")}
+      <form data-f="cat-add" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
+        <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome da nova categoria" required />
         <button class="botao-neutro grande">+ Adicionar categoria</button>
-      </div>
-    </section>
+      </form>
+    </section>`;
+  }
 
-    <!-- ============ CURSOS ============ -->
-    <section class="tela ativa" id="tela-cursos">
+  /* ---------- CURSOS ---------- */
+  function telaCursos() {
+    return `
+    <section class="tela ativa">
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px">
-        <span style="flex:1;color:var(--texto-2);font-size:14px">
-          Todos os produtos. Clique num deles para montar o conteúdo.
-        </span>
-        <button class="botao">+ Criar novo</button>
+        <span style="flex:1;color:var(--texto-2);font-size:14px">Todos os produtos. Clique num deles para montar o conteúdo.</span>
+        <button class="botao" data-a="curso-novo">+ Criar novo</button>
       </div>
-      <div class="cartoes">
-        <button class="cartao-curso"><b>Caminho do Desbloqueio</b><span>Mentoria</span></button>
-        <button class="cartao-curso"><b>17 Frequências Genuínas</b><span>Meditações guiadas</span></button>
-        <button class="cartao-curso"><b>Manuscritos Sagrados</b><span>Ebooks</span></button>
-      </div>
-    </section>
+      ${S.cursos.length ? `<div class="cartoes">
+        ${S.cursos.map(c => `<button class="cartao-curso" data-a="abrir-curso" data-id="${c.id}"><b>${h(c.nome)}</b><span>${h((cat(c.cat) || {}).nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</span></button>`).join("")}
+      </div>` : `<div class="vazio">Nenhum produto ainda. Crie o primeiro.</div>`}
+    </section>`;
+  }
 
-    <!-- ============ CURSO ABERTO ============ -->
-    <section class="tela" id="tela-curso">
+  /* ---------- CURSO ABERTO ---------- */
+  function telaCurso() {
+    const c = curso(ui.curso);
+    if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
+    return `
+    <section class="tela ativa">
       <div style="display:flex;flex-wrap:wrap;align-items:start;gap:14px;margin-bottom:18px">
-        <span style="flex:1 1 320px">
-          <span class="rotulo">Curso</span>
-          <div class="titulo" style="font-size:22px">Caminho do Desbloqueio para Bênçãos Ilimitadas</div>
-        </span>
-        <button class="botao-neutro grande">← Voltar</button>
+        <span style="flex:1 1 320px"><span class="rotulo">Curso</span><div class="titulo" style="font-size:22px">${h(c.nome)}</div></span>
+        <button class="botao-neutro grande" data-a="aba" data-v="cursos">← Voltar</button>
       </div>
 
       <p class="rotulo" style="margin:0 0 10px">Configurações</p>
-      <div class="cartao" style="padding:16px;margin-bottom:26px">
+      <form data-f="curso-config" class="cartao" style="padding:16px;margin-bottom:26px">
         <div class="campos">
-          <label class="grupo nome">
-            <span class="rotulo">Nome</span>
-            <input class="campo" value="Caminho do Desbloqueio para Bênçãos Ilimitadas" />
+          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" value="${h(c.nome)}" required /></label>
+          <label class="grupo" style="flex:1 1 240px"><span class="rotulo">Categoria onde aparece</span>
+            <select class="campo" name="cat">
+              <option value="" ${c.cat ? "" : "selected"}>Sem categoria</option>
+              ${S.cats.map(k => `<option value="${k.id}" ${k.id === c.cat ? "selected" : ""}>${h(k.nome)}</option>`).join("")}
+            </select>
           </label>
-          <label class="grupo" style="flex:1 1 240px">
-            <span class="rotulo">Categoria onde aparece</span>
-            <select class="campo"><option>Mentoria</option></select>
-          </label>
-          <label class="grupo" style="flex:0 0 130px">
-            <span class="rotulo">Visibilidade</span>
-            <select class="campo"><option>Visível</option><option>Oculto</option></select>
+          <label class="grupo" style="flex:0 0 130px"><span class="rotulo">Visibilidade</span>
+            <select class="campo" name="visivel"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select>
           </label>
         </div>
-
-        <label class="grupo largo" style="margin-top:14px">
-          <span class="rotulo">Descrição</span>
-          <textarea class="campo" rows="2">A mentoria completa, em módulos e aulas.</textarea>
-        </label>
-
-        <label class="grupo largo" style="margin-top:14px">
-          <span class="rotulo">Fundação — o que é este curso</span>
-          <textarea class="campo" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui."></textarea>
-        </label>
-
-        <label class="grupo largo" style="margin-top:14px">
-          <span class="rotulo">Aviso de material — aparece em toda aula</span>
-          <textarea class="campo" rows="2">Quer o PDF desta aula? Peça no seu grupo da mentoria.</textarea>
-        </label>
-
+        <label class="grupo largo" style="margin-top:14px"><span class="rotulo">Descrição</span><textarea class="campo" name="descricao" rows="2">${h(c.descricao)}</textarea></label>
+        <label class="grupo largo" style="margin-top:14px"><span class="rotulo">Fundação — o que é este curso</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui.">${h(c.fundacao)}</textarea></label>
+        <label class="grupo largo" style="margin-top:14px"><span class="rotulo">Aviso de material — aparece em toda aula</span><textarea class="campo" name="aviso" rows="2">${h(c.aviso)}</textarea></label>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px">
           <button class="botao">Salvar</button>
-          <button class="botao-neutro grande">Cancelar</button>
-          <button class="botao-neutro grande botao-remover">Remover</button>
+          <button type="button" class="botao-neutro grande" data-a="curso-cancelar">Cancelar</button>
+          <button type="button" class="botao-neutro grande botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
         </div>
-      </div>
+      </form>
 
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px">
         <span class="rotulo">Conteúdo do produto</span>
-        <span style="font-size:13px;color:var(--texto-2)">11 módulos · 50 aulas</span>
+        <span style="font-size:13px;color:var(--texto-2)">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</span>
       </div>
 
-      <div class="bloco-modulo">
-        <div class="cabecalho-modulo">
-          <span class="nome"><b>Módulo 0 — BOAS-VINDAS E DIAGNÓSTICO</b><br /><span style="font-size:13px;color:var(--texto-3)">2 aulas</span></span>
-          <span class="acoes">
-            <span class="etiqueta" style="color:#9dc08b">Ativo</span>
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro">Bloquear para todas</button>
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro botao-remover">Remover módulo</button>
-            <button class="botao-neutro">⌄</button>
-          </span>
-        </div>
+      ${c.modulos.map((m, i) => blocoModulo(c, m, i)).join("") || `<div class="vazio" style="margin-bottom:14px">Este produto ainda não tem módulos.</div>`}
 
-        <div class="linha" style="margin-top:12px">
-          <span class="nome"><b>1. Você não entrou em mais um curso</b><span>com vídeo · com texto</span></span>
-          <span class="acoes">
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro">Abrir</button>
-            <button class="botao-neutro">Liberar para todas</button>
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro botao-remover">Bloquear</button>
-            <button class="botao-neutro botao-remover">Remover</button>
-          </span>
-        </div>
-        <div class="linha">
-          <span class="nome"><b>2. Seu ponto de partida e a vida que deseja construir</b><span>sem vídeo</span></span>
-          <span class="acoes">
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro">Abrir</button>
-            <button class="botao-neutro">Liberar para todas</button>
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro botao-remover">Bloquear</button>
-            <button class="botao-neutro botao-remover">Remover</button>
-          </span>
-        </div>
-
-        <button class="botao-neutro grande" style="margin-top:12px">+ Adicionar aula</button>
-      </div>
-
-      <div class="bloco-modulo">
-        <div class="cabecalho-modulo">
-          <span class="nome"><b>Módulo 1 — DESCOBRINDO O VERDADEIRO BLOQUEIO</b><br /><span style="font-size:13px;color:var(--texto-3)">4 aulas</span></span>
-          <span class="acoes">
-            <span class="etiqueta" style="color:#9dc08b">Ativo</span>
-            <button class="botao-neutro">Editar</button>
-            <button class="botao-neutro">Bloquear para todas</button>
-            <button class="botao-neutro">↑</button>
-            <button class="botao-neutro">↓</button>
-            <button class="botao-neutro botao-remover">Remover módulo</button>
-            <button class="botao-neutro">⌄</button>
-          </span>
-        </div>
-      </div>
-
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding:16px;border:1px dashed rgba(255,255,255,.16);border-radius:14px">
-        <input class="campo" style="flex:1 1 260px;max-width:520px" placeholder="Nome do novo módulo" />
+      <form data-f="mod-add" data-id="${c.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding:16px;border:1px dashed rgba(255,255,255,.16);border-radius:14px">
+        <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome do novo módulo" required />
         <button class="botao-neutro grande">+ Adicionar módulo</button>
-      </div>
-    </section>
+      </form>
+    </section>`;
+  }
 
-    <!-- ============ AULA ABERTA ============ -->
-    <section class="tela" id="tela-aula">
+  function blocoModulo(c, m, i) {
+    const cab = editando("mod", m.id) ? `
+      <form data-f="mod-renomear" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <input id="editarCampo" class="campo" style="flex:1 1 280px;max-width:560px" name="nome" value="${h(m.nome)}" required />
+        ${botoesEdicao("Salvar")}
+      </form>` : `
+      <div class="cabecalho-modulo">
+        <span class="nome"><b>Módulo ${numModulo(c, i)} — ${h(m.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(m.aulas.length, "aula", "aulas")}</span></span>
+        <span class="acoes">
+          ${m.ativo ? etiqueta("Ativo", VERDE) : etiqueta("Bloqueado", VERMELHO)}
+          <button class="botao-neutro" data-a="mod-editar" data-id="${m.id}">Editar</button>
+          <button class="botao-neutro" data-a="mod-bloquear" data-id="${m.id}">${m.ativo ? "Bloquear para todas" : "Desbloquear"}</button>
+          <button class="botao-neutro" data-a="mod-sobe" data-id="${m.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+          <button class="botao-neutro" data-a="mod-desce" data-id="${m.id}" ${i === c.modulos.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+          <button class="botao-neutro botao-remover" data-a="mod-remover" data-id="${m.id}">Remover módulo</button>
+          <button class="botao-neutro" data-a="mod-abrir-fechar" data-id="${m.id}" aria-label="${m.aberto ? "Recolher" : "Mostrar aulas"}">${m.aberto ? "⌃" : "⌄"}</button>
+        </span>
+      </div>`;
+    if (!m.aberto) return `<div class="bloco-modulo">${cab}</div>`;
+    return `
+    <div class="bloco-modulo">
+      ${cab}
+      <div style="margin-top:12px">
+        ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p style="margin:0;padding:10px 0;font-size:13px;color:var(--texto-3)">Nenhuma aula neste módulo.</p>`}
+      </div>
+      ${ui.addAula === m.id ? `
+        <form data-f="aula-add" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+          <input id="novaAula" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" placeholder="Nome da nova aula" required />
+          <button class="botao-neutro grande">Adicionar</button>
+          <button type="button" class="botao-neutro grande" data-a="aula-add-cancelar">Cancelar</button>
+        </form>` : `<button class="botao-neutro grande" style="margin-top:12px" data-a="aula-add-abrir" data-id="${m.id}">+ Adicionar aula</button>`}
+    </div>`;
+  }
+
+  function linhaAula(m, a, j) {
+    if (editando("aula", a.id)) return `
+      <div class="linha">
+        <form data-f="aula-renomear" data-id="${a.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1 1 100%">
+          <input id="editarCampo" class="campo" style="flex:1 1 280px;max-width:560px" name="nome" value="${h(a.nome)}" required />
+          ${botoesEdicao("Salvar")}
+        </form>
+      </div>`;
+    const info = [a.video ? "com vídeo" : "sem vídeo", a.texto ? "com texto" : null, a.extras.length ? p(a.extras.length, "extra", "extras") : null].filter(Boolean).join(" · ");
+    const est = a.acesso === "liberada" ? etiqueta("Liberada para todas", OURO) : a.acesso === "bloqueada" ? etiqueta("Bloqueada", VERMELHO) : "";
+    return `
+      <div class="linha">
+        <span class="nome"><b>${j + 1}. ${h(a.nome)}</b><span>${info}</span></span>
+        ${est}
+        <span class="acoes">
+          <button class="botao-neutro" data-a="aula-sobe" data-id="${a.id}" ${j === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+          <button class="botao-neutro" data-a="aula-desce" data-id="${a.id}" ${j === m.aulas.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+          <button class="botao-neutro" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
+          <button class="botao-neutro" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
+          <button class="botao-neutro" data-a="aula-editar" data-id="${a.id}">Editar</button>
+          ${a.acesso === "bloqueada"
+            ? `<button class="botao-neutro" data-a="aula-bloquear" data-id="${a.id}">Desbloquear</button>`
+            : `<button class="botao-neutro botao-remover" data-a="aula-bloquear" data-id="${a.id}">Bloquear</button>`}
+          <button class="botao-neutro botao-remover" data-a="aula-remover" data-id="${a.id}">Remover</button>
+        </span>
+      </div>`;
+  }
+
+  /* ---------- AULA ABERTA ---------- */
+  function telaAula() {
+    const x = ui.aula && acharAula(ui.aula);
+    if (!x) return `<section class="tela ativa"><div class="vazio">Nenhuma aula aberta. Abra uma pela lista do curso.</div></section>`;
+    const a = x.a;
+    const previa = previas[a.id] || (a.capa ? "assets/capas/" + a.capa : "");
+    const tipo = ui.extraTipo;
+    const semArquivo = tipo === "Link" || tipo === "Texto";
+    return `
+    <section class="tela ativa">
       <div style="display:flex;flex-wrap:wrap;align-items:start;gap:14px;margin-bottom:22px">
-        <span style="flex:1 1 320px">
-          <span class="rotulo">Módulo 1 · Aula 1</span>
-          <div class="titulo" style="font-size:22px">O primeiro passo do desbloqueio</div>
-        </span>
-        <button class="botao-neutro grande">← Voltar</button>
+        <span style="flex:1 1 320px"><span class="rotulo">${localAula(a.id)}</span><div class="titulo" style="font-size:22px">${h(a.nome)}</div></span>
+        <button class="botao-neutro grande" data-a="aba" data-v="curso">← Voltar</button>
       </div>
 
-      <label class="grupo largo" style="margin-bottom:16px">
-        <span class="rotulo">Vídeo — link ou identificador (Cloudflare Stream)</span>
-        <input class="campo" placeholder="https://iframe.videodelivery.net/&lt;uid&gt;  ou só o uid" />
-      </label>
+      <form data-f="aula" data-id="${a.id}">
+        <label class="grupo largo" style="margin-bottom:16px">
+          <span class="rotulo">Vídeo — link ou identificador (Cloudflare Stream)</span>
+          <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt;  ou só o uid" />
+        </label>
 
-      <label class="grupo largo" style="margin-bottom:16px">
-        <span class="rotulo">Capa da aula</span>
-        <span style="display:flex;flex-wrap:wrap;gap:8px">
-          <input class="campo" style="flex:1 1 240px" placeholder="modulo-1-aula-1.webp" />
-          <button class="botao-neutro grande">Escolher imagem</button>
-        </span>
-        <span class="dica">Escolha a imagem do computador e o caminho se preenche sozinho.</span>
-      </label>
+        <div class="grupo largo" style="margin-bottom:16px">
+          <span class="rotulo">Capa da aula</span>
+          <span style="display:flex;flex-wrap:wrap;gap:8px">
+            <input id="campoCapa" class="campo" name="capa" style="flex:1 1 240px" value="${h(a.capa)}" placeholder="modulo-1-aula-1.webp" />
+            <button type="button" class="botao-neutro grande" data-a="escolher-capa">Escolher imagem</button>
+          </span>
+          <span class="dica">Escolha a imagem do computador e o caminho se preenche sozinho.</span>
+          <div id="previaCapa" style="width:220px;max-width:100%;aspect-ratio:16/9;margin-top:6px;border-radius:8px;border:1px solid var(--linha-suave);background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#131c33,#060911 60%,#101830)"></div>
+        </div>
 
-      <label class="grupo largo" style="margin-bottom:18px">
-        <span class="rotulo">O texto desta aula — é o que a aluna lê</span>
-        <textarea class="campo" rows="16" style="min-height:420px" placeholder="Escreva a aula como você quiser.
+        <label class="grupo largo" style="margin-bottom:18px">
+          <span class="rotulo">O texto desta aula — é o que a aluna lê</span>
+          <textarea class="campo" name="texto" rows="16" style="min-height:420px" placeholder="Escreva a aula como você quiser.
 
 Uma linha em branco separa parágrafo.
 
-Para destacar, use *asteriscos* — igual ao WhatsApp."></textarea>
-        <span class="dica">Deixe vazio e a aula fica só com o vídeo.</span>
-      </label>
+Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
+          <span class="dica">Deixe vazio e a aula fica só com o vídeo.</span>
+        </label>
 
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px">
-        <button class="botao">Salvar aula</button>
-        <button class="botao-neutro grande">Voltar sem salvar</button>
-      </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px">
+          <button class="botao">Salvar aula</button>
+          <button type="button" class="botao-neutro grande" data-a="voltar-sem-salvar">Voltar sem salvar</button>
+        </div>
+      </form>
 
       <p class="rotulo" style="margin:0 0 10px">Conteúdo extra desta aula</p>
       <div class="cartao" style="padding:16px">
+        ${a.extras.length ? `<div style="margin:-4px 0 16px">${a.extras.map(e => `
+          <div class="linha">
+            <span class="nome"><b>${h(e.nome)}</b><span>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</span></span>
+            <span class="acoes"><button class="botao-neutro botao-remover" data-a="extra-remover" data-id="${e.id}">Remover</button></span>
+          </div>`).join("")}</div>` : ""}
         <div class="chips" style="margin-bottom:14px">
-          <button class="chip">Vídeo</button>
-          <button class="chip">Áudio</button>
-          <button class="chip">Texto</button>
-          <button class="chip">PDF / e-book</button>
-          <button class="chip">Link</button>
-          <button class="chip">Imagem / capa</button>
+          ${["Vídeo", "Áudio", "Texto", "PDF / e-book", "Link", "Imagem / capa"].map(t => `<button type="button" class="chip" style="cursor:pointer" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}
         </div>
-        <div class="campos">
-          <label class="grupo nome">
-            <span class="rotulo">Nome do conteúdo</span>
-            <input class="campo" placeholder="Baixar o PDF" />
-          </label>
-          <label class="grupo" style="flex:1 1 240px">
-            <span class="rotulo">Arquivo no depósito materiais</span>
-            <span style="display:flex;gap:8px">
-              <input class="campo" placeholder="livro.pdf" />
-              <button class="botao-neutro grande">Enviar arquivo</button>
-            </span>
-          </label>
-        </div>
-        <div style="margin-top:14px"><button class="botao">Adicionar</button></div>
+        <form data-f="extra-add" data-id="${a.id}">
+          <div class="campos">
+            <label class="grupo nome"><span class="rotulo">Nome do conteúdo</span><input class="campo" name="nome" placeholder="Baixar o PDF" required /></label>
+            <label class="grupo" style="flex:1 1 240px">
+              <span class="rotulo">${tipo === "Link" ? "Endereço do link" : tipo === "Texto" ? "Texto" : "Arquivo no depósito materiais"}</span>
+              <span style="display:flex;gap:8px">
+                <input class="campo" name="arquivo" placeholder="${tipo === "Link" ? "https://" : tipo === "Texto" ? "Escreva aqui" : "livro.pdf"}" />
+                ${semArquivo ? "" : `<button type="button" class="botao-neutro grande" data-a="enviar-arquivo">Enviar arquivo</button>`}
+              </span>
+            </label>
+          </div>
+          <div style="margin-top:14px"><button class="botao">Adicionar</button></div>
+        </form>
       </div>
-    </section>
+    </section>`;
+  }
 
-    <!-- ============ COMENTÁRIOS ============ -->
-    <section class="tela" id="tela-comentarios">
+  /* ---------- COMENTÁRIOS ---------- */
+  function telaComentarios() {
+    const n = e => S.comentarios.filter(k => k.estado === e).length;
+    const lista = S.comentarios.filter(k => k.estado === ui.filtroCom);
+    const vazio = { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
+    return `
+    <section class="tela ativa">
       <div class="chips" style="margin-bottom:20px">
-        <button class="chip">Para moderar (2)</button>
-        <button class="chip">Publicados</button>
-        <button class="chip">Ocultos</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="moderar" aria-pressed="${ui.filtroCom === "moderar"}">Para moderar (${n("moderar")})</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="publicado" aria-pressed="${ui.filtroCom === "publicado"}">Publicados (${n("publicado")})</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
       </div>
-
+      ${lista.map(k => `
       <div class="cartao" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
-          <b style="flex:1 1 220px">Maria das Graças</b>
-          <span style="font-size:13px;color:var(--texto-3)">Módulo 1 · Aula 1 · hoje, 09:14</span>
+          <b style="flex:1 1 220px">${h(k.autora)}</b>
+          <span style="font-size:13px;color:var(--texto-3)">${localAula(k.aula)} · ${h(k.quando)}</span>
         </div>
-        <p style="margin:10px 0 14px;color:rgba(255,255,255,.85)">
-          Essa aula mexeu comigo. Fiz o exercício ontem à noite e chorei.
-        </p>
-        <div class="acoes">
-          <button class="botao-neutro">Publicar</button>
-          <button class="botao-neutro">Ocultar</button>
-          <button class="botao-neutro">Responder</button>
-          <button class="botao-neutro botao-remover">Remover</button>
-        </div>
-      </div>
+        <p style="margin:10px 0 14px;color:var(--comentario)">${h(k.texto)}</p>
+        ${k.resposta ? `<div class="resposta"><span class="rotulo">Resposta da equipe</span><p style="margin:4px 0 0">${h(k.resposta)}</p></div>` : ""}
+        ${ui.respondendo === k.id ? `
+          <form data-f="com-resposta" data-id="${k.id}" style="display:flex;flex-direction:column;gap:10px">
+            <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta" required>${h(k.resposta)}</textarea>
+            <div class="acoes"><button class="botao">Enviar resposta</button><button type="button" class="botao-neutro grande" data-a="com-responder-cancelar">Cancelar</button></div>
+          </form>` : `
+          <div class="acoes">
+            ${k.estado !== "publicado" ? `<button class="botao-neutro" data-a="com-publicar" data-id="${k.id}">Publicar</button>` : ""}
+            ${k.estado !== "oculto" ? `<button class="botao-neutro" data-a="com-ocultar" data-id="${k.id}">Ocultar</button>` : ""}
+            <button class="botao-neutro" data-a="com-responder" data-id="${k.id}">${k.resposta ? "Editar resposta" : "Responder"}</button>
+            <button class="botao-neutro botao-remover" data-a="com-remover" data-id="${k.id}">Remover</button>
+          </div>`}
+      </div>`).join("") || `<div class="vazio">${vazio}</div>`}
+    </section>`;
+  }
 
-      <div class="cartao" style="padding:16px">
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
-          <b style="flex:1 1 220px">Terezinha Alves</b>
-          <span style="font-size:13px;color:var(--texto-3)">Módulo 0 · Aula 2 · ontem, 21:40</span>
-        </div>
-        <p style="margin:10px 0 14px;color:rgba(255,255,255,.85)">
-          Não consegui abrir o vídeo pelo celular. Alguém mais?
-        </p>
-        <div class="acoes">
-          <button class="botao-neutro">Publicar</button>
-          <button class="botao-neutro">Ocultar</button>
-          <button class="botao-neutro">Responder</button>
-          <button class="botao-neutro botao-remover">Remover</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ EQUIPE ============ -->
-    <section class="tela" id="tela-equipe">
+  /* ---------- EQUIPE ---------- */
+  function telaEquipe() {
+    return `
+    <section class="tela ativa">
+      ${S.equipe.map(e => `
       <div class="linha">
-        <span class="nome"><b>Administradora</b><span>admin · dono</span></span>
+        <span class="nome"><b>${h(e.nome)}</b><span>${h(e.login)} · ${h(e.papel.toLowerCase())}</span></span>
+        ${e.bloqueada ? etiqueta("Bloqueada", VERMELHO) : ""}
         <span class="acoes">
-          <button class="botao-neutro">Trocar código</button>
+          <button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>
+          <button class="botao-neutro" data-a="trocar-codigo" data-id="${e.id}">Trocar código</button>
+          ${e.papel === "Dono" ? "" : e.bloqueada
+            ? `<button class="botao-neutro" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>`
+            : `<button class="botao-neutro botao-remover" data-a="equipe-bloquear" data-id="${e.id}">Bloquear</button>`}
+          ${e.papel === "Dono" ? "" : `<button class="botao-neutro botao-remover" data-a="equipe-remover" data-id="${e.id}">Remover</button>`}
         </span>
-      </div>
-      <div class="linha">
-        <span class="nome"><b>Joana Suporte</b><span>joana · suporte</span></span>
-        <span class="acoes">
-          <button class="botao-neutro">Trocar código</button>
-          <button class="botao-neutro botao-remover">Bloquear</button>
-          <button class="botao-neutro botao-remover">Remover</button>
-        </span>
-      </div>
-
-      <div class="cartao" style="padding:16px;margin-top:20px;max-width:780px">
+      </div>`).join("")}
+      <form data-f="equipe-add" class="cartao" style="padding:16px;margin-top:20px;max-width:780px">
         <p class="rotulo" style="margin:0 0 12px">Adicionar alguém à equipe</p>
         <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" /></label>
+          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" required /></label>
           <label class="grupo" style="flex:0 0 150px"><span class="rotulo">Papel</span>
-            <select class="campo"><option>Suporte</option><option>Administrador</option></select>
+            <select class="campo" name="papel"><option>Suporte</option><option>Administrador</option></select>
           </label>
         </div>
         <div style="margin-top:16px"><button class="botao">Adicionar</button></div>
-      </div>
-    </section>
-
-    <p class="aviso">
-      Maquete. Nada aqui salva, apaga ou fala com o banco — é a casca do painel
-      para mexer no layout à vontade.
-    </p>
-  </div>
-
-<script>
-  /* Trocar de tela. É só isso: a maquete não tem lógica nenhuma. */
-  const nomes = {
-    alunas: ["Alunas", "3 alunas · 2 ativas"],
-    layout: ["Categorias / Layout", "6 categorias"],
-    cursos: ["Cursos e conteúdos", "3 produtos · 12 módulos · 51 aulas"],
-    curso: ["Caminho do Desbloqueio", "11 módulos · 50 aulas"],
-    aula: ["O primeiro passo do desbloqueio", "Módulo 1 · Aula 1"],
-    comentarios: ["Comentários", "2 para moderar"],
-    equipe: ["Equipe", "2 pessoas"],
-  };
-  for (const aba of document.querySelectorAll(".aba")) {
-    aba.addEventListener("click", () => {
-      for (const o of document.querySelectorAll(".aba")) o.removeAttribute("aria-selected");
-      aba.setAttribute("aria-selected", "true");
-      for (const t of document.querySelectorAll(".tela")) t.classList.remove("ativa");
-      document.getElementById("tela-" + aba.dataset.tela).classList.add("ativa");
-      const [titulo, contagem] = nomes[aba.dataset.tela];
-      document.getElementById("tituloDaTela").textContent = titulo;
-      document.getElementById("contagemDaTela").textContent = contagem;
-    });
+      </form>
+    </section>`;
   }
+
+  /* ---------- JANELAS ---------- */
+  function modal() {
+    const m = ui.modal;
+    if (!m) return "";
+    let corpo = "";
+    if (m.tipo === "aluna") {
+      const a = m.id ? aluna(m.id) : null;
+      const hoje = iso(HOJE);
+      corpo = `
+      <form data-f="aluna" data-id="${a ? a.id : ""}">
+        <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
+        <p class="explica">${a ? "Ficha da aluna. " + p(aulasLiberadas(a), "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
+        <div class="campos">
+          <label class="grupo nome"><span class="rotulo">Nome</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" /></label>
+          <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
+            <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
+          </label>
+          <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : hoje}" required /></label>
+          <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade : maisAno(hoje)}" required /></label>
+        </div>
+        <div class="rodape-modal">
+          <button class="botao">${a ? "Salvar" : "Cadastrar"}</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+          ${a ? `<span style="flex:1"></span><button type="button" class="botao-neutro grande botao-remover" data-a="remover-aluna" data-id="${a.id}">Remover aluna</button>` : ""}
+        </div>
+      </form>`;
+      if (!ui.focar) ui.focar = a ? null : "alunaNome";
+    } else if (m.tipo === "liberar") {
+      const a = aluna(m.id); const ac = a.acesso;
+      corpo = `
+      <form data-f="liberar" data-id="${a.id}">
+        <h2 class="titulo">Liberar conteúdo</h2>
+        <p class="explica">${h(a.nome)}. Marque o curso inteiro, módulos inteiros ou aulas avulsas.</p>
+        ${S.cursos.map(c => {
+          const cOn = ac.cursos.includes(c.id);
+          return `
+          <div class="cartao" style="padding:10px 14px;margin-bottom:10px;background:var(--superficie)" data-caixa="curso">
+            <label class="marcar"><input type="checkbox" name="c" value="${c.id}" data-cascata ${cOn ? "checked" : ""} /> <b>${h(c.nome)}</b> <span style="font-size:12px;color:var(--texto-3)">curso inteiro</span></label>
+            ${c.modulos.map((mo, i) => {
+              const mOn = cOn || ac.modulos.includes(mo.id);
+              return `
+              <div data-caixa="modulo" style="padding-left:26px">
+                <label class="marcar"><input type="checkbox" name="m" value="${mo.id}" data-cascata ${mOn ? "checked" : ""} /> Módulo ${numModulo(c, i)} — ${h(mo.nome)}</label>
+                ${mo.aulas.length ? `<details style="padding-left:28px"><summary style="cursor:pointer;padding:2px 0 6px;font-size:13px;color:var(--texto-3)">Selecionar aulas (${mo.aulas.length})</summary>
+                  ${mo.aulas.map((au, j) => `<label class="marcar"><input type="checkbox" name="a" value="${au.id}" ${mOn || ac.aulas.includes(au.id) ? "checked" : ""} /> ${j + 1}. ${h(au.nome)}</label>`).join("")}
+                </details>` : ""}
+              </div>`;
+            }).join("")}
+          </div>`;
+        }).join("")}
+        <div class="rodape-modal">
+          <button class="botao">Salvar liberação</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+        </div>
+      </form>`;
+    } else if (m.tipo === "cronograma") {
+      const a = aluna(m.id);
+      corpo = `
+      <form data-f="cronograma" data-id="${a.id}">
+        <h2 class="titulo">Cronograma</h2>
+        <p class="explica">${h(a.nome)} entrou em ${br(a.entrada)}. Diga quantos dias depois da entrada cada módulo abre para ela. Vazio segue a liberação normal.</p>
+        ${S.cursos.filter(c => c.modulos.length).map(c => `
+          <p class="rotulo" style="margin:14px 0 6px">${h(c.nome)}</p>
+          ${c.modulos.map((mo, i) => `
+            <div class="linha" style="padding:8px 0">
+              <span class="nome" style="font-size:14px">Módulo ${numModulo(c, i)} — ${h(mo.nome)}</span>
+              <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--texto-3)">
+                <input class="campo" type="number" min="0" name="d_${mo.id}" value="${a.cronograma[mo.id] != null ? a.cronograma[mo.id] : ""}" style="width:90px" placeholder="—" /> dias
+              </span>
+            </div>`).join("")}`).join("")}
+        <div class="rodape-modal">
+          <button class="botao">Salvar cronograma</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+        </div>
+      </form>`;
+    } else if (m.tipo === "curso") {
+      corpo = `
+      <form data-f="curso-novo">
+        <h2 class="titulo">Criar novo produto</h2>
+        <p class="explica">Depois de criar, ele abre para você montar módulos e aulas.</p>
+        <div class="campos">
+          <label class="grupo nome"><span class="rotulo">Nome</span><input id="cursoNome" class="campo" name="nome" required /></label>
+          <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Categoria</span>
+            <select class="campo" name="cat"><option value="">Sem categoria</option>${S.cats.map(k => `<option value="${k.id}">${h(k.nome)}</option>`).join("")}</select>
+          </label>
+        </div>
+        <div class="rodape-modal"><button class="botao">Criar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
+      </form>`;
+      if (!ui.focar) ui.focar = "cursoNome";
+    } else if (m.tipo === "confirmar") {
+      corpo = `
+      <form data-f="confirmar">
+        <h2 class="titulo">${h(m.titulo)}</h2>
+        <p class="explica">${h(m.texto)}</p>
+        <label class="grupo"><span class="rotulo">Para confirmar, escreva ${h(m.palavra)}</span><input id="confirmaPalavra" class="campo" autocomplete="off" data-palavra="${h(m.palavra)}" /></label>
+        <div class="rodape-modal">
+          <button id="confirmaBotao" class="botao perigo" disabled>${h(m.rotulo || "Confirmar")}</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+        </div>
+      </form>`;
+    } else if (m.tipo === "info") {
+      corpo = `
+        <h2 class="titulo">${h(m.titulo)}</h2>
+        <p class="explica">${h(m.texto)}</p>
+        ${m.destaque ? `<p style="margin:0 0 6px;font-size:40px;font-weight:700;letter-spacing:.3em">${h(m.destaque)}</p>` : ""}
+        <div class="rodape-modal"><button type="button" class="botao" data-a="fechar">Fechar</button></div>`;
+    }
+    return `<div class="modal-fundo" data-a="fechar-fundo"><div class="modal" role="dialog" aria-modal="true">${corpo}</div></div>`;
+  }
+
+  /* ---------- AÇÕES ---------- */
+  function acao(a, d, el) {
+    const al = d.id && aluna(d.id);
+    switch (a) {
+      case "aba":
+        ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
+        if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
+        if (d.v === "aula" && !(ui.aula && acharAula(ui.aula))) {
+          const c = curso(ui.curso) || S.cursos[0];
+          const mo = c && c.modulos.find(k => k.aulas.length);
+          ui.aula = mo ? mo.aulas[0].id : null; if (c) ui.curso = c.id;
+        }
+        window.scrollTo(0, 0);
+        break;
+      case "tema": tema = tema === "claro" ? "escuro" : "claro"; try { localStorage.setItem(KT, tema); } catch (e) {} aplicarTema(); break;
+      case "sair": S.sessao = null; salvar(); ui.focar = "loginCampo"; break;
+      case "fechar": ui.modal = null; pend = null; break;
+      case "fechar-fundo": if (el !== d._alvo) return; ui.modal = null; pend = null; break;
+      case "restaurar":
+        confirmar({ titulo: "Restaurar os dados de exemplo?", texto: "Tudo o que você mudou nesta maquete volta ao começo.", palavra: "RESTAURAR", rotulo: "Restaurar" }, () => {
+          const sess = S.sessao; S = semente(); S.sessao = sess; ui.curso = null; ui.aula = null; ui.tab = "cursos"; toast("Dados de exemplo restaurados.");
+        });
+        break;
+
+      case "aluna-nova": ui.modal = { tipo: "aluna" }; break;
+      case "ficha": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "gerar-codigo": el.closest("form").elements.codigo.value = novoCodigo(); return;
+      case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
+      case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
+      case "renovar": {
+        const base = al.validade && al.validade > iso(HOJE) ? al.validade : iso(HOJE);
+        al.validade = maisAno(base); salvar(); toast("Acesso de " + al.nome + " renovado até " + br(al.validade) + ".");
+        break;
+      }
+      case "bloquear-aluna":
+        confirmar({ titulo: "Bloquear " + al.nome + "?", texto: "Ela perde o acesso na hora, em qualquer aparelho. Dá para desbloquear depois.", palavra: "BLOQUEAR", rotulo: "Bloquear aluna" }, () => { al.bloqueada = true; toast(al.nome + " foi bloqueada."); });
+        break;
+      case "desbloquear-aluna": al.bloqueada = false; salvar(); toast(al.nome + " foi desbloqueada."); break;
+      case "remover-aluna":
+        confirmar({ titulo: "Remover " + al.nome + "?", texto: "A ficha, as liberações e o cronograma dela são apagados. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover aluna" }, () => { S.alunas = S.alunas.filter(x => x.id !== al.id); toast(al.nome + " foi removida."); });
+        break;
+
+      case "cat-editar": ui.editando = { tipo: "cat", id: d.id }; ui.focar = "editarCampo"; break;
+      case "mod-editar": ui.editando = { tipo: "mod", id: d.id }; ui.focar = "editarCampo"; break;
+      case "aula-editar": ui.editando = { tipo: "aula", id: d.id }; ui.focar = "editarCampo"; break;
+      case "cancelar-edicao": ui.editando = null; break;
+      case "cat-sobe": case "cat-desce": mover(S.cats, S.cats.findIndex(k => k.id === d.id), a === "cat-sobe" ? -1 : 1); salvar(); break;
+      case "cat-remover": {
+        const k = cat(d.id); const n = S.cursos.filter(c => c.cat === k.id).length;
+        confirmar({ titulo: "Remover a categoria " + k.nome + "?", texto: n ? p(n, "produto fica", "produtos ficam") + " sem categoria até você escolher outra." : "Ela está vazia.", palavra: "REMOVER", rotulo: "Remover categoria" }, () => {
+          S.cats = S.cats.filter(x => x.id !== k.id); S.cursos.forEach(c => { if (c.cat === k.id) c.cat = ""; }); toast("Categoria removida.");
+        });
+        break;
+      }
+
+      case "abrir-curso": ui.curso = d.id; ui.tab = "curso"; ui.editando = null; window.scrollTo(0, 0); break;
+      case "curso-novo": ui.modal = { tipo: "curso" }; break;
+      case "curso-cancelar": toast("Alterações descartadas."); break;
+      case "curso-remover": {
+        const c = curso(d.id);
+        confirmar({ titulo: "Remover " + c.nome + "?", texto: "O produto, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover produto" }, () => {
+          S.cursos = S.cursos.filter(x => x.id !== c.id); ui.curso = null; ui.aula = null; ui.tab = "cursos"; toast("Produto removido.");
+        });
+        break;
+      }
+      case "mod-bloquear": {
+        const x = acharModulo(d.id);
+        if (x.m.ativo) confirmar({ titulo: "Bloquear o módulo para todas?", texto: "Nenhuma aluna vê " + x.m.nome + " até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear módulo" }, () => { x.m.ativo = false; toast("Módulo bloqueado para todas."); });
+        else { x.m.ativo = true; salvar(); toast("Módulo desbloqueado."); }
+        break;
+      }
+      case "mod-sobe": case "mod-desce": { const x = acharModulo(d.id); mover(x.c.modulos, x.i, a === "mod-sobe" ? -1 : 1); salvar(); break; }
+      case "mod-remover": {
+        const x = acharModulo(d.id);
+        confirmar({ titulo: "Remover o módulo " + x.m.nome + "?", texto: "As " + p(x.m.aulas.length, "aula dele é apagada", "aulas dele são apagadas") + " junto. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover módulo" }, () => {
+          x.c.modulos = x.c.modulos.filter(k => k.id !== x.m.id); toast("Módulo removido.");
+        });
+        break;
+      }
+      case "mod-abrir-fechar": { const x = acharModulo(d.id); x.m.aberto = !x.m.aberto; salvar(); break; }
+      case "aula-add-abrir": ui.addAula = d.id; ui.focar = "novaAula"; break;
+      case "aula-add-cancelar": ui.addAula = null; break;
+      case "aula-sobe": case "aula-desce": { const x = acharAula(d.id); mover(x.m.aulas, x.ai, a === "aula-sobe" ? -1 : 1); salvar(); break; }
+      case "abrir-aula": { const x = acharAula(d.id); ui.aula = d.id; ui.curso = x.c.id; ui.tab = "aula"; window.scrollTo(0, 0); break; }
+      case "aula-liberar": { const x = acharAula(d.id); x.a.acesso = x.a.acesso === "liberada" ? "padrao" : "liberada"; salvar(); toast(x.a.acesso === "liberada" ? "Aula liberada para todas." : "Liberação retirada."); break; }
+      case "aula-bloquear": {
+        const x = acharAula(d.id);
+        if (x.a.acesso === "bloqueada") { x.a.acesso = "padrao"; salvar(); toast("Aula desbloqueada."); }
+        else confirmar({ titulo: "Bloquear esta aula?", texto: "Nenhuma aluna vê " + x.a.nome + " até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear aula" }, () => { x.a.acesso = "bloqueada"; toast("Aula bloqueada."); });
+        break;
+      }
+      case "aula-remover": {
+        const x = acharAula(d.id);
+        confirmar({ titulo: "Remover a aula " + x.a.nome + "?", texto: "O texto, o vídeo e os extras dela são apagados. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover aula" }, () => {
+          x.m.aulas = x.m.aulas.filter(k => k.id !== x.a.id); if (ui.aula === x.a.id) ui.aula = null; toast("Aula removida.");
+        });
+        break;
+      }
+
+      case "voltar-sem-salvar": ui.tab = "curso"; toast("Voltou sem salvar."); break;
+      case "escolher-capa": document.getElementById("arquivoCapa").click(); return;
+      case "enviar-arquivo": document.getElementById("arquivoExtra").click(); return;
+      case "extra-tipo": ui.extraTipo = d.v; break;
+      case "extra-remover": {
+        const x = acharAula(ui.aula); const e = x.a.extras.find(k => k.id === d.id);
+        confirmar({ titulo: "Remover " + e.nome + "?", texto: "O conteúdo extra sai desta aula.", palavra: "REMOVER", rotulo: "Remover" }, () => { x.a.extras = x.a.extras.filter(k => k.id !== e.id); toast("Conteúdo removido."); });
+        break;
+      }
+
+      case "com-filtro": ui.filtroCom = d.v; ui.respondendo = null; break;
+      case "com-publicar": { const k = S.comentarios.find(x => x.id === d.id); k.estado = "publicado"; salvar(); toast("Comentário publicado."); break; }
+      case "com-ocultar": { const k = S.comentarios.find(x => x.id === d.id); k.estado = "oculto"; salvar(); toast("Comentário ocultado."); break; }
+      case "com-responder": ui.respondendo = d.id; ui.focar = "respostaCampo"; break;
+      case "com-responder-cancelar": ui.respondendo = null; break;
+      case "com-remover":
+        confirmar({ titulo: "Remover este comentário?", texto: "Ele some para todas as alunas. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover comentário" }, () => { S.comentarios = S.comentarios.filter(x => x.id !== d.id); toast("Comentário removido."); });
+        break;
+
+      case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "info", titulo: "Código de " + e.nome, texto: "Login " + e.login + ". É o que ela digita para entrar no painel.", destaque: e.codigo }; break; }
+      case "trocar-codigo": {
+        const e = pessoa(d.id); e.codigo = novoCodigo(); salvar();
+        ui.modal = { tipo: "info", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para ela.", destaque: e.codigo };
+        break;
+      }
+      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear " + e.nome + "?", texto: "Ela deixa de entrar no painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear" }, () => { e.bloqueada = true; toast(e.nome + " foi bloqueada."); }); break; }
+      case "equipe-desbloquear": { const e = pessoa(d.id); e.bloqueada = false; salvar(); toast(e.nome + " foi desbloqueada."); break; }
+      case "equipe-remover": { const e = pessoa(d.id); confirmar({ titulo: "Remover " + e.nome + " da equipe?", texto: "Ela perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover" }, () => { S.equipe = S.equipe.filter(x => x.id !== e.id); toast(e.nome + " saiu da equipe."); }); break; }
+      default: return;
+    }
+    render();
+  }
+
+  function enviar(f, form) {
+    const v = n => (form.elements[n] ? form.elements[n].value.trim() : "");
+    const id = form.dataset.id;
+    switch (f) {
+      case "entrar": {
+        const e = S.equipe.find(x => x.login.toLowerCase() === v("login").toLowerCase() && x.codigo === v("codigo"));
+        if (!e) { ui.erroLogin = "Login ou código incorreto."; break; }
+        if (e.bloqueada) { ui.erroLogin = "Este acesso está bloqueado."; break; }
+        ui.erroLogin = ""; S.sessao = { id: e.id }; salvar(); break;
+      }
+      case "aluna": {
+        const cod = v("codigo");
+        if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
+        const nome = v("nome");
+        const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, "");
+        if (S.alunas.some(x => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
+        if (id) {
+          Object.assign(aluna(id), { nome, login: loginNovo, codigo: cod, entrada: v("entrada"), validade: v("validade") });
+          toast("Ficha de " + nome + " salva.");
+        } else {
+          S.alunas.push({ id: "al-" + uid(), nome, login: loginNovo, codigo: cod, entrada: v("entrada"), validade: v("validade"), bloqueada: false, acesso: { cursos: [], modulos: [], aulas: [] }, cronograma: {} });
+          toast(nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".");
+        }
+        ui.modal = null; salvar(); break;
+      }
+      case "liberar": {
+        const marcados = n => [...form.querySelectorAll('input[name="' + n + '"]:checked')].map(x => x.value);
+        const cs = marcados("c");
+        const ms = marcados("m").filter(mid => { const x = acharModulo(mid); return x && !cs.includes(x.c.id); });
+        const as = marcados("a").filter(aid => { const x = acharAula(aid); return x && !cs.includes(x.c.id) && !ms.includes(x.m.id); });
+        const al = aluna(id); al.acesso = { cursos: cs, modulos: ms, aulas: as };
+        ui.modal = null; salvar(); toast("Liberação salva: " + p(aulasLiberadas(al), "aula", "aulas") + " para " + al.nome + "."); break;
+      }
+      case "cronograma": {
+        const al = aluna(id); const cr = {};
+        [...form.querySelectorAll('input[type="number"]')].forEach(x => { if (x.value !== "") cr[x.name.slice(2)] = Math.max(0, parseInt(x.value, 10) || 0); });
+        al.cronograma = cr; ui.modal = null; salvar(); toast("Cronograma de " + al.nome + " salvo."); break;
+      }
+      case "confirmar": {
+        const inp = document.getElementById("confirmaPalavra");
+        if (inp.value.trim().toUpperCase() !== inp.dataset.palavra) return;
+        const fn = pend; pend = null; ui.modal = null; if (fn) fn(); salvar(); break;
+      }
+      case "curso-novo": {
+        const c = { id: "c-" + uid(), nome: v("nome"), cat: v("cat"), visivel: true, inicio: 1, descricao: "", fundacao: "", aviso: "", modulos: [] };
+        S.cursos.push(c); ui.modal = null; ui.curso = c.id; ui.tab = "curso"; salvar(); toast("Produto criado. Agora monte os módulos."); break;
+      }
+      case "cat-add": S.cats.push({ id: "k-" + uid(), nome: v("nome") }); salvar(); toast("Categoria adicionada."); break;
+      case "cat-renomear": cat(id).nome = v("nome"); ui.editando = null; salvar(); toast("Categoria renomeada."); break;
+      case "curso-config": {
+        Object.assign(curso(ui.curso), { nome: v("nome"), cat: v("cat"), visivel: v("visivel") === "1", descricao: v("descricao"), fundacao: v("fundacao"), aviso: v("aviso") });
+        salvar(); toast("Configurações salvas."); break;
+      }
+      case "mod-add": curso(id).modulos.push({ id: "m-" + uid(), nome: v("nome").toUpperCase(), ativo: true, aberto: true, aulas: [] }); salvar(); toast("Módulo adicionado."); break;
+      case "mod-renomear": acharModulo(id).m.nome = v("nome"); ui.editando = null; salvar(); toast("Módulo renomeado."); break;
+      case "aula-add": acharModulo(id).m.aulas.push({ id: "a-" + uid(), nome: v("nome"), video: "", capa: "", texto: "", acesso: "padrao", extras: [] }); ui.addAula = null; salvar(); toast("Aula adicionada."); break;
+      case "aula-renomear": acharAula(id).a.nome = v("nome"); ui.editando = null; salvar(); toast("Aula renomeada."); break;
+      case "aula": {
+        const x = acharAula(id);
+        Object.assign(x.a, { video: v("video"), capa: v("capa"), texto: form.elements.texto.value });
+        salvar(); toast("Aula salva."); break;
+      }
+      case "extra-add": {
+        const x = acharAula(id);
+        x.a.extras.push({ id: "x-" + uid(), tipo: ui.extraTipo, nome: v("nome"), arquivo: v("arquivo") });
+        salvar(); toast("Conteúdo adicionado à aula."); break;
+      }
+      case "com-resposta": {
+        const k = S.comentarios.find(x => x.id === id); k.resposta = v("resposta"); if (k.estado === "moderar") k.estado = "publicado";
+        ui.respondendo = null; salvar(); toast("Resposta enviada."); break;
+      }
+      case "equipe-add": {
+        const login = v("login").toLowerCase();
+        if (S.equipe.some(x => x.login === login)) { toast("Esse login já está na equipe."); return; }
+        const e = { id: "e-" + uid(), nome: v("nome"), login, codigo: novoCodigo(), papel: v("papel"), bloqueada: false };
+        S.equipe.push(e); salvar();
+        ui.modal = { tipo: "info", titulo: e.nome + " entrou na equipe", texto: "Login " + e.login + ". Passe este código para ela entrar no painel.", destaque: e.codigo };
+        break;
+      }
+      default: return;
+    }
+    render();
+  }
+
+  /* ---------- eventos ---------- */
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-a]");
+    if (!b || b.disabled) return;
+    const d = Object.assign({}, b.dataset, { _alvo: e.target });
+    acao(b.dataset.a, d, b);
+  });
+  document.addEventListener("submit", e => {
+    const f = e.target.closest("form[data-f]");
+    if (!f) return;
+    e.preventDefault();
+    enviar(f.dataset.f, f);
+  });
+  document.addEventListener("input", e => {
+    const t = e.target;
+    if (t.dataset.i === "busca") { ui.busca = t.value; render(); return; }
+    if (t.id === "confirmaPalavra") document.getElementById("confirmaBotao").disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
+  });
+  document.addEventListener("change", e => {
+    const t = e.target;
+    if (t.matches("input[type=checkbox]")) {
+      const form = t.closest('form[data-f="liberar"]');
+      if (!form) return;
+      if (t.hasAttribute("data-cascata")) t.closest("[data-caixa]").querySelectorAll("input[type=checkbox]").forEach(x => { x.checked = t.checked; });
+      form.querySelectorAll('[data-caixa="curso"]').forEach(cx => {
+        cx.querySelectorAll('[data-caixa="modulo"]').forEach(mx => {
+          const aulas = mx.querySelectorAll('input[name="a"]');
+          if (aulas.length) mx.querySelector('input[name="m"]').checked = [...aulas].every(x => x.checked);
+        });
+        const mods = cx.querySelectorAll('input[name="m"]');
+        if (mods.length) cx.querySelector('input[name="c"]').checked = [...mods].every(x => x.checked);
+      });
+    }
+  });
+  document.getElementById("arquivoCapa").addEventListener("change", e => {
+    const file = e.target.files[0]; if (!file) return;
+    const campo = document.getElementById("campoCapa"); if (campo) campo.value = file.name;
+    const url = URL.createObjectURL(file); if (ui.aula) previas[ui.aula] = url;
+    const pv = document.getElementById("previaCapa");
+    if (pv) pv.style.background = "url('" + url + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
+    toast("Imagem escolhida. Clique em Salvar aula para guardar.");
+    e.target.value = "";
+  });
+  document.getElementById("arquivoExtra").addEventListener("change", e => {
+    const file = e.target.files[0]; if (!file) return;
+    const form = document.querySelector('form[data-f="extra-add"]');
+    if (form) { form.elements.arquivo.value = file.name; if (!form.elements.nome.value) form.elements.nome.value = file.name.replace(/\.[^.]+$/, ""); }
+    e.target.value = "";
+  });
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && ui.modal) { ui.modal = null; pend = null; render(); }
+  });
+
+  /* arrastar as categorias */
+  document.addEventListener("dragstart", e => {
+    const t = e.target.closest && e.target.closest("[data-arrasta]"); if (!t) return;
+    ui.arrasto = t.dataset.arrasta; t.classList.add("arrastando");
+    e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", ui.arrasto);
+  });
+  document.addEventListener("dragover", e => {
+    const t = e.target.closest && e.target.closest("[data-arrasta]"); if (!t || !ui.arrasto) return;
+    e.preventDefault();
+    document.querySelectorAll(".chip.alvo").forEach(x => x.classList.remove("alvo"));
+    if (t.dataset.arrasta !== ui.arrasto) t.classList.add("alvo");
+  });
+  document.addEventListener("drop", e => {
+    const t = e.target.closest && e.target.closest("[data-arrasta]"); if (!t || !ui.arrasto) return;
+    e.preventDefault();
+    const de = S.cats.findIndex(k => k.id === ui.arrasto), para = S.cats.findIndex(k => k.id === t.dataset.arrasta);
+    if (de >= 0 && para >= 0 && de !== para) { const [k] = S.cats.splice(de, 1); S.cats.splice(para, 0, k); salvar(); toast("Ordem das categorias salva."); }
+    ui.arrasto = null; render();
+  });
+  document.addEventListener("dragend", () => { ui.arrasto = null; document.querySelectorAll(".chip.arrastando, .chip.alvo").forEach(x => x.classList.remove("arrastando", "alvo")); });
+
+  render();
+})();
 </script>
 </body>
 </html>
