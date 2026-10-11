@@ -3,6 +3,8 @@
     "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npm run build)",
+
+      "Bash(curl -sS -X POST https://api.supabase.com/v1/projects/crcclhmamknqkamvavyp/database/query *)",
       "Bash(npx tsc --noEmit *)",
       "mcp__ATOMICAT__atomicat_capture_webpage",
       "mcp__Supabase__get_edge_function",
