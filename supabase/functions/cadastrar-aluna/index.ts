@@ -129,12 +129,11 @@ Deno.serve(async (req) => {
       origem,
     );
   }
-  // O celular é opcional — muita aluna vem sem, e travar o cadastro por
-  // causa disso seria pior que o campo vazio. Mas se veio, tem de ser um
-  // número plausível: DDD e o número, ou com o código do país na frente.
-  if (celular && (celular.length < 10 || celular.length > 15)) {
+  // O celular é obrigatório (0042): é por ele que a aluna é acompanhada.
+  // DDD e os nove números — onze dígitos.
+  if (!/^[0-9]{11}$/.test(celular)) {
     return resposta(
-      { erro: "celular_invalido", mensagem: "O celular precisa do DDD. Ex.: 11 98765-4321." },
+      { erro: "celular_invalido", mensagem: "Preencha o celular com DDD: (11) 98765-4321." },
       400,
       origem,
     );

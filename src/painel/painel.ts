@@ -74,6 +74,15 @@ const maisAno = (s: string) => { const d = new Date(s + "T12:00:00"); d.setFullY
 const maisDias = (s: string, n: number) => { const d = new Date(s + "T12:00:00"); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(r); return String(1000 + (r[0] % 9000)); };
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
+/** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
+function formatarCelular(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 11);
+  if (d.length === 0) return "";
+  if (d.length <= 2) return "(" + d;
+  if (d.length <= 7) return "(" + d.slice(0, 2) + ") " + d.slice(2);
+  return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
+}
+
 const vencida = (a: Aluna) => !!a.validade && a.validade < hoje();
 function quando(iso: string): string {
   const dia = diaDe(iso);
@@ -106,7 +115,7 @@ const MOTIVOS: Record<string, string> = {
   nome_invalido: "Confira o nome.",
   validade_antes_da_entrada: "A validade não pode ser antes da entrada.",
   data_vazia: "Preencha a entrada e a validade.",
-  celular_invalido: "O celular precisa do DDD. Ex.: 11 98765-4321.",
+  celular_invalido: "Preencha o celular com DDD: (11) 98765-4321.",
   email_invalido: "Confira o e-mail.",
   nao_bloqueia_a_si_mesmo: "Você não pode bloquear a si mesma.",
   nao_remove_a_si_mesmo: "Você não pode remover a si mesma.",
@@ -806,7 +815,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
             <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
           </label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular</span><input class="campo" name="celular" type="tel" inputmode="tel" autocomplete="off" placeholder="11 98765-4321" value="${h(a ? a.celular : "")}" /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
@@ -1113,7 +1122,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
         if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
         const celular = v("celular").replace(/\D/g, "");
-        if (celular && (celular.length < 10 || celular.length > 15)) { toast("O celular precisa do DDD. Ex.: 11 98765-4321."); return; }
+        if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
         const email = v("email").toLowerCase();
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
@@ -1274,6 +1283,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
     if (t.dataset.i === "busca") { ui.busca = t.value; render(); return; }
+    if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
