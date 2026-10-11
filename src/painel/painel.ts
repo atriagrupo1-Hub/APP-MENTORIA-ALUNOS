@@ -35,6 +35,7 @@ type Curso = {
 type Cat = { id: string; nome: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
+  celular: string; email: string;
   entrada: string; validade: string; bloqueada: boolean; liberadas: number;
   acesso: { cursos: string[]; modulos: string[]; aulas: string[] };
   datas: Record<string, string>;
@@ -105,6 +106,8 @@ const MOTIVOS: Record<string, string> = {
   nome_invalido: "Confira o nome.",
   validade_antes_da_entrada: "A validade não pode ser antes da entrada.",
   data_vazia: "Preencha a entrada e a validade.",
+  celular_invalido: "O celular precisa do DDD. Ex.: 11 98765-4321.",
+  email_invalido: "Confira o e-mail.",
   nao_bloqueia_a_si_mesmo: "Você não pode bloquear a si mesma.",
   nao_remove_a_si_mesmo: "Você não pode remover a si mesma.",
   produtos_categoria_id_fkey: "Esta categoria tem produtos. Mude-os de categoria antes de remover.",
@@ -125,7 +128,7 @@ function falhou<T extends { error: { message: string } | null }>(r: T): T {
 /* ---------- leitura do banco ---------- */
 
 async function lerTudo(eu: Eu): Promise<Dados> {
-  const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms] = await Promise.all([
+  const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
     supabase.from("categorias").select("id, titulo, ordem").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem").order("ordem"),
     supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral").not("produto_id", "is", null).order("ordem"),
@@ -136,6 +139,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("acessos").select("aluna_id, escopo, produto_id, modulo_id, aula_id, abre_em"),
     supabase.from("cronograma_modulo").select("aluna_id, modulo_id, dias"),
     supabase.rpc("comentarios_para_moderacao", { p_aula: null }),
+    supabase.rpc("contatos_das_alunas"),
   ]);
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -177,8 +181,13 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
   }));
 
+  // Celular e e-mail (0041). Se a leitura falhar, a lista abre do mesmo jeito, só sem eles.
+  const contato = new Map<string, { celular?: string; email?: string }>();
+  for (const c of contatos.data ?? []) contato.set(c.id, c);
   const listaAlunas: Aluna[] = (alunas.data ?? []).map((a: Record<string, unknown>) => ({
     id: String(a.id), nome: String(a.nome), login: String(a.login), codigo: String(a.codigo ?? ""),
+    celular: String(a.celular ?? contato.get(String(a.id))?.celular ?? ""),
+    email: String(contato.get(String(a.id))?.email ?? ""),
     entrada: String(a.entrada ?? ""), validade: a.validade ? String(a.validade) : "",
     bloqueada: a.status === "bloqueada", liberadas: Number(a.aulas_liberadas ?? 0),
     acesso: { cursos: [], modulos: [], aulas: [] }, datas: {}, cronograma: {},
@@ -797,6 +806,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
             <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
           </label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular</span><input class="campo" name="celular" type="tel" inputmode="tel" autocomplete="off" placeholder="11 98765-4321" value="${h(a ? a.celular : "")}" /></label>
+          <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
         </div>
@@ -1101,12 +1112,16 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const nome = v("nome");
         const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
         if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
+        const celular = v("celular").replace(/\D/g, "");
+        if (celular && (celular.length < 10 || celular.length > 15)) { toast("O celular precisa do DDD. Ex.: 11 98765-4321."); return; }
+        const email = v("email").toLowerCase();
+        if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
           if (id) {
-            await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade") });
+            await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
             ui.modal = null; return "Ficha de " + nome + " salva.";
           }
-          await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, entrada: v("entrada"), validade: v("validade") });
+          await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
           ui.modal = null; return nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
         });
         return;

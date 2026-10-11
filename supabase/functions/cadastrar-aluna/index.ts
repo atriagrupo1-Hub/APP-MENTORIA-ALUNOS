@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
   let login = "";
   let codigo = "";
   let celular = "";
+  let email = "";
   let entrada = "";
   let validade = "";
   try {
@@ -108,6 +109,7 @@ Deno.serve(async (req) => {
     // virar dois na hora de procurar, e o link do WhatsApp não aceita
     // pontuação de qualquer jeito.
     celular = String(corpo?.celular ?? "").replace(/\D/g, "");
+    email = String(corpo?.email ?? "").trim().toLowerCase();
     entrada = String(corpo?.entrada ?? "").trim();
     validade = String(corpo?.validade ?? "").trim();
   } catch {
@@ -133,6 +135,15 @@ Deno.serve(async (req) => {
   if (celular && (celular.length < 10 || celular.length > 15)) {
     return resposta(
       { erro: "celular_invalido", mensagem: "O celular precisa do DDD. Ex.: 11 98765-4321." },
+      400,
+      origem,
+    );
+  }
+
+  // O e-mail também é opcional (0041): só contato, nunca usado para entrar.
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return resposta(
+      { erro: "email_invalido", mensagem: "Confira o e-mail." },
       400,
       origem,
     );
@@ -208,6 +219,7 @@ Deno.serve(async (req) => {
       papel: "aluna",
       status: "ativa",
       celular: celular || null,
+      email: email || null,
       entrada,
       acesso_ate: fimDaValidade,
     });
