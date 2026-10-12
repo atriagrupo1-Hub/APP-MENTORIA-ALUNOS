@@ -137,7 +137,12 @@ export function Login() {
               aria-label={verCodigo ? "Ocultar código" : "Mostrar código"}
               onClick={() => setVerCodigo((v) => !v)}
             >
-              <span className={verCodigo ? "vazio" : ""} />
+              {/* Desenho do olho em SVG: o círculo feito só com CSS sumia em alguns celulares. */}
+              <svg className="ent-olho-ic" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+                <circle cx="12" cy="12" r="3" />
+                {verCodigo ? <path d="M4 4l16 16" /> : null}
+              </svg>
             </button>
           </div>
 

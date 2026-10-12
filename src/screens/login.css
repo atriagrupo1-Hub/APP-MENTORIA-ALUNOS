@@ -112,3 +112,9 @@
   .ent-logo { width: 170px; height: 125px; margin-bottom: 10px; }
   .ent-logo img { background: none; }
 
+
+/* O olho do código: desenhado em SVG, para aparecer igual em todo celular. */
+.entrada .ent-olho { color: #f0dca8; }
+.entrada .ent-olho-ic { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.entrada .ent-olho:hover .ent-olho-ic { color: #fff; }
+.entrada .ent-cod::-ms-reveal, .entrada .ent-cod::-ms-clear { display: none; }
