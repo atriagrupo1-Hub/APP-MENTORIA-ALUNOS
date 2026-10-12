@@ -395,29 +395,22 @@ export function montar(app: HTMLElement) {
 
   /* ---------- avisos ---------- */
   let tToast: ReturnType<typeof setTimeout> | undefined;
-  /** O que dá para desfazer depois do aviso: a ação contrária, feita no banco. */
-  let desfazerPendente: null | { fn: () => Promise<void>; texto: string } = null;
-  function toast(msg: string, desfazer?: { fn: () => Promise<void>; texto: string }) {
-    toastEl.textContent = "";
-    const t = document.createElement("span"); t.textContent = msg; toastEl.appendChild(t);
-    desfazerPendente = desfazer ?? null;
-    if (desfazer) {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "desfazer"; b.textContent = "Desfazer";
-      b.addEventListener("click", () => {
-        const d = desfazerPendente; desfazerPendente = null; toastEl.hidden = true;
-        if (d) void executar(async () => { await d.fn(); await registrar(null, "Desfez: " + d.texto); return "Ação desfeita."; });
-      });
-      toastEl.appendChild(b);
-    }
-    toastEl.hidden = false;
-    clearTimeout(tToast); tToast = setTimeout(() => { toastEl.hidden = true; desfazerPendente = null; }, desfazer ? 7000 : 3400);
+  function toast(msg: string) {
+    toastEl.textContent = msg; toastEl.hidden = false;
+    clearTimeout(tToast); tToast = setTimeout(() => { toastEl.hidden = true; }, 3400);
   }
+  /**
+   * As últimas alterações que dá para voltar, da mais recente para a mais
+   * antiga. Remover não entra: é definitivo. Fica só nesta aba do navegador
+   * — o que volta é feito no banco, ação por ação.
+   */
+  const LIMITE_DESFAZER = 5;
+  let pilha: { texto: string; quando: string; fn: () => Promise<void> }[] = [];
   /** Uma linha no histórico. Se o banco recusar, a ação em si já valeu — não desfaz nada. */
   async function registrar(alunaId: string | null, texto: string) {
     await supabase.from("historico_acoes").insert({ aluna_id: alunaId, texto: texto.slice(0, 500) });
   }
-  type Resultado = string | void | { msg: string; desfazer?: () => Promise<void>; texto?: string };
+  type Resultado = string | void | { msg: string; desfazer?: () => Promise<void>; texto: string };
   function confirmar(opts: Record<string, string>, fn: () => Promise<Resultado>) {
     pend = fn; ui.modal = Object.assign({ tipo: "confirmar" }, opts); ui.focar = "confirmaPalavra";
   }
@@ -432,7 +425,10 @@ export function montar(app: HTMLElement) {
     try {
       const r = await fn();
       if (typeof r === "string") toast(r);
-      else if (r) toast(r.msg, r.desfazer ? { fn: r.desfazer, texto: r.texto || r.msg } : undefined);
+      else if (r) {
+        if (r.desfazer) pilha = [{ texto: r.texto, quando: new Date().toISOString(), fn: r.desfazer }, ...pilha].slice(0, LIMITE_DESFAZER);
+        toast(r.msg);
+      }
     } catch (e) {
       toast(motivo(e));
     }
@@ -517,7 +513,7 @@ export function montar(app: HTMLElement) {
       <button class="botao-neutro" data-a="sair">Sair</button>
     </div>
     <div class="conteudo">
-      <div class="cabecalho"><h1>${h(t)}</h1>${ajudaAba()}<span class="contagem">${h(cont)}</span></div>
+      <div class="cabecalho"><h1>${h(t)}</h1>${ajudaAba()}<span class="contagem">${h(cont)}</span>${pilha.length ? `<span style="flex:1"></span><button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}</div>
       <div class="abas" role="tablist">
         ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); return `<button class="aba" role="tab" data-a="aba" data-v="${id}" ${on ? 'aria-selected="true"' : ""}>${nome}</button>`; }).join("")}
       </div>
@@ -541,6 +537,8 @@ export function montar(app: HTMLElement) {
   const haQuanto = (s: string) => { if (!s) return "nunca"; const n = diasEntre(s, hoje()); return n <= 0 ? "hoje" : n === 1 ? "ontem" : "há " + n + " dias"; };
   const fone = (t: string) => formatarCelular(t || "");
   const primeiroNome = (n: string) => n.split(" ")[0];
+  /** O último segundo do dia, no horário de Brasília — é assim que a validade é guardada. */
+  const fimDoDia = (dia: string) => new Date(dia + "T23:59:59-03:00").toISOString();
 
   /* ---------- situação da aluna ---------- */
   type Sit = "ativa" | "vencendo" | "vencida" | "bloqueada";
@@ -1330,6 +1328,15 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>
       </form>`;
+    } else if (m.tipo === "desfazer") {
+      corpo = `
+        <h2 class="titulo">Desfazer alterações</h2>
+        <p class="explica">As últimas ${p(pilha.length, "alteração", "alterações")} desta sessão, da mais recente para a mais antiga. Volta uma de cada vez, sempre a mais recente. Remoções não voltam.</p>
+        ${pilha.map((x, i) => `<div class="mini"><span class="nome"><b class="${i ? "leve" : ""}">${i ? "" : "→ "}${h(x.texto)}</b><span>${dataHora(x.quando)}</span></span></div>`).join("") || semNada("Nada para desfazer.")}
+        <div class="rodape-modal">
+          ${pilha.length ? `<button type="button" class="botao" data-a="desfazer-confirmar">Desfazer: ${h(pilha[0].texto)}</button>` : ""}
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+        </div>`;
     } else if (m.tipo === "sugestoes") {
       corpo = `
       <form data-f="sugestao">
@@ -1388,6 +1395,12 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "aluna-nova": ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
       case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
+      case "desfazer-confirmar": {
+        const x = pilha.shift(); ui.modal = null;
+        if (x) void executar(async () => { await x.fn(); await registrar(null, "Desfez: " + x.texto); return "Desfeito: " + x.texto + "."; });
+        return;
+      }
       case "ver-codigo-aluna": ui.verCodigo = ui.verCodigo === d.id ? null : d.id; break;
       case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
@@ -1481,7 +1494,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           await registrar(al!.id, "Acesso renovado até " + nova);
           return {
             msg: "Acesso de " + al!.nome + " renovado até " + nova + ".", texto: "renovação de " + al!.nome,
-            desfazer: antes ? async () => { await rpc("definir_validade", { p_aluna: al!.id, p_validade: new Date(antes + "T23:59:59-03:00").toISOString() }); } : undefined,
+            desfazer: antes ? async () => { await rpc("definir_validade", { p_aluna: al!.id, p_validade: fimDoDia(antes) }); } : undefined,
           };
         });
         return;
@@ -1515,7 +1528,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "cancelar-edicao": ui.editando = null; break;
       case "cat-sobe": case "cat-desce": {
         const nova = trocado(S.cats, S.cats.findIndex((k) => k.id === d.id), a === "cat-sobe" ? -1 : 1);
-        if (nova) void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((k) => k.id) }); });
+        const velha = S.cats.map((k) => k.id);
+        if (nova) void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das categorias salva.", texto: "ordem das categorias", desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: velha }); } }; });
         return;
       }
       case "cat-remover": {
@@ -1552,7 +1566,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       }
       case "mod-sobe": case "mod-desce": {
         const x = acharModulo(d.id)!; const nova = trocado(x.c.modulos, x.i, a === "mod-sobe" ? -1 : 1);
-        if (nova) void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((k) => k.id) }); });
+        const velha = x.c.modulos.map((k) => k.id);
+        if (nova) void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((k) => k.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + x.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
         return;
       }
       case "mod-remover": {
@@ -1567,7 +1582,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "aula-add-cancelar": ui.addAula = null; break;
       case "aula-sobe": case "aula-desce": {
         const x = acharAula(d.id)!; const nova = trocado(x.m.aulas, x.ai, a === "aula-sobe" ? -1 : 1);
-        if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); });
+        const velha = x.m.aulas.map((k) => k.id);
+        if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + x.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: velha }); } }; });
         return;
       }
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.tab = "aula"; window.scrollTo(0, 0); break; }
@@ -1632,8 +1648,10 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "trocar-codigo": {
         const e = pessoa(d.id);
         void executar(async () => {
+          const velho = e.codigo;
           const codigo = String(await rpc("trocar_codigo", { p_id: e.id }));
           await registrar(null, "Trocou o código de " + e.nome);
+          if (velho) pilha = [{ texto: "troca do código de " + e.nome, quando: new Date().toISOString(), fn: async () => { await rpc("mudar_codigo", { p_id: e.id, p_codigo: velho }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "info", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para ela.", destaque: codigo };
         });
         return;
@@ -1673,18 +1691,20 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
           if (id) {
-            const o = aluna(id);
+            const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
               msg: "Dados de " + nome + " salvos.", texto: "edição dos dados de " + nome,
-              desfazer: /^\d{11}$/.test(o.celular) ? async () => { await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_validade: o.validade, p_celular: o.celular, p_email: o.email }); } : undefined,
+              desfazer: async () => { await rpc("restaurar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_acesso_ate: fimDoDia(o.validade), p_celular: o.celular, p_email: o.email }); },
             };
           }
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
           if (r.id) await registrar(String(r.id), "Aluna cadastrada");
-          ui.modal = null; return nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
+          ui.modal = null;
+          const msg = nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
+          return r.id ? { msg, texto: "cadastro de " + nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: String(r.id) }); } } : msg;
         });
         return;
       }
@@ -1736,7 +1756,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o produto " + v("nome"));
           ui.modal = null; ui.curso = r.data!.id; ui.tab = "curso";
-          return "Produto criado. Agora monte os módulos.";
+          return { msg: "Produto criado. Agora monte os módulos.", texto: "criação do produto " + v("nome"), desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); if (ui.curso === r.data!.id) { ui.curso = null; ui.tab = "cursos"; } } };
         });
         return;
       }
@@ -1749,52 +1769,69 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         });
         return;
       case "cat-renomear":
-        void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return "Categoria renomeada."; });
+        { const velho = cat(id)!.nome;
+          void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Categoria renomeada.", texto: "nome da categoria " + velho, desfazer: async () => { falhou(await supabase.from("categorias").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
-      case "curso-config":
+      case "curso-config": {
+        const c = curso(ui.curso)!; const cid = c.id;
+        const velho = { titulo: c.nome, categoria_id: c.cat || null, publicado: c.visivel, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null };
         void executar(async () => {
           falhou(await supabase.from("produtos").update({
             titulo: v("nome"), categoria_id: v("cat"), publicado: v("visivel") === "1",
             descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
-          }).eq("id", ui.curso!).select("id").single());
-          return "Configurações salvas.";
+          }).eq("id", cid).select("id").single());
+          return { msg: "Configurações salvas.", texto: "configurações de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(velho).eq("id", cid).select("id").single()); } };
         });
         return;
+      }
       case "mod-add": {
         const c = curso(id)!;
         void executar(async () => {
           const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length }).select("id").single());
           // A posição é a última da lista, qualquer que seja a `ordem` dos outros.
           await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: [...c.modulos.map((m) => m.id), r.data!.id] });
-          ui.abertos.add(r.data!.id); return "Módulo adicionado.";
+          ui.abertos.add(r.data!.id);
+          return { msg: "Módulo adicionado.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "mod-renomear":
-        void executar(async () => { falhou(await supabase.from("modulos").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return "Módulo renomeado."; });
+        { const velho = acharModulo(id)!.m.nome;
+          void executar(async () => { falhou(await supabase.from("modulos").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Módulo renomeado.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula-add": {
         const x = acharModulo(id)!;
         void executar(async () => {
           const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, titulo: v("nome"), ordem: x.m.aulas.length }).select("id").single());
           await rpc("ordenar_aulas", { p_modulo: id, p_ids: [...x.m.aulas.map((a) => a.id), r.data!.id] });
-          ui.addAula = null; return "Aula adicionada.";
+          ui.addAula = null;
+          return { msg: "Aula adicionada.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "aula-renomear":
-        void executar(async () => { falhou(await supabase.from("aulas").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return "Aula renomeada."; });
+        { const velho = acharAula(id)!.a.nome;
+          void executar(async () => { falhou(await supabase.from("aulas").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Aula renomeada.", texto: "nome da aula " + velho, desfazer: async () => { falhou(await supabase.from("aulas").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula": {
         const video = v("video"); const ref = idDoVideo(video);
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
+        const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video };
         void executar(async () => {
           falhou(await supabase.from("aulas").update({ capa_path: v("capa") || null, texto: texto.trim() ? texto : null }).eq("id", id).select("id").single());
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
           delete previas[id];
-          return "Aula salva.";
+          return {
+            msg: "Aula salva.", texto: "conteúdo da aula " + x0.nome,
+            desfazer: async () => {
+              falhou(await supabase.from("aulas").update({ capa_path: velho.capa || null, texto: velho.texto || null }).eq("id", id).select("id").single());
+              const vref = velho.video ? idDoVideo(velho.video) : null;
+              if (vref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(velho.video), video_ref: vref }));
+              else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
+            },
+          };
         });
         return;
       }
@@ -1808,15 +1845,27 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           if (!ref) { toast("Não reconheci o vídeo. Cole o link ou só o identificador."); return; }
           linha.video_ref = ref; linha.video_provider = provedorDoLink(arq);
         } else linha.arquivo_path = arq;
-        void executar(async () => { falhou(await supabase.from("conteudos").insert(linha)); return "Conteúdo adicionado à aula."; });
+        void executar(async () => {
+          const r = falhou(await supabase.from("conteudos").insert(linha).select("id").single());
+          return { msg: "Conteúdo adicionado à aula.", texto: "conteúdo extra " + v("nome"), desfazer: async () => { falhou(await supabase.from("conteudos").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
         return;
       }
       case "com-resposta":
         void executar(async () => {
           const k = S.comentarios.find((x) => x.id === id);
-          await rpc("responder_comentario", { p_comentario: id, p_texto: v("resposta") });
+          const antes = k?.resposta ?? ""; const estadoAntes = k?.estado === "moderar" ? "pendente" : k?.estado;
+          const rid = String(await rpc("responder_comentario", { p_comentario: id, p_texto: v("resposta") }));
           await registrar(k?.autoraId || null, "Respondeu um comentário de " + (k?.autora ?? "uma aluna"));
-          ui.respondendo = null; return "Resposta enviada.";
+          ui.respondendo = null;
+          return {
+            msg: "Resposta enviada.", texto: "resposta a " + (k?.autora ?? "uma aluna"),
+            desfazer: async () => {
+              if (antes) await rpc("responder_comentario", { p_comentario: id, p_texto: antes });
+              else await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });
+              if (estadoAntes === "pendente") await rpc("moderar_comentario", { p_comentario: id, p_status: "pendente" });
+            },
+          };
         });
         return;
       case "equipe-add": {
@@ -1826,6 +1875,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel });
           await registrar(null, "Adicionou " + v("nome") + " à equipe");
+          if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "info", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para ela entrar no painel.", destaque: String(r.codigo ?? "") };
         });
         return;
@@ -1844,18 +1894,20 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const res = form.querySelector<HTMLInputElement>('input[name="resultado"]:checked')?.value || "Contato feito";
         const obs = (form.elements.namedItem("obs") as HTMLTextAreaElement).value.trim();
         void executar(async () => {
-          falhou(await supabase.from("contatos_aluna").insert({ aluna_id: id, canal: "telefone", resultado: res, observacao: obs || null }));
+          const r = falhou(await supabase.from("contatos_aluna").insert({ aluna_id: id, canal: "telefone", resultado: res, observacao: obs || null }).select("id").single());
           await registrar(id, "Contato registrado: " + res + (obs ? " — " + obs : ""));
-          ui.modal = null; return "Contato com " + primeiroNome(al.nome) + " registrado.";
+          ui.modal = null;
+          return { msg: "Contato com " + primeiroNome(al.nome) + " registrado.", texto: "contato com " + al.nome, desfazer: async () => { falhou(await supabase.from("contatos_aluna").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "sugestao": {
         const t = (form.elements.namedItem("texto") as HTMLTextAreaElement).value.trim(); if (!t) return;
         void executar(async () => {
-          falhou(await supabase.from("sugestoes").insert({ texto: t }));
+          const r = falhou(await supabase.from("sugestoes").insert({ texto: t }).select("id").single());
           await registrar(null, "Deixou uma sugestão");
-          ui.modal = { tipo: "sugestoes" }; ui.focar = "sugestaoCampo"; return "Sugestão enviada. Obrigada!";
+          ui.modal = { tipo: "sugestoes" }; ui.focar = "sugestaoCampo";
+          return { msg: "Sugestão enviada. Obrigada!", texto: "envio de uma sugestão", desfazer: async () => { falhou(await supabase.from("sugestoes").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -1864,14 +1916,18 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         if (acaoL === "liberar") {
           const mid = v("modulo"); if (!mid) { toast("Escolha o módulo que quer liberar."); return; }
           const x = acharModulo(mid)!;
+          const antes = ids.map((sid) => ({ sid, ac: { ...aluna(sid).acesso } }));
           void executar(async () => {
             const n = Number(await rpc("lote_liberar_modulo", { p_alunas: ids, p_modulo: mid }));
-            ui.sel = []; return x.m.nome + " liberado para " + p(n, "aluna", "alunas") + ".";
+            ui.sel = [];
+            return { msg: x.m.nome + " liberado para " + p(n, "aluna", "alunas") + ".", texto: "liberação em lote de " + x.m.nome, desfazer: async () => { for (const z of antes) await rpc("salvar_liberacao", { p_aluna: z.sid, p_produtos: z.ac.cursos, p_modulos: z.ac.modulos, p_aulas: z.ac.aulas }); } };
           });
         } else if (acaoL === "renovar") {
+          const antes = ids.map((sid) => ({ sid, v: aluna(sid).validade }));
           void executar(async () => {
             const n = Number(await rpc("lote_renovar", { p_alunas: ids }));
-            ui.sel = []; return "Acesso renovado para " + p(n, "aluna", "alunas") + ".";
+            ui.sel = [];
+            return { msg: "Acesso renovado para " + p(n, "aluna", "alunas") + ".", texto: "renovação em lote", desfazer: async () => { for (const z of antes) if (z.v) await rpc("definir_validade", { p_aluna: z.sid, p_validade: fimDoDia(z.v) }); } };
           });
         }
         return;
@@ -2037,7 +2093,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     ui.arrasto = null;
     if (de >= 0 && para >= 0 && de !== para) {
       const nova = S.cats.slice(); const [k] = nova.splice(de, 1); nova.splice(para, 0, k);
-      void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((x) => x.id) }); return "Ordem das categorias salva."; });
+      const velha = S.cats.map((x) => x.id);
+      void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem das categorias salva.", texto: "ordem das categorias", desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: velha }); } }; });
     } else render();
   });
   app.addEventListener("dragend", () => { ui.arrasto = null; document.querySelectorAll(".chip.arrastando, .chip.alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
