@@ -107,6 +107,14 @@ export async function temSessao(): Promise<boolean> {
   return Boolean(data.session);
 }
 
+/**
+ * Avisa o banco que a aluna abriu o aplicativo — é o "último acesso" que a
+ * equipe vê no painel. Falhar aqui não atrapalha nada da aluna.
+ */
+export async function marcarPresenca(): Promise<void> {
+  await supabase.rpc("marcar_presenca");
+}
+
 /** Perfil de quem está logada. Vem por função, nunca da tabela direto. */
 export async function meuPerfil(): Promise<PerfilSessao | null> {
   const { data, error } = await supabase.rpc("meu_perfil");

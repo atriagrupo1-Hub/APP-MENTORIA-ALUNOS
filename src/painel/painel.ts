@@ -40,10 +40,18 @@ type Aluna = {
   acesso: { cursos: string[]; modulos: string[]; aulas: string[] };
   datas: Record<string, string>;
   cronograma: Record<string, number>;
+  /** Do banco (0043): último acesso (AAAA-MM-DD), última aula, concluídas e nota. */
+  ultimoAcesso: string; ultimaAula: string; concluidas: number; nota: number; nComentarios: number;
+  feitas: Set<string>;
+  notas: Nota[]; contatos: Contato[];
 };
+type Nota = { id: string; texto: string; quem: string; quando: string };
+type Contato = { id: string; resultado: string; obs: string; quem: string; quando: string };
+type Hist = { id: string; aluna: string | null; quem: string; quando: string; texto: string };
+type Sugestao = { id: string; texto: string; quem: string; autorId: string; quando: string };
 type Estado = "moderar" | "publicado" | "oculto";
 type Comentario = {
-  id: string; autora: string; aula: string; quando: string;
+  id: string; autora: string; autoraId: string; aula: string; quando: string;
   texto: string; estado: Estado; resposta: string;
 };
 type Pessoa = {
@@ -55,6 +63,7 @@ type Eu = { id: string; nome: string; papel: Papel };
 type Dados = {
   cats: Cat[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; equipe: Pessoa[];
+  historico: Hist[]; sugestoes: Sugestao[];
 };
 
 /* ---------- utilidades (as mesmas da maquete) ---------- */
@@ -150,6 +159,15 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("comentarios_para_moderacao", { p_aula: null }),
     supabase.rpc("contatos_das_alunas"),
   ]);
+  // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
+  const [eng, feitas, notas, contatosAl, sugs, hist] = await Promise.all([
+    supabase.rpc("engajamento_alunas"),
+    supabase.rpc("aulas_concluidas_alunas"),
+    supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
+    supabase.from("contatos_aluna").select("id, aluna_id, resultado, observacao, autor_nome, quando").order("quando"),
+    supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
+    supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
+  ]);
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
   const video = new Map<string, string>();
@@ -200,8 +218,23 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     entrada: String(a.entrada ?? ""), validade: a.validade ? String(a.validade) : "",
     bloqueada: a.status === "bloqueada", liberadas: Number(a.aulas_liberadas ?? 0),
     acesso: { cursos: [], modulos: [], aulas: [] }, datas: {}, cronograma: {},
+    ultimoAcesso: "", ultimaAula: "", concluidas: 0, nota: 0, nComentarios: 0,
+    feitas: new Set<string>(), notas: [], contatos: [],
   }));
   const porId = new Map(listaAlunas.map((a) => [a.id, a]));
+  for (const e of (eng.data ?? []) as Record<string, unknown>[]) {
+    const al = porId.get(String(e.aluna_id));
+    if (!al) continue;
+    al.ultimoAcesso = e.ultimo_acesso ? diaDe(String(e.ultimo_acesso)) : "";
+    al.ultimaAula = e.ultima_aula ? String(e.ultima_aula) : "";
+    al.liberadas = Number(e.liberadas ?? al.liberadas);
+    al.concluidas = Number(e.concluidas ?? 0);
+    al.nComentarios = Number(e.comentarios ?? 0);
+    al.nota = Number(e.nota ?? 0);
+  }
+  for (const f of (feitas.data ?? []) as { aluna_id: string; aula_id: string }[]) porId.get(f.aluna_id)?.feitas.add(f.aula_id);
+  for (const n of notas.data ?? []) porId.get(n.aluna_id)?.notas.push({ id: n.id, texto: n.texto, quem: n.autor_nome, quando: n.quando });
+  for (const c of contatosAl.data ?? []) porId.get(c.aluna_id)?.contatos.push({ id: c.id, resultado: c.resultado, obs: c.observacao ?? "", quem: c.autor_nome, quando: c.quando });
   for (const ac of acessos.data ?? []) {
     const al = porId.get(ac.aluna_id);
     if (!al) continue;
@@ -218,7 +251,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   }
 
   // Comentário das alunas na lista; a resposta da equipe vai dentro dele.
-  type Linha = { id: string; aula_id: string; autora_nome: string; texto: string; status: string; criado_em: string; resposta_a: string | null; eh_instrutor: boolean };
+  type Linha = { id: string; aula_id: string; autora_id: string; autora_nome: string; texto: string; status: string; criado_em: string; resposta_a: string | null; eh_instrutor: boolean };
   const linhas = (coms.data ?? []) as Linha[];
   const resposta = new Map<string, string>();
   for (const c of [...linhas].reverse()) {
@@ -229,7 +262,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const comentarios: Comentario[] = linhas
     .filter((c) => !c.eh_instrutor && c.status !== "removido")
     .map((c) => ({
-      id: c.id, autora: c.autora_nome, aula: c.aula_id, quando: quando(c.criado_em), texto: c.texto,
+      id: c.id, autora: c.autora_nome, autoraId: c.autora_id ?? "", aula: c.aula_id, quando: quando(c.criado_em), texto: c.texto,
       estado: c.status === "pendente" ? "moderar" : (c.status as Estado),
       resposta: resposta.get(c.id) ?? "",
     }));
@@ -247,6 +280,8 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo })),
     cursos, alunas: listaAlunas, comentarios, equipe,
+    historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
+    sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
 }
 
@@ -291,19 +326,23 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [] };
+  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [] };
   let carregando = true;
   let ocupado = false;
   const ui = {
-    tab: "cursos", curso: null as string | null, aula: null as string | null, busca: "",
+    tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as Estado, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
     abertos: new Set<string>(), primeiraVez: true,
+    filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
+    ficha: null as string | null, verCodigo: null as string | null,
+    buscaGeral: "", buscaAberta: false, filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
+    sujo: null as null | { f: string; id: string },
   };
   const previas: Record<string, string> = {};
-  let pend: null | (() => Promise<void>) = null;
+  let pend: null | (() => Promise<Resultado>) = null;
 
   const toastEl = document.createElement("div");
   toastEl.id = "toast"; toastEl.className = "toast"; toastEl.setAttribute("role", "status"); toastEl.hidden = true;
@@ -315,7 +354,7 @@ export function montar(app: HTMLElement) {
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
   const aplicarTema = () => { document.documentElement.setAttribute("data-tema", tema); };
   aplicarTema();
-  const botaoTema = () => `<button class="botao-neutro tema" data-a="tema" aria-label="Trocar para tema ${tema === "claro" ? "escuro" : "claro"}"><span class="bola"></span>${tema === "claro" ? "Tema escuro" : "Tema claro"}</button>`;
+  const botaoTema = () => `<button class="tema-bola" data-a="tema" aria-label="Trocar para tema ${tema === "claro" ? "escuro" : "claro"}" title="Trocar para tema ${tema === "claro" ? "escuro" : "claro"}"><span class="bola"></span></button>`;
 
   /* ---------- procurar ---------- */
   const curso = (id: string | null) => S.cursos.find((c) => c.id === id);
@@ -356,11 +395,30 @@ export function montar(app: HTMLElement) {
 
   /* ---------- avisos ---------- */
   let tToast: ReturnType<typeof setTimeout> | undefined;
-  function toast(msg: string) {
-    toastEl.textContent = msg; toastEl.hidden = false;
-    clearTimeout(tToast); tToast = setTimeout(() => { toastEl.hidden = true; }, 3400);
+  /** O que dá para desfazer depois do aviso: a ação contrária, feita no banco. */
+  let desfazerPendente: null | { fn: () => Promise<void>; texto: string } = null;
+  function toast(msg: string, desfazer?: { fn: () => Promise<void>; texto: string }) {
+    toastEl.textContent = "";
+    const t = document.createElement("span"); t.textContent = msg; toastEl.appendChild(t);
+    desfazerPendente = desfazer ?? null;
+    if (desfazer) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "desfazer"; b.textContent = "Desfazer";
+      b.addEventListener("click", () => {
+        const d = desfazerPendente; desfazerPendente = null; toastEl.hidden = true;
+        if (d) void executar(async () => { await d.fn(); await registrar(null, "Desfez: " + d.texto); return "Ação desfeita."; });
+      });
+      toastEl.appendChild(b);
+    }
+    toastEl.hidden = false;
+    clearTimeout(tToast); tToast = setTimeout(() => { toastEl.hidden = true; desfazerPendente = null; }, desfazer ? 7000 : 3400);
   }
-  function confirmar(opts: Record<string, string>, fn: () => Promise<void>) {
+  /** Uma linha no histórico. Se o banco recusar, a ação em si já valeu — não desfaz nada. */
+  async function registrar(alunaId: string | null, texto: string) {
+    await supabase.from("historico_acoes").insert({ aluna_id: alunaId, texto: texto.slice(0, 500) });
+  }
+  type Resultado = string | void | { msg: string; desfazer?: () => Promise<void>; texto?: string };
+  function confirmar(opts: Record<string, string>, fn: () => Promise<Resultado>) {
     pend = fn; ui.modal = Object.assign({ tipo: "confirmar" }, opts); ui.focar = "confirmaPalavra";
   }
 
@@ -368,12 +426,13 @@ export function montar(app: HTMLElement) {
    * Toda escrita passa por aqui: chama o banco, avisa, relê e redesenha.
    * Se o banco recusar, a tela diz por quê e mostra o que o banco tem.
    */
-  async function executar(fn: () => Promise<string | void>) {
+  async function executar(fn: () => Promise<Resultado>) {
     if (ocupado) return;
     ocupado = true;
     try {
-      const msg = await fn();
-      if (msg) toast(msg);
+      const r = await fn();
+      if (typeof r === "string") toast(r);
+      else if (r) toast(r.msg, r.desfazer ? { fn: r.desfazer, texto: r.texto || r.msg } : undefined);
     } catch (e) {
       toast(motivo(e));
     }
@@ -383,13 +442,17 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- moldura ---------- */
-  const ABAS = [["alunas", "Alunas"], ["layout", "Categorias / Layout"], ["cursos", "Cursos e conteúdos"], ["comentarios", "Comentários"], ["equipe", "Equipe"]];
+  const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["layout", "Categorias / Layout"], ["cursos", "Cursos e conteúdos"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
     const c = curso(ui.curso); const x = ui.aula ? acharAula(ui.aula) : null;
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
+      case "inicio": return ["Início", "o que pede atenção hoje"];
+      case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
+      case "engajamento": return ["Engajamento", "quem está avançando e quem precisa de um empurrão"];
+      case "registro": return ["Registro", p(S.historico.length, "ação registrada", "ações registradas")];
       case "alunas": return ["Alunas", p(S.alunas.length, "aluna", "alunas") + " · " + p(ativas, "ativa", "ativas")];
       case "layout": return ["Categorias / Layout", p(S.cats.length, "categoria", "categorias")];
       case "cursos": return ["Cursos e conteúdos", p(S.cursos.length, "produto", "produtos") + " · " + p(totalModulos(), "módulo", "módulos") + " · " + p(S.cursos.reduce((s, k) => s + totalAulas(k), 0), "aula", "aulas")];
@@ -413,7 +476,8 @@ export function montar(app: HTMLElement) {
     }
   }
 
-  const marca = (resto = "") => `<div class="marca"><span class="selo">AION</span><span class="rotulo">Painel administrativo</span><span style="flex:1"></span>${resto}</div>`;
+  const selo = `<span class="marca-bloco"><span class="selo">AION <em>Mentoria</em></span><span class="rotulo">Painel administrativo</span></span>`;
+  const marca = (resto = "") => `<div class="marca">${selo}<span style="flex:1"></span>${resto}</div>`;
 
   function carregandoTela() {
     return `${marca(botaoTema())}<div class="conteudo"><div class="vazio">Carregando…</div></div>`;
@@ -436,24 +500,28 @@ export function montar(app: HTMLElement) {
 
   function painel() {
     const [t, cont] = titulo();
-    const abas = ABAS.filter(([id]) => !(id === "equipe" && !podeEquipe()));
-    const telas: Record<string, () => string> = { alunas: telaAlunas, layout: telaLayout, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe };
-    if (ui.tab === "equipe" && !podeEquipe()) ui.tab = "cursos";
+    const restrita = (id: string) => (id === "equipe" || id === "registro") && !podeEquipe();
+    const abas = ABAS.filter(([id]) => !restrita(id));
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaLayout, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    if (restrita(ui.tab)) ui.tab = "inicio";
     return `
     <div class="marca">
-      <span class="selo">AION</span>
-      <span class="rotulo">Painel administrativo</span>
-      <span style="flex:1"></span>
-      <span style="font-size:13px;color:var(--texto-2)">${h(eu!.nome)} · ${h(eu!.papel)}</span>
+      ${selo}
+      <div class="busca-geral">
+        <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+        <div id="buscaResultados">${resultadosBusca()}</div>
+      </div>
+      <span class="quem" style="font-size:13px;color:var(--texto-2)">${h(eu!.nome)} · ${h(eu!.papel)}</span>
+      <button class="botao-neutro" data-a="sugestoes">Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
       ${botaoTema()}
       <button class="botao-neutro" data-a="sair">Sair</button>
     </div>
     <div class="conteudo">
-      <div class="cabecalho"><h1>${h(t)}</h1><span class="contagem">${h(cont)}</span></div>
+      <div class="cabecalho"><h1>${h(t)}</h1>${ajudaAba()}<span class="contagem">${h(cont)}</span></div>
       <div class="abas" role="tablist">
-        ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")); return `<button class="aba" role="tab" data-a="aba" data-v="${id}" ${on ? 'aria-selected="true"' : ""}>${nome}</button>`; }).join("")}
+        ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); return `<button class="aba" role="tab" data-a="aba" data-v="${id}" ${on ? 'aria-selected="true"' : ""}>${nome}</button>`; }).join("")}
       </div>
-      ${(telas[ui.tab] || telaCursos)()}
+      ${(telas[ui.tab] || telaInicio)()}
     </div>
     ${modal()}`;
   }
@@ -463,34 +531,381 @@ export function montar(app: HTMLElement) {
   const botoesEdicao = (rotulo: string) => `<button class="botao-neutro">${rotulo}</button><button type="button" class="botao-neutro" data-a="cancelar-edicao">Cancelar</button>`;
   const editando = (tipo: string, id: string) => !!ui.editando && ui.editando.tipo === tipo && ui.editando.id === id;
 
-  /* ---------- ALUNAS ---------- */
-  function telaAlunas() {
-    const q = ui.busca.trim().toLowerCase();
-    const lista = S.alunas.filter((a) => (a.nome + " " + a.login).toLowerCase().includes(q));
+  /* ---------- datas e nomes (rodada 2) ---------- */
+  const diasEntre = (a: string, b: string) => Math.round((Date.parse(b + "T12:00:00") - Date.parse(a + "T12:00:00")) / 864e5);
+  const dataHora = (s: string) => {
+    const d = new Date(s);
+    return d.toLocaleDateString("pt-BR", { timeZone: FUSO }) + " · " + d.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+  };
+  const iniciais = (n: string) => String(n || "?").trim().split(/\s+/).filter((w) => w.length > 2 || /^[A-ZÁ-Ú]/.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+  const haQuanto = (s: string) => { if (!s) return "nunca"; const n = diasEntre(s, hoje()); return n <= 0 ? "hoje" : n === 1 ? "ontem" : "há " + n + " dias"; };
+  const fone = (t: string) => formatarCelular(t || "");
+  const primeiroNome = (n: string) => n.split(" ")[0];
+
+  /* ---------- situação da aluna ---------- */
+  type Sit = "ativa" | "vencendo" | "vencida" | "bloqueada";
+  function situacao(a: Aluna): Sit {
+    if (a.bloqueada) return "bloqueada";
+    if (vencida(a)) return "vencida";
+    if (a.validade && diasEntre(hoje(), a.validade) <= 15) return "vencendo";
+    return "ativa";
+  }
+  const parada = (a: Aluna) => !a.bloqueada && !vencida(a) && (!a.ultimoAcesso || diasEntre(a.ultimoAcesso, hoje()) > 14);
+  const sitInfo = (s: Sit): [string, string] => ({ ativa: ["Ativa", "var(--verde)"], vencendo: ["Vence em breve", "var(--ouro-txt)"], vencida: ["Vencida", VERMELHO], bloqueada: ["Bloqueada", VERMELHO] } as Record<Sit, [string, string]>)[s];
+  const avatar = (a: Aluna, grande = false) => `<span class="avatar${grande ? " grande" : ""}" style="--cor:${sitInfo(situacao(a))[1]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
+  const numero = (n: number, rotulo: string, atencao = false) => `<div class="numero${atencao && n ? " atencao" : ""}"><b>${n}</b><span>${h(rotulo)}</span></div>`;
+  const numeroTxt = (txt: string, rotulo: string, sub = "") => `<div class="numero"><b class="txt">${h(txt)}</b><span>${h(rotulo)}</span>${sub ? `<em>${h(sub)}</em>` : ""}</div>`;
+  const vaiVencer = (a: Aluna) => { const n = diasEntre(hoje(), a.validade); return n <= 0 ? "vence hoje" : n === 1 ? "vence amanhã" : "vence em " + n + " dias"; };
+  const semNada = (t: string) => `<p class="nada">${t}</p>`;
+  const nova = (a: Aluna) => !!a.entrada && diasEntre(a.entrada, hoje()) >= 0 && diasEntre(a.entrada, hoje()) <= 7;
+  const comentariosDe = (a: Aluna) => S.comentarios.filter((k) => k.autoraId === a.id);
+
+  /* ---------- INÍCIO ---------- */
+  function telaInicio() {
+    const moder = S.comentarios.filter((k) => k.estado === "moderar");
+    const venc = S.alunas.filter((a) => situacao(a) === "vencendo").sort((x, y) => x.validade.localeCompare(y.validade));
+    const par = S.alunas.filter(parada);
+    const novas = S.alunas.filter(nova);
+    const concl = S.alunas.reduce((s, a) => s + a.concluidas, 0);
+    const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
+    const hora = Number(new Date().toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", hour12: false }).slice(0, 2));
+    const saud = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+    const pendencias = moder.length + venc.length + par.length;
+    const mini = (a: Aluna, extra: string, botoes: string) => `<div class="mini"><button type="button" class="abre-ficha" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${avatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${extra} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span><span class="seta" aria-hidden="true">›</span></button><span class="acoes">${botoes}</span></div>`;
     return `
     <section class="tela ativa">
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px">
+      <p class="saudacao">${saud}, ${h(primeiroNome(eu!.nome))}. ${pendencias ? "Isto pede sua atenção hoje." : "Tudo em dia por aqui."}</p>
+      <div class="numeros">
+        ${numero(ativas, "Alunas ativas")}
+        ${numero(concl, "Aulas concluídas")}
+        ${numero(moder.length, "Comentários para moderar", true)}
+        ${numero(venc.length, "Vencem em 15 dias", true)}
+      </div>
+      <div class="grade-2">
+        <div class="painel-bloco">
+          <h3>Comentários esperando</h3>
+          <p class="sub">Publique, oculte ou responda.</p>
+          ${moder.slice(0, 3).map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${h(k.autora)} · ${localAula(k.aula)} · ${h(k.quando)}</span></span></div>`).join("") || semNada("Nenhum comentário esperando.")}
+          ${moder.length ? `<button class="botao-neutro grande" style="margin-top:12px" data-a="ir-moderar">${moder.length > 3 ? "Ver os " + moder.length + " comentários" : "Moderar agora"}</button>` : ""}
+        </div>
+        <div class="painel-bloco">
+          <h3>Acessos que vencem em 15 dias</h3>
+          <p class="sub">Abra o acesso dela e renove por lá antes que vença.</p>
+          ${venc.map((a) => mini(a, vaiVencer(a) + " · " + br(a.validade), `<button class="botao-verde" data-a="ficha" data-id="${a.id}">Ver acesso</button>`)).join("") || semNada("Nenhum acesso vencendo.")}
+        </div>
+        <div class="painel-bloco">
+          <h3>Sem acesso há mais de 14 dias</h3>
+          <p class="sub">Um recado pode trazê-la de volta.</p>
+          ${par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Todas acessaram recentemente.")}
+        </div>
+        <div class="painel-bloco">
+          <h3>Novas nesta semana</h3>
+          <p class="sub">Cadastradas nos últimos 7 dias.</p>
+          ${novas.map((a) => mini(a, "entrou em " + br(a.entrada), "")).join("") || semNada("Nenhum cadastro nos últimos 7 dias.")}
+        </div>
+      </div>
+    </section>`;
+  }
+
+  /* ---------- FICHA ---------- */
+  function progressoModulos(a: Aluna) {
+    const ac = a.acesso;
+    const blocos = S.cursos.filter((c) => c.modulos.length).map((c) => {
+      const linhas = c.modulos.map((m, i) => {
+        const libs = m.aulas.filter((k) => ac.cursos.includes(c.id) || ac.modulos.includes(m.id) || ac.aulas.includes(k.id));
+        if (!libs.length) return "";
+        const n = m.aulas.filter((k) => a.feitas.has(k.id)).length;
+        const pct = m.aulas.length ? Math.round(n / m.aulas.length * 100) : 0;
+        return `<div class="prog"><div class="prog-topo"><span>Módulo ${numModulo(c, i)} — ${h(m.nome)}</span><span>${n}/${m.aulas.length}</span></div><div class="barra"><i style="width:${pct}%"></i></div></div>`;
+      }).join("");
+      return linhas ? `<p class="rotulo" style="margin:12px 0 2px">${h(c.nome)}</p>${linhas}` : "";
+    }).join("");
+    return blocos || semNada("Nenhum conteúdo liberado ainda.");
+  }
+
+  function telaFicha() {
+    const a = ui.ficha ? S.alunas.find((x) => x.id === ui.ficha) : undefined;
+    if (!a) return `<section class="tela ativa"><div class="vazio">Aluna não encontrada.</div><button class="botao-neutro grande" style="margin-top:14px" data-a="aba" data-v="alunas">← Alunas</button></section>`;
+    const [rot, cor] = sitInfo(situacao(a));
+    const ult = a.ultimaAula ? acharAula(a.ultimaAula) : null;
+    const hist = S.historico.filter((x) => x.aluna === a.id);
+    const coms = comentariosDe(a);
+    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto" };
+    const verCod = ui.verCodigo === a.id;
+    return `
+    <section class="tela ativa">
+      <button class="botao-neutro grande" style="margin-bottom:18px" data-a="aba" data-v="alunas">← Alunas</button>
+
+      <div class="cartao ficha-topo">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px">
+          ${avatar(a, true)}
+          <span style="flex:1 1 280px;min-width:0">
+            <span style="display:flex;flex-wrap:wrap;align-items:center;gap:10px"><b style="font-size:22px">${h(a.nome)}</b>${etiqueta(rot, cor)}</span>
+            <span class="ficha-meta">Login <b>${h(a.login)}</b> · Código <b style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</b><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button> · ${a.celular ? "WhatsApp " + h(fone(a.celular)) : "sem WhatsApp cadastrado"}</span>
+            <span class="ficha-datas">Entrou em ${br(a.entrada)} · ${vencida(a) ? "acesso venceu em " + br(a.validade) : "acesso até " + br(a.validade)}</span>
+          </span>
+        </div>
+        <div class="acoes" style="margin-top:20px">
+          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
+          <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
+          <button class="botao-neutro grande" data-a="editar-aluna" data-id="${a.id}">Editar dados</button>
+          <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
+          <button class="botao-neutro grande" data-a="cronograma" data-id="${a.id}">Cronograma</button>
+          <button class="botao-neutro grande" data-a="renovar" data-id="${a.id}">Renovar</button>
+          ${a.bloqueada
+            ? `<button class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
+            : `<button class="botao-neutro grande botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}
+        </div>
+      </div>
+
+      <div class="numeros">
+        ${numero(a.concluidas, "Aulas concluídas")}
+        ${numero(a.liberadas, "Aulas liberadas")}
+        ${numeroTxt(haQuanto(a.ultimoAcesso), "Último acesso")}
+        ${numeroTxt(ult ? localAula(ult.a.id) : "—", "Última aula assistida", ult ? ult.a.nome : "")}
+      </div>
+
+      <div class="grade-2" style="align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="painel-bloco">
+            <h3>Progresso por módulo</h3>
+            <p class="sub">Aulas concluídas em cada módulo liberado.</p>
+            ${progressoModulos(a)}
+          </div>
+          <div class="painel-bloco">
+            <h3>Anotações internas</h3>
+            <p class="sub">Só a equipe vê.</p>
+            <form data-f="nota" data-id="${a.id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:6px">
+              <textarea class="campo" name="texto" rows="2" placeholder="Ex.: pediu ajuda com o celular" required></textarea>
+              <div><button class="botao-neutro grande">Adicionar anotação</button></div>
+            </form>
+            ${a.notas.slice().reverse().map((n) => `<div class="mini"><span class="nome"><b class="leve">${h(n.texto)}</b><span>${h(n.quem)} · ${dataHora(n.quando)}</span></span><span class="acoes"><button class="botao-neutro botao-remover" data-a="nota-remover" data-id="${a.id}" data-v="${n.id}">Remover</button></span></div>`).join("") || semNada("Nenhuma anotação.")}
+          </div>
+          ${coms.length ? `<div class="painel-bloco">
+            <h3>Comentários dela</h3>
+            <p class="sub">${p(coms.length, "comentário", "comentários")} nas aulas.</p>
+            ${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}
+          </div>` : ""}
+        </div>
+        <div class="painel-bloco">
+          <h3>Histórico</h3>
+          <p class="sub">Tudo o que aconteceu com esta aluna, do mais recente ao mais antigo.</p>
+          ${hist.length ? `<ul class="tempo">${hist.map((x) => `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}</p></li>`).join("")}</ul>` : semNada("Nada registrado ainda.")}
+        </div>
+      </div>
+    </section>`;
+  }
+
+  /* ---------- ENGAJAMENTO (a nota vem do banco) ---------- */
+  const nivelEng = (n: number): [string, string, string] => n >= 60 ? ["Avançando", "var(--verde)", "avancando"] : n >= 35 ? ["No ritmo", "var(--ouro-txt)", "ritmo"] : ["Precisa de um empurrão", VERMELHO, "empurrao"];
+  const AJUDA: Record<string, [string, string, string, string]> = {
+    avancando: ["Avançando", "Está assistindo e voltando com frequência.", "um elogio rápido, ou nada — ela está bem.", "var(--verde)"],
+    ritmo: ["No ritmo", "Assiste, mas devagar ou com intervalos.", "uma mensagem de incentivo, lembrando a próxima aula.", "var(--ouro-txt)"],
+    empurrao: ["Precisa de um empurrão", "Parou de entrar ou quase não começou.", "ligue ou mande WhatsApp perguntando se precisa de ajuda para entrar.", "var(--perigo)"],
+  };
+  const AJUDA_ABAS: Record<string, [string, string, string]> = {
+    inicio: ["Início", "O resumo do dia: o que pede atenção agora.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
+    alunas: ["Alunas", "Todas as alunas cadastradas, com a situação de cada uma.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
+    ficha: ["Ficha da aluna", "Tudo sobre uma aluna: dados, aulas liberadas, progresso, anotações e histórico.", "confira o que ela já tem liberado antes de responder qualquer dúvida. Anote o que conversou para a equipe saber."],
+    engajamento: ["Engajamento", "Quem está avançando e quem parou. A nota vai de 0 a 100.", "comece por quem precisa de um empurrão, ligue ou mande recado, e clique em Registrar contato para anotar como foi."],
+    layout: ["Categorias / Layout", "As seções que a aluna vê na área de membros, como Mentoria, Ebooks e Documentários.", "arraste para mudar a ordem em que aparecem. Renomeie ou crie uma categoria nova quando precisar."],
+    cursos: ["Cursos e conteúdos", "Todos os produtos: a mentoria e os presentes.", "clique num produto para montar os módulos e as aulas. Use + Criar novo para um produto novo."],
+    curso: ["Curso aberto", "Um produto por dentro: configurações, módulos e aulas.", "adicione, renomeie, reordene ou bloqueie módulos e aulas. Clique em Abrir na aula para colocar vídeo, capa e texto."],
+    aula: ["Aula aberta", "O conteúdo de uma aula: vídeo, capa, texto e extras.", "cole o link do vídeo, escolha a capa, escreva o texto e clique em Salvar aula."],
+    comentarios: ["Comentários", "O que as alunas escreveram nas aulas.", "publique o que estiver bom, oculte o que não for adequado e responda quando fizer sentido."],
+    equipe: ["Equipe", "Quem tem acesso a este painel.", "adicione uma pessoa, passe o código para ela e bloqueie quando ela sair da equipe."],
+    registro: ["Registro", "Tudo o que a equipe fez no painel, com data e hora.", "consulte quando precisar saber quem mudou o quê."],
+  };
+  const ajudaAba = () => {
+    const g = AJUDA_ABAS[ui.tab]; if (!g) return "";
+    const key = "aba-" + ui.tab;
+    return `<span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="${key}" aria-label="O que é ${g[0]}" aria-expanded="${ui.ajuda === key}">?</button>${ui.ajuda === key ? `<span class="ajuda-pop esq" role="tooltip"><b>${g[0]}</b><span>${g[1]}</span><em>O que fazer: ${g[2]}</em></span>` : ""}</span>`;
+  };
+  function telaEngajamento() {
+    const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
+    const cont = (k: string) => base.filter((x) => nivelEng(x.nota)[2] === k).length;
+    const media = base.length ? Math.round(base.reduce((s, x) => s + x.nota, 0) / base.length) : 0;
+    const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
+    const grupo = (g: string) => (x: Aluna) => nivelEng(x.nota)[2] === g;
+    const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["semcontato", "Sem contato há 7 dias", semContato]];
+    const fl = FIL.find((z) => z[0] === ui.filtroEng) || FIL[0];
+    const lista = base.filter(fl[2]);
+    return `
+    <section class="tela ativa">
+      <div class="numeros">
+        ${numero(media, "Engajamento médio")}
+        ${numero(cont("avancando"), "Avançando")}
+        ${numero(cont("ritmo"), "No ritmo")}
+        ${numero(cont("empurrao"), "Precisam de um empurrão", true)}
+      </div>
+      <div class="guia">
+        <button type="button" class="guia-topo" data-a="guia-eng" aria-expanded="${ui.guiaEng}"><b>Como usar esta aba</b><span>${ui.guiaEng ? "Esconder" : "Mostrar"}</span></button>
+        ${ui.guiaEng ? `
+        <ol class="passos">
+          <li><b>Comece por “Precisa de um empurrão”.</b> São as alunas que pararam ou quase não começaram.</li>
+          <li><b>Ligue ou mande o recado pelo WhatsApp.</b> O botão já abre a conversa com a mensagem pronta.</li>
+          <li><b>Clique em “Registrar contato” e anote como foi.</b> Assim ninguém da equipe liga duas vezes para a mesma pessoa.</li>
+        </ol>
+        <div class="grupos">${["avancando", "ritmo", "empurrao"].map((k) => { const g = AJUDA[k]; return `<div class="grupo-eng" style="--cor:${g[3]}"><b>${g[0]}</b><p>${g[1]}</p><em>O que fazer: ${g[2]}</em></div>`; }).join("")}</div>
+        <p class="nada" style="margin-top:12px">A nota vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.</p>` : ""}
+      </div>
+      <div class="chips" style="margin-bottom:16px">
+        ${FIL.map(([id, n, fn]) => `<button class="chip" style="cursor:pointer" data-a="eng-filtro" data-v="${id}" aria-pressed="${ui.filtroEng === id}">${n} (${base.filter(fn).length})</button>`).join("")}
+      </div>
+      ${lista.length ? lista.map((x) => {
+        const pos = base.indexOf(x) + 1; const [rot, cor, k] = nivelEng(x.nota);
+        const uc = x.contatos[x.contatos.length - 1];
+        return `
+      <div class="linha">
+        <span class="posicao">${pos}º</span>
+        ${avatar(x)}
+        <span class="nome"><b>${h(x.nome)}</b><span>${x.concluidas} de ${p(x.liberadas, "aula liberada", "aulas liberadas")} concluídas · último acesso ${haQuanto(x.ultimoAcesso)} · ${p(x.nComentarios, "comentário", "comentários")}</span><span class="contato-linha">${uc ? "Último contato " + haQuanto(diaDe(uc.quando)) + " · " + h(uc.resultado) + " · " + h(uc.quem) : "Nenhum contato registrado"}</span></span>
+        <span class="nota-eng" aria-label="Nota ${x.nota} de 100"><span class="barra"><i style="width:${x.nota}%;background:${cor}"></i></span><b style="color:${cor}">${x.nota}</b></span>
+        ${etiqueta(rot, cor)}
+        <span class="acoes">
+          <button class="botao-verde" data-a="contato" data-id="${x.id}">Registrar contato</button>
+          ${k !== "avancando" && x.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${x.id}">Mandar recado</button>` : ""}
+          <button class="botao-neutro" data-a="ficha" data-id="${x.id}">Ficha</button>
+        </span>
+      </div>`;
+      }).join("") : `<div class="vazio">${base.length ? "Nenhuma aluna neste grupo." : "Nenhuma aluna ativa ainda."}</div>`}
+    </section>`;
+  }
+
+  /* ---------- BUSCA GERAL ---------- */
+  const norm = (s: unknown) => String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  function resultadosBusca() {
+    const q = norm(ui.buscaGeral).trim();
+    if (!q || !ui.buscaAberta) return "";
+    const r: [string, string, string, string, string][] = [];
+    S.alunas.forEach((a) => { if (norm(a.nome + " " + a.login + " " + a.celular).includes(q)) r.push(["Aluna", a.nome, a.login + " · " + sitInfo(situacao(a))[0], "aluna", a.id]); });
+    S.cursos.forEach((c) => {
+      if (norm(c.nome).includes(q)) r.push(["Produto", c.nome, p(c.modulos.length, "módulo", "módulos"), "curso", c.id]);
+      c.modulos.forEach((m, i) => {
+        if (norm(m.nome).includes(q)) r.push(["Módulo", m.nome, c.nome + " · Módulo " + numModulo(c, i), "curso", c.id]);
+        m.aulas.forEach((au) => { if (norm(au.nome).includes(q)) r.push(["Aula", au.nome, localAula(au.id), "aula", au.id]); });
+      });
+    });
+    S.comentarios.forEach((k) => { if (norm(k.texto + " " + k.autora).includes(q)) r.push(["Comentário", k.texto, k.autora + " · " + localAula(k.aula), "comentario", k.id]); });
+    if (!r.length) return `<div class="busca-pop"><p class="nada" style="padding:10px 12px;margin:0">Nada encontrado para “${h(ui.buscaGeral.trim())}”.</p></div>`;
+    return `<div class="busca-pop" role="listbox">${r.slice(0, 12).map(([tipo, tit, sub, k, id]) => `<button data-a="busca-ir" data-k="${k}" data-id="${id}" role="option"><span class="tipo">${tipo}</span><span class="txt"><b>${h(tit)}</b><span>${h(sub)}</span></span></button>`).join("")}${r.length > 12 ? `<p class="nada" style="padding:8px 12px;margin:0">Mais ${r.length - 12} resultados. Escreva mais para refinar.</p>` : ""}</div>`;
+  }
+  function atualizarBusca() { const el = document.getElementById("buscaResultados"); if (el) el.innerHTML = resultadosBusca(); }
+
+  /* ---------- REGISTRO ---------- */
+  function telaRegistro() {
+    const lista = S.historico;
+    return `
+    <section class="tela ativa">
+      <p style="margin:0 0 16px;font-size:14px;color:var(--texto-2)">Tudo o que a equipe fez no painel, do mais recente ao mais antigo.</p>
+      ${lista.length ? `<div class="painel-bloco"><ul class="tempo">${lista.map((x) => {
+        const al = x.aluna ? S.alunas.find((y) => y.id === x.aluna) : undefined;
+        return `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}${al ? ` · <button class="link" data-a="ficha" data-id="${al.id}">${h(al.nome)}</button>` : ""}</p></li>`;
+      }).join("")}</ul></div>` : `<div class="vazio">Nenhuma ação registrada ainda.</div>`}
+    </section>`;
+  }
+
+  /* ---------- seleção e menu ---------- */
+  function barraLote() {
+    const mods: [string, string][] = [];
+    S.cursos.forEach((c) => c.modulos.forEach((m, i) => mods.push([m.id, c.nome + " · Módulo " + numModulo(c, i) + " — " + m.nome])));
+    return `
+    <form data-f="lote" class="lote">
+      <b style="font-size:14px">${p(ui.sel.length, "aluna selecionada", "alunas selecionadas")}</b>
+      <select class="campo" name="modulo" style="flex:1 1 260px;max-width:420px" aria-label="Módulo para liberar">
+        <option value="">Escolha um módulo para liberar</option>
+        ${mods.map(([id, n]) => `<option value="${id}">${h(n)}</option>`).join("")}
+      </select>
+      <button class="botao-neutro grande" name="acao" value="liberar">Liberar módulo</button>
+      <button class="botao-neutro grande" name="acao" value="renovar">Renovar por 1 ano</button>
+      <button type="button" class="botao-neutro grande" data-a="sel-limpar">Limpar seleção</button>
+    </form>`;
+  }
+  function menuAluna(a: Aluna) {
+    return `
+    <div class="menu-pop" role="menu">
+      <button data-a="liberar" data-id="${a.id}" role="menuitem">Liberar conteúdo</button>
+      <button data-a="cronograma" data-id="${a.id}" role="menuitem">Cronograma</button>
+      <button data-a="renovar" data-id="${a.id}" role="menuitem">Renovar por 1 ano</button>
+      <button data-a="copiar-acesso" data-id="${a.id}" role="menuitem">Copiar login e código</button>
+      <button data-a="whatsapp" data-id="${a.id}" role="menuitem">Enviar acesso pelo WhatsApp</button>
+      <button data-a="editar-aluna" data-id="${a.id}" role="menuitem">Editar dados</button>
+      ${a.bloqueada
+        ? `<button data-a="desbloquear-aluna" data-id="${a.id}" role="menuitem">Desbloquear</button>`
+        : `<button class="perigo-txt" data-a="bloquear-aluna" data-id="${a.id}" role="menuitem">Bloquear</button>`}
+    </div>`;
+  }
+
+  /* ---------- ALUNAS ---------- */
+  const FILTROS_AL: [string, string, (a: Aluna) => boolean][] = [
+    ["todas", "Todas", () => true],
+    ["novas", "Recém-adicionadas", nova],
+    ["ativas", "Ativas", (a) => { const s = situacao(a); return s === "ativa" || s === "vencendo"; }],
+    ["vencendo", "Vencendo", (a) => situacao(a) === "vencendo"],
+    ["vencidas", "Vencidas", (a) => situacao(a) === "vencida"],
+    ["bloqueadas", "Bloqueadas", (a) => a.bloqueada],
+    ["paradas", "Sem acesso recente", parada],
+  ];
+  const ORDENS: Record<string, (x: Aluna, y: Aluna) => number> = {
+    recentes: (x, y) => (y.entrada || "").localeCompare(x.entrada || "") || x.nome.localeCompare(y.nome, "pt"),
+    antigas: (x, y) => (x.entrada || "").localeCompare(y.entrada || "") || x.nome.localeCompare(y.nome, "pt"),
+    nome: (x, y) => x.nome.localeCompare(y.nome, "pt"),
+    vence: (x, y) => (x.validade || "9999").localeCompare(y.validade || "9999"),
+    acesso: (x, y) => (y.ultimoAcesso || "").localeCompare(x.ultimoAcesso || ""),
+  };
+  /** As alunas da busca e do filtro, na ordem escolhida — é também o que a planilha exporta. */
+  function listaAlunas() {
+    const q = norm(ui.busca).trim();
+    const f = FILTROS_AL.find((x) => x[0] === ui.filtroAl) || FILTROS_AL[0];
+    return { f, lista: S.alunas.filter((a) => norm(a.nome + " " + a.login).includes(q) && f[2](a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
+  }
+  function telaAlunas() {
+    const { lista } = listaAlunas();
+    ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
+    const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
+    const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
+    return `
+    <section class="tela ativa">
+      <div class="numeros">
+        ${numero(S.alunas.length, "Alunas")}
+        ${numero(ativas, "Ativas")}
+        ${numero(S.alunas.filter((a) => situacao(a) === "vencendo").length, "Vencem em 15 dias", true)}
+        ${numero(S.alunas.filter(parada).length, "Sem acesso há 14 dias", true)}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
         <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar pelo nome" value="${h(ui.busca)}" data-i="busca" />
         <button class="botao" data-a="aluna-nova">Cadastrar aluna</button>
+        <button class="botao-neutro grande" data-a="exportar">Exportar planilha</button>
+        <label class="ordenar"><span>Ordenar por</span>
+          <select class="campo" data-ordem aria-label="Ordenar alunas">
+            ${[["recentes", "Mais recentes primeiro"], ["antigas", "Mais antigas primeiro"], ["nome", "Nome (A–Z)"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
+          </select>
+        </label>
       </div>
-      ${lista.length ? lista.map(linhaAluna).join("") : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna com esse nome." : "Nenhuma aluna cadastrada ainda."}</div>`}
+      <div class="chips" style="margin-bottom:16px">
+        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="chip" style="cursor:pointer" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter(fn).length})</button>`).join("")}
+      </div>
+      ${ui.sel.length ? barraLote() : ""}
+      ${lista.length
+        ? `<label class="marcar selecionar-todas"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} /> Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}</label>` + lista.map(linhaAluna).join("")
+        : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
     </section>`;
   }
   function linhaAluna(a: Aluna) {
-    const venc = vencida(a);
-    const est = a.bloqueada ? etiqueta("Bloqueada", VERMELHO) : venc ? etiqueta("Vencida", VERMELHO) : etiqueta("Ativa", VERDE);
+    const [rot, cor] = sitInfo(situacao(a));
+    const marc = ui.sel.includes(a.id);
     return `
-    <div class="linha">
-      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · entrou em ${brCurto(a.entrada)} · ${venc ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span>
-      ${est}
+    <div class="linha${marc ? " marcada" : ""}">
+      <input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" />
+      ${avatar(a)}
+      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · ${vencida(a) ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")} · último acesso ${haQuanto(a.ultimoAcesso)}</span></span>
+      ${etiqueta(rot, cor)}
       <span class="acoes">
-        <button class="botao-neutro" data-a="ficha" data-id="${a.id}">Ficha</button>
-        <button class="botao-neutro" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
-        <button class="botao-neutro" data-a="cronograma" data-id="${a.id}">Cronograma</button>
-        <button class="botao-neutro" data-a="renovar" data-id="${a.id}">Renovar</button>
-        ${a.bloqueada
-          ? `<button class="botao-neutro" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
-          : `<button class="botao-neutro botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}
+        <button class="botao-neutro" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
+        <span class="menu-acoes">
+          <button class="botao-neutro" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋯</button>
+          ${ui.menu === a.id ? menuAluna(a) : ""}
+        </span>
       </span>
     </div>`;
   }
@@ -808,14 +1223,14 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}">
         <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
-        <p class="explica">${a ? "Ficha da aluna. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
+        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
         <div class="campos">
           <label class="grupo nome"><span class="rotulo">Nome</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" required /></label>
           <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
             <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
           </label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp)</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
@@ -915,6 +1330,31 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>
       </form>`;
+    } else if (m.tipo === "sugestoes") {
+      corpo = `
+      <form data-f="sugestao">
+        <h2 class="titulo">Sugestões da equipe</h2>
+        <p class="explica">Viu algo que poderia funcionar melhor? Escreva aqui — a coordenação lê tudo.</p>
+        <textarea id="sugestaoCampo" class="campo" name="texto" rows="3" style="width:100%" placeholder="Ex.: muitas alunas não sabem abrir o vídeo pelo celular" required></textarea>
+        <div class="rodape-modal" style="margin-top:12px"><button class="botao">Enviar sugestão</button><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>
+      </form>
+      <div style="margin-top:18px">
+        ${S.sugestoes.map((x) => `<div class="mini"><span class="nome"><b class="leve">${h(x.texto)}</b><span>${h(x.quem)} · ${dataHora(x.quando)}</span></span>${eu!.papel === "Dono" || x.autorId === eu!.id ? `<span class="acoes"><button class="botao-neutro botao-remover" data-a="sugestao-remover" data-id="${x.id}">Remover</button></span>` : ""}</div>`).join("") || semNada("Nenhuma sugestão ainda.")}
+      </div>`;
+      if (!ui.focar) ui.focar = "sugestaoCampo";
+    } else if (m.tipo === "contato") {
+      const a = aluna(m.id);
+      const ant = a.contatos.slice().reverse();
+      corpo = `
+      <form data-f="contato" data-id="${a.id}">
+        <h2 class="titulo">Registrar contato</h2>
+        <p class="explica">${h(a.nome)}${a.celular ? " · " + h(fone(a.celular)) : ""}. Anote como foi para ninguém da equipe ligar duas vezes.</p>
+        <p class="rotulo" style="margin:0 0 6px">Como foi</p>
+        ${["Atendeu e vai voltar", "Não atendeu", "Pediu ajuda para entrar", "Mandei recado no WhatsApp", "Não quer continuar"].map((x, i) => `<label class="marcar"><input type="radio" name="resultado" value="${x}" ${i === 0 ? "checked" : ""} /> ${x}</label>`).join("")}
+        <label class="grupo largo" style="margin-top:14px"><span class="rotulo">Observação (opcional)</span><textarea class="campo" name="obs" rows="2" placeholder="Ex.: ligar de novo na quinta à tarde"></textarea></label>
+        ${ant.length ? `<p class="rotulo" style="margin:18px 0 2px">Contatos anteriores</p>${ant.slice(0, 4).map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}` : ""}
+        <div class="rodape-modal"><button class="botao">Salvar contato</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
+      </form>`;
     } else if (m.tipo === "info") {
       corpo = `
         <h2 class="titulo">${h(m.titulo)}</h2>
@@ -930,6 +1370,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
 
   function acao(a: string, d: Record<string, string>, el: HTMLElement, alvo: EventTarget | null) {
     const al = d.id ? S.alunas.find((x) => x.id === d.id) : undefined;
+    if (a !== "menu") ui.menu = null;
+    if (a !== "ajuda") ui.ajuda = null;
     switch (a) {
       case "aba":
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
@@ -940,11 +1382,85 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "sair":
         void api.sair().finally(() => { eu = null; ui.focar = "loginCampo"; render(); });
         return;
-      case "fechar": ui.modal = null; pend = null; break;
+      case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
 
       case "aluna-nova": ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
-      case "ficha": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
+      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "ver-codigo-aluna": ui.verCodigo = ui.verCodigo === d.id ? null : d.id; break;
+      case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
+      case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
+      case "al-filtro": ui.filtroAl = d.v; break;
+      case "sel-limpar": ui.sel = []; break;
+      case "eng-filtro": ui.filtroEng = d.v; break;
+      case "guia-eng": ui.guiaEng = !ui.guiaEng; break;
+      case "ajuda": ui.ajuda = ui.ajuda === d.v ? null : d.v; break;
+      case "contato": ui.modal = { tipo: "contato", id: d.id }; break;
+      case "sugestoes": ui.modal = { tipo: "sugestoes" }; break;
+      case "sugestao-remover":
+        confirmar({ titulo: "Remover esta sugestão?", texto: "Ela sai da lista da equipe.", palavra: "REMOVER", rotulo: "Remover sugestão" }, async () => {
+          falhou(await supabase.from("sugestoes").delete().eq("id", d.id).select("id").single());
+          ui.modal = { tipo: "sugestoes" }; return "Sugestão removida.";
+        });
+        break;
+      case "busca-ir": {
+        ui.buscaGeral = ""; ui.buscaAberta = false; ui.modal = null; ui.editando = null;
+        if (d.k === "aluna") { ui.tab = "ficha"; ui.ficha = d.id; ui.verCodigo = null; }
+        else if (d.k === "curso") { ui.curso = d.id; ui.tab = "curso"; }
+        else if (d.k === "aula") { const x = acharAula(d.id); if (x) { ui.aula = d.id; ui.curso = x.c.id; ui.tab = "aula"; } }
+        else if (d.k === "comentario") { const k = S.comentarios.find((x) => x.id === d.id); ui.tab = "comentarios"; ui.respondendo = null; if (k) ui.filtroCom = k.estado; }
+        window.scrollTo(0, 0);
+        break;
+      }
+      case "copiar-acesso": {
+        const txt = "Login: " + al!.login + "\nCódigo: " + al!.codigo;
+        const ok = () => toast("Login e código de " + primeiroNome(al!.nome) + " copiados.");
+        const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
+        return;
+      }
+      case "whatsapp": case "whatsapp-volta": {
+        if (!al!.celular) { toast("Cadastre o WhatsApp dela em Editar dados."); return; }
+        const nome = primeiroNome(al!.nome);
+        const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
+        const msg = a === "whatsapp"
+          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
+        // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
+        window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+        void executar(async () => {
+          if (a === "whatsapp") await registrar(al!.id, "Acesso enviado pelo WhatsApp");
+          else {
+            falhou(await supabase.from("contatos_aluna").insert({ aluna_id: al!.id, canal: "whatsapp", resultado: "Mandei recado no WhatsApp" }));
+            await registrar(al!.id, "Recado de retorno enviado pelo WhatsApp");
+          }
+        });
+        return;
+      }
+      case "nota-remover":
+        confirmar({ titulo: "Remover esta anotação?", texto: "Ela sai da ficha de " + al!.nome + ".", palavra: "REMOVER", rotulo: "Remover anotação" }, async () => {
+          falhou(await supabase.from("anotacoes_aluna").delete().eq("id", d.v).select("id").single());
+          await registrar(al!.id, "Anotação removida"); return "Anotação removida.";
+        });
+        break;
+      case "exportar": {
+        const { f, lista } = listaAlunas();
+        if (!lista.length) { toast("Não há alunas na lista para exportar."); return; }
+        const cab = ["Nome", "Login", "Código", "WhatsApp", "Situação", "Entrada", "Acesso até", "Aulas liberadas", "Aulas concluídas", "Último acesso", "Engajamento"];
+        const cel = (x: unknown) => { const t = String(x == null ? "" : x); return /[";\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+        const linhas = lista.map((x) => [x.nome, x.login, x.codigo, fone(x.celular), sitInfo(situacao(x))[0], br(x.entrada), br(x.validade), x.liberadas, x.concluidas, x.ultimoAcesso ? br(x.ultimoAcesso) : "nunca", x.nota].map(cel).join(";"));
+        const csv = "\ufeff" + [cab.join(";")].concat(linhas).join("\r\n");
+        const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+        const l = document.createElement("a");
+        l.href = url; l.download = "alunas-" + f[0] + "-" + hoje() + ".csv";
+        document.body.appendChild(l); l.click(); l.remove(); setTimeout(() => URL.revokeObjectURL(url), 1500);
+        void executar(async () => {
+          await registrar(null, "Exportou a lista de alunas (" + p(linhas.length, "aluna", "alunas") + ")");
+          return "Planilha com " + p(linhas.length, "aluna", "alunas") + " baixada.";
+        });
+        return;
+      }
       case "gerar-codigo": ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); return;
       case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
       case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
@@ -958,23 +1474,38 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         toast(ids.length ? p(ids.length, "data preenchida", "datas preenchidas") + ". Confira e salve." : "Ela ainda não tem aulas liberadas.");
         return;
       }
-      case "renovar":
+      case "renovar": {
+        const antes = al!.validade;
         void executar(async () => {
-          const nova = await rpc("renovar_acesso", { p_aluna: al!.id, p_dias: 0, p_meses: 0, p_anos: 1 });
-          return "Acesso de " + al!.nome + " renovado até " + br(diaDe(String(nova))) + ".";
+          const nova = br(diaDe(String(await rpc("renovar_acesso", { p_aluna: al!.id, p_dias: 0, p_meses: 0, p_anos: 1 }))));
+          await registrar(al!.id, "Acesso renovado até " + nova);
+          return {
+            msg: "Acesso de " + al!.nome + " renovado até " + nova + ".", texto: "renovação de " + al!.nome,
+            desfazer: antes ? async () => { await rpc("definir_validade", { p_aluna: al!.id, p_validade: new Date(antes + "T23:59:59-03:00").toISOString() }); } : undefined,
+          };
         });
         return;
+      }
       case "bloquear-aluna":
         confirmar({ titulo: "Bloquear " + al!.nome + "?", texto: "Ela perde o acesso na hora, em qualquer aparelho. Dá para desbloquear depois.", palavra: "BLOQUEAR", rotulo: "Bloquear aluna" }, async () => {
-          await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "bloqueada" }); toast(al!.nome + " foi bloqueada.");
+          await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "bloqueada" });
+          await registrar(al!.id, "Aluna bloqueada");
+          return { msg: al!.nome + " foi bloqueada.", texto: "bloqueio de " + al!.nome, desfazer: async () => { await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "ativa" }); } };
         });
         break;
       case "desbloquear-aluna":
-        void executar(async () => { await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "ativa" }); return al!.nome + " foi desbloqueada."; });
+        void executar(async () => {
+          await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "ativa" });
+          await registrar(al!.id, "Aluna desbloqueada");
+          return { msg: al!.nome + " foi desbloqueada.", texto: "desbloqueio de " + al!.nome, desfazer: async () => { await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "bloqueada" }); } };
+        });
         return;
       case "remover-aluna":
         confirmar({ titulo: "Remover " + al!.nome + "?", texto: "A ficha, as liberações e o cronograma dela são apagados. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover aluna" }, async () => {
-          await rpc("remover_aluna", { p_aluna: al!.id }); toast(al!.nome + " foi removida.");
+          await rpc("remover_aluna", { p_aluna: al!.id });
+          await registrar(null, "Aluna removida: " + al!.nome);
+          ui.sel = ui.sel.filter((x) => x !== al!.id); if (ui.tab === "ficha") ui.tab = "alunas";
+          return al!.nome + " foi removida.";
         });
         break;
 
@@ -1013,9 +1544,10 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "mod-bloquear": {
         const x = acharModulo(d.id)!;
         if (x.m.ativo) confirmar({ titulo: "Bloquear o módulo para todas?", texto: "Nenhuma aluna vê " + x.m.nome + " até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear módulo" }, async () => {
-          falhou(await supabase.from("modulos").update({ bloqueado_geral: true }).eq("id", x.m.id).select("id").single()); toast("Módulo bloqueado para todas.");
+          falhou(await supabase.from("modulos").update({ bloqueado_geral: true }).eq("id", x.m.id).select("id").single());
+          return { msg: "Módulo bloqueado para todas.", texto: "bloqueio do módulo " + x.m.nome, desfazer: async () => { falhou(await supabase.from("modulos").update({ bloqueado_geral: false }).eq("id", x.m.id).select("id").single()); } };
         });
-        else { void executar(async () => { falhou(await supabase.from("modulos").update({ bloqueado_geral: false }).eq("id", x.m.id).select("id").single()); return "Módulo desbloqueado."; }); return; }
+        else { void executar(async () => { falhou(await supabase.from("modulos").update({ bloqueado_geral: false }).eq("id", x.m.id).select("id").single()); return { msg: "Módulo desbloqueado.", texto: "desbloqueio do módulo " + x.m.nome, desfazer: async () => { falhou(await supabase.from("modulos").update({ bloqueado_geral: true }).eq("id", x.m.id).select("id").single()); } }; }); return; }
         break;
       }
       case "mod-sobe": case "mod-desce": {
@@ -1041,14 +1573,15 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.tab = "aula"; window.scrollTo(0, 0); break; }
       case "aula-liberar": {
         const x = acharAula(d.id)!; const liberar = x.a.acesso !== "liberada";
-        void executar(async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: liberar }); return liberar ? "Aula liberada para todas." : "Liberação retirada."; });
+        void executar(async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: liberar }); return { msg: liberar ? "Aula liberada para todas." : "Liberação retirada.", texto: "liberação da aula " + x.a.nome, desfazer: async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: !liberar }); } }; });
         return;
       }
       case "aula-bloquear": {
         const x = acharAula(d.id)!;
-        if (x.a.acesso === "bloqueada") { void executar(async () => { await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: false }); return "Aula desbloqueada."; }); return; }
+        if (x.a.acesso === "bloqueada") { void executar(async () => { await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: false }); return { msg: "Aula desbloqueada.", texto: "desbloqueio da aula " + x.a.nome, desfazer: async () => { await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: true }); } }; }); return; }
         confirmar({ titulo: "Bloquear esta aula?", texto: "Nenhuma aluna vê " + x.a.nome + " até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear aula" }, async () => {
-          await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: true }); toast("Aula bloqueada.");
+          await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: true });
+          return { msg: "Aula bloqueada.", texto: "bloqueio da aula " + x.a.nome, desfazer: async () => { await rpc("definir_bloqueio_aula", { p_aula: x.a.id, p_bloqueada: false }); } };
         });
         break;
       }
@@ -1073,13 +1606,25 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       }
 
       case "com-filtro": ui.filtroCom = d.v as Estado; ui.respondendo = null; break;
-      case "com-publicar": void executar(async () => { await rpc("moderar_comentario", { p_comentario: d.id, p_status: "publicado" }); return "Comentário publicado."; }); return;
-      case "com-ocultar": void executar(async () => { await rpc("moderar_comentario", { p_comentario: d.id, p_status: "oculto" }); return "Comentário ocultado."; }); return;
+      case "com-publicar": case "com-ocultar": {
+        const k = S.comentarios.find((x) => x.id === d.id)!;
+        const novo = a === "com-publicar" ? "publicado" : "oculto";
+        const antes = k.estado === "moderar" ? "pendente" : k.estado;
+        void executar(async () => {
+          await rpc("moderar_comentario", { p_comentario: k.id, p_status: novo });
+          await registrar(k.autoraId || null, (novo === "publicado" ? "Publicou" : "Ocultou") + " um comentário de " + k.autora);
+          return { msg: novo === "publicado" ? "Comentário publicado." : "Comentário ocultado.", texto: "moderação de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: antes }); } };
+        });
+        return;
+      }
       case "com-responder": ui.respondendo = d.id; ui.focar = "respostaCampo"; break;
       case "com-responder-cancelar": ui.respondendo = null; break;
       case "com-remover":
         confirmar({ titulo: "Remover este comentário?", texto: "Ele some para todas as alunas. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover comentário" }, async () => {
-          await rpc("moderar_comentario", { p_comentario: d.id, p_status: "removido" }); toast("Comentário removido.");
+          const k = S.comentarios.find((x) => x.id === d.id);
+          await rpc("moderar_comentario", { p_comentario: d.id, p_status: "removido" });
+          await registrar(k?.autoraId || null, "Removeu um comentário de " + (k?.autora ?? "uma aluna"));
+          return "Comentário removido.";
         });
         break;
 
@@ -1088,19 +1633,20 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const e = pessoa(d.id);
         void executar(async () => {
           const codigo = String(await rpc("trocar_codigo", { p_id: e.id }));
+          await registrar(null, "Trocou o código de " + e.nome);
           ui.modal = { tipo: "info", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para ela.", destaque: codigo };
         });
         return;
       }
-      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear " + e.nome + "?", texto: "Ela deixa de entrar no painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); toast(e.nome + " foi bloqueada."); }); break; }
-      case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); return e.nome + " foi desbloqueada."; }); return; }
-      case "equipe-remover": { const e = pessoa(d.id); confirmar({ titulo: "Remover " + e.nome + " da equipe?", texto: "Ela perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); toast(e.nome + " saiu da equipe."); }); break; }
+      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear " + e.nome + "?", texto: "Ela deixa de entrar no painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
+      case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
+      case "equipe-remover": { const e = pessoa(d.id); confirmar({ titulo: "Remover " + e.nome + " da equipe?", texto: "Ela perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); await registrar(null, "Removeu " + e.nome + " da equipe"); return e.nome + " saiu da equipe."; }); break; }
       default: return;
     }
     render();
   }
 
-  function enviar(f: string, form: HTMLFormElement) {
+  function enviar(f: string, form: HTMLFormElement, quem?: HTMLButtonElement | null) {
     const v = (n: string) => { const el = form.elements.namedItem(n) as HTMLInputElement | null; return el ? el.value.trim() : ""; };
     const id = form.dataset.id ?? "";
     switch (f) {
@@ -1127,10 +1673,17 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
           if (id) {
+            const o = aluna(id);
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
-            ui.modal = null; return "Ficha de " + nome + " salva.";
+            await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
+            ui.modal = null;
+            return {
+              msg: "Dados de " + nome + " salvos.", texto: "edição dos dados de " + nome,
+              desfazer: /^\d{11}$/.test(o.celular) ? async () => { await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_validade: o.validade, p_celular: o.celular, p_email: o.email }); } : undefined,
+            };
           }
-          await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
+          const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
+          if (r.id) await registrar(String(r.id), "Aluna cadastrada");
           ui.modal = null; return nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
         });
         return;
@@ -1140,10 +1693,12 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const cs = marcados("c");
         const ms = marcados("m").filter((mid) => { const x = acharModulo(mid); return x && !cs.includes(x.c.id); });
         const as = marcados("a").filter((aid) => { const x = acharAula(aid); return x && !cs.includes(x.c.id) && !ms.includes(x.m.id); });
-        const al = aluna(id);
+        const al = aluna(id); const antes = { ...al.acesso };
         void executar(async () => {
           const n = Number(await rpc("salvar_liberacao", { p_aluna: id, p_produtos: cs, p_modulos: ms, p_aulas: as }));
-          ui.modal = null; return "Liberação salva: " + p(n, "aula", "aulas") + " para " + al.nome + ".";
+          await registrar(id, "Liberação atualizada: " + p(n, "aula", "aulas"));
+          ui.modal = null;
+          return { msg: "Liberação salva: " + p(n, "aula", "aulas") + " para " + al.nome + ".", texto: "liberação de " + al.nome, desfazer: async () => { await rpc("salvar_liberacao", { p_aluna: id, p_produtos: antes.cursos, p_modulos: antes.modulos, p_aulas: antes.aulas }); } };
         });
         return;
       }
@@ -1157,9 +1712,13 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           const aid = x.name.slice(3);
           if (x.value !== (al.datas[aid] || "")) { aulas.push(aid); datas.push(x.value || null); }
         });
+        const cAntes = Object.entries(al.cronograma);
+        const dAntes = aulas.map((aid) => al.datas[aid] || null);
         void executar(async () => {
           await rpc("salvar_cronograma", { p_aluna: id, p_modulos: mods, p_dias: dias, p_aulas: aulas, p_datas: datas });
-          ui.modal = null; return "Cronograma de " + al.nome + " salvo.";
+          await registrar(id, "Cronograma atualizado");
+          ui.modal = null;
+          return { msg: "Cronograma de " + al.nome + " salvo.", texto: "cronograma de " + al.nome, desfazer: async () => { await rpc("salvar_cronograma", { p_aluna: id, p_modulos: cAntes.map((x) => x[0]), p_dias: cAntes.map((x) => x[1]), p_aulas: aulas, p_datas: dAntes }); } };
         });
         return;
       }
@@ -1175,6 +1734,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         void executar(async () => {
           const r = falhou(await supabase.from("produtos").insert({ titulo: v("nome"), categoria_id: v("cat"), inicio: 1, ordem: S.cursos.length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
+          await registrar(null, "Criou o produto " + v("nome"));
           ui.modal = null; ui.curso = r.data!.id; ui.tab = "curso";
           return "Produto criado. Agora monte os módulos.";
         });
@@ -1184,7 +1744,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         void executar(async () => {
           const r = falhou(await supabase.from("categorias").insert({ titulo: v("nome"), ordem: S.cats.length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: [...S.cats.map((k) => k.id), r.data!.id] });
-          return "Categoria adicionada.";
+          await registrar(null, "Criou a categoria " + v("nome"));
+          return { msg: "Categoria adicionada.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       case "cat-renomear":
@@ -1251,7 +1812,12 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         return;
       }
       case "com-resposta":
-        void executar(async () => { await rpc("responder_comentario", { p_comentario: id, p_texto: v("resposta") }); ui.respondendo = null; return "Resposta enviada."; });
+        void executar(async () => {
+          const k = S.comentarios.find((x) => x.id === id);
+          await rpc("responder_comentario", { p_comentario: id, p_texto: v("resposta") });
+          await registrar(k?.autoraId || null, "Respondeu um comentário de " + (k?.autora ?? "uma aluna"));
+          ui.respondendo = null; return "Resposta enviada.";
+        });
         return;
       case "equipe-add": {
         const login = v("login").toLowerCase();
@@ -1259,8 +1825,55 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const papel = v("papel") === "Administrador" ? "admin" : "suporte";
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel });
+          await registrar(null, "Adicionou " + v("nome") + " à equipe");
           ui.modal = { tipo: "info", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para ela entrar no painel.", destaque: String(r.codigo ?? "") };
         });
+        return;
+      }
+      case "nota": {
+        const t = (form.elements.namedItem("texto") as HTMLTextAreaElement).value.trim(); if (!t) return;
+        void executar(async () => {
+          const r = falhou(await supabase.from("anotacoes_aluna").insert({ aluna_id: id, texto: t }).select("id").single());
+          await registrar(id, "Anotação adicionada");
+          return { msg: "Anotação salva.", texto: "anotação", desfazer: async () => { falhou(await supabase.from("anotacoes_aluna").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
+      case "contato": {
+        const al = aluna(id);
+        const res = form.querySelector<HTMLInputElement>('input[name="resultado"]:checked')?.value || "Contato feito";
+        const obs = (form.elements.namedItem("obs") as HTMLTextAreaElement).value.trim();
+        void executar(async () => {
+          falhou(await supabase.from("contatos_aluna").insert({ aluna_id: id, canal: "telefone", resultado: res, observacao: obs || null }));
+          await registrar(id, "Contato registrado: " + res + (obs ? " — " + obs : ""));
+          ui.modal = null; return "Contato com " + primeiroNome(al.nome) + " registrado.";
+        });
+        return;
+      }
+      case "sugestao": {
+        const t = (form.elements.namedItem("texto") as HTMLTextAreaElement).value.trim(); if (!t) return;
+        void executar(async () => {
+          falhou(await supabase.from("sugestoes").insert({ texto: t }));
+          await registrar(null, "Deixou uma sugestão");
+          ui.modal = { tipo: "sugestoes" }; ui.focar = "sugestaoCampo"; return "Sugestão enviada. Obrigada!";
+        });
+        return;
+      }
+      case "lote": {
+        const acaoL = quem?.value; const ids = ui.sel.slice();
+        if (acaoL === "liberar") {
+          const mid = v("modulo"); if (!mid) { toast("Escolha o módulo que quer liberar."); return; }
+          const x = acharModulo(mid)!;
+          void executar(async () => {
+            const n = Number(await rpc("lote_liberar_modulo", { p_alunas: ids, p_modulo: mid }));
+            ui.sel = []; return x.m.nome + " liberado para " + p(n, "aluna", "alunas") + ".";
+          });
+        } else if (acaoL === "renovar") {
+          void executar(async () => {
+            const n = Number(await rpc("lote_renovar", { p_alunas: ids }));
+            ui.sel = []; return "Acesso renovado para " + p(n, "aluna", "alunas") + ".";
+          });
+        }
         return;
       }
       default: return;
@@ -1268,26 +1881,84 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     render();
   }
 
+  /* ---------- alterações não salvas ---------- */
+  const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
+  const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
+  const LIVRE = new Set(["escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  function marcarSujo(t: HTMLElement) {
+    const fm = t.closest?.<HTMLFormElement>("form[data-f]");
+    if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
+  }
+  function formSujo(): HTMLFormElement | null {
+    if (!ui.sujo) return null;
+    return document.querySelector<HTMLFormElement>('form[data-f="' + ui.sujo.f + '"]' + (ui.sujo.id ? '[data-id="' + ui.sujo.id + '"]' : ""));
+  }
+  function mostrarAviso(seguir: () => void) {
+    if (document.getElementById("avisoSujo")) return;
+    const div = document.createElement("div");
+    div.className = "modal-fundo topo"; div.id = "avisoSujo";
+    div.innerHTML = `<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="avisoTitulo" style="max-width:460px">
+      <h2 class="titulo" id="avisoTitulo">Sair sem salvar?</h2>
+      <p class="explica">Você começou a editar e ainda não salvou. Se sair agora, o que mudou se perde.</p>
+      <div class="rodape-modal">
+        <button type="button" class="botao" data-sujo="ficar">Continuar editando</button>
+        <button type="button" class="botao-neutro grande botao-remover" data-sujo="sair">Sair sem salvar</button>
+      </div>
+    </div>`;
+    div.addEventListener("click", (ev) => {
+      const b = (ev.target as HTMLElement).closest<HTMLElement>("[data-sujo]");
+      ev.stopPropagation();
+      if (!b) { if (ev.target === div) div.remove(); return; }
+      div.remove();
+      if (b.dataset.sujo === "sair") { ui.sujo = null; seguir(); }
+      else { const c = formSujo()?.querySelector<HTMLElement>("input:not([type=hidden]), textarea, select"); c?.focus(); }
+    });
+    document.body.appendChild(div);
+    div.querySelector<HTMLElement>('[data-sujo="ficar"]')!.focus();
+  }
+  /** Antes de cada clique: se há um formulário mexido e o clique sai dele, pergunta. */
+  function guardado(a: string, d: Record<string, string>, el: HTMLElement | null, alvo: EventTarget | null) {
+    if (a === "fechar-fundo" && alvo !== el) return;
+    if (ui.sujo && !LIVRE.has(a)) {
+      const fd = formSujo();
+      if (!fd || CANCELA.has(a)) ui.sujo = null;
+      else if (!(el && fd.contains(el))) { mostrarAviso(() => acao(a, d, el!, alvo)); return; }
+    }
+    acao(a, d, el!, alvo);
+  }
+
   /* ---------- eventos ---------- */
   app.addEventListener("click", (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-a]");
-    if (!b || (b as HTMLButtonElement).disabled) return;
-    acao(b.dataset.a!, Object.assign({}, b.dataset) as Record<string, string>, b, e.target);
+    const alvo = e.target as HTMLElement;
+    if (ui.buscaAberta && !alvo.closest(".busca-geral")) { ui.buscaAberta = false; atualizarBusca(); }
+    const b = alvo.closest<HTMLElement>("[data-a]");
+    const solto = !b || (b as HTMLButtonElement).disabled;
+    if (solto && ui.menu && !alvo.closest(".menu-pop")) { ui.menu = null; render(); return; }
+    if (solto && ui.ajuda && !alvo.closest(".ajuda-pop")) { ui.ajuda = null; render(); return; }
+    if (solto) return;
+    guardado(b.dataset.a!, Object.assign({}, b.dataset) as Record<string, string>, b, e.target);
   });
   app.addEventListener("submit", (e) => {
     const f = (e.target as HTMLElement).closest<HTMLFormElement>("form[data-f]");
     if (!f) return;
     e.preventDefault();
-    enviar(f.dataset.f!, f);
+    if (ui.sujo && ui.sujo.f === f.dataset.f) ui.sujo = null;
+    enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.dataset.i === "buscaGeral") { ui.buscaGeral = t.value; ui.buscaAberta = true; atualizarBusca(); return; }
+    marcarSujo(t);
     if (t.dataset.i === "busca") { ui.busca = t.value; render(); return; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
+    marcarSujo(t);
+    if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; render(); return; }
+    if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
+    if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }
     if (t.matches("input[type=checkbox]")) {
       const form = t.closest('form[data-f="liberar"]');
       if (!form) return;
@@ -1311,6 +1982,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       try {
         const caminho = await enviarArquivo("capas", x.c.id, file);
         const campo = document.getElementById("campoCapa") as HTMLInputElement | null; if (campo) campo.value = caminho;
+        ui.sujo = { f: "aula", id: aulaId };
         previas[aulaId] = URL.createObjectURL(file);
         const pv = document.getElementById("previaCapa");
         if (pv) pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
@@ -1327,6 +1999,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const caminho = await enviarArquivo(t.deposito!, x.c.id, file);
         const form = document.querySelector<HTMLFormElement>('form[data-f="extra-add"]');
         if (form) {
+          ui.sujo = { f: "extra-add", id: form.dataset.id || "" };
           (form.elements.namedItem("arquivo") as HTMLInputElement).value = caminho;
           const nome = form.elements.namedItem("nome") as HTMLInputElement;
           if (!nome.value) nome.value = file.name.replace(/\.[^.]+$/, "");
@@ -1336,8 +2009,14 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     })();
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && ui.modal) { ui.modal = null; pend = null; render(); }
+    if (e.key !== "Escape") return;
+    const av = document.getElementById("avisoSujo"); if (av) { av.remove(); return; }
+    if (ui.buscaAberta) { ui.buscaAberta = false; atualizarBusca(); return; }
+    if (ui.menu || ui.ajuda) { ui.menu = null; ui.ajuda = null; render(); return; }
+    if (ui.modal) guardado("fechar-esc", {}, null, null);
   });
+  document.addEventListener("focusin", (e) => { if ((e.target as HTMLElement).id === "buscaGeral" && ui.buscaGeral.trim()) { ui.buscaAberta = true; atualizarBusca(); } });
+  window.addEventListener("beforeunload", (e) => { if (ui.sujo && formSujo()) { e.preventDefault(); e.returnValue = ""; } });
 
   /* arrastar as categorias */
   app.addEventListener("dragstart", (e) => {

@@ -166,6 +166,7 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
         return;
       }
       setAluna(perfil);
+      if (perfil.papel === "aluna") void api.marcarPresenca().catch(() => {});
 
       const [cat, aulas, likes, mods, abre] = await Promise.all([
         api.carregarCatalogo(),
