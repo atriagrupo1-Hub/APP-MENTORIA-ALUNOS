@@ -265,7 +265,12 @@ export function ProvedorEstado({ children }: { children: ReactNode }) {
   const entrar = useCallback<Estado["entrar"]>(
     async (login, codigo) => {
       const r = await api.entrar(login, codigo);
-      if (!r.ok) return r.falha.mensagem;
+      if (!r.ok) {
+        // Texto da tela de entrada aprovada; os outros motivos (trava,
+        // bloqueio, rede) seguem com a mensagem do servidor.
+        if (r.falha.erro === "acesso_invalido") return "Nome ou código não conferem. Confira e tente de novo.";
+        return r.falha.mensagem;
+      }
       await carregarTudo();
       return null;
     },

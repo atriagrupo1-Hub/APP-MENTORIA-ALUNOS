@@ -83,9 +83,9 @@ ok(
 );
 
 /* ---------- 3. a tela de entrada ---------- */
-ok("a tela de entrada aparece", (await pg.getByText("Entre para continuar").count()) > 0);
-ok("tem onde escrever o nome", (await pg.locator("#aluna-nome").count()) > 0);
-ok("tem onde escrever o código", (await pg.locator("#aluna-codigo").count()) > 0);
+ok("a tela de entrada aparece", (await pg.getByText("Bem-vindo(a)", { exact: true }).count()) > 0);
+ok("tem onde escrever o nome", (await pg.locator("#nome").count()) > 0);
+ok("tem onde escrever o código", (await pg.locator("#codigo").count()) > 0);
 ok("tem o botão de entrar", (await pg.getByRole("button", { name: /Entrar na mentoria/i }).count()) > 0);
 
 const rolaDeLado = await pg.evaluate(
@@ -98,8 +98,8 @@ ok("no celular não sobra nada para o lado", !rolaDeLado);
  * Nome que não existe, de propósito: errar o código de uma aluna de
  * verdade conta como tentativa e tranca a conta dela por 15 minutos.
  */
-await pg.locator("#aluna-nome").fill("zzz-nao-existe-zzz");
-await pg.locator("#aluna-codigo").fill("000000");
+await pg.locator("#nome").fill("zzz-nao-existe-zzz");
+await pg.locator("#codigo").fill("0000");
 await pg.getByRole("button", { name: /Entrar na mentoria/i }).click();
 await pg.waitForTimeout(4000);
 const textoDepois = await pg.locator("body").innerText();
@@ -108,17 +108,17 @@ ok(
   /não encontramos|inválid|incorret|confira/i.test(textoDepois),
   textoDepois.slice(0, 160).replace(/\n/g, " "),
 );
-ok("acesso inválido: não virou tela branca", (await pg.locator("#aluna-nome").count()) > 0);
+ok("acesso inválido: não virou tela branca", (await pg.locator("#nome").count()) > 0);
 
 /* ---------- 5. entrando de verdade (só se você passar os dois) ---------- */
 if (NOME && CODIGO) {
   await pg.goto(SITE, { waitUntil: "networkidle" });
-  await pg.locator("#aluna-nome").fill(NOME);
-  await pg.locator("#aluna-codigo").fill(CODIGO);
+  await pg.locator("#nome").fill(NOME);
+  await pg.locator("#codigo").fill(CODIGO);
   await pg.getByRole("button", { name: /Entrar na mentoria/i }).click();
   await pg.waitForTimeout(6000);
 
-  const entrou = !/Entre para continuar/i.test(await pg.locator("body").innerText());
+  const entrou = !/Bem-vindo\(a\)/.test(await pg.locator("body").innerText());
   ok("a aluna entra com nome e código", entrou, pg.url());
 
   if (entrou) {

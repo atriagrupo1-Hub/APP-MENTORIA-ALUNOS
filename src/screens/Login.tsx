@@ -1,60 +1,57 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { SilhuetaCadeado, SilhuetaPessoa } from "@/components/Icones";
-import { Marca } from "@/components/Marca";
 import { useEstado } from "@/data/estado";
-import { cores, tipografia } from "@/design/tokens";
+import "./login.css";
 
-const CAMPO: React.CSSProperties = {
-  width: "100%",
-  height: 54,
-  fontSize: 16,
-  color: cores.textoCorpo,
-  background: "rgba(8,12,24,.85)",
-  border: "1px solid rgba(255,255,255,.24)",
-  borderRadius: 12,
-  outline: "none",
-};
-
-const SELOS = [
-  { glifo: "✓", rotulo: "Acesso protegido" },
-  { glifo: "⌘", rotulo: "Dados privados" },
-  { glifo: "♦", rotulo: "Turma verificada" },
-];
-
+/**
+ * A tela de entrada da aluna.
+ *
+ * Marcação, textos e CSS são os do pacote aprovado no Claude Design
+ * (`pacote-login`): reproduzir idêntico, sem inventar nada. A tela não
+ * rola — cabe em 390×844 e em telas menores, encolhendo os espaços pela
+ * altura.
+ *
+ * Quem decide se o nome e o código valem é o servidor (Edge Function
+ * `entrar`). Aqui só se confere o formato, para avisar antes de ir.
+ */
 export function Login() {
   const { entrar, aluna, carregando } = useEstado();
   const navegar = useNavigate();
   const [nome, setNome] = useState("");
   const [codigo, setCodigo] = useState("");
-  const [mostrarCodigo, setMostrarCodigo] = useState(false);
+  const [verCodigo, setVerCodigo] = useState(false);
   const [erro, setErro] = useState("");
-  const [focado, setFocado] = useState("");
   const [entrando, setEntrando] = useState(false);
 
   /*
-   * Quem já entrou não pede para entrar de novo.
-   *
-   * `/` sempre desenhava a tela de entrada, com sessão ou sem. A aluna
-   * guardava o endereço do site nos favoritos, abria no dia seguinte —
-   * com a sessão viva — e lia "Bem-vinda de volta. Entre para
-   * continuar". Tendo esquecido o código, ela parava ali, num
-   * aplicativo em que já estava dentro.
-   *
-   * `carregando` importa: sem ele, a tela de entrada pisca por um
-   * instante antes do redirecionamento, em toda visita.
+   * Quem já entrou não pede para entrar de novo. `carregando` importa:
+   * sem ele, a tela de entrada pisca por um instante antes de seguir.
    */
   useEffect(() => {
     if (!carregando && aluna) navegar("/inicio", { replace: true });
   }, [carregando, aluna, navegar]);
 
+  // A tela não rola: o corpo da página fica parado enquanto ela está aberta.
+  useEffect(() => {
+    document.body.classList.add("sem-nav");
+    return () => document.body.classList.remove("sem-nav");
+  }, []);
+
   async function enviar(e: FormEvent) {
     e.preventDefault();
     if (entrando) return;
+    if (!nome.trim()) {
+      setErro("Escreva o seu nome.");
+      return;
+    }
+    if (!/^\d{4}$/.test(codigo)) {
+      setErro("O código tem 4 números. Confira e tente de novo.");
+      return;
+    }
     setEntrando(true);
     setErro("");
     try {
-      const falha = await entrar(nome, codigo);
+      const falha = await entrar(nome.trim(), codigo);
       if (falha) {
         setErro(falha);
         return;
@@ -66,224 +63,108 @@ export function Login() {
     }
   }
 
-  const foco = (campo: string): React.CSSProperties =>
-    focado === campo
-      ? { borderColor: "#ffffff", boxShadow: "0 0 0 3px rgba(255,255,255,.16)" }
-      : {};
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-5 py-8">
-      <div className="entra w-full max-w-[460px]">
-        <div className="mb-6 text-center">
-          {/*
-            A marca, e não um desenho de chave.
-
-            Aqui houve primeiro a foto da mentora (um círculo cinza
-            escrito "foto da mentora", enquanto o arquivo não chegava),
-            depois um círculo com uma chave desenhada. Os dois eram do
-            protótipo: seguravam o alto da tela sem dizer de quem é o
-            produto. O painel já abria com a marca AIÓN; esta porta,
-            que é a que a aluna usa, abria com um ícone genérico.
-
-            É a mesma marca dos dois lados agora, do mesmo arquivo.
-          */}
-          <span className="mb-5 inline-block">
-            <Marca altura={112} />
+    <div className="entrada">
+      <div className="ent-col">
+        <div className="ent-marca">
+          <span className="ent-logo">
+            <img
+              src="/marca/logo-aion.png"
+              alt="AIŌN"
+              onError={(e) => e.currentTarget.remove()}
+            />
+            <span className="ent-logo-txt serif" aria-hidden="true">
+              AIŌN
+            </span>
           </span>
-
-          <p className="mb-2 mt-0 text-rotulo uppercase tracking-rotulo text-marfim">Mentoria</p>
-          <p
-            className="m-0 font-titulo font-semibold leading-[1.15] tracking-rotulo"
-            style={{ fontSize: tipografia.marcaLogin, color: "#ffffff" }}
-          >
-            CAMINHO DO DESBLOQUEIO
-          </p>
-          <p
-            className="mb-0 mt-1 font-titulo font-semibold leading-[1.15] tracking-rotulo"
-            style={{ fontSize: tipografia.marcaLogin, color: "#ffffff" }}
-          >
-            PARA BÊNÇÃOS ILIMITADAS
-          </p>
+          <p className="ent-sobre">Mentoria</p>
+          <p className="ent-nome serif">CAMINHO DO DESBLOQUEIO</p>
+          <p className="ent-nome serif">PARA BÊNÇÃOS ILIMITADAS</p>
         </div>
 
-        <form
-          onSubmit={enviar}
-          className="rounded-[22px] px-6 pb-6 pt-7"
-          style={{
-            background: cores.cartaoForte,
-            border: "1px solid rgba(255,255,255,.2)",
-            boxShadow:
-              "0 40px 90px -50px rgba(255,255,255,.35), 0 20px 60px rgba(0,0,0,.6)",
-          }}
-        >
-          <h1
-            className="text-heroi m-0 text-center font-bold leading-[1.2] text-white"
-          >
-            Bem-vinda de volta
-          </h1>
-          <p
-            className="mb-6 mt-2 text-center text-corpo"
-            style={{ color: cores.textoSecundario }}
-          >
-            Entre para continuar sua jornada
-          </p>
+        <form className="ent-cartao" onSubmit={enviar} noValidate>
+          <h1>Bem-vindo(a)</h1>
 
-          <label
-            htmlFor="aluna-nome"
-            className="mb-2 block text-apoio font-bold"
-            style={{ color: "rgba(243,236,225,.75)" }}
-          >
+          <label className="ent-rot" htmlFor="nome">
             Seu nome
           </label>
-          <div className="relative mb-4 flex">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2">
-              <SilhuetaPessoa />
+          <div className="ent-campo">
+            <span className="ent-ic" aria-hidden="true">
+              <span className="cab" />
+              <span className="corpo" />
             </span>
             <input
-              id="aluna-nome"
-              type="text"
+              id="nome"
+              name="nome"
+              autoComplete="username"
+              placeholder="Digite seu nome"
               value={nome}
               onChange={(e) => {
                 setNome(e.target.value);
                 setErro("");
               }}
-              onFocus={() => setFocado("nome")}
-              onBlur={() => setFocado("")}
-              autoComplete="off"
-              placeholder="Digite seu nome"
-              style={{ ...CAMPO, padding: "0 16px 0 48px", ...foco("nome") }}
             />
           </div>
 
-          {/*
-            Mesmo caso do painel: o que entra aqui é o nome de acesso
-            que a mentoria entregou, não o e-mail. Sem este aviso, o
-            servidor só consegue responder "Não encontramos este
-            acesso" — correto e inútil para quem está do outro lado.
-          */}
-          {nome.includes("@") ? (
-            <p
-              className="mb-4 mt-[-8px] text-apoio leading-[1.5]"
-              style={{ color: cores.textoSecundario }}
-            >
-              Aqui vai o nome que a mentoria te passou, não o e-mail.
-            </p>
-          ) : null}
-
-          <label
-            htmlFor="aluna-codigo"
-            className="mb-2 block text-apoio font-bold"
-            style={{ color: "rgba(243,236,225,.75)" }}
-          >
+          <label className="ent-rot" htmlFor="codigo">
             Seu código
           </label>
-          <div className="relative flex">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2">
-              <SilhuetaCadeado />
+          <div className="ent-campo">
+            <span className="ent-ic cad" aria-hidden="true">
+              <span className="arco" />
+              <span className="caixa" />
             </span>
             <input
-              id="aluna-codigo"
-              type={mostrarCodigo ? "text" : "password"}
+              id="codigo"
+              name="codigo"
+              className="ent-cod"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              autoComplete="one-time-code"
+              placeholder="Digite seu código"
+              type={verCodigo ? "text" : "password"}
               value={codigo}
               onChange={(e) => {
-                setCodigo(e.target.value);
+                setCodigo(e.target.value.replace(/\D/g, "").slice(0, 4));
                 setErro("");
               }}
-              onFocus={() => setFocado("codigo")}
-              onBlur={() => setFocado("")}
-              inputMode="numeric"
-              autoComplete="off"
-              pattern="[0-9]*"
-              maxLength={6}
-              placeholder="Digite seu código"
-              style={{ ...CAMPO, padding: "0 52px 0 48px", ...foco("codigo") }}
             />
             <button
               type="button"
-              onClick={() => setMostrarCodigo((v) => !v)}
-              aria-label={mostrarCodigo ? "Ocultar código" : "Mostrar código"}
-              title={mostrarCodigo ? "Ocultar código" : "Mostrar código"}
-              className="absolute right-2 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center border-none bg-transparent text-realce"
-              style={{ color: "rgba(255,255,255,.8)", cursor: "pointer" }}
+              className="ent-olho"
+              aria-pressed={verCodigo}
+              aria-label={verCodigo ? "Ocultar código" : "Mostrar código"}
+              onClick={() => setVerCodigo((v) => !v)}
             >
-              {mostrarCodigo ? "◎" : "◉"}
+              <span className={verCodigo ? "vazio" : ""} />
             </button>
           </div>
 
           {erro ? (
-            <p className="mb-0 mt-3 text-corpo" style={{ color: "#e6b8a0" }}>
+            <p className="erro" role="alert">
               {erro}
             </p>
           ) : null}
 
-          <button
-            type="submit"
-            disabled={entrando}
-            className="relative mt-6 flex min-h-[56px] w-full items-center justify-center rounded-pilula border-none px-14 py-4 text-realce font-bold transition-opacity hover:opacity-90"
-            /*
-             * O único dourado do aplicativo, e de propósito.
-             *
-             * Todo o resto é preto e branco — foi assim que a tela
-             * parou de parecer amadora. Mas esta é a tela de entrada,
-             * onde só existe uma coisa a fazer, e onde a marca se
-             * apresenta. Um dourado sozinho, num botão único, não é
-             * decoração: é o destino da tela dito em cor.
-             *
-             * Do lado de dentro o preto e branco continua inteiro.
-             */
-            style={{
-              color: cores.ouroTexto,
-              background: cores.botaoOuro,
-              boxShadow: "0 10px 30px -12px rgba(212,177,112,.55)",
-              cursor: entrando ? "wait" : "pointer",
-              opacity: entrando ? 0.7 : 1,
-            }}
-          >
-            {entrando ? "Entrando..." : "Entrar na mentoria"}
-            <span
-              aria-hidden="true"
-              className="absolute right-2 top-1/2 grid h-[38px] w-[38px] -translate-y-1/2 place-items-center rounded-full text-realce"
-              style={{ color: cores.ouroTexto, background: "rgba(26,20,8,.14)" }}
-            >
-              →
-            </span>
+          <button className="ent-entrar" disabled={entrando} style={entrando ? { cursor: "wait", opacity: 0.8 } : undefined}>
+            Entrar na mentoria<span aria-hidden="true">→</span>
           </button>
-
-          <div className="my-6 mb-4 flex items-center gap-3">
-            <span className="h-px flex-1" style={{ background: "rgba(243,236,225,.12)" }} />
-            <span className="text-apoio" style={{ color: cores.textoSecundarioForte }}>
-              ambiente exclusivo
-            </span>
-            <span className="h-px flex-1" style={{ background: "rgba(243,236,225,.12)" }} />
-          </div>
-
-          <p
-            className="m-0 text-center text-apoio leading-[1.6]"
-            style={{ color: "rgba(243,236,225,.5)" }}
-          >
+          <p className="ent-nota" style={{ marginTop: 20 }}>
             Acesso reservado às alunas da mentoria.
           </p>
         </form>
 
-        <div className="mt-7 flex justify-center gap-7">
-          {SELOS.map((selo) => (
-            <span
-              key={selo.rotulo}
-              className="flex flex-col items-center gap-2 text-apoio tracking-rotulo"
-              style={{ color: cores.textoSecundarioForte }}
-            >
-              <span
-                className="grid h-[26px] w-[26px] place-items-center rounded-full text-apoio"
-                style={{
-                  color: "rgba(255,255,255,.7)",
-                  border: "1px solid rgba(255,255,255,.35)",
-                }}
-              >
-                {selo.glifo}
-              </span>
-              {selo.rotulo}
-            </span>
-          ))}
+        <div className="ent-selos">
+          <span>
+            <i>✓</i>Acesso protegido
+          </span>
+          <span>
+            <i>⌘</i>Dados privados
+          </span>
+          <span>
+            <i>♦</i>Turma verificada
+          </span>
         </div>
       </div>
     </div>
