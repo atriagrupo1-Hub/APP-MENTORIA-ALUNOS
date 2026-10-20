@@ -373,7 +373,8 @@ export function montar(app: HTMLElement) {
     abertos: new Set<string>(), primeiraVez: true,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
-    buscaGeral: "", buscaAberta: false, inicioVista: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
+    buscaGeral: "", buscaAberta: false, inicioVista: "",
+    acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
   };
   const previas: Record<string, string> = {};
@@ -499,11 +500,36 @@ export function montar(app: HTMLElement) {
     const ae = document.activeElement as HTMLInputElement | null;
     const fid = ae && ae.id;
     const sel = fid && typeof ae.selectionStart === "number" ? [ae.selectionStart, ae.selectionEnd] : null;
+    // Os painéis laterais rolam por dentro: redesenhar não pode jogá-los de volta ao topo.
+    const rolagem = new Map<string, number>();
+    app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => rolagem.set(x.dataset.rolagem!, x.scrollTop));
     app.innerHTML = carregando ? carregandoTela() : eu ? painel() : login();
+    document.body.classList.toggle("aa-trava", !!app.querySelector(".aa-painel"));
+    ajustarListaLateral();
+    app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
       const el = document.getElementById(alvo) as HTMLInputElement | null;
       if (el) { el.focus(); if (sel && !veioDeFora) { try { el.setSelectionRange(sel[0], sel[1]); } catch { /* campo sem seleção */ } } }
+    }
+  }
+
+  /*
+   * A lista de "Alunas e acessos" ocupa o espaço que sobra à direita dos
+   * quadros, para nenhum deles ficar escondido; sem espaço (tela menor),
+   * fica com a largura padrão por cima. A seta dourada na borda do painel
+   * aponta para a altura do quadro escolhido.
+   */
+  function ajustarListaLateral() {
+    const painel = document.getElementById("aaLista"); const grade = app.querySelector(".aa-grade");
+    const sel = app.querySelector(".aa-ind.sel");
+    if (!painel || !grade || !sel) return;
+    painel.style.width = ""; painel.removeAttribute("data-liga");
+    const livre = innerWidth - grade.getBoundingClientRect().right - 28;
+    if (innerWidth > 600 && livre >= 420) painel.style.width = Math.min(livre, 640) + "px";
+    const r = sel.getBoundingClientRect();
+    if (innerWidth > 600 && r.right <= painel.getBoundingClientRect().left + 1) {
+      painel.setAttribute("data-liga", ""); painel.style.setProperty("--liga-y", Math.round(r.top + r.height / 2) + "px");
     }
   }
 
@@ -633,28 +659,8 @@ export function montar(app: HTMLElement) {
       if (!ds.length) return "sem data";
       return ds[0] === ds[ds.length - 1] ? "cadastro em " + br(ds[0]) : "cadastros de " + br(ds[0]) + " a " + br(ds[ds.length - 1]);
     };
-    const mini = (a: Aluna, extra: string, botoes: string) => `<div class="mini"><button type="button" class="abre-ficha" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${avatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${extra} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span><span class="seta" aria-hidden="true">›</span></button><span class="acoes">${botoes}</span></div>`;
-    const blocosAcesso = `
-        ${bloco("vencem", "Acessos que vencem em 15 dias", venc.length, venc.length ? "o primeiro " + vaiVencer(venc[0]) + " · " + br(venc[0].validade) : "Nenhum vencendo", "Abra o acesso dela e renove por lá antes que vença.",
-          venc.map((a) => mini(a, vaiVencer(a) + " · " + br(a.validade), `<button class="botao-verde" data-a="ficha" data-id="${a.id}">Ver acesso</button>`)).join("") || semNada("Nenhum acesso vencendo."))}
-        ${bloco("parada", "Sem acesso há mais de 14 dias", par.length, par.length ? p(par.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar", "Um recado pode trazê-la de volta.",
-          par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Ninguém parou de entrar."))}
-        ${bloco("comecar", "Ainda não fizeram o primeiro acesso", comecar.length, comecar.length ? p(comecar.length, "aluna", "alunas") + " · " + periodo(comecar) : "Todas já entraram", "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.",
-          comecar.map((a) => mini(a, cadastrada(a), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : ""}`)).join("") || semNada("Todas já entraram pelo menos uma vez."))}
-        ${bloco("novas", "Novas nesta semana", novas.length, novas.length ? p(novas.length, "cadastrada", "cadastradas") + " · " + periodo(novas) : "Nenhum cadastro nos últimos 7 dias", "Cadastradas nos últimos 7 dias.",
-          novas.map((a) => mini(a, "entrou em " + br(a.entrada), "")).join("") || semNada("Nenhum cadastro nos últimos 7 dias."))}`;
-
-    /*
-     * "Alunas e acessos" abre numa tela só dela, isolando o resto do
-     * Início: os quatro quadros de acesso, cada um fechado com o número.
-     */
-    if (ui.inicioVista === "acessos") return `
-    <section class="tela ativa">
-      <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:16px">← Voltar ao início</button>
-      <h2 style="margin:0 0 4px;font-size:22px;font-weight:700">Alunas e acessos</h2>
-      <p style="margin:0 0 16px;font-size:14px;color:var(--texto-3)">Clique em Ver em cada quadro para abrir a lista.</p>
-      <div class="lista-blocos">${blocosAcesso}</div>
-    </section>`;
+    // "Alunas e acessos" abre numa tela só dela (telaAcessos, logo abaixo).
+    if (ui.inicioVista === "acessos") return telaAcessos({ vencem: venc, parada: par, comecar, novas }, periodo);
 
     const linhaResumo = (n: number, txt: string, atencao = false) => `<li><b class="${atencao && n ? "atencao" : ""}">${n}</b> ${txt}</li>`;
     return `
@@ -682,6 +688,209 @@ export function montar(app: HTMLElement) {
         </button>
       </div>
     </section>`;
+  }
+
+  /* ---------- ALUNAS E ACESSOS ----------
+   *
+   * Indicadores → lista lateral → cadastro da aluna. Os quatro quadros
+   * nunca mudam de tamanho: a lista abre num painel à direita, por cima
+   * da página, e o cadastro abre por cima da lista. Fechar o cadastro
+   * volta à lista; fechar a lista volta aos quadros. As listas e o
+   * cálculo de cada uma são os mesmos de antes — só a apresentação muda.
+   */
+  type Lista = "vencem" | "parada" | "comecar" | "novas";
+  const ICONE: Record<Lista, string> = {
+    vencem: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="16.5" cy="16" r="2.6"/><path d="M16.5 14.9v1.2l.8.6"/></svg>`,
+    parada: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.2" height="14" rx="1"/><rect x="13.8" y="5" width="3.2" height="14" rx="1"/></svg>`,
+    comecar: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg>`,
+    novas: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>`,
+  };
+  const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
+  const xis = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
+  function telaAcessos(listas: Record<Lista, Aluna[]>, periodo: (l: Aluna[]) => string) {
+    const DEF: Record<Lista, { titulo: string; resumo: string; sub: string; vazio: string; extra: (a: Aluna) => string; acao: (a: Aluna) => string }> = {
+      vencem: {
+        titulo: "Acessos que vencem em 15 dias",
+        resumo: listas.vencem.length ? "o primeiro " + vaiVencer(listas.vencem[0]) + " · " + br(listas.vencem[0].validade) : "Nenhum vencendo",
+        sub: "Abra o acesso dela e renove por lá antes que vença.", vazio: "Nenhum acesso vencendo.",
+        extra: (a) => vaiVencer(a) + " · " + br(a.validade),
+        acao: (a) => `<button class="botao-verde" data-a="aa-aluna" data-id="${a.id}" data-v="acessos">Ver acesso</button>`,
+      },
+      parada: {
+        titulo: "Sem acesso há mais de 14 dias",
+        resumo: listas.parada.length ? p(listas.parada.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar",
+        sub: "Um recado pode trazê-la de volta.", vazio: "Ninguém parou de entrar.",
+        extra: (a) => "último acesso " + haQuanto(a.ultimoAcesso),
+        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : "",
+      },
+      comecar: {
+        titulo: "Ainda não fizeram o primeiro acesso",
+        resumo: listas.comecar.length ? p(listas.comecar.length, "aluna", "alunas") + " · " + periodo(listas.comecar) : "Todas já entraram",
+        sub: "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.", vazio: "Todas já entraram pelo menos uma vez.",
+        extra: (a) => cadastrada(a),
+        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : "",
+      },
+      novas: {
+        titulo: "Novas nesta semana",
+        resumo: listas.novas.length ? p(listas.novas.length, "cadastrada", "cadastradas") + " · " + periodo(listas.novas) : "Nenhum cadastro nos últimos 7 dias",
+        sub: "Cadastradas nos últimos 7 dias.", vazio: "Nenhum cadastro nos últimos 7 dias.",
+        extra: (a) => "entrou em " + br(a.entrada),
+        acao: () => "",
+      },
+    };
+    const ordem: Lista[] = ["vencem", "parada", "comecar", "novas"];
+    const aberta = ui.acessoLista as Lista | "";
+    const anima = ui.aaAnima; ui.aaAnima = "";
+
+    const cartao = (id: Lista) => {
+      const d = DEF[id]; const n = listas[id].length;
+      return `
+        <button type="button" class="aa-ind${aberta === id ? " sel" : ""}" data-a="aa-lista" data-v="${id}" aria-expanded="${aberta === id}" aria-controls="aaLista">
+          <span class="aa-icone">${ICONE[id]}</span>
+          <span class="aa-ind-txt"><b>${d.titulo}</b><span>${h(d.resumo)}</span></span>
+          <span class="aa-conta${n ? " tem" : ""}">${n}</span>
+          ${seta}
+        </button>`;
+    };
+
+    let lista = "";
+    if (aberta && DEF[aberta]) {
+      const d = DEF[aberta]; const l = listas[aberta];
+      lista = `
+      <div class="aa-fundo" data-a="aa-fechar-lista"></div>
+      <aside id="aaLista" class="aa-painel${anima === "lista" ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="${h(d.titulo)}">
+        <header class="aa-cab">
+          <div><h2>${d.titulo}</h2><p><span class="aa-conta tem">${l.length}</span> ${h(d.resumo)}</p></div>
+          <button type="button" class="aa-fechar" data-a="aa-fechar-lista" aria-label="Fechar a lista">${xis}</button>
+        </header>
+        <div class="aa-corpo" data-rolagem="lista-${aberta}">
+          <p class="aa-sub">${d.sub}</p>
+          ${l.map((a) => `
+          <div class="aa-item">
+            <button type="button" class="aa-item-abre" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${avatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${d.extra(a)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span></button>
+            <span class="acoes">${d.acao(a)}</span>
+            <button type="button" class="aa-item-seta" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${seta}</button>
+          </div>`).join("") || semNada(d.vazio)}
+        </div>
+      </aside>`;
+    }
+
+    return `
+    <section class="tela ativa aa">
+      <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:18px">← Voltar ao início</button>
+      <h2 class="aa-titulo">Alunas e acessos</h2>
+      <p class="aa-intro">Clique em um dos quadros para ver a lista.</p>
+      <div class="aa-grade">${ordem.map(cartao).join("")}</div>
+      ${lista}
+      ${aberta && ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
+    </section>`;
+  }
+
+  /** O cadastro completo, por cima da lista. Tudo o que vem daqui já existia na ficha. */
+  function cadastroAluna(entra: boolean) {
+    const a = S.alunas.find((x) => x.id === ui.acessoAluna);
+    if (!a) { ui.acessoAluna = null; return ""; }
+    const [rot, cor] = sitInfo(situacao(a));
+    const status = !a.ultimoAcesso && !a.bloqueada && !vencida(a) ? etiqueta("Ainda não acessou", "var(--ouro)") : etiqueta(rot, cor);
+    const ult = a.ultimaAula ? acharAula(a.ultimaAula) : null;
+    const hist = S.historico.filter((x) => x.aluna === a.id);
+    const coms = comentariosDe(a);
+    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto" };
+    const verCod = ui.verCodigo === a.id;
+    const libs = new Set(aulasDaLiberacao(a));
+    const produtos = S.cursos.map((c) => {
+      const total = c.modulos.reduce((s, m) => s + m.aulas.length, 0);
+      const n = c.modulos.reduce((s, m) => s + m.aulas.filter((k) => libs.has(k.id)).length, 0);
+      return n ? { c, n, total } : null;
+    }).filter(Boolean) as { c: Curso; n: number; total: number }[];
+    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["observacoes", "Observações"], ["historico", "Histórico"]];
+    const aba = ABAS_AL.some(([k]) => k === ui.acessoAba) ? ui.acessoAba : "geral";
+    const linha = (rotulo: string, valor: string) => `<div class="aa-dado"><span>${rotulo}</span><b>${valor}</b></div>`;
+    const resumo = (ic: string, rotulo: string, valor: string) => `<div class="aa-resumo"><span class="aa-icone pequeno">${ic}</span><span><span>${rotulo}</span><b>${valor}</b></span></div>`;
+    const notasHtml = (lim?: number) => (lim ? a.notas.slice().reverse().slice(0, lim) : a.notas.slice().reverse()).map((n) => `<div class="mini"><span class="nome"><b class="leve">${h(n.texto)}</b><span>${h(n.quem)} · ${dataHora(n.quando)}</span></span>${lim ? "" : `<span class="acoes"><button class="botao-neutro botao-remover" data-a="nota-remover" data-id="${a.id}" data-v="${n.id}">Remover</button></span>`}</div>`).join("");
+    const acoes = `
+          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
+          <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
+          <button class="botao-neutro grande" data-a="editar-aluna" data-id="${a.id}">Editar dados</button>
+          <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
+          <button class="botao-neutro grande" data-a="cronograma" data-id="${a.id}">Cronograma</button>
+          <button class="botao-neutro grande" data-a="renovar" data-id="${a.id}">Renovar</button>
+          ${a.bloqueada
+            ? `<button class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
+            : `<button class="botao-neutro grande botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}`;
+
+    let corpo = "";
+    if (aba === "geral") corpo = `
+        <div class="aa-duas">
+          <div class="aa-cartao">
+            <div class="aa-cartao-cab"><h3>Informações da aluna</h3><button type="button" class="aa-editar" data-a="editar-aluna" data-id="${a.id}">Editar</button></div>
+            ${linha("Nome completo", h(a.nome))}
+            ${linha("Login", h(a.login))}
+            ${linha("Código de acesso", `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>`)}
+            ${linha("Celular (WhatsApp)", a.celular ? h(fone(a.celular)) : "não informado")}
+            ${linha("E-mail", a.email ? h(a.email) : "não informado")}
+            ${linha("Data de cadastro", br(a.entrada))}
+            ${linha("Acesso até", vencida(a) ? "venceu em " + br(a.validade) : br(a.validade))}
+            ${linha("Status", status)}
+          </div>
+          <div class="aa-cartao">
+            <div class="aa-cartao-cab"><h3>Resumo de acesso</h3></div>
+            ${resumo(ICONE.vencem, "Entrada", br(a.entrada))}
+            ${resumo(ICONE.novas, "Aulas liberadas", p(a.liberadas, "aula", "aulas"))}
+            ${resumo(ICONE.comecar, "Último acesso", a.ultimoAcesso ? haQuanto(a.ultimoAcesso) + " (" + br(a.ultimoAcesso) + ")" : "Nunca acessou")}
+            ${resumo(ICONE.parada, "Aulas concluídas", String(a.concluidas))}
+            ${ult ? resumo(ICONE.novas, "Última aula assistida", h(localAula(ult.a.id) + " · " + ult.a.nome)) : ""}
+          </div>
+        </div>
+        <h3 class="aa-secao">Produtos e acessos</h3>
+        ${produtos.map((x) => `<div class="aa-produto"><span class="aa-icone">${`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`}</span><span class="nome"><b>${h(x.c.nome)}</b><span>${x.n === x.total ? p(x.n, "aula liberada", "aulas liberadas") : x.n + " de " + p(x.total, "aula liberada", "aulas liberadas")}</span></span>${etiqueta(rot, cor)}</div>`).join("") || semNada("Nenhum conteúdo liberado ainda.")}
+        <h3 class="aa-secao">Observações</h3>
+        <div class="aa-obs">${notasHtml(3) || semNada("Nenhuma observação registrada.")}${a.notas.length > 3 ? `<button type="button" class="link" data-a="aa-aba" data-v="observacoes">Ver todas as ${a.notas.length}</button>` : ""}</div>`;
+    else if (aba === "acessos") corpo = `
+        <div class="aa-cartao">
+          ${linha("Situação", etiqueta(rot, cor))}
+          ${linha("Entrada", br(a.entrada))}
+          ${linha("Acesso até", vencida(a) ? "venceu em " + br(a.validade) : br(a.validade))}
+          ${linha("Aulas liberadas", String(a.liberadas))}
+          ${linha("Login", h(a.login))}
+        </div>
+        <h3 class="aa-secao">Ações</h3>
+        <div class="acoes aa-acoes">${acoes}</div>`;
+    else if (aba === "progresso") corpo = `
+        <div class="numeros">
+          ${numero(a.concluidas, "Aulas concluídas")}
+          ${numero(a.liberadas, "Aulas liberadas")}
+        </div>
+        <div class="aa-cartao"><div class="aa-cartao-cab"><h3>Progresso por módulo</h3></div><p class="sub">Aulas concluídas em cada módulo liberado.</p>${progressoModulos(a)}</div>
+        ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
+    else if (aba === "observacoes") corpo = `
+        <div class="aa-cartao">
+          <div class="aa-cartao-cab"><h3>Anotações internas</h3></div>
+          <p class="sub">Só a equipe vê.</p>
+          <form data-f="nota" data-id="${a.id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:6px">
+            <textarea class="campo" name="texto" rows="2" placeholder="Ex.: pediu ajuda com o celular" required></textarea>
+            <div><button class="botao-neutro grande">Adicionar anotação</button></div>
+          </form>
+          ${notasHtml() || semNada("Nenhuma anotação.")}
+        </div>
+        ${a.contatos.length ? `<h3 class="aa-secao">Contatos registrados</h3><div class="aa-cartao">${a.contatos.slice().reverse().map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}</div>` : ""}`;
+    else corpo = `
+        <div class="aa-cartao">
+          <p class="sub">Tudo o que aconteceu com esta aluna, do mais recente ao mais antigo.</p>
+          ${hist.length ? `<ul class="tempo">${hist.map((x) => `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}</p></li>`).join("")}</ul>` : semNada("Nada registrado ainda.")}
+        </div>`;
+
+    return `
+      <div class="aa-fundo dois" data-a="aa-fechar-aluna"></div>
+      <aside class="aa-painel largo${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Cadastro de ${h(a.nome)}">
+        <header class="aa-cab">
+          <div class="aa-quem">${avatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.entrada)}</p></div></div>
+          <span class="aa-cab-dir">${status}<button type="button" class="aa-fechar" data-a="aa-fechar-aluna" aria-label="Fechar o cadastro e voltar à lista">${xis}</button></span>
+        </header>
+        <nav class="aa-abas" role="tablist">${ABAS_AL.map(([k, n]) => `<button type="button" role="tab" class="aa-aba" data-a="aa-aba" data-v="${k}" aria-selected="${k === aba}">${n}</button>`).join("")}</nav>
+        <div class="aa-corpo" data-rolagem="aluna-${a.id}-${aba}">${corpo}</div>
+      </aside>`;
   }
 
   /* ---------- FICHA ---------- */
@@ -1568,10 +1777,15 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     if (a !== "menu") ui.menu = null;
     if (a !== "ajuda") ui.ajuda = null;
     switch (a) {
-      case "inicio-acessos": ui.inicioVista = "acessos"; window.scrollTo(0, 0); break;
-      case "inicio-voltar": ui.inicioVista = ""; window.scrollTo(0, 0); break;
+      case "inicio-acessos": ui.inicioVista = "acessos"; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
+      case "inicio-voltar": ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
+      case "aa-lista": if (ui.acessoLista !== d.v) ui.aaAnima = "lista"; ui.acessoLista = d.v; ui.acessoAluna = null; break;
+      case "aa-fechar-lista": if (a === "aa-fechar-lista" && alvo !== el && el.classList.contains("aa-fundo")) return; ui.acessoLista = ""; ui.acessoAluna = null; break;
+      case "aa-aluna": ui.acessoAluna = d.id; ui.acessoAba = d.v || "geral"; ui.aaAnima = "aluna"; break;
+      case "aa-fechar-aluna": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.acessoAluna = null; break;
+      case "aa-aba": ui.acessoAba = d.v; break;
       case "aba":
-        ui.inicioVista = "";
+        ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
         window.scrollTo(0, 0);
@@ -2372,8 +2586,13 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     const av = document.getElementById("avisoSujo"); if (av) { av.remove(); return; }
     if (ui.buscaAberta) { ui.buscaAberta = false; atualizarBusca(); return; }
     if (ui.menu || ui.ajuda) { ui.menu = null; ui.ajuda = null; render(); return; }
-    if (ui.modal) guardado("fechar-esc", {}, null, null);
+    if (ui.modal) { guardado("fechar-esc", {}, null, null); return; }
+    if (ui.tab === "inicio" && ui.inicioVista === "acessos" && (ui.acessoAluna || ui.acessoLista)) {
+      if (ui.acessoAluna) ui.acessoAluna = null; else ui.acessoLista = "";
+      render();
+    }
   });
+  window.addEventListener("resize", ajustarListaLateral);
   document.addEventListener("focusin", (e) => { if ((e.target as HTMLElement).id === "buscaGeral" && ui.buscaGeral.trim()) { ui.buscaAberta = true; atualizarBusca(); } });
   window.addEventListener("beforeunload", (e) => { if (ui.sujo && formSujo()) { e.preventDefault(); e.returnValue = ""; } });
 
