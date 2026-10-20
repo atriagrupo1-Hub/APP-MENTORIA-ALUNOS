@@ -1,0 +1,1404 @@
+// @ts-nocheck
+/*
+ * A área da aluna: a maquete aprovada ("Área de Membros AION - maquete.html")
+ * ligada ao banco, sem React — o mesmo caminho que o painel seguiu.
+ *
+ * O desenho, os textos e o comportamento são os da maquete. O que muda é
+ * de onde vêm as coisas: catálogo, liberação, progresso, vídeo e
+ * comentários vêm do Supabase, que é a única autoridade. No aparelho
+ * ficam só preferências da própria aluna (tema, tamanho da letra, foto e
+ * cor do círculo) — nada que libere ou bloqueie conteúdo.
+ */
+import "./area.css";
+import { supabase } from "../data/supabase";
+import * as api from "../data/api";
+
+export function montar(raiz: HTMLElement) {
+  raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
+  const app = raiz.querySelector("#app") as HTMLElement;
+  const camada = raiz.querySelector("#camada") as HTMLElement;
+
+  /* ---------- utilidades da maquete ---------- */
+  const HOJE = new Date();
+  const dataCurta = (d) => { d = new Date(d); return String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0"); };
+  const h = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const p = (n, um, varios) => n + " " + (n === 1 ? um : varios);
+  const capaUrl = (caminho) => (caminho ? api.urlDaCapa(caminho) || "" : "");
+  const img = (src, alt) => (src ? `<img src="${h(src)}" alt="${h(alt)}" loading="lazy" onerror="this.remove()" />` : "");
+  const titulo = (t) => { t = String(t || ""); return t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t; };
+  const CORES_MOD = ["#e6b85a", "#ff5a4f", "#4ea6ff", "#b47cff", "#8ec5ff", "#b5d66b", "#f5a64a", "#4f8cff", "#ff6fa3", "#f0b45c", "#e6b85a"];
+  const CORES_CAT = ["#d4b170", "#6fcb94", "#d99a6c", "#8fb2e8", "#b9a0e8"];
+  const CORES_NOME = [["#f2b01e", "Dourado"], ["#ffe000", "Amarelo"], ["#ff6a00", "Laranja"], ["#ff1f8f", "Rosa"], ["#0057ff", "Azul"], ["#000000", "Preto"], ["#ffffff", "Branco"]];
+  const CORES_OUTRAS = ["#e07a9a", "#5aa0e6", "#4fbf86", "#a98be6", "#d4a94e", "#e6955a", "#5fc0c0"];
+  const corDe = (txt) => { let n = 0; for (const c of String(txt || "")) n = (n * 31 + c.charCodeAt(0)) >>> 0; return CORES_OUTRAS[n % CORES_OUTRAS.length]; };
+  const TAM = [17, 18.5, 20, 21.5];
+  const NOMES_TAM = ["Normal", "Grande", "Maior", "Máxima"];
+  const quandoTxt = (iso) => {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 3600) return "há " + Math.max(1, Math.round(s / 60)) + " min";
+    if (s < 86400) return "há " + Math.round(s / 3600) + (Math.round(s / 3600) === 1 ? " hora" : " horas");
+    const d = Math.round(s / 86400); return "há " + d + (d === 1 ? " dia" : " dias");
+  };
+  const mmss = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+
+  /* ---------- preferências do aparelho ---------- */
+  const ler = (k, padrao) => { try { const v = localStorage.getItem(k); return v == null ? padrao : v; } catch { return padrao; } };
+  const gravar = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* sem armazenamento */ } };
+
+  /* ---------- estado ---------- */
+  const ini = () => ({
+    entrou: false, carregando: true, nome: "", tela: "inicio", mod: 0, aula: 0, presente: null,
+    origemMod: "inicio", rolagemOrigem: 0, comsFechado: false, comTodos: {}, respTodas: {}, corNome: ler("aion-cor-nome", "#f2b01e"),
+    velocidade: "Normal", letra: Math.min(3, Math.max(0, parseInt(ler("aion-letra", "0"), 10) || 0)), tema: ler("aion-tema", "escuro") === "claro" ? "claro" : "escuro",
+    meus: {}, rascunho: "", tocando: false, abaAula: "sobre", fim: {}, modFim: {}, mudo: false,
+    foto: "", fotoOrig: null, coms: {}, videos: {},
+  });
+  let S = ini();
+  let D = null; // dados vindos do banco
+
+  /* ---------- dados ---------- */
+  async function carregar() {
+    const [perfil, cat, libs, abert] = await Promise.all([api.meuPerfil(), api.carregarCatalogo(), api.minhasAulas(), api.minhasAberturas().catch(() => new Map())]);
+    const prog = new Map(libs.map((l) => [l.aulaId, l]));
+    const jornada = cat.produtoJornada;
+    const mods = cat.modulos
+      .filter((m) => (jornada ? m.produtoId === jornada : true))
+      .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
+      .map((m) => ({
+        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", capa: capaUrl(`modulo-${m.numero}.webp`),
+        aulas: m.aulas.slice().sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
+          id: a.id, titulo: a.titulo, texto: a.texto || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
+        })),
+      }));
+    // Presentes: as categorias que não são a da jornada, cada uma com seus produtos.
+    const prodJ = cat.produtos.find((x) => x.id === jornada);
+    const semModulo = cat.produtos.filter((x) => x.id !== jornada && !x.modulos.length).map((x) => x.id);
+    const prodLib = await api.produtosLiberados(semModulo).catch(() => new Set());
+    const cats = cat.categorias
+      .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada))
+      .map((c) => ({
+        id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
+        cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
+          id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: capaUrl(x.capaPath), conteudos: x.conteudos || [],
+          liberadoDireto: prodLib.has(x.id),
+          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.slice().sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, titulo: a.titulo, texto: a.texto || "", capa: capaUrl(a.capaPath) })),
+        })),
+      }));
+    D = { perfil, mods, cats, prog, abert, user: perfil?.id };
+    S.nome = perfil?.nome || "";
+    S.foto = ler("aion-foto-" + (perfil?.id || ""), "") || "";
+    try { S.fotoOrig = JSON.parse(ler("aion-foto-orig-" + (perfil?.id || ""), "null")); } catch { S.fotoOrig = null; }
+  }
+
+  const MODS = () => (D ? D.mods : []);
+  const agora = () => Date.now();
+  const aulaAdmin = (id) => { if (!D || !D.prog.has(id)) return false; const ab = D.abert.get(id); return !ab || new Date(ab).getTime() <= agora(); };
+  const aberturaDe = (id) => { const ab = D && D.abert.get(id); return ab && new Date(ab).getTime() > agora() ? ab : null; };
+  const feitaId = (id) => !!(D && D.prog.get(id)?.concluida);
+  const feita = (m, a) => feitaId(MODS()[m].aulas[a].id);
+  const posicaoId = (id) => { const l = D && D.prog.get(id); if (!l || !l.duracaoSegundos) return 0; return Math.min(1, (l.posicaoSegundos || 0) / l.duracaoSegundos); };
+  const posicao = (m, a) => posicaoId(MODS()[m].aulas[a].id);
+  const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
+  const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
+  const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
+  // O módulo abre quando o painel libera e o anterior está concluído (a regra da maquete).
+  const liberado = (m) => moduloAdmin(m) && (m === 0 || modConcluido(m - 1));
+  const abre = (m) => { const ds = MODS()[m].aulas.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
+  const total = () => MODS().reduce((s, x) => s + x.aulas.length, 0);
+  function continuar() {
+    if (!D) return null;
+    let melhor = null;
+    for (const [id, l] of D.prog) {
+      if (!l.atualizadaEm || l.concluida) continue;
+      if (!melhor || l.atualizadaEm > melhor.t) melhor = { id, t: l.atualizadaEm };
+    }
+    if (melhor) for (let m = 0; m < MODS().length; m++) { const a = MODS()[m].aulas.findIndex((x) => x.id === melhor.id); if (a >= 0 && liberado(m)) return { m, a }; }
+    for (let m = 0; m < MODS().length; m++) {
+      if (!liberado(m)) continue;
+      for (let a = 0; a < MODS()[m].aulas.length; a++) if (!feita(m, a) && aulaAdmin(MODS()[m].aulas[a].id)) return { m, a };
+    }
+    return null;
+  }
+  function estadoAula(m, a) {
+    const id = MODS()[m].aulas[a].id;
+    if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
+    if (!aulaAdmin(id)) return { cls: "fechado", txt: aberturaDe(id) ? "Libera em " + dataCurta(aberturaDe(id)) : "Em breve", fech: true };
+    if (feita(m, a)) return { cls: "ok", txt: "✓ Concluída" };
+    if (a > 0 && !feita(m, a - 1)) return { cls: "fechado", txt: "Conclua a Aula " + a + " para liberar", fech: true, seq: true };
+    if (posicao(m, a) > 0) return { cls: "andando", txt: "Em andamento" };
+    return { cls: "livre", txt: "Disponível" };
+  }
+  function estadoMod(m) {
+    const t = MODS()[m].aulas.length;
+    if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
+    const n = feitasMod(m);
+    if (t && n === t) return { cls: "ok", txt: "✓ Módulo concluído" };
+    if (n > 0) return { cls: "andando", txt: n + " de " + t + " aulas feitas" };
+    return { cls: "livre", txt: "Disponível · " + p(t, "aula", "aulas") };
+  }
+  const msgModFechado = (m) => (m > 0 && moduloAdmin(m) && !modConcluido(m - 1) ? "Desbloqueia assim que você concluir o Módulo " + MODS()[m - 1].num : abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve");
+
+  /* ---------- ícones (da maquete) ---------- */
+  const ICONES = {
+    inicio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+    modulos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="18" height="6" rx="1.5"/></svg>',
+    presentes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>',
+    perfil: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>',
+    curtido: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>',
+    pausa: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1"/><rect x="14" y="4.5" width="4" height="15" rx="1"/></svg>',
+    volume: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+    mudo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>',
+    engrenagem: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke-linecap="round"/></svg>',
+    telaCheia: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>',
+    livro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 5.5c3-1.3 6-1.3 9 .5v13c-3-1.8-6-1.8-9-.5zM21 5.5c-3-1.3-6-1.3-9 .5v13c3-1.8 6-1.8 9-.5z"/></svg>',
+    material: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>',
+    balao: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-4 3.5V16H4z"/></svg>',
+    enviar: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 11.2L20 4.5l-6.7 16.5-2.3-7.1z"/></svg>',
+    seta_esq: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 5l-7 7 7 7"/></svg>',
+    chev_esq: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+    chev_dir: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>',
+    cadeado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+    refazer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>',
+    trofeu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>',
+    coroa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>',
+  };
+  const NAV = [["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"]];
+  const navAtual = () => ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela;
+  const NOME_ORIGEM = { inicio: "Início", modulos: "Módulos", perfil: "Perfil", presentes: "Presentes" };
+  const avTopo = () => (S.foto ? `<img src="${S.foto}" alt="" />` : h((S.nome || "?").trim().charAt(0).toUpperCase()));
+  const avCom = (nome, cor, foto, pq) => foto
+    ? `<span class="av av-c av-foto${pq ? " pq" : ""}" style="--c:${cor}" aria-hidden="true"><img src="${h(foto)}" alt="" onerror="this.remove()" /></span>`
+    : `<span class="av av-c${pq ? " pq" : ""}" style="--c:${cor}" aria-hidden="true">${h(String(nome || "?").trim().charAt(0).toUpperCase())}</span>`;
+  const controleLetra = () => `<div class="tamanho"><button data-a="letra-menos" aria-label="Diminuir a letra" ${S.letra <= 0 ? "disabled" : ""}>A−</button><span aria-live="polite"><b>Aa</b>${NOMES_TAM[S.letra]}</span><button data-a="letra-mais" aria-label="Aumentar a letra" ${S.letra >= TAM.length - 1 ? "disabled" : ""}>A+</button></div>`;
+  const cabMp = (voltar, rotulo) => `
+    <header class="mp-cab">
+      <button class="mp-voltar" ${voltar} aria-label="Voltar para ${h(rotulo)}"><span aria-hidden="true">‹</span>Voltar</button>
+      <button class="mp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início"><b>Mentoria</b><span>Área de Alunos</span></button>
+      <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
+    </header>`;
+
+  /* ---------- desenho ---------- */
+  function render() {
+    const cfgAntes = app.querySelector(".config-corpo");
+    const cfgTopo = cfgAntes ? cfgAntes.scrollTop : null;
+    const pagTopo = window.scrollY;
+    try { renderReal(); } finally {
+      const cfg = app.querySelector(".config");
+      if (cfg && cfgTopo !== null) { cfg.classList.add("sem-anim"); const c = cfg.querySelector(".config-corpo"); if (c) c.scrollTop = cfgTopo; window.scrollTo(0, pagTopo); }
+      encaixarVideo();
+    }
+  }
+  function renderReal() {
+    if (!Number.isInteger(S.letra) || S.letra < 0 || S.letra >= TAM.length) S.letra = 0;
+    document.documentElement.style.fontSize = TAM[S.letra] + "px";
+    document.documentElement.setAttribute("data-tema", S.tema === "claro" ? "claro" : "escuro");
+    if (S.carregando) { document.body.classList.add("sem-nav"); app.innerHTML = `<div class="entrada"><div class="ent-col"><p class="apoio" style="text-align:center">Carregando…</p></div></div>`; return; }
+    if (!S.entrou && S.saiu) { document.body.classList.add("sem-nav"); app.innerHTML = telaSaiu(); return; }
+    if (!S.entrou) { document.body.classList.add("sem-nav"); app.innerHTML = telaEntrada(); return; }
+    document.body.classList.remove("sem-nav");
+    const telas = { inicio: telaInicio, modulos: telaModulos, modulo: telaModulo, aula: telaAula, presentes: telaPresentes, categoria: telaCategoria, cursoPres: telaCursoPres, presente: telaPresente, perfil: telaPerfil, jornada: telaJornada, leitor: telaLeitor };
+    if (!telas[S.tela]) S.tela = "inicio";
+    const n = navAtual();
+    app.innerHTML = `
+      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
+        <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início"><b>Mentoria</b><span>Área de Alunos</span></button>
+        <nav class="nav-topo" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
+        <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
+      </div></header>`}
+      <main>${telas[S.tela]()}</main>
+      ${S.tela === "leitor" ? "" : `<nav class="nav-base" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${ICONES[id]}${t}</button>`).join("")}</nav>`}`;
+  }
+
+  function telaEntrada() {
+    return `
+    <div class="entrada"><div class="ent-col">
+      <div class="ent-marca">
+        <span class="ent-logo">
+          <img src="/marca-aion.png" alt="AIŌN" onerror="this.remove()" />
+          <span class="ent-logo-txt serif" aria-hidden="true">AIŌN</span>
+        </span>
+        <p class="ent-sobre">Mentoria</p>
+        <p class="ent-nome serif">CAMINHO DO DESBLOQUEIO</p>
+        <p class="ent-nome serif">PARA BÊNÇÃOS ILIMITADAS</p>
+      </div>
+      <form class="ent-cartao" data-f="entrar" novalidate>
+        <h1>Bem-vindo(a)</h1>
+        <label class="ent-rot" for="nome">Seu nome</label>
+        <div class="ent-campo">
+          <span class="ent-ic" aria-hidden="true"><span class="cab"></span><span class="corpo"></span></span>
+          <input id="nome" name="nome" autocomplete="username" placeholder="Digite seu nome" value="${h(S.nomeDigitado || "")}" />
+        </div>
+        <label class="ent-rot" for="codigo">Seu código</label>
+        <div class="ent-campo">
+          <span class="ent-ic cad" aria-hidden="true"><span class="arco"></span><span class="caixa"></span></span>
+          <input id="codigo" name="codigo" class="ent-cod" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Digite seu código" type="${S.verCodigo ? "text" : "password"}" />
+          <button type="button" class="ent-olho" data-a="ver-codigo" aria-pressed="${!!S.verCodigo}" aria-label="${S.verCodigo ? "Ocultar código" : "Mostrar código"}"><span class="${S.verCodigo ? "vazio" : ""}"></span></button>
+        </div>
+        ${S.erroEntrada ? `<p class="erro" role="alert">${h(S.erroEntrada)}</p>` : ""}
+        <button class="ent-entrar" ${S.entrando ? "disabled" : ""}>${S.entrando ? "Entrando…" : "Entrar na mentoria"}<span aria-hidden="true">→</span></button>
+        <p class="ent-nota" style="margin-top:20px">Acesso reservado às alunas da mentoria.</p>
+      </form>
+      <div class="ent-selos">
+        <span><i>✓</i>Acesso protegido</span>
+        <span><i>⌘</i>Dados privados</span>
+        <span><i>♦</i>Turma verificada</span>
+      </div>
+    </div></div>`;
+  }
+
+  function linhaModulo(m, irModulo) {
+    const md = MODS()[m], e = estadoMod(m), n = feitasMod(m), t = md.aulas.length;
+    const aberto = !!(S.verAulas || {})[m];
+    const COR = CORES_MOD[m % CORES_MOD.length];
+    const meta = `<p class="mc-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>${t ? p(t, "aula", "aulas") : "Aula será adicionada em breve"}</span></p>`;
+    if (e.fech) {
+      const msg = msgModFechado(m);
+      return `
+    <div class="mod-bloco mc mc-tranc" style="--mc:${COR}">
+      <button class="mc-top" data-a="modulo" data-m="${m}" aria-label="Módulo ${md.num}, ${h(titulo(md.titulo))}. Bloqueado. ${h(msg)}.">
+        <span class="mc-capa" aria-hidden="true">${img(md.capa, "")}</span>
+        <span class="mc-info" aria-hidden="true">
+          <span class="mc-rot">Módulo ${md.num}</span>
+          <b class="mc-tit serif">${h(titulo(md.titulo))}</b>
+          ${meta}
+        </span>
+        <span class="tranca-veu" aria-hidden="true">
+          <span class="tranca-ic">${ICONES.cadeado}</span>
+          <span class="tranca-txt"><b>Módulo ${md.num} · ${h(titulo(md.titulo))}</b><span>${h(msg)}</span></span>
+        </span>
+      </button>
+    </div>`;
+    }
+    return `
+    <div class="mod-bloco mc" style="--mc:${COR}">
+      <div class="mc-top">
+        <button class="mc-capa" data-a="modulo" data-m="${m}" aria-label="Abrir o Módulo ${md.num}">${img(md.capa, "")}</button>
+        <div class="mc-info">
+          <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">Módulo ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
+          ${meta}
+          ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
+          ${irModulo
+            ? `<button class="ex-botao mc-ver-grande" data-a="modulo" data-m="${m}">Ver aulas</button>`
+            : t ? `<button class="mc-ver ver-aulas" data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}<span aria-hidden="true">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
+        </div>
+      </div>
+    ${irModulo || !t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
+      <button class="la-item${ea.fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
+        <span class="la-capa">${img(x.capa, "")}<span class="la-ic">${ea.fech ? '<span class="cadeado"></span>' : feita(m, i) ? "✓" : ""}</span></span>
+        <span class="la-info"><b>Módulo ${md.num} · Aula ${i + 1}</b><span>${h(x.titulo)}</span>${ea.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ea.txt)}</span>` : `<em>${feita(m, i) ? "Concluída" : "Disponível"}</em>`}</span>
+        ${ea.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
+      </button>`; }).join("")}</div></div>`}
+    </div>`;
+  }
+
+  const VERSICULOS = [
+    ["Não vos conformeis com este mundo, mas transformai-vos pela renovação do vosso entendimento.", "Romanos 12:2"],
+    ["Se alguém está em Cristo, nova criatura é; as coisas velhas já passaram; eis que tudo se fez novo.", "2 Coríntios 5:17"],
+    ["Eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz e não de mal, para vos dar o fim que esperais.", "Jeremias 29:11"],
+    ["Porque, como imaginou na sua alma, assim é.", "Provérbios 23:7"],
+    ["Eis que faço uma coisa nova; agora sairá à luz; porventura não a percebeis?", "Isaías 43:19"],
+    ["Posso todas as coisas naquele que me fortalece.", "Filipenses 4:13"],
+    ["Fazei prova de mim, diz o Senhor dos Exércitos, se eu não vos abrir as janelas do céu e não derramar sobre vós uma bênção.", "Malaquias 3:10"],
+    ["Assim também a fé, se não tiver as obras, é morta em si mesma.", "Tiago 2:17"],
+    ["A morte e a vida estão no poder da língua.", "Provérbios 18:21"],
+    ["Tudo o que pedirdes, orando, crede que o recebereis, e tê-lo-eis.", "Marcos 11:24"],
+    ["Àquele que é poderoso para fazer tudo muito mais abundantemente além daquilo que pedimos ou pensamos.", "Efésios 3:20"],
+    ["Os que esperam no Senhor renovarão as suas forças; subirão com asas como águias.", "Isaías 40:31"],
+    ["Tudo o que é verdadeiro, tudo o que é amável, tudo o que é de boa fama, nisso pensai.", "Filipenses 4:8"],
+    ["Amado, desejo que te vá bem em todas as coisas e que tenhas saúde, assim como bem vai a tua alma.", "3 João 1:2"],
+  ];
+  function versiculoHoje() {
+    const dia = Math.floor((HOJE - new Date(HOJE.getFullYear(), 0, 0)) / 864e5);
+    const [txt, ref] = VERSICULOS[dia % VERSICULOS.length];
+    return `
+          <figure class="vers" aria-label="Versículo de hoje">
+            <p class="vers-rot"><span aria-hidden="true"></span>Versículo de hoje<span aria-hidden="true"></span></p>
+            <blockquote class="vers-txt serif">“${h(txt)}”</blockquote>
+            <figcaption class="vers-ref">${h(ref)}</figcaption>
+          </figure>`;
+  }
+
+  function telaInicio() {
+    const primeiraVez = !D || ![...D.prog.values()].some((l) => l.atualizadaEm || l.concluida);
+    const c = continuar();
+    const primeiro = (S.nome || "").split(" ")[0];
+    let heroi = "";
+    if (c) {
+      const md = MODS()[c.m], ps = posicao(c.m, c.a);
+      heroi = `
+      <section class="heroi" aria-labelledby="h-cont">
+        <button class="capa" data-a="aula" data-m="${c.m}" data-i="${c.a}" style="border:0;padding:0;width:100%" aria-label="Assistir a aula">${img(md.aulas[c.a].capa, "")}<span class="play-capa"></span></button>
+        <div class="corpo">
+          <p class="onde-parou">Módulo ${md.num} · Aula ${c.a + 1}</p>
+          <h2 class="serif" id="h-cont">${h(md.aulas[c.a].titulo)}</h2>
+          ${ps > 0 ? `<div class="barra"><i style="width:${ps * 100}%"></i></div><p class="apoio">Em andamento</p>` : ""}
+          <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}"><span class="ic-play"></span>Continuar assistindo</button>
+        </div>
+      </section>`;
+    } else heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. As próximas aparecem aqui assim que forem liberadas.</div>`;
+    const cardsExtra = `
+      <section class="ex-card vivo" aria-labelledby="h-vivo">
+        <span class="ex-img ex-ph"><span class="ex-ph-txt">arte do cartão<br>Aulas ao vivo</span>${img("/inicio/aulas-ao-vivo.png", "")}</span>
+        <div class="ex-info">
+          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Aulas ao vivo</p>
+          <h2 class="serif" id="h-vivo">Encontros ao vivo</h2>
+          <p class="ex-desc">Um encontro ao vivo em cada módulo, para tirar dúvidas e seguir junto com a mentoria.</p>
+          <button class="ex-botao" data-a="ir" data-v="modulos">Ver aulas ao vivo</button>
+        </div>
+      </section>
+      <section class="ex-card mestres" aria-labelledby="h-mestres">
+        <span class="ex-img">${img("/inicio/jornada.png", "")}</span>
+        <div class="ex-info">
+          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg>Mestres espirituais</p>
+          <h2 class="serif" id="h-mestres">Mestres espirituais secretos</h2>
+          <p class="ex-desc">Coleção de vídeos gravados e escondidos em VHS, que nunca foram ao ar na internet.</p>
+          <p class="ex-alerta">Conteúdo proibido em 89 países</p>
+          <button class="ex-botao mestres-botao" data-a="ir-cat" data-v="Mestres espirituais">Ver os vídeos ocultos</button>
+        </div>
+      </section>
+      <section class="ex-card pres" aria-labelledby="h-pres">
+        <span class="ex-img">${img("/inicio/presentes.png", "")}</span>
+        <div class="ex-info">
+          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>Seus presentes</p>
+          <h2 class="serif" id="h-pres">Acesse seus presentes</h2>
+          <p class="ex-desc">Materiais especiais, bônus e conteúdos exclusivos para acelerar sua transformação.</p>
+          <button class="ex-botao" data-a="ir" data-v="presentes">Ver presentes</button>
+        </div>
+      </section>
+      <section class="ex-card doc" aria-labelledby="h-doc">
+        <span class="ex-img ex-ph"><span class="ex-ph-txt">arte do cartão<br>Documentários</span>${img("/inicio/documentarios.png", "")}</span>
+        <div class="ex-info">
+          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/></svg>Documentários</p>
+          <h2 class="serif" id="h-doc">Assista aos documentários</h2>
+          <p class="ex-desc">Histórias reais e conteúdos que aprofundam a sua jornada, para assistir com calma.</p>
+          <button class="ex-botao" data-a="ir-cat" data-v="Documentários">Ver documentários</button>
+        </div>
+      </section>`;
+    if (primeiraVez && MODS().length) {
+      return `
+      <div class="pa">
+        <section class="pa-ola">
+          <h1 class="pa-nome serif"><span class="pa-saud">Bem-vinda,</span> ${h(primeiro)}</h1>
+          ${versiculoHoje()}
+        </section>
+        <section class="pa-comece-mc" aria-labelledby="h-comece">
+          <p class="pa-rot" id="h-comece">Comece por aqui</p>
+          <div class="lista">${linhaModulo(0, true)}</div>
+        </section>
+        ${cardsExtra}
+      </div>`;
+    }
+    return `
+    <div class="pa">
+      <section class="pa-ola">
+        <h1 class="pa-nome serif"><span class="pa-saud">Bem-vinda,</span> ${h(primeiro)}</h1>
+        <p class="pa-intro">Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.</p>
+        ${versiculoHoje()}
+      </section>
+      <section class="pa-comece-mc" aria-labelledby="h-cont-rot">
+        <p class="pa-rot" id="h-cont-rot">Continue de onde parou</p>
+        ${heroi}
+      </section>
+      ${cardsExtra}
+    </div>`;
+  }
+
+  function telaModulos() {
+    return `
+    <div class="pagina">
+      <h1 class="todos-mod serif">Todos os módulos</h1>
+      <div class="grade-mod">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
+    </div>`;
+  }
+
+  function telaModulo() {
+    const m = S.mod, md = MODS()[m];
+    if (!md) { S.tela = "modulos"; return telaModulos(); }
+    const n = feitasMod(m), t = md.aulas.length;
+    const c = md.aulas.findIndex((_, a) => !feita(m, a));
+    const pct = t ? Math.round((n / t) * 100) : 0;
+    const COR = CORES_MOD[m % CORES_MOD.length];
+    const cardAula = (a) => {
+      const e = estadoAula(m, a), ps = posicao(m, a), feitaA = feita(m, a);
+      return `
+        <button class="la-item${e.fech ? " fechada" : ""}${a === c ? " atual" : ""}" data-a="aula" data-m="${m}" data-i="${a}">
+          <span class="la-capa">${img(md.aulas[a].capa, "")}<span class="la-ic">${e.fech ? '<span class="cadeado"></span>' : feitaA ? "✓" : ""}</span>${ps > 0 && !feitaA ? `<span class="mp-visto"><i style="width:${ps * 100}%"></i></span>` : ""}</span>
+          <span class="la-info"><b>Módulo ${md.num} · Aula ${a + 1}</b><span>${h(md.aulas[a].titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${feitaA ? "Concluída" : "Disponível"}</em>`}</span>
+          ${e.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
+        </button>`;
+    };
+    const proxFech = m < MODS().length - 1 && !liberado(m + 1);
+    return `
+    ${cabMp(`data-a="voltar-mod"`, NOME_ORIGEM[S.origemMod] || "Início")}
+    <div class="mp mv" style="--mc:${COR}">
+      <section class="mv-topo" aria-labelledby="h-mod">
+        <span class="mv-capa-mod">${img(md.capa, "Módulo " + md.num + " — " + titulo(md.titulo))}</span>
+        <div class="mv-txt">
+          <p class="mv-rot">Módulo ${md.num}<span aria-hidden="true"></span></p>
+          <h1 class="serif mv-tit" id="h-mod">${h(md.titulo)}</h1>
+          <span class="mv-linha" aria-hidden="true"></span>
+          <p class="mv-desc">${h(md.intro)}</p>
+        </div>
+      </section>
+      <div class="mv-ind">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><span><b>${p(t, "aula", "aulas")}</b><em>neste módulo</em></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><span><b>1 aula ao vivo</b><em>data a confirmar</em></span></div>
+      </div>
+      <section class="mv-prog" aria-label="Progresso do módulo">
+        <div class="mv-prog-topo"><span>Progresso do módulo</span><b>${pct}%</b></div>
+        <div class="barra"><i style="width:${pct}%"></i></div>
+        <p>${n} de ${p(t, "aula concluída", "aulas concluídas")}</p>
+      </section>
+      ${!liberado(m) ? `<div class="mp-fechado"><span class="cadeado"></span>${h(msgModFechado(m))}.</div>` : ""}
+      <section class="mv-aulas" aria-labelledby="h-aulas">
+        <div class="mv-aulas-topo"><h2 id="h-aulas">Aulas do módulo</h2><span>${p(t, "aula", "aulas")}</span></div>
+        <div class="mv-lista">${t ? md.aulas.map((_, a) => cardAula(a)).join("") : `<div class="vazio">Aula será adicionada em breve.</div>`}</div>
+      </section>
+      <div class="mv-entre">
+        <button data-a="modulo" data-m="${m - 1}" ${m === 0 ? "disabled" : ""}>${ICONES.chev_esq}Módulo anterior</button>
+        <button data-a="modulo" data-m="${m + 1}" ${m === MODS().length - 1 ? "disabled" : ""}${proxFech ? ' class="tranc"' : ""}>${proxFech ? ICONES.cadeado : ""}Próximo módulo${ICONES.chev_dir}</button>
+      </div>
+    </div>`;
+  }
+
+  /* ---------- o player (vídeo de verdade, nos controles da maquete) ---------- */
+  let VID = null; // o <video> da aula aberta; sobrevive aos redesenhos
+  let VID_ID = null; // de qual aula ele é
+  let hlsAtual = null;
+  let ultimaGravacao = 0;
+  let renovou = false;
+  function pararVideo() {
+    if (VID) { try { gravarPosicao(true); VID.pause(); } catch { /* */ } }
+    if (hlsAtual) { try { hlsAtual.destroy(); } catch { /* */ } hlsAtual = null; }
+    VID = null; VID_ID = null; S.tocando = false;
+  }
+  const parar = () => { if (VID) VID.pause(); S.tocando = false; };
+  function gravarPosicao(agoraJa) {
+    if (!VID || !VID_ID || !Number.isFinite(VID.duration)) return;
+    const t = VID.currentTime;
+    if (!agoraJa && Math.abs(t - ultimaGravacao) < 5) return;
+    ultimaGravacao = t;
+    const l = D.prog.get(VID_ID); if (l) { l.posicaoSegundos = t; l.duracaoSegundos = l.duracaoSegundos || VID.duration; l.atualizadaEm = new Date().toISOString(); }
+    void api.salvarPosicao(VID_ID, t).catch(() => {});
+  }
+  async function pedirVideo(aulaId) {
+    if (S.videos[aulaId] !== undefined) return S.videos[aulaId];
+    try { const v = await api.videoDaAula(aulaId); S.videos[aulaId] = v && v.ref ? v.ref : ""; }
+    catch { S.videos[aulaId] = null; }
+    return S.videos[aulaId];
+  }
+  function ligarFonte(ref) {
+    const url = `https://videodelivery.net/${ref}/manifest/video.m3u8`;
+    if (VID.canPlayType("application/vnd.apple.mpegurl")) { VID.src = url; return; }
+    void import("hls.js").then(({ default: Hls }) => {
+      if (!VID) return;
+      if (!Hls.isSupported()) { VID.src = url; return; }
+      const hls = new Hls({ enableWorker: true }); hlsAtual = hls;
+      hls.on(Hls.Events.ERROR, (_e, dados) => { if (dados.fatal) void renovarVideo(); });
+      hls.loadSource(url); hls.attachMedia(VID);
+    });
+  }
+  async function renovarVideo() {
+    if (renovou || !VID_ID) { aviso("Não conseguimos carregar este vídeo agora. Tente de novo."); return; }
+    renovou = true; const id = VID_ID; const t = VID ? VID.currentTime : 0;
+    delete S.videos[id]; const ref = await pedirVideo(id);
+    if (!ref || !VID) return;
+    if (hlsAtual) { try { hlsAtual.destroy(); } catch { /* */ } hlsAtual = null; }
+    ligarFonte(ref); VID.addEventListener("loadedmetadata", () => { VID.currentTime = t; void VID.play().catch(() => {}); }, { once: true });
+  }
+  async function tocar(aulaId) {
+    const ref = await pedirVideo(aulaId);
+    if (!ref) { render(); if (ref === null) aviso("Não conseguimos carregar este vídeo agora. Tente de novo."); return; }
+    if (VID && VID_ID === aulaId) { await VID.play().catch(() => {}); return; }
+    pararVideo();
+    renovou = false;
+    VID = document.createElement("video"); VID_ID = aulaId;
+    VID.setAttribute("playsinline", ""); VID.className = "aula-video";
+    VID.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:1";
+    VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
+    VID.muted = !!S.mudo;
+    const l = D.prog.get(aulaId);
+    VID.addEventListener("loadedmetadata", () => {
+      if (l && !l.duracaoSegundos && Number.isFinite(VID.duration)) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
+      const ini = l && !l.concluida ? l.posicaoSegundos || 0 : 0;
+      if (ini > 0 && ini < VID.duration - 15) VID.currentTime = ini;
+      VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
+    }, { once: true });
+    VID.addEventListener("play", () => { S.tocando = true; atualizarControles(); });
+    VID.addEventListener("pause", () => { S.tocando = false; gravarPosicao(true); atualizarControles(); });
+    VID.addEventListener("timeupdate", () => { gravarPosicao(false); atualizarControles(); });
+    VID.addEventListener("ended", () => {
+      S.tocando = false; gravarPosicao(true);
+      const lx = D.prog.get(aulaId); if (lx) lx.concluida = true;
+      void api.marcarConcluida(aulaId, true).catch(() => {});
+      const k = chaveAtual(); S.fim[k] = 1; render();
+    });
+    VID.addEventListener("error", () => void renovarVideo());
+    ligarFonte(ref);
+    S.tocando = true;
+    render();
+    void VID.play().catch(() => { S.tocando = false; atualizarControles(); });
+  }
+  const chaveAtual = () => (S.tela === "presente" ? "p-" + S.presente : S.mod + "-" + S.aula);
+  function encaixarVideo() {
+    if (!VID) return;
+    const slot = app.querySelector(".player[data-aula]");
+    if (!slot || slot.dataset.aula !== VID_ID) { const vai = VID; pararVideo(); vai.remove(); return; }
+    if (VID.parentNode !== slot) slot.appendChild(VID);
+    atualizarControles();
+  }
+  function atualizarControles() {
+    const pl = app.querySelector(".player[data-aula]"); if (!pl || !VID) return;
+    const d = Number.isFinite(VID.duration) ? VID.duration : 0, t = VID.currentTime || 0, f = d ? t / d : 0;
+    const tr = pl.querySelector(".trilha i"), bo = pl.querySelector(".trilha b"), tx = pl.querySelector(".tempo-txt");
+    if (tr) tr.style.width = f * 100 + "%"; if (bo) bo.style.left = f * 100 + "%";
+    if (tx) tx.textContent = mmss(t) + " / " + mmss(d);
+    const pb = pl.querySelector('.ctrl-linha [data-a="tocar"]'); if (pb) { pb.innerHTML = VID.paused ? ICONES.play : ICONES.pausa; pb.setAttribute("aria-label", VID.paused ? "Assistir" : "Pausar"); }
+    const pc = pl.querySelector(".play-centro"); if (pc) pc.style.display = VID.paused && !S.fim[chaveAtual()] ? "" : "none";
+    const ctr = pl.querySelector(".controles"); if (ctr) ctr.style.zIndex = "3";
+  }
+  function playerHtml(aulaId, capa, livre, rotulo) {
+    const ref = S.videos[aulaId];
+    const k = chaveAtual(), fimAqui = !!S.fim[k];
+    const l = D.prog.get(aulaId), dur = l && l.duracaoSegundos ? l.duracaoSegundos : 0, ps = l && dur ? (l.posicaoSegundos || 0) / dur : 0;
+    if (!livre) return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span></div>`;
+    if (ref === "") return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.play}</span><p class="fim-rot">Aula será adicionada em breve</p></div></div>`;
+    return `
+          <div class="player" data-aula="${aulaId}">
+            ${img(capa, "")}<span class="veu"></span>
+            ${fimAqui ? "" : `<button class="play-centro" data-a="tocar" aria-label="${ps > 0 && !(l && l.concluida) ? "Continuar de " + mmss(ps * dur) : "Assistir " + h(rotulo)}" style="z-index:2"></button>`}
+            ${S.mudo ? `<button class="selo-mudo" data-a="volume" style="z-index:3" aria-label="Vídeo sem som. Tocar para ligar o som">${ICONES.mudo}Sem som</button>` : ""}
+            <div class="controles" style="z-index:3">
+              <div class="trilha" data-a="buscar"><i style="width:${ps * 100}%"></i><b style="left:${ps * 100}%"></b></div>
+              <div class="ctrl-linha">
+                <button data-a="tocar" aria-label="${S.tocando ? "Pausar" : "Assistir"}">${S.tocando ? ICONES.pausa : ICONES.play}</button>
+                <span class="tempo-txt">${mmss(ps * dur)} / ${mmss(dur)}</span>
+                <span style="flex:1"></span>
+                <button data-a="volume" aria-pressed="${!!S.mudo}" aria-label="${S.mudo ? "Ligar o som" : "Tirar o som"}">${S.mudo ? ICONES.mudo : ICONES.volume}</button>
+                <button data-a="velocidade" aria-label="Velocidade do vídeo${S.velocidade === "Normal" ? "" : ": " + S.velocidade}">${ICONES.engrenagem}</button>
+                <button data-a="tela-cheia" aria-label="Tela cheia">${ICONES.telaCheia}</button>
+              </div>
+            </div>
+            ${fimAqui ? `<div class="fim-sobre" role="status" style="z-index:4">
+              <span class="fim-ic">${ICONES.check}</span>
+              <p class="fim-rot">${S.tela === "aula" && S.aula + 1 >= MODS()[S.mod].aulas.length ? "Módulo concluído" : "Aula concluída"}</p>
+              ${S.tela === "aula" && S.aula + 1 >= MODS()[S.mod].aulas.length ? "" : `<button class="fim-botao" data-a="seguinte">${S.tela === "aula" ? "Assistir próxima aula" : "Próximo"}</button>`}
+              <button class="fim-de-novo" data-a="de-novo">${ICONES.refazer}Assistir novamente</button>
+            </div>` : ""}
+          </div>`;
+  }
+
+  function telaAula() {
+    const m = S.mod, a = S.aula, md = MODS()[m];
+    if (!md || !md.aulas[a]) { S.tela = "modulos"; return telaModulos(); }
+    const au = md.aulas[a], k = m + "-" + a;
+    const ultimaDoMod = a + 1 >= md.aulas.length;
+    const modFimAqui = !!S.modFim[m] && ultimaDoMod && feita(m, a);
+    const pm = m + 1 < MODS().length ? m + 1 : null;
+    const botaoProx = !feita(m, a)
+      ? `<button class="nav-prox trancado" disabled aria-label="Próxima aula, bloqueada até você concluir esta">${ICONES.cadeado}Próxima aula</button>`
+      : ultimaDoMod
+        ? (!modFimAqui ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
+          : pm === null ? `<button class="nav-prox trancado" disabled>Última aula</button>`
+          : liberado(pm) ? `<button class="nav-prox livre" data-a="modulo" data-m="${pm}">Próximo módulo${ICONES.chev_dir}</button>`
+          : `<button class="nav-prox trancado" disabled>${ICONES.cadeado}${h(msgModFechado(pm))}</button>`)
+        : `<button class="nav-prox livre" data-a="seguinte">Próxima aula${ICONES.chev_dir}</button>`;
+    const cardModFim = pm === null ? `
+      <section class="mod-fim" aria-labelledby="h-modfim">
+        <span class="mod-fim-ic">${ICONES.coroa}</span>
+        <p class="fim-rot" id="h-modfim">Você concluiu toda a jornada!</p>
+        <p class="mod-fim-txt">Parabéns! Você chegou ao final da mentoria. Continue aplicando e vivendo essa transformação.</p>
+        <button class="mod-fim-sec" data-a="voltar-aula-fim">${ICONES.chev_esq}Voltar à aula anterior</button>
+      </section>` : `
+      <section class="mod-fim" aria-labelledby="h-modfim">
+        <span class="mod-fim-ic">${ICONES.trofeu}</span>
+        <p class="fim-rot">Módulo concluído</p>
+        <h2 id="h-modfim">Você concluiu o Módulo ${md.num}!</h2>
+        <p class="mod-fim-txt">Parabéns por mais um passo na sua jornada de transformação.</p>
+        <div class="mod-fim-prox">
+          <p class="mod-fim-rot">Seu próximo módulo</p>
+          <section class="mp-heroi${liberado(pm) ? "" : " trancado"}">
+            <span class="capa">${img(MODS()[pm].capa, "Módulo " + MODS()[pm].num + " — " + titulo(MODS()[pm].titulo))}</span>
+            ${liberado(pm) ? "" : `<span class="mod-fim-cad">${ICONES.cadeado}</span>`}
+          </section>
+          <div class="mp-heroi-txt">
+            <p class="mp-rot">Módulo ${MODS()[pm].num}</p>
+            <h3 class="serif mod-fim-nome">${h(MODS()[pm].titulo)}</h3>
+            <p class="mp-desc">${h(MODS()[pm].intro)}</p>
+          </div>
+          <div class="mp-ind">
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${p(MODS()[pm].aulas.length, "aula", "aulas")}</b><span>neste módulo</span></div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><b>1 aula ao vivo</b><span>data a confirmar</span></div>
+          </div>
+          ${liberado(pm)
+            ? `<button class="fim-botao largo" data-a="modulo" data-m="${pm}">Ver próximo módulo${ICONES.chev_dir}</button>`
+            : `<p class="mod-fim-bloq"><b>Indisponível no momento.</b> ${h(msgModFechado(pm))}.</p>`}
+          <button class="mod-fim-sec" data-a="voltar-aula-fim">${ICONES.chev_esq}Voltar à aula anterior</button>
+        </div>
+      </section>`;
+    const todos = S.coms[au.id] || [];
+    const raizes = todos.filter((x) => !x.respostaA);
+    const respsDe = (id) => todos.filter((x) => x.respostaA === id);
+    const meus = S.meus[k] || [];
+    const nomeDe = (x) => (x.ehInstrutor ? x.autoraNome || "Equipe AION" : x.autoraNome || "Aluna");
+    const extras = (au.conteudos || []).filter((x) => x.publicado !== false);
+    return `
+    <div class="pagina" style="padding:0">
+      <div class="cab-aula">
+        <button class="voltar" data-a="modulo" data-m="${m}" aria-label="Voltar ao módulo">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar ao módulo</span></button>
+        <span class="cab-aula-mod" aria-hidden="true"></span>
+        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
+      </div>
+      <div class="aula-col${modFimAqui ? " mod-fim-on" : ""}">
+        <div>
+          ${playerHtml(au.id, au.capa, true, au.titulo)}
+          <div class="pagina">
+            ${modFimAqui ? cardModFim : ""}
+            <div class="dois-botoes">
+              <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
+              ${botaoProx}
+            </div>
+            ${feita(m, a) ? "" : `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>`}
+            <div class="abas-aula" role="tablist">
+              <button role="tab" data-a="aba-aula" data-v="sobre" aria-selected="true">${ICONES.livro}Sobre a aula</button>
+            </div>
+            <div class="sobre-cartao">
+              <span class="sobre-ic">${ICONES.livro}</span>
+              <div style="flex:1;min-width:0">
+                <p class="aula-id sobre-id">Módulo ${md.num} · Aula ${a + 1}</p>
+                <h1 class="sobre-titulo">${h(au.titulo)}</h1>
+                ${au.texto ? au.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("") : ""}
+                ${extras.length ? `<div class="opcoes" style="margin-top:12px">${extras.map((x) => `<button data-a="extra" data-id="${x.id}">${ICONES.material}${h(x.titulo || "Material da aula")}</button>`).join("")}</div>` : ""}
+              </div>
+            </div>
+
+            <section class="coms" aria-labelledby="h-com">
+              <div class="coms-cab">
+                <h2 id="h-com">Comentários (${raizes.length + meus.length})</h2>
+                <button class="coms-toggle" data-a="coms-toggle" aria-expanded="${!S.comsFechado}" aria-controls="coms-corpo">${S.comsFechado ? "Abrir" : "Fechar"}<span aria-hidden="true">${S.comsFechado ? "⌄" : "⌃"}</span></button>
+              </div>
+              ${S.comsFechado ? "" : `<div id="coms-corpo">
+              <button class="com-abrir" data-a="abrir-comentar">
+                ${avCom(S.nome, S.corNome, S.foto)}
+                <span class="com-abrir-txt">${ICONES.balao}Comentar na aula</span>
+              </button>
+              <p class="com-aviso">A equipe lê cada comentário antes de publicar.</p>
+              ${meus.map((x) => `<div class="com">${avCom(S.nome, S.corNome, S.foto)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h((S.nome || "").split(" ")[0])}</b><span class="pendente">Aguardando aprovação</span></div><p>${h(x.txt)}</p><span class="com-nota">Só você vê este comentário até a equipe aprovar.</span></div></div>`).join("")}
+              ${(S.comTodos[k] ? raizes : raizes.slice(0, 2)).map((x) => {
+                const rs = respsDe(x.id), todas = !!S.respTodas[x.id], vis = todas ? rs : rs.slice(0, 2);
+                const nm = nomeDe(x);
+                return `<div class="com">
+                ${avCom(nm, x.minha ? S.corNome : corDe(nm), x.minha ? S.foto : "")}
+                <div class="com-corpo">
+                  <div class="com-topo"><b class="com-nome">${h(nm)}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span></div>
+                  <p>${h(x.texto)}</p>
+                  <div class="com-acoes"><button data-a="com-responder" data-v="${h(nm)}" data-id="${x.id}">${ICONES.balao}Responder</button></div>
+                  ${vis.length ? `<div class="resps">${vis.map((r) => { const rn = nomeDe(r); return `<div class="resp">${avCom(rn, r.minha ? S.corNome : corDe(rn), r.minha ? S.foto : "", true)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(rn)}</b><span class="quando">${h(quandoTxt(r.criadoEm))}</span></div><p>${h(r.texto)}</p></div></div>`; }).join("")}
+                    ${rs.length > 2 ? `<button class="ver-mais pq" data-a="resp-ver-mais" data-v="${x.id}">${todas ? "Ver menos respostas" : "Ver mais " + (rs.length - 2) + (rs.length - 2 === 1 ? " resposta" : " respostas")}</button>` : ""}</div>` : ""}
+                </div>
+              </div>`; }).join("")}
+              ${raizes.length > 2 ? `<button class="ver-mais" data-a="com-ver-mais">${S.comTodos[k] ? "Ver menos comentários" : "Ver mais comentários (" + (raizes.length - 2) + ")"}</button>` : ""}
+              </div>`}
+            </section>
+
+            ${md.aulas.length > a + 1 ? `
+            <section class="prox-aulas" aria-labelledby="h-prox">
+              <h2 id="h-prox">Próximas aulas deste módulo</h2>
+              ${md.aulas.slice(a + 1).map((x, j) => { const i = a + 1 + j; const ei = estadoAula(m, i), fech = !!ei.fech; return `
+              <button class="prox-card${fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
+                <span class="capa">${img(x.capa, "")}<span class="prox-play">${fech ? '<span class="cadeado"></span>' : ""}</span></span>
+                <span class="prox-info"><b>Módulo ${md.num} · Aula ${i + 1}</b><span>${h(x.titulo)}</span>${fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ei.txt)}</span>` : `<em>Disponível</em>`}</span>
+                ${fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
+              </button>`; }).join("")}
+            </section>` : ""}
+            <div class="mv-entre aula-entre">
+              <button data-a="modulo" data-m="${m - 1}" ${m === 0 ? "disabled" : ""}>${ICONES.chev_esq}Módulo anterior</button>
+              <button data-a="modulo" data-m="${m + 1}" ${m === MODS().length - 1 ? "disabled" : ""}${pm !== null && !liberado(pm) ? ' class="tranc"' : ""}>${pm !== null && !liberado(pm) ? ICONES.cadeado : ""}Próximo módulo${ICONES.chev_dir}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  /* ---------- presentes ---------- */
+  const DESC_CAT = { "Mestres espirituais": "Coleção de vídeos gravados e escondidos em VHS, que nunca foram ao ar na internet.", "Lançamentos": "As novidades da mentoria, assim que saem.", "Frequências": "Áudios para ouvir e meditar no seu tempo.", "Ebooks": "Leituras para aprofundar a sua jornada.", "Documentários": "Histórias e conteúdos para assistir com calma." };
+  const TIPO_CAT = { "Lançamentos": "Vídeo", "Frequências": "Áudio", "Ebooks": "Leitura", "Documentários": "Documentário", "Mestres espirituais": "Vídeo" };
+  const CATS = () => (D ? D.cats : []);
+  const ehEbook = (curso) => !curso.itens.length && curso.conteudos.some((x) => x.url || x.arquivoPath);
+  const cursoLiberado = (curso) => curso.liberadoDireto || curso.itens.some((x) => aulaAdmin(x.id));
+  const catAberta = (c) => !c.bloqueada && c.cursos.some(cursoLiberado);
+  const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
+  function telaPresentes() {
+    return `
+    <div class="pagina">
+      <h1 class="todos-mod serif">Presentes</h1>
+      <p class="apoio" style="margin-top:-6px">Conteúdos extras para assistir, ouvir e ler no seu tempo.</p>
+      <div class="cat-grade">${CATS().map((c, ci) => {
+        const COR = CORES_CAT[ci % CORES_CAT.length];
+        const capa = (c.cursos.find((x) => x.capa) || {}).capa || "";
+        if (!catAberta(c)) return `
+        <section class="cat-card cat-fech" style="--mc:${COR}" aria-labelledby="h-cat-${ci}">
+          <button class="cat-fech-alvo" data-a="cat-fechada" data-v="${ci}" aria-label="${h(c.nome)}. Bloqueado, ainda não liberado.">
+            <span class="cat-tit serif" id="h-cat-${ci}"><span aria-hidden="true"></span>${h(c.nome)}<span aria-hidden="true"></span></span>
+            <span class="cat-fech-area" aria-hidden="true">
+              <span class="cat-fech-fosco">
+                <span class="cat-corpo"><span class="cat-capa">${img(capa, "")}</span><span class="cat-desc">${h(DESC_CAT[c.nome] || "")}</span></span>
+                <span class="ex-botao cat-ver">Ver todos</span>
+              </span>
+              <span class="cat-fech-veu">
+                <span class="cat-fech-cad">${ICONES.cadeado}</span>
+                <span class="cat-fech-chama">Em breve, só para você</span>
+              </span>
+            </span>
+          </button>
+        </section>`;
+        return `
+        <section class="cat-card" style="--mc:${COR}" aria-labelledby="h-cat-${ci}">
+          <h2 class="cat-tit serif" id="h-cat-${ci}"><span aria-hidden="true"></span>${h(c.nome)}<span aria-hidden="true"></span></h2>
+          <button class="cat-corpo" data-a="categoria" data-v="${ci}" aria-label="Abrir ${h(c.nome)}">
+            <span class="cat-capa">${img(capa, "")}</span>
+            <span class="cat-desc">${h(DESC_CAT[c.nome] || "")}</span>
+          </button>
+          <button class="ex-botao cat-ver" data-a="categoria" data-v="${ci}">Ver todos</button>
+        </section>`;
+      }).join("") || `<div class="vazio">Em breve, presentes para você.</div>`}</div>
+    </div>`;
+  }
+  function telaCategoria() {
+    const c = CATS()[S.cat];
+    if (!c) { S.tela = "presentes"; return telaPresentes(); }
+    const ci = S.cat;
+    return `
+    <div class="pagina">
+      <div class="barra-aula"><button class="voltar voltar-btn" data-a="ir" data-v="presentes" aria-label="Voltar para Presentes">${ICONES.seta_esq}Voltar</button></div>
+      <h1 class="todos-mod serif">${h(c.nome)}</h1>
+      <p class="apoio" style="margin-top:-6px">${h(DESC_CAT[c.nome] || "")}</p>
+      ${c.cursos.length ? `<div class="grade-mod">${c.cursos.map((x, i) => cartaoCurso(ci, i, x, c.nome)).join("")}</div>` : `<div class="vazio">Em breve, conteúdos nesta categoria.</div>`}
+    </div>`;
+  }
+  function cartaoCurso(ci, i, curso, cat) {
+    const COR = CORES_CAT[ci % CORES_CAT.length];
+    const key = ci + "-" + i;
+    const ebook = ehEbook(curso);
+    const freq = cat === "Frequências";
+    const tipo = (TIPO_CAT[cat] || "conteúdo").toLowerCase();
+    const plural = ebook ? "Leitura" : freq ? p(curso.itens.length, "frequência", "frequências") : curso.itens.length ? p(curso.itens.length, tipo, tipo + "s") : "Será adicionado em breve";
+    const meta = `<p class="mc-meta"><span>${ebook ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`}${h(plural)}</span></p>`;
+    if (!cursoLiberado(curso)) {
+      const msg = abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Em breve";
+      return `
+    <div class="mod-bloco mc mc-tr-curso" style="--mc:${COR}">
+      <button class="mc-top" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado. ${h(msg)}. Toque para ver o que vem aí.">
+        <span class="mc-capa" aria-hidden="true">${img(curso.capa, "")}</span>
+        <span class="mc-info" aria-hidden="true">
+          <span class="mc-cab"><span class="mc-rot">${h(cat)}</span><b class="mc-tit serif">${h(curso.nome)}</b></span>
+          ${meta}
+          <span class="ex-botao mc-ver-grande">${freq ? "Ver todas" : "Ver os vídeos"}<span style="margin-left:8px">⌄</span></span>
+        </span>
+        <span class="tr-curso-veu" aria-hidden="true">
+          <span class="tranca-ic">${ICONES.cadeado}</span>
+          <span class="tr-curso-txt"><b>${h(curso.nome)}</b><span>${h(msg)}</span></span>
+        </span>
+      </button>
+    </div>`;
+    }
+    if (ebook) return `
+    <div class="mod-bloco mc" style="--mc:${COR}">
+      <div class="mc-top">
+        <button class="mc-capa" data-a="ebook" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
+        <div class="mc-info">
+          <button class="mc-cab" data-a="ebook" data-v="${key}"><span class="mc-rot">${h(cat)}</span><b class="mc-tit serif">${h(curso.nome)}</b></button>
+          ${meta}
+          <button class="mc-ver ver-aulas" data-a="ebook" data-v="${key}">Ver ebook<span aria-hidden="true">›</span></button>
+        </div>
+      </div>
+    </div>`;
+    const aberto = !!(S.verCurso || {})[key];
+    return `
+    <div class="mod-bloco mc" style="--mc:${COR}">
+      <div class="mc-top">
+        <button class="mc-capa" data-a="curso-pres" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
+        <div class="mc-info">
+          <button class="mc-cab" data-a="curso-pres" data-v="${key}"><span class="mc-rot">${h(cat)}</span><b class="mc-tit serif">${h(curso.nome)}</b></button>
+          ${meta}
+          ${curso.itens.length ? `<button class="ex-botao mc-ver-grande" data-a="ver-curso" data-v="${key}" aria-expanded="${aberto}" aria-controls="lc-${key}">${aberto ? "Esconder" : freq ? "Ver todas" : "Ver os vídeos"}<span aria-hidden="true" style="margin-left:8px">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
+        </div>
+      </div>
+      ${curso.itens.length ? `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="lc-${key}"><div class="la-in">${curso.itens.map((t, j) => itemPresente(ci, i, j, curso, t, freq)).join("")}</div></div>` : ""}
+    </div>`;
+  }
+  function itemPresente(ci, i, j, curso, t, freq) {
+    const livre = aulaAdmin(t.id);
+    return `
+        <button class="la-item${livre ? "" : " fechada"}" data-a="presente" data-v="${ci}-${i}-${j}">
+          <span class="la-capa">${img(t.capa || curso.capa, "")}<span class="la-ic">${livre ? (feitaId(t.id) ? "✓" : "") : '<span class="cadeado"></span>'}</span></span>
+          <span class="la-info"><b>${h(curso.nome)} · ${j + 1}</b><span>${h(t.titulo)}</span>${livre ? `<em>${feitaId(t.id) ? "Concluído" : "Disponível"}</em>` : `<span class="aviso-lib">${ICONES.cadeado}${aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve"}</span>`}</span>
+          ${livre ? `<span class="la-assistir" aria-hidden="true">${ICONES.play}${freq ? "Ouvir" : "Assistir"}</span>` : ""}
+        </button>`;
+  }
+  function telaCursoPres() {
+    const [ci, i] = String(S.cursoPres || "").split("-").map(Number);
+    const c = CATS()[ci], curso = c && c.cursos[i];
+    if (!curso) { S.tela = "presentes"; return telaPresentes(); }
+    const cat = c.nome, COR = CORES_CAT[ci % CORES_CAT.length], freq = cat === "Frequências";
+    const nomeTipo = freq ? ["frequência", "frequências"] : ["vídeo", "vídeos"];
+    if (!cursoLiberado(curso)) {
+      const quando = abreCurso(curso) ? dataCurta(abreCurso(curso)) : null;
+      return `
+    ${cabMp(`data-a="categoria" data-v="${ci}"`, cat)}
+    <div class="mp mv cp-tr" style="--mc:${COR}">
+      <section class="cp-tr-heroi" aria-labelledby="h-cptr">
+        <button class="cp-tr-fechar" data-a="categoria" data-v="${ci}" aria-label="Fechar e voltar para ${h(cat)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <span class="cp-tr-capa" aria-hidden="true">${img(curso.capa, "")}</span>
+        <span class="cp-tr-ic" aria-hidden="true">${ICONES.cadeado}</span>
+        <p class="mv-rot">${h(cat)}<span></span></p>
+        <h1 class="cp-tr-tit serif" id="h-cptr">${h(curso.nome)}</h1>
+        <p class="cp-tr-txt">Este conteúdo ainda está guardado.${quando ? ` Ele fica liberado para você em <b>${quando}</b>.` : " Em breve, só para você."}</p>
+        ${quando ? `<span class="cp-tr-data">${ICONES.cadeado}Libera em ${quando}</span>` : ""}
+      </section>
+      ${curso.itens.length ? `<section class="mv-aulas" aria-labelledby="h-cptr-l">
+        <div class="mv-aulas-topo"><h2 id="h-cptr-l">O que vem aí</h2><span>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</span></div>
+        <ul class="mv-lista cp-tr-lista">${curso.itens.map((t, j) => `
+          <li class="mv-aula cp-tr-item">
+            <span class="mv-num">${j + 1}</span>
+            <span class="mv-capa">${img(t.capa || curso.capa, "")}<span class="cp-tr-mini">${ICONES.cadeado}</span></span>
+            <span class="mv-info"><b>${h(t.titulo)}</b><span class="mv-meta">${ICONES.cadeado}${quando ? "Libera em " + quando : "Em breve"}</span></span>
+          </li>`).join("")}</ul>
+      </section>` : ""}
+    </div>`;
+    }
+    const feitos = curso.itens.filter((t) => feitaId(t.id)).length;
+    const pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
+    const totalC = c.cursos.length;
+    return `
+    ${cabMp(`data-a="categoria" data-v="${ci}"`, cat)}
+    <div class="mp mv" style="--mc:${COR}">
+      <section class="mv-topo" aria-labelledby="h-cpt">
+        <span class="mv-capa-mod">${img(curso.capa, "")}</span>
+        <div class="mv-txt">
+          <p class="mv-rot">${h(cat)}<span aria-hidden="true"></span></p>
+          <h1 class="serif mv-tit" id="h-cpt">${h(curso.nome)}</h1>
+          <span class="mv-linha" aria-hidden="true"></span>
+          <p class="mv-desc">${h(curso.descricao || DESC_CAT[cat] || "")}</p>
+        </div>
+      </section>
+      <div class="mv-ind">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><span><b>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</b><em>${cat === "Mestres espirituais" ? "neste volume" : "neste curso"}</em></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span><b>Acesso liberado</b><em>assista quando quiser</em></span></div>
+      </div>
+      <section class="mv-prog" aria-label="Progresso">
+        <div class="mv-prog-topo"><span>${cat === "Mestres espirituais" ? "Progresso do volume" : "Progresso do curso"}</span><b>${pct}%</b></div>
+        <div class="barra"><i style="width:${pct}%"></i></div>
+        <p>${feitos} de ${p(curso.itens.length, nomeTipo[0] + (freq ? " concluída" : " concluído"), nomeTipo[1] + (freq ? " concluídas" : " concluídos"))}</p>
+      </section>
+      <section class="mv-aulas" aria-labelledby="h-cp">
+        <div class="mv-aulas-topo"><h2 id="h-cp">${freq ? "Frequências deste curso" : cat === "Mestres espirituais" ? "Vídeos deste volume" : "Conteúdos deste curso"}</h2><span>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</span></div>
+        <div class="mv-lista">${curso.itens.map((t, j) => itemPresente(ci, i, j, curso, t, freq)).join("") || `<div class="vazio">Aula será adicionada em breve.</div>`}</div>
+      </section>
+      <div class="mv-entre">
+        <button data-a="curso-pres" data-v="${ci}-${i - 1}" ${i === 0 ? "disabled" : ""}>${ICONES.chev_esq}${cat === "Mestres espirituais" ? "Volume anterior" : "Curso anterior"}</button>
+        <button data-a="curso-pres" data-v="${ci}-${i + 1}" ${i + 1 >= totalC ? "disabled" : ""}>${cat === "Mestres espirituais" ? "Próximo volume" : "Próximo curso"}${ICONES.chev_dir}</button>
+      </div>
+    </div>`;
+  }
+  function telaEbook(ci, i, curso) {
+    return `
+    <div class="pagina eb">
+      <div class="barra-aula"><button class="voltar voltar-btn" data-a="categoria" data-v="${ci}" aria-label="Voltar">${ICONES.seta_esq}Voltar</button></div>
+      <div class="eb-topo">
+        <span class="eb-capa">${img(curso.capa, "")}</span>
+        <h1 class="eb-tit serif" style="margin-top:18px">${h(curso.nome)}</h1>
+        <p class="eb-desc">${h(curso.descricao || "Um livro da mentoria para ler no seu tempo. Abra quando quiser, no celular ou no computador.")}</p>
+        <button class="botao largo eb-ler" data-a="abrir-ebook" data-v="${ci}-${i}">${ICONES.livro}Ler ebook completo</button>
+        <p class="eb-dica">O ebook abre aqui mesmo, dentro do aplicativo.</p>
+      </div>
+    </div>`;
+  }
+  function telaPresente() {
+    const pts = String(S.presente || "").split("-").map(Number);
+    const [ci, i, j] = pts;
+    const c = CATS()[ci], curso = c && c.cursos[i];
+    if (!curso) { S.tela = "presentes"; return telaPresentes(); }
+    if (pts.length < 3) return telaEbook(ci, i, curso);
+    const t = curso.itens[j];
+    if (!t) { S.tela = "presentes"; return telaPresentes(); }
+    const livre = aulaAdmin(t.id);
+    const tipo = TIPO_CAT[c.nome] || "Conteúdo";
+    const temAnt = j > 0, temProx = j + 1 < curso.itens.length;
+    return `
+    <div class="pagina" style="padding:0">
+      <div class="cab-aula">
+        <button class="voltar" data-a="curso-pres" data-v="${ci}-${i}" aria-label="Voltar para ${h(curso.nome)}">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar para ${h(curso.nome)}</span></button>
+        <span class="cab-aula-mod" aria-hidden="true"></span>
+        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
+      </div>
+      <div class="aula-col">
+        <div>
+          ${livre ? playerHtml(t.id, t.capa || curso.capa, true, t.titulo) : `<div class="player">${img(t.capa || curso.capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.cadeado}</span><p class="fim-rot">${aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve"}</p></div></div>`}
+          <div class="pagina">
+            <div class="dois-botoes">
+              <button class="nav-ant" ${temAnt ? `data-a="presente" data-v="${ci}-${i}-${j - 1}"` : "disabled"}>${ICONES.chev_esq}Anterior</button>
+              ${temProx ? `<button class="nav-prox livre" data-a="presente" data-v="${ci}-${i}-${j + 1}">Próximo${ICONES.chev_dir}</button>` : `<button class="nav-prox trancado" disabled>Último deste curso</button>`}
+            </div>
+            <div class="sobre-cartao">
+              <span class="sobre-ic">${ICONES.livro}</span>
+              <div style="flex:1;min-width:0">
+                <p class="aula-id sobre-id">${h(curso.nome)} · ${j + 1} de ${curso.itens.length}</p>
+                <h1 class="sobre-titulo">${h(t.titulo)}</h1>
+                ${t.texto ? t.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\n/g, "<br>")}</p>`).join("") : `<p>${h(tipo)}. Um presente da mentoria para acompanhar a sua jornada. Assista com calma, no seu tempo.</p>`}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+  const ZOOMS = [0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
+  function aplicarZoomLeitor(fr) {
+    fr = fr || document.querySelector(".leitor-quadro");
+    const z = ZOOMS[S.leitorZoom == null ? 1 : S.leitorZoom];
+    const pct = document.querySelector(".leitor-pct"); if (pct) pct.textContent = Math.round(z * 100) + "%";
+    const menos = document.querySelector('[data-a="leitor-zoom"][data-v="-1"]'), mais = document.querySelector('[data-a="leitor-zoom"][data-v="1"]');
+    if (menos) menos.disabled = (S.leitorZoom ?? 1) <= 0;
+    if (mais) mais.disabled = (S.leitorZoom ?? 1) >= ZOOMS.length - 1;
+    try {
+      const doc = fr && fr.contentDocument; if (!doc || !doc.documentElement) return;
+      let st = doc.getElementById("zoom-leitor");
+      if (!st) { st = doc.createElement("style"); st.id = "zoom-leitor"; (doc.head || doc.documentElement).appendChild(st); }
+      st.textContent = "html{zoom:" + z + "}";
+    } catch { /* outro domínio */ }
+  }
+  window.__zoomLeitor = aplicarZoomLeitor;
+  function telaLeitor() {
+    const l = S.leitor || {};
+    const zi = S.leitorZoom == null ? 1 : S.leitorZoom;
+    return `
+    <div class="leitor" role="dialog" aria-modal="true" aria-label="${h(l.titulo || "Ebook")}">
+      <div class="leitor-cab">
+        <button class="voltar" data-a="fechar-leitor" aria-label="Fechar o ebook e voltar">${ICONES.seta_esq}Voltar</button>
+        <b class="leitor-tit">${h(l.titulo || "")}</b>
+        <div class="leitor-zoom" role="group" aria-label="Tamanho da letra do ebook">
+          <button data-a="leitor-zoom" data-v="-1" aria-label="Diminuir a letra" ${zi <= 0 ? "disabled" : ""}>A−</button>
+          <span class="leitor-pct" aria-live="polite">${Math.round(ZOOMS[zi] * 100)}%</span>
+          <button data-a="leitor-zoom" data-v="1" aria-label="Aumentar a letra" ${zi >= ZOOMS.length - 1 ? "disabled" : ""}>A+</button>
+        </div>
+      </div>
+      <iframe class="leitor-quadro" src="${h(l.href || "")}" title="${h(l.titulo || "Ebook")}" onload="window.__zoomLeitor && window.__zoomLeitor(this)"></iframe>
+    </div>`;
+  }
+
+  /* ---------- jornada e perfil ---------- */
+  function telaJornada() {
+    const c = continuar();
+    const concl = MODS().reduce((s, md, mi) => s + md.aulas.filter((_, ai) => feita(mi, ai)).length, 0);
+    const tot = total(), pctJ = tot ? Math.round((concl / tot) * 100) : 0;
+    const modsFeitos = MODS().filter((md, mi) => md.aulas.length && feitasMod(mi) === md.aulas.length).length;
+    let onde = "";
+    if (c) {
+      const md = MODS()[c.m], ps = posicao(c.m, c.a);
+      onde = `
+      <section class="jn-onde" aria-labelledby="h-onde">
+        <p class="pa-rot" id="h-onde-rot">Onde você está</p>
+        <button class="jn-onde-card" data-a="aula" data-m="${c.m}" data-i="${c.a}">
+          <span class="la-capa">${img(md.aulas[c.a].capa, "")}<span class="la-ic">${ICONES.play}</span></span>
+          <span class="la-info"><b>Módulo ${md.num} · Aula ${c.a + 1}</b><span id="h-onde">${h(md.aulas[c.a].titulo)}</span><em>${ps > 0 ? "Em andamento" : "Ainda não começou"}</em></span>
+        </button>
+        <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}"><span class="ic-play"></span>Continuar assistindo</button>
+      </section>`;
+    } else onde = `<div class="vazio" style="margin-top:18px">Você concluiu todas as aulas liberadas.</div>`;
+    const grupos = MODS().map((md, mi) => {
+      const fs = md.aulas.map((t, ai) => [ai, t]).filter(([ai]) => feita(mi, ai));
+      if (!fs.length) return "";
+      return `
+        <div class="jn-grupo">
+          <div class="jn-grupo-topo"><b>Módulo ${md.num} — ${h(titulo(md.titulo))}</b><span>${fs.length} de ${md.aulas.length}</span></div>
+          ${fs.map(([ai, t]) => `
+          <button class="la-item" data-a="aula" data-m="${mi}" data-i="${ai}">
+            <span class="la-capa">${img(t.capa, "")}<span class="la-ic">✓</span></span>
+            <span class="la-info"><b>Módulo ${md.num} · Aula ${ai + 1}</b><span>${h(t.titulo)}</span><em>Concluída</em></span>
+            <span class="la-assistir" aria-hidden="true">${ICONES.play}Rever</span>
+          </button>`).join("")}
+        </div>`;
+    }).join("");
+    return `
+    <div class="pagina jn">
+      <div class="barra-aula"><button class="voltar" data-a="voltar-jornada" aria-label="Voltar para onde você estava">‹ Voltar</button></div>
+      <div class="ola"><p>Sua jornada</p><h1 class="serif">Minha jornada</h1></div>
+      <section class="jn-resumo" aria-label="Seu progresso">
+        <span class="ex-anel" style="--p:${pctJ}"><b>${pctJ}%</b></span>
+        <span class="jn-resumo-txt">
+          <b>${concl} de ${p(tot, "aula concluída", "aulas concluídas")}</b>
+          <span class="barra"><i style="width:${pctJ}%"></i></span>
+          <span>${modsFeitos} de ${p(MODS().length, "módulo concluído", "módulos concluídos")}</span>
+        </span>
+      </section>
+      ${onde}
+      <section class="secao jn-prog"><div class="secao-topo"><h2 class="serif">Seu progresso por módulo</h2></div>
+        <div class="cartao">${MODS().map((md, m) => (liberado(m) ? `<div class="prog-mod"><div><span>Módulo ${md.num} · ${h(titulo(md.titulo))}</span><span class="apoio">${feitasMod(m)}/${md.aulas.length}</span></div><div class="barra"><i style="width:${md.aulas.length ? (feitasMod(m) / md.aulas.length) * 100 : 0}%"></i></div></div>` : "")).join("")}
+          <p class="apoio" style="margin-top:10px">Os próximos módulos aparecem aqui quando forem liberados.</p></div></section>
+      <section class="jn-feitas" aria-labelledby="h-feitas">
+        <p class="pa-rot" id="h-feitas">Aulas que você já assistiu</p>
+        ${grupos || `<div class="vazio">Você ainda não concluiu nenhuma aula. Quando terminar uma, ela aparece aqui.</div>`}
+      </section>
+    </div>`;
+  }
+  function painelConfig() {
+    return `
+    <div class="config" role="dialog" aria-modal="true" aria-labelledby="h-config">
+      <div class="config-cab">
+        <button class="mp-voltar" data-a="fechar-config" aria-label="Voltar para o perfil"><span aria-hidden="true">‹</span>Voltar</button>
+        <h2 class="serif" id="h-config">Configurações</h2>
+      </div>
+      <p class="config-nota">Tudo o que você muda aqui é salvo na hora.</p>
+      <div class="config-corpo">
+      <section class="secao"><div class="secao-topo"><h2 class="serif">Sua foto e sua cor</h2></div>
+        <div class="cartao"><p class="apoio">Sua foto aparece nos seus comentários. A cor fica no círculo em volta dela (ou na letra, se você não colocar foto).</p>
+          <div class="foto-acoes">${S.foto
+            ? `<button class="botao-2" data-a="ajustar-foto">Ajustar</button><button class="botao-2" data-a="escolher-foto">Trocar foto</button><button class="botao-2 foto-remover" data-a="tirar-foto">Remover</button>`
+            : '<button class="botao-2" data-a="escolher-foto">Colocar foto</button>'}</div>
+          <div class="cores-nome" role="group" aria-label="Cor do círculo">${CORES_NOME.map(([cor, nome]) => `<button data-a="cor-nome" data-v="${cor}" style="--c:${cor}" aria-pressed="${S.corNome === cor}" aria-label="${nome}"><span></span></button>`).join("")}</div>
+          <div class="cor-previa">${avCom(S.nome, S.corNome, S.foto)}<b class="com-nome">${h(S.nome)}</b></div>
+        </div></section>
+      <section class="secao"><div class="secao-topo"><h2 class="serif">Tema</h2></div>
+        <div class="cartao"><p class="apoio">Escolha o fundo que fica mais confortável para os seus olhos.</p>
+          <div class="segmento" role="group" aria-label="Tema">
+            <button data-a="tema" data-v="escuro" aria-pressed="${S.tema !== "claro"}"><span class="tema-bola escuro" aria-hidden="true"></span>Escuro</button>
+            <button data-a="tema" data-v="claro" aria-pressed="${S.tema === "claro"}"><span class="tema-bola claro" aria-hidden="true"></span>Claro</button>
+          </div>
+        </div></section>
+      <section class="secao"><div class="secao-topo"><h2 class="serif">Tamanho da letra</h2></div>
+        <div class="cartao"><p class="apoio">Escolha o que fica mais confortável para ler.</p>
+          ${controleLetra()}
+        </div></section>
+      <section class="secao"><div class="secao-topo"><h2 class="serif">Ajuda</h2></div>
+        <div class="cartao" style="display:grid;gap:10px">
+          <button class="botao-2" data-a="instalar" style="justify-content:flex-start">Colocar a mentoria na tela do celular</button>
+          <p class="apoio">Dúvidas sobre acesso ou aulas? Fale com a equipe da mentoria pelo seu grupo.</p>
+        </div></section>
+      </div>
+    </div>`;
+  }
+  function telaSaiu() {
+    return `
+    <div class="saiu">
+      <div class="saiu-caixa">
+        <span class="saiu-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg></span>
+        <h1 class="serif">Você saiu da mentoria</h1>
+        <p>Sua conta foi desconectada deste aparelho. Já pode fechar o aplicativo.</p>
+        <button class="saiu-voltar" data-a="entrar-de-novo">Entrar de novo</button>
+      </div>
+    </div>`;
+  }
+  function telaPerfil() {
+    document.documentElement.classList.toggle("trava-rolagem", !!S.config);
+    return `
+    <div class="pagina">
+      ${S.perfilDe ? `<div class="barra-aula"><button class="voltar" data-a="voltar-perfil" aria-label="Voltar para onde você estava">‹ Voltar</button></div>` : ""}
+      <div class="ola"><p>Seu perfil</p><h1 class="serif">${h(S.nome)}</h1></div>
+      <div class="perfil-acoes"><button class="botao-2 btn-config" data-a="abrir-config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurar</button><button class="botao-2 btn-config" data-a="jornada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Onde parei</button></div>
+      <button class="botao-2" data-a="sair" style="width:100%;margin-top:32px;color:var(--perigo)">Sair da área de membros</button>
+    </div>
+    ${S.config ? painelConfig() : ""}`;
+  }
+
+  /* ---------- folhas, avisos e foto (da maquete) ---------- */
+  let FE = null;
+  const FE_V = 240;
+  const feBase = () => Math.max(FE_V / FE.w, FE_V / FE.h);
+  function feLimitar() { const sc = feBase() * FE.z, mx = Math.max(0, (FE.w * sc - FE_V) / 2), my = Math.max(0, (FE.h * sc - FE_V) / 2); FE.x = Math.max(-mx, Math.min(mx, FE.x)); FE.y = Math.max(-my, Math.min(my, FE.y)); }
+  function feDesenhar() {
+    const im = camada.querySelector(".fe-img"); if (!im) return;
+    feLimitar(); const sc = feBase() * FE.z;
+    im.style.width = FE.w * sc + "px"; im.style.height = FE.h * sc + "px";
+    im.style.transform = "translate(calc(-50% + " + FE.x + "px), calc(-50% + " + FE.y + "px))";
+    const z = camada.querySelector(".fe-zoom"); if (z) z.value = FE.z;
+  }
+  function abrirEditorFoto(dados) {
+    FE = dados;
+    folha(`
+      <h2 class="serif" style="margin:0 0 4px">Ajuste sua foto</h2>
+      <p class="apoio">Arraste a foto para centralizar o rosto. Use a barra para aproximar.</p>
+      <div class="fe-quadro" style="--c:${S.corNome}">
+        <div class="fe-janela"><img class="fe-img" src="${FE.src}" alt="" draggable="false" /></div>
+      </div>
+      <div class="fe-zoom-linha"><span aria-hidden="true">−</span><input class="fe-zoom" type="range" min="1" max="3" step="0.01" value="${FE.z}" aria-label="Aproximar a foto" /><span aria-hidden="true">+</span></div>
+      <button class="fe-trocar" data-a="escolher-foto">Escolher outra foto</button>
+      <div class="folha-botoes"><button class="botao-2" data-a="foto-cancelar">Cancelar</button><button class="botao" data-a="foto-salvar">Salvar foto</button></div>`);
+    const jan = camada.querySelector(".fe-janela"), zoom = camada.querySelector(".fe-zoom");
+    let arr = null;
+    jan.addEventListener("pointerdown", (ev) => { arr = { px: ev.clientX, py: ev.clientY, x: FE.x, y: FE.y }; jan.setPointerCapture(ev.pointerId); });
+    jan.addEventListener("pointermove", (ev) => { if (!arr) return; FE.x = arr.x + (ev.clientX - arr.px); FE.y = arr.y + (ev.clientY - arr.py); feDesenhar(); });
+    const solta = () => { arr = null; };
+    jan.addEventListener("pointerup", solta); jan.addEventListener("pointercancel", solta);
+    jan.addEventListener("wheel", (ev) => { ev.preventDefault(); FE.z = Math.max(1, Math.min(3, FE.z - ev.deltaY * 0.002)); feDesenhar(); }, { passive: false });
+    zoom.addEventListener("input", () => { FE.z = +zoom.value; feDesenhar(); });
+    const im = camada.querySelector(".fe-img");
+    if (im.complete) feDesenhar(); else im.onload = feDesenhar;
+  }
+  function salvarFoto() {
+    if (!FE) return;
+    const im = camada.querySelector(".fe-img"), t = 320, sc = feBase() * FE.z;
+    const c = document.createElement("canvas"); c.width = t; c.height = t;
+    const k = t / FE_V, dw = FE.w * sc * k, dh = FE.h * sc * k;
+    c.getContext("2d").drawImage(im, t / 2 - dw / 2 + FE.x * k, t / 2 - dh / 2 + FE.y * k, dw, dh);
+    S.foto = c.toDataURL("image/jpeg", 0.88);
+    S.fotoOrig = { src: FE.src, w: FE.w, h: FE.h, z: FE.z, x: FE.x, y: FE.y };
+    gravar("aion-foto-" + (D?.user || ""), S.foto); gravar("aion-foto-orig-" + (D?.user || ""), JSON.stringify(S.fotoOrig));
+    camada.innerHTML = ""; FE = null;
+    aviso("Foto salva. Ela já aparece no topo e nos seus comentários.");
+    render();
+  }
+  function folha(conteudo) { camada.innerHTML = `<div class="fundo-folha" data-a="fechar-folha"><div class="folha" role="dialog" aria-modal="true">${conteudo}</div></div>`; const b = camada.querySelector("button"); if (b) b.focus(); }
+  let tAviso;
+  function aviso(t) { let el = document.querySelector(".aviso"); if (!el) { el = document.createElement("div"); el.className = "aviso"; el.setAttribute("role", "status"); document.body.appendChild(el); } el.textContent = t; clearTimeout(tAviso); tAviso = setTimeout(() => el.remove(), 3600); }
+  const topo = () => window.scrollTo({ top: 0 });
+
+  /* ---------- voltar do aparelho ---------- */
+  const foto = () => ({ tela: S.tela, mod: S.mod, aula: S.aula, presente: S.presente, cat: S.cat, cursoPres: S.cursoPres, origemMod: S.origemMod, perfilDe: S.perfilDe, jornadaDe: S.jornadaDe, leitor: S.leitor, config: S.config });
+  let ultimaTela = "";
+  function marcarHistorico() {
+    const chave = JSON.stringify([S.tela, S.mod, S.aula, S.presente, S.cat, S.cursoPres, !!S.config]);
+    if (!S.entrou || chave === ultimaTela) return;
+    if (ultimaTela) history.pushState({ aion: foto() }, ""); else history.replaceState({ aion: foto() }, "");
+    ultimaTela = chave;
+  }
+  window.addEventListener("popstate", (e) => {
+    const f = e.state && e.state.aion; if (!f || !S.entrou) return;
+    camada.innerHTML = "";
+    if (S.tela === "aula" || S.tela === "presente") pararVideo();
+    Object.assign(S, f); ultimaTela = JSON.stringify([S.tela, S.mod, S.aula, S.presente, S.cat, S.cursoPres, !!S.config]);
+    if (S.tela === "aula") abrirAula(); else if (S.tela === "presente") abrirPresente();
+    render();
+  });
+
+  async function abrirAula() {
+    const au = MODS()[S.mod]?.aulas[S.aula]; if (!au) return;
+    const id = au.id;
+    void pedirVideo(id).then(() => { if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) render(); });
+    api.comentariosDaAula(id).then((l) => { S.coms[id] = l; if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) render(); }).catch(() => {});
+  }
+  async function abrirPresente() {
+    const [ci, i, j] = String(S.presente || "").split("-").map(Number);
+    const t = CATS()[ci]?.cursos[i]?.itens[j]; if (!t || !aulaAdmin(t.id)) return;
+    void pedirVideo(t.id).then(() => { if (S.tela === "presente") render(); });
+  }
+
+  /* ---------- ações ---------- */
+  function acao(a, d) {
+    switch (a) {
+      case "ir": S.config = false; document.documentElement.classList.remove("trava-rolagem"); pararVideo(); if (S.tela !== d.v || d.v !== "perfil") S.perfilDe = null; S.tela = d.v; topo(); break;
+      case "perfil-av": if (S.tela !== "perfil") { pararVideo(); S.perfilDe = { tela: S.tela, mod: S.mod, aula: S.aula, presente: S.presente, y: window.scrollY }; S.tela = "perfil"; topo(); } break;
+      case "jornada": pararVideo(); if (S.tela !== "jornada") S.jornadaDe = { tela: S.tela, mod: S.mod, aula: S.aula, presente: S.presente, y: window.scrollY }; S.tela = "jornada"; topo(); break;
+      case "voltar-jornada": case "voltar-perfil": {
+        const o = a === "voltar-jornada" ? S.jornadaDe : S.perfilDe;
+        if (a === "voltar-jornada") S.jornadaDe = null; else S.perfilDe = null;
+        if (!o) { S.tela = "inicio"; topo(); break; }
+        Object.assign(S, { tela: o.tela, mod: o.mod, aula: o.aula, presente: o.presente });
+        if (S.tela === "aula") void abrirAula(); if (S.tela === "presente") void abrirPresente();
+        render(); window.scrollTo({ top: o.y || 0 }); return;
+      }
+      case "modulo": {
+        const m = +d.m; if (!MODS()[m]) return; pararVideo();
+        if (!liberado(m)) { aviso("O Módulo " + MODS()[m].num + ": " + msgModFechado(m).charAt(0).toLowerCase() + msgModFechado(m).slice(1) + "."); return; }
+        if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
+        S.mod = m; S.tela = "modulo"; topo(); break;
+      }
+      case "voltar-mod": { pararVideo(); const y = S.rolagemOrigem || 0; S.tela = S.origemMod || "inicio"; render(); window.scrollTo({ top: y }); return; }
+      case "aula": {
+        const m = +d.m, i = +d.i; if (!MODS()[m] || !MODS()[m].aulas[i]) return;
+        const ea = estadoAula(m, i);
+        if (ea.fech) { aviso(ea.seq ? "Conclua a Aula " + i + " para liberar esta." : ea.txt === "Em breve" ? "Esta aula ainda não foi liberada para você." : "Esta aula " + ea.txt.charAt(0).toLowerCase() + ea.txt.slice(1) + "."); return; }
+        pararVideo();
+        if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
+        S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = "sobre"; void abrirAula(); topo(); break;
+      }
+      case "anterior": if (S.aula > 0) acao("aula", { m: S.mod, i: S.aula - 1 }); else if (S.mod > 0) acao("aula", { m: S.mod - 1, i: MODS()[S.mod - 1].aulas.length - 1 }); return;
+      case "seguinte":
+        if (S.tela === "presente") { const [ci, i, j] = String(S.presente).split("-").map(Number); if (CATS()[ci]?.cursos[i]?.itens[j + 1]) acao("presente", { v: ci + "-" + i + "-" + (j + 1) }); return; }
+        if (S.aula + 1 < MODS()[S.mod].aulas.length) acao("aula", { m: S.mod, i: S.aula + 1 }); else acao("modulo", { m: S.mod + 1 }); return;
+      case "tocar": {
+        const id = S.tela === "presente" ? (() => { const [ci, i, j] = String(S.presente).split("-").map(Number); return CATS()[ci]?.cursos[i]?.itens[j]?.id; })() : MODS()[S.mod]?.aulas[S.aula]?.id;
+        if (!id) return;
+        if (VID && VID_ID === id && !VID.paused) { VID.pause(); return; }
+        void tocar(id); return;
+      }
+      case "buscar": { if (!VID || !Number.isFinite(VID.duration)) return; const r = d._el.getBoundingClientRect(); VID.currentTime = Math.max(0, Math.min(1, (d._x - r.left) / r.width)) * VID.duration; return; }
+      case "de-novo": { const k = chaveAtual(); delete S.fim[k]; if (VID) { VID.currentTime = 0; void VID.play().catch(() => {}); render(); } else acao("tocar", {}); return; }
+      case "ver-aulas": {
+        S.verAulas = S.verAulas || {}; const ab = (S.verAulas[d.m] = !S.verAulas[d.m]);
+        const lista = document.getElementById("la-" + d.m), b = d._el;
+        if (lista && b) { lista.classList.toggle("aberto", ab); b.setAttribute("aria-expanded", ab); b.innerHTML = (ab ? "Esconder aulas" : "Ver aulas (" + MODS()[+d.m].aulas.length + ")") + '<span aria-hidden="true">' + (ab ? "⌃" : "⌄") + "</span>"; return; }
+        break;
+      }
+      case "voltar-aula-fim": delete S.modFim[S.mod]; render(); window.scrollTo({ top: 0 }); return;
+      case "finalizar-mod": { parar(); delete S.fim[chaveAtual()]; S.modFim[S.mod] = 1; render(); window.scrollTo({ top: 0 }); return; }
+      case "concluir": {
+        const id = MODS()[S.mod]?.aulas[S.aula]?.id; if (!id) return;
+        const l = D.prog.get(id); if (l) l.concluida = true;
+        void api.marcarConcluida(id, true).then(() => aviso("Aula concluída. Parabéns pelo passo de hoje!")).catch(() => { if (l) l.concluida = false; aviso("Não conseguimos marcar agora. Tente de novo."); render(); });
+        break;
+      }
+      case "velocidade": folha(`<h2 class="serif">Velocidade do vídeo</h2><div class="opcoes">${["0,75x", "Normal", "1,25x", "1,5x"].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${S.velocidade === v}">${v === "Normal" ? "Normal (1x)" : v}</button>`).join("")}</div>`); return;
+      case "vel": S.velocidade = d.v; if (VID) VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[d.v] || 1; camada.innerHTML = ""; aviso("Velocidade: " + (d.v === "Normal" ? "normal" : d.v) + "."); break;
+      case "fechar-folha": if (d._alvo && d._alvo !== d._el && d._el.classList.contains("fundo-folha")) return; camada.innerHTML = ""; return;
+      case "volume": S.mudo = !S.mudo; if (VID) VID.muted = S.mudo; aviso(S.mudo ? "Vídeo sem som. Toque de novo para ligar." : "Som ligado."); break;
+      case "tela-cheia": {
+        if (!VID) { aviso("Toque em assistir primeiro."); return; }
+        if (VID.webkitEnterFullscreen && /iPad|iPhone|iPod/.test(navigator.userAgent)) { VID.webkitEnterFullscreen(); return; }
+        const pl = app.querySelector(".player[data-aula]"); if (pl && pl.requestFullscreen) void pl.requestFullscreen().catch(() => {}); return;
+      }
+      case "extra": {
+        const au = MODS()[S.mod]?.aulas[S.aula]; const x = au && au.conteudos.find((c) => c.id === d.id); if (!x) return;
+        if (x.url) { window.open(x.url, "_blank", "noopener"); return; }
+        if (x.arquivoPath) { void api.enderecoDoArquivo(x.tipo === "audio" ? "audios" : "materiais", x.arquivoPath).then((u) => (u ? window.open(u, "_blank", "noopener") : aviso("Não conseguimos abrir este arquivo agora."))); return; }
+        if (x.texto) folha(`<h2 class="serif">${h(x.titulo)}</h2><div style="margin-top:12px;line-height:1.7;color:var(--texto-2)">${h(x.texto).replace(/\n/g, "<br>")}</div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Fechar</button>`);
+        return;
+      }
+      case "ebook": { const [ci, i] = d.v.split("-").map(Number); S.presente = ci + "-" + i; S.tela = "presente"; topo(); break; }
+      case "abrir-ebook": {
+        const [ci, i] = d.v.split("-").map(Number); const curso = CATS()[ci]?.cursos[i]; if (!curso) return;
+        const x = curso.conteudos.find((c) => c.url || c.arquivoPath);
+        const abrir = (href) => { S.leitorDe = { presente: S.presente, y: window.scrollY }; S.leitor = { titulo: curso.nome, href }; S.tela = "leitor"; topo(); render(); };
+        if (x && x.url) abrir(x.url);
+        else if (x && x.arquivoPath) void api.enderecoDoArquivo("materiais", x.arquivoPath).then((u) => (u ? abrir(u) : aviso("Não conseguimos abrir o ebook agora.")));
+        return;
+      }
+      case "leitor-zoom": { const atual = S.leitorZoom == null ? 1 : S.leitorZoom; S.leitorZoom = Math.max(0, Math.min(ZOOMS.length - 1, atual + Number(d.v))); aplicarZoomLeitor(); return; }
+      case "fechar-leitor": { const o = S.leitorDe || {}; S.leitorDe = null; S.presente = o.presente || S.presente; S.tela = "presente"; render(); window.scrollTo({ top: o.y || 0 }); return; }
+      case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
+      case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return; pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
+      case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
+      case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
+      case "ir-cat": {
+        const ci = CATS().findIndex((c) => c.nome.toLowerCase() === String(d.v).toLowerCase());
+        if (ci < 0 || !catAberta(CATS()[ci])) { aviso(d.v + " ainda não foi liberado para você. Em breve!"); return; }
+        pararVideo(); S.perfilDe = null; S.cat = ci; S.tela = "categoria"; topo(); break;
+      }
+      case "presente": {
+        const [ci, i, j] = d.v.split("-").map(Number); const t = CATS()[ci]?.cursos[i]?.itens[j];
+        if (!t) return; if (!aulaAdmin(t.id)) { aviso("Este conteúdo ainda não foi liberado para você. Em breve!"); return; }
+        pararVideo(); S.presente = d.v; S.tela = "presente"; void abrirPresente(); topo(); break;
+      }
+      case "com-responder": S.respondendo = d.id || null; S.rascunho = "@" + d.v + " "; acao("abrir-comentar", {}); return;
+      case "coms-toggle": S.comsFechado = !S.comsFechado; break;
+      case "com-ver-mais": { const k = S.mod + "-" + S.aula; S.comTodos[k] = !S.comTodos[k]; break; }
+      case "resp-ver-mais": S.respTodas[d.v] = !S.respTodas[d.v]; break;
+      case "abrir-comentar": {
+        folha(`<form data-f="comentar">
+          <h2 class="serif">Comentar na aula</h2>
+          <p class="apoio" style="margin-top:4px">${h(MODS()[S.mod].aulas[S.aula].titulo)}</p>
+          <label for="txtCom" class="sr">Seu comentário</label>
+          <textarea id="txtCom" name="txt" class="com-grande" placeholder="Escreva aqui o que achou desta aula...">${h(S.rascunho)}</textarea>
+          <p class="apoio" style="margin-top:10px">A equipe lê cada comentário antes de publicar.</p>
+          <div class="com-botoes">
+            <button type="button" class="botao-2" data-a="fechar-folha">Cancelar</button>
+            <button class="botao">${ICONES.enviar}Enviar</button>
+          </div>
+        </form>`);
+        const t = document.getElementById("txtCom"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+        return;
+      }
+      case "escolher-foto": {
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+        inp.onchange = () => {
+          const fl = inp.files[0]; if (!fl) return;
+          const rd = new FileReader();
+          rd.onload = () => { const im = new Image(); im.onload = () => {
+            const max = 1000, k = Math.min(1, max / Math.max(im.width, im.height));
+            const c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            abrirEditorFoto({ src: c.toDataURL("image/jpeg", 0.9), w: c.width, h: c.height, z: 1, x: 0, y: 0 });
+          }; im.src = rd.result; };
+          rd.readAsDataURL(fl);
+        };
+        inp.click(); return;
+      }
+      case "ajustar-foto": if (S.fotoOrig) abrirEditorFoto(Object.assign({}, S.fotoOrig)); else acao("escolher-foto", {}); return;
+      case "foto-cancelar": camada.innerHTML = ""; return;
+      case "foto-salvar": salvarFoto(); return;
+      case "abrir-config": S.config = true; break;
+      case "fechar-config": S.config = false; break;
+      case "tirar-foto": folha(`<h2 class="serif" style="margin:0 0 6px">Remover sua foto?</h2><p class="apoio">No lugar dela volta a aparecer a letra do seu nome.</p><div class="folha-botoes"><button class="botao-2" data-a="fechar-folha">Cancelar</button><button class="botao" data-a="foto-remover-ok">Remover foto</button></div>`); return;
+      case "foto-remover-ok": S.foto = ""; S.fotoOrig = null; gravar("aion-foto-" + (D?.user || ""), null); gravar("aion-foto-orig-" + (D?.user || ""), null); camada.innerHTML = ""; aviso("Foto removida."); break;
+      case "cor-nome": S.corNome = d.v; gravar("aion-cor-nome", d.v); aviso("Cor salva."); break;
+      case "tema": S.tema = d.v === "claro" ? "claro" : "escuro"; gravar("aion-tema", S.tema); aviso(S.tema === "claro" ? "Tema claro ativado." : "Tema escuro ativado."); break;
+      case "letra-mais": S.letra = Math.min(TAM.length - 1, S.letra + 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
+      case "letra-menos": S.letra = Math.max(0, S.letra - 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
+      case "instalar": folha(`<h2 class="serif">Colocar na tela do celular</h2><div style="margin-top:14px;font-size:1.0625rem;line-height:1.7;color:var(--texto-2)"><p><b style="color:var(--texto)">No iPhone:</b> toque em Compartilhar e depois em “Adicionar à Tela de Início”.</p><p style="margin-top:12px"><b style="color:var(--texto)">No Android:</b> toque nos três pontinhos do navegador e depois em “Instalar aplicativo”.</p></div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Entendi</button>`); return;
+      case "sair": folha(`<h2 class="serif">Sair da área de membros?</h2><p class="apoio" style="margin-top:8px">Para entrar de novo, use seu nome e seu código.</p><div style="display:grid;gap:10px;margin-top:18px"><button class="botao" data-a="sair-sim">Sair</button><button class="botao-2" data-a="fechar-folha">Continuar aqui</button></div>`); return;
+      case "sair-sim": {
+        camada.innerHTML = ""; pararVideo();
+        void api.sair().finally(() => {
+          S = ini(); S.carregando = false; S.saiu = true; D = null; ultimaTela = "";
+          document.documentElement.classList.remove("trava-rolagem"); render();
+          try { window.close(); } catch { /* o navegador não deixa */ }
+        });
+        return;
+      }
+      case "entrar-de-novo": S.saiu = false; break;
+      case "ver-codigo": { const v = document.getElementById("codigo").value, n = document.getElementById("nome").value; S.verCodigo = !S.verCodigo; S.nomeDigitado = n; render(); document.getElementById("codigo").value = v; document.getElementById("codigo").focus(); return; }
+      default: return;
+    }
+    render();
+  }
+  async function enviar(f, form) {
+    if (f === "entrar") {
+      const n = form.nome.value.trim(), c = form.codigo.value.trim();
+      S.nomeDigitado = n;
+      if (!n) S.erroEntrada = "Escreva o seu nome.";
+      else if (!/^\d{4,6}$/.test(c)) S.erroEntrada = "O código tem 4 números. Confira e tente de novo.";
+      else {
+        S.erroEntrada = ""; S.entrando = true; render();
+        const r = await api.entrar(n, c);
+        if (!r.ok) { S.entrando = false; S.erroEntrada = r.falha.mensagem; render(); document.getElementById("codigo")?.focus(); return; }
+        try { await iniciarSessao(); } catch { S.entrando = false; S.erroEntrada = "Não foi possível abrir sua área agora. Tente de novo."; render(); }
+        return;
+      }
+      render();
+      document.getElementById(!n ? "nome" : "codigo")?.focus();
+      return;
+    }
+    if (f === "comentar") {
+      const t = form.txt.value.trim();
+      if (!t) { aviso("Escreva seu comentário antes de enviar."); form.txt.focus(); return; }
+      const au = MODS()[S.mod].aulas[S.aula], k = S.mod + "-" + S.aula;
+      const pos = VID && VID_ID === au.id ? VID.currentTime : 0;
+      const btn = form.querySelector("button:not([type])"); if (btn) btn.disabled = true;
+      try {
+        await api.comentar(au.id, t, pos, S.respondendo || undefined);
+        (S.meus[k] = S.meus[k] || []).unshift({ txt: t });
+        S.rascunho = ""; S.respondendo = null; camada.innerHTML = ""; render();
+        aviso("Recebemos seu comentário. Ele aparece aqui depois que a equipe aprovar.");
+      } catch { if (btn) btn.disabled = false; aviso("Não conseguimos enviar agora. Tente de novo."); }
+    }
+  }
+  async function iniciarSessao() {
+    await carregar();
+    void api.marcarPresenca().catch(() => {});
+    const nomeTela = S.nome; S.entrou = true; S.carregando = false; S.entrando = false; S.erroEntrada = ""; S.nome = nomeTela;
+    render(); marcarHistorico();
+  }
+
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-a]"); if (!b || b.disabled || !raiz.contains(b)) return;
+    acao(b.dataset.a, Object.assign({}, b.dataset, { _alvo: e.target, _el: b, _x: e.clientX }));
+    marcarHistorico();
+  });
+  document.addEventListener("submit", (e) => { const f = e.target.closest("form[data-f]"); if (!f || !raiz.contains(f)) return; e.preventDefault(); void enviar(f.dataset.f, f); });
+  document.addEventListener("input", (e) => { if (e.target.id === "txtCom") S.rascunho = e.target.value; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && camada.innerHTML) camada.innerHTML = ""; });
+  // Saindo do app no meio da aula, a posição vai junto.
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") gravarPosicao(true); });
+  window.addEventListener("pagehide", () => gravarPosicao(true));
+
+  render();
+  void (async () => {
+    try {
+      if (await api.temSessao()) { await iniciarSessao(); return; }
+    } catch { /* sessão vencida: volta para a entrada */ }
+    S.carregando = false; render();
+  })();
+}
