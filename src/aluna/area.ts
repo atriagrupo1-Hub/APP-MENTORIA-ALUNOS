@@ -747,7 +747,8 @@ export function montar(raiz: HTMLElement) {
   const CATS = () => (D ? D.cats : []);
   const ehEbook = (curso) => !curso.itens.length && curso.conteudos.some((x) => x.url || x.arquivoPath);
   const cursoLiberado = (curso) => curso.liberadoDireto || curso.itens.some((x) => aulaAdmin(x.id));
-  const catAberta = (c) => !c.bloqueada && c.cursos.some(cursoLiberado);
+  // Categoria ainda sem curso abre vazia ("Em breve…"): não há nada nela para liberar.
+  const catAberta = (c) => !c.bloqueada && (!c.cursos.length || c.cursos.some(cursoLiberado));
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   function telaPresentes() {
     return `
@@ -786,7 +787,7 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
   function telaCategoria() {
-    const c = CATS()[S.cat];
+    const c = S.cat < 0 && S.catVazia ? { nome: S.catVazia, cursos: [] } : CATS()[S.cat];
     if (!c) { S.tela = "presentes"; return telaPresentes(); }
     const ci = S.cat;
     return `
@@ -1292,8 +1293,8 @@ export function montar(raiz: HTMLElement) {
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
         const ci = CATS().findIndex((c) => c.nome.toLowerCase() === String(d.v).toLowerCase());
-        if (ci < 0 || !catAberta(CATS()[ci])) { aviso(d.v + " ainda não foi liberado para você. Em breve!"); return; }
-        pararVideo(); S.perfilDe = null; S.cat = ci; S.tela = "categoria"; topo(); break;
+        if (ci >= 0 && !catAberta(CATS()[ci])) { aviso(d.v + " ainda não foi liberado para você. Em breve!"); return; }
+        pararVideo(); S.perfilDe = null; S.cat = ci; S.catVazia = ci < 0 ? String(d.v) : null; S.tela = "categoria"; topo(); break;
       }
       case "presente": {
         const [ci, i, j] = d.v.split("-").map(Number); const t = CATS()[ci]?.cursos[i]?.itens[j];
