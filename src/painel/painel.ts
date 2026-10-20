@@ -1296,7 +1296,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         <span class="nome"><b>${h(e.nome)}</b><span>${h(e.login)} · ${h(e.papel.toLowerCase())}</span></span>
         ${e.bloqueada ? etiqueta("Bloqueada", VERMELHO) : ""}
         <span class="acoes">
-          ${e.codigo ? `<button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
+          ${e.codigo ? `<button class="botao-neutro" data-a="copiar-acesso-equipe" data-id="${e.id}">Copiar login e código</button><button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
           ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="trocar-codigo" data-id="${e.id}">Trocar código</button>` : ""}
           ${!gere(e) ? "" : e.bloqueada
             ? `<button class="botao-neutro" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>`
@@ -1560,6 +1560,13 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         else if (d.k === "comentario") { const k = S.comentarios.find((x) => x.id === d.id); ui.tab = "comentarios"; ui.respondendo = null; if (k) ui.filtroCom = k.estado; }
         window.scrollTo(0, 0);
         break;
+      }
+      case "copiar-acesso-equipe": {
+        const e = pessoa(d.id);
+        const txt = "Login: " + e.login + "\nCódigo: " + (e.codigo ?? "");
+        const falha = () => toast("Login " + e.login + " · código " + (e.codigo ?? ""));
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Login e código de " + primeiroNome(e.nome) + " copiados."), falha); else falha();
+        return;
       }
       case "copiar-acesso": {
         const txt = "Login: " + al!.login + "\nCódigo: " + al!.codigo;
