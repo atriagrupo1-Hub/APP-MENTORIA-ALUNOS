@@ -394,3 +394,17 @@ html { background: var(--fundo); }
 
 /* "Mesmo da aluna anterior", no alto das janelas de liberação e cronograma. */
 .copiar-de { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; padding: 10px 12px; background: var(--superficie); border: 1px solid var(--linha-suave); border-radius: 10px; }
+
+/* Início: cada quadro fechado, com título, número e resumo; "Ver" abre. */
+.sanfona { padding: 0; align-self: start; }
+.sanfona > summary { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 16px 20px; cursor: pointer; list-style: none; }
+.sanfona > summary::-webkit-details-marker { display: none; }
+.sanfona-topo { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.sanfona-topo h3 { margin: 0; }
+.sanfona .conta { min-width: 26px; height: 26px; padding: 0 8px; display: inline-grid; place-items: center; font-size: 13px; font-weight: 700; color: var(--texto-2); border: 1px solid var(--linha-suave); border-radius: 999px; }
+.sanfona .conta.tem { color: var(--texto); border-color: var(--linha); }
+.sanfona-resumo { grid-column: 1; font-size: 13px; color: var(--texto-3); }
+.sanfona-ver { grid-column: 2; grid-row: 1 / span 2; font-size: 13px; font-weight: 600; color: var(--texto); padding: 6px 12px; border: 1px solid var(--linha); border-radius: 999px; }
+.sanfona-ver::after { content: "Ver"; }
+.sanfona[open] .sanfona-ver::after { content: "Fechar"; }
+.sanfona-corpo { padding: 0 20px 20px; }
