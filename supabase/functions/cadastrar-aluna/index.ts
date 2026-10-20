@@ -103,12 +103,17 @@ Deno.serve(async (req) => {
   try {
     const corpo = await req.json();
     nome = String(corpo?.nome ?? "").trim();
-    login = String(corpo?.login ?? "").trim().toLowerCase();
+    // "Angela F.": primeiro nome e a inicial do sobrenome, separados por
+    // um espaço. Guardado em minúsculas; a aluna digita como quiser.
+    login = String(corpo?.login ?? "").trim().toLowerCase().replace(/\s+/g, " ");
     codigo = String(corpo?.codigo ?? "").trim();
     // Só os dígitos. Guardar "(11) 98765-4321" faria o mesmo número
     // virar dois na hora de procurar, e o link do WhatsApp não aceita
     // pontuação de qualquer jeito.
-    celular = String(corpo?.celular ?? "").replace(/\D/g, "");
+    // Número de fora do Brasil começa com "+" e o código do país, e fica
+    // guardado com o "+": é o que diferencia os dois na hora de ler.
+    const bruto = String(corpo?.celular ?? "").trim();
+    celular = (bruto.startsWith("+") ? "+" : "") + bruto.replace(/\D/g, "");
     email = String(corpo?.email ?? "").trim().toLowerCase();
     entrada = String(corpo?.entrada ?? "").trim();
     validade = String(corpo?.validade ?? "").trim();
@@ -119,21 +124,22 @@ Deno.serve(async (req) => {
   if (nome.length < 2 || nome.length > 80) {
     return resposta({ erro: "nome_invalido", mensagem: "Informe o nome da aluna." }, 400, origem);
   }
-  if (!/^[a-z0-9._-]{2,40}$/.test(login)) {
+  if (login.length < 2 || login.length > 40 || !/^[a-z0-9._-]+( [a-z0-9._-]+)*$/.test(login)) {
     return resposta(
       {
         erro: "login_invalido",
-        mensagem: "O nome de acesso aceita letras minúsculas, números, ponto, hífen e sublinhado.",
+        mensagem: "O login aceita letras sem acento, números, ponto, hífen e espaço entre as palavras.",
       },
       400,
       origem,
     );
   }
   // O celular é obrigatório (0042): é por ele que a aluna é acompanhada.
-  // DDD e os nove números — onze dígitos.
-  if (!/^[0-9]{11}$/.test(celular)) {
+  // Do Brasil, DDD e os nove números — onze dígitos. De fora (0045), "+",
+  // o código do país e o número: de 8 a 15 dígitos.
+  if (!/^[0-9]{11}$/.test(celular) && !/^\+[0-9]{8,15}$/.test(celular)) {
     return resposta(
-      { erro: "celular_invalido", mensagem: "Preencha o celular com DDD: (11) 98765-4321." },
+      { erro: "celular_invalido", mensagem: "Preencha o celular com DDD, (11) 98765-4321, ou de fora com + e o código do país." },
       400,
       origem,
     );
@@ -198,7 +204,9 @@ Deno.serve(async (req) => {
   // que o Auth não sabe ler, e o login falha com "Database error
   // loading user".
   const { data: conta, error: erroConta } = await admin.auth.admin.createUser({
-    email: `${login}@${DOMINIO_INTERNO}`,
+    // O e-mail do Auth é interno e ninguém o digita. Não vem mais do
+    // login: com o espaço de "angela f." ele não seria um e-mail válido.
+    email: `${crypto.randomUUID()}@${DOMINIO_INTERNO}`,
     password: senhaDescartavel,
     email_confirm: true,
     user_metadata: { nome },

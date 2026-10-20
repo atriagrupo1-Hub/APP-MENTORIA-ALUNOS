@@ -51,7 +51,12 @@ export async function entrar(
     resposta = await fetch(enderecoEntrar, {
       method: "POST",
       headers: { apikey: chavePublica, "Content-Type": "application/json" },
-      body: JSON.stringify({ login, codigo }),
+      // O login é guardado sem acento e com um espaço só entre as palavras
+      // ("angela f."): quem digita "Ângela  F." tem de chegar ao mesmo.
+      body: JSON.stringify({
+        login: login.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim(),
+        codigo,
+      }),
     });
   } catch {
     return {

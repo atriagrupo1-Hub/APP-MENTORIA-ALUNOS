@@ -85,12 +85,45 @@ const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
 /** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
 function formatarCelular(valor: string): string {
+  // De fora do Brasil: "+", o código do país e o número, sem máscara —
+  // cada país agrupa de um jeito. Só os dígitos e os espaços ficam.
+  if (valor.trim().startsWith("+")) return "+" + valor.replace(/[^\d ]/g, "").replace(/\s+/g, " ").trimStart().slice(0, 19);
   const d = valor.replace(/\D/g, "").slice(0, 11);
   if (d.length === 0) return "";
   if (d.length <= 2) return "(" + d;
   if (d.length <= 7) return "(" + d.slice(0, 2) + ") " + d.slice(2);
   return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
 }
+
+/*
+ * Nome e login da aluna.
+ *
+ * O nome ganha a primeira letra maiúscula em cada palavra, menos nas
+ * partículas ("Angela de Fátima"). O login é o primeiro nome e a
+ * inicial do primeiro sobrenome que não é partícula, com ponto:
+ * "Angela F.". Sem acento, porque é o que a aluna digita para entrar —
+ * a tela de entrada tira o acento do que ela escreve. No banco ele fica
+ * em minúsculas; aqui é mostrado como ela vê.
+ */
+const PARTICULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du", "del", "van", "von"]);
+const maiuscula = (w: string) => w.charAt(0).toLocaleUpperCase("pt-BR") + w.slice(1);
+function nomeProprio(nome: string, final = false): string {
+  return nome.replace(/\s+/g, " ").replace(final ? /^ | $/g : /^ /, "").split(" ").map((w, i) => {
+    const min = w.toLocaleLowerCase("pt-BR");
+    if (i > 0 && PARTICULAS.has(min)) return min;
+    return maiuscula(final ? min : w);
+  }).join(" ");
+}
+const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function loginDoNome(nome: string): string {
+  const ws = semAcento(nome).split(/\s+/).map((w) => w.replace(/[^A-Za-z0-9]/g, "")).filter(Boolean);
+  if (!ws.length) return "";
+  const sobrenome = ws.slice(1).find((w) => !PARTICULAS.has(w.toLowerCase()));
+  return maiuscula(ws[0].toLowerCase()) + (sobrenome ? " " + sobrenome[0].toUpperCase() + "." : "");
+}
+const loginVisivel = (login: string) => login.split(" ").map(maiuscula).join(" ");
+const loginGuardado = (login: string) => semAcento(login).toLowerCase().replace(/[^a-z0-9._ -]/g, "").replace(/\s+/g, " ").trim();
+const whatsappDe = (celular: string) => celular.startsWith("+") ? celular.replace(/\D/g, "") : "55" + celular.replace(/\D/g, "");
 
 const vencida = (a: Aluna) => !!a.validade && a.validade < hoje();
 function quando(iso: string): string {
@@ -212,7 +245,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const contato = new Map<string, { celular?: string; email?: string }>();
   for (const c of contatos.data ?? []) contato.set(c.id, c);
   const listaAlunas: Aluna[] = (alunas.data ?? []).map((a: Record<string, unknown>) => ({
-    id: String(a.id), nome: String(a.nome), login: String(a.login), codigo: String(a.codigo ?? ""),
+    id: String(a.id), nome: String(a.nome), login: loginVisivel(String(a.login)), codigo: String(a.codigo ?? ""),
     celular: String(a.celular ?? contato.get(String(a.id))?.celular ?? ""),
     email: String(contato.get(String(a.id))?.email ?? ""),
     entrada: String(a.entrada ?? ""), validade: a.validade ? String(a.validade) : "",
@@ -1282,14 +1315,14 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}">
         <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
-        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
+        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Cadastre com nome e sobrenome. O login sai sozinho: o primeiro nome e a inicial do sobrenome, como Angela F. — é com ele e o código de 4 números que ela entra."}</p>
         <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" /></label>
+          <label class="grupo nome"><span class="rotulo">Nome completo</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" placeholder="Nome e sobrenome" autocomplete="off" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input id="alunaLogin" class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="Angela F." autocomplete="off" ${!a || a.login.toLowerCase() === loginDoNome(a.nome).toLowerCase() ? "data-auto" : ""} /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
             <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
           </label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp)</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp) · de fora, comece com +</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="tel" autocomplete="off" maxlength="20" placeholder="(11) 98765-4321 ou +351 912 345 678" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
@@ -1529,7 +1562,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
-        window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+        window.open("https://wa.me/" + whatsappDe(al!.celular) + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
         void executar(async () => {
           if (a === "whatsapp") await registrar(al!.id, "Acesso enviado pelo WhatsApp");
           else {
@@ -1804,11 +1837,13 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "aluna": {
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
-        const nome = v("nome");
-        const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
-        if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
-        const celular = v("celular").replace(/\D/g, "");
-        if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
+        const nome = nomeProprio(v("nome"), true);
+        const loginNovo = loginGuardado(v("login") || loginDoNome(nome));
+        if (loginNovo.length < 2) { toast("Preencha o nome da aluna."); return; }
+        if (S.alunas.some((x) => x.login.toLowerCase() === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginVisivel(loginNovo) + ". Mude o login, por exemplo com a segunda letra do sobrenome."); return; }
+        const fora = v("celular").startsWith("+");
+        const celular = (fora ? "+" : "") + v("celular").replace(/\D/g, "");
+        if (fora ? !/^\+\d{8,15}$/.test(celular) : celular.length !== 11) { toast(fora ? "Confira o número de fora: + , o código do país e o número." : "Preencha o celular com DDD: (11) 98765-4321. Se for de fora do Brasil, comece com +."); return; }
         const email = v("email").toLowerCase();
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
@@ -1825,7 +1860,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
           if (r.id) await registrar(String(r.id), "Aluna cadastrada");
           ui.modal = null;
-          const msg = nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
+          const msg = nome + " cadastrada. Login " + loginVisivel(loginNovo) + ", código " + cod + ".";
           return r.id ? { msg, texto: "cadastro de " + nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: String(r.id) }); } } : msg;
         });
         return;
@@ -2116,6 +2151,14 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     if (solto) return;
     guardado(b.dataset.a!, Object.assign({}, b.dataset) as Record<string, string>, b, e.target);
   });
+  // Dois cliques num campo preenchido selecionam tudo o que está nele,
+  // não só a palavra — é o que a equipe espera para apagar ou copiar.
+  app.addEventListener("dblclick", (e) => {
+    const t = e.target as HTMLInputElement;
+    if (!t.matches?.("input.campo, textarea")) return;
+    if (["checkbox", "radio", "date", "file", "color", "range"].includes(t.type)) return;
+    try { t.select(); } catch { /* campo que não aceita seleção */ }
+  });
   app.addEventListener("submit", (e) => {
     const f = (e.target as HTMLElement).closest<HTMLFormElement>("form[data-f]");
     if (!f) return;
@@ -2129,11 +2172,19 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     marcarSujo(t);
     if (t.dataset.i === "busca") { ui.busca = t.value; render(); return; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
+    if (t.id === "alunaNome") {
+      const pos = t.selectionStart; t.value = nomeProprio(t.value); t.setSelectionRange(pos, pos);
+      const lg = document.getElementById("alunaLogin") as HTMLInputElement | null;
+      if (lg && lg.hasAttribute("data-auto")) lg.value = loginDoNome(t.value);
+      return;
+    }
+    if (t.id === "alunaLogin") { t.removeAttribute("data-auto"); if (!t.value.trim()) t.setAttribute("data-auto", ""); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
+    if (t.id === "alunaNome") t.value = nomeProprio(t.value, true);
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
     if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }

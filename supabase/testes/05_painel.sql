@@ -309,26 +309,47 @@ select confere(
   (select codigo from alunas_do_painel() where id = :maria) = '1234',
   'o suporte vê o código da aluna');
 select salvar_ficha_aluna(:maria, 'Maria das Graças', 'maria', '4821',
-  '2026-09-01', '2027-09-01');
+  '2026-09-01', '2027-09-01', '(11) 98765-4321', '');
 select confere(
   (select codigo = '4821' and entrada = '2026-09-01' and validade = '2027-09-01'
      from alunas_do_painel() where id = :maria),
   'e salva nome, código, entrada e validade');
 select recusa(
-  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L)',
-         :ana, 'Ana', 'maria', '1111', '2026-01-01', '2027-01-01'),
+  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L, %L, %L)',
+         :ana, 'Ana', 'maria', '1111', '2026-01-01', '2027-01-01', '11987654321', ''),
   'login repetido');
 select recusa(
-  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L)',
-         :ana, 'Ana', 'ana', '12a4', '2026-01-01', '2027-01-01'),
+  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L, %L, %L)',
+         :ana, 'Ana', 'ana', '12a4', '2026-01-01', '2027-01-01', '11987654321', ''),
   'código que não é de 4 números');
+
+-- 0045: login "Maria G." (nome e inicial, com espaço) e celular de fora.
+select salvar_ficha_aluna(:maria, 'Maria das Graças', 'Maria  G.', '4821',
+  '2026-09-01', '2027-09-01', '+351 912 345 678', '');
+select confere(
+  (select login = 'maria g.' and celular = '+351912345678' from profiles where id = :maria),
+  'login com espaço vira "maria g.", e o celular de fora fica com o +');
+select recusa(
+  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L, %L, %L)',
+         :maria, 'Maria', 'maria g.', '4821', '2026-09-01', '2027-09-01', '+12', ''),
+  'celular de fora curto demais');
+select recusa(
+  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L, %L, %L)',
+         :maria, 'Maria', 'maria g.', '4821', '2026-09-01', '2027-09-01', '(11) 9876-543', ''),
+  'celular do Brasil sem os onze números');
+select recusa(
+  format('select salvar_ficha_aluna(%L, %L, %L, %L, %L, %L, %L, %L)',
+         :maria, 'Maria', 'maria@g', '4821', '2026-09-01', '2027-09-01', '11987654321', ''),
+  'login com caractere que não vale');
+select salvar_ficha_aluna(:maria, 'Maria das Graças', 'maria', '4821',
+  '2026-09-01', '2027-09-01', '11987654321', '');
 
 select confere(length(trocar_codigo(:maria)) = 4, 'o suporte troca o código da aluna');
 
 -- Validade vencida ontem: perde o acesso.
 select salvar_ficha_aluna(:ana, 'Ana', 'ana', '5678',
   (now() at time zone 'America/Sao_Paulo')::date - 30,
-  (now() at time zone 'America/Sao_Paulo')::date - 1);
+  (now() at time zone 'America/Sao_Paulo')::date - 1, '11987654321', '');
 set request.jwt.claim.sub = :ana;
 select confere(not conta_ativa(), 'validade de ontem: Vencida');
 set request.jwt.claim.sub = :suporte;
