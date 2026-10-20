@@ -714,6 +714,38 @@ export function montar(app: HTMLElement) {
     equipe: ["Equipe", "Quem tem acesso a este painel.", "adicione uma pessoa, passe o código para ela e bloqueie quando ela sair da equipe."],
     registro: ["Registro", "Tudo o que a equipe fez no painel, com data e hora.", "consulte quando precisar saber quem mudou o quê."],
   };
+  /*
+   * O manual do cronograma, aberto pelo "?" da janela.
+   *
+   * É `<details>` e não o balão das abas de propósito: o balão redesenha
+   * a tela, e aqui isso apagaria os dias e as datas que a pessoa já
+   * digitou sem salvar.
+   */
+  const manualCronograma = (a: Aluna) => {
+    const ex = a.entrada || hoje();
+    return `
+    <details class="manual">
+      <summary><span class="ajuda-btn" aria-hidden="true">?</span> Como funciona o cronograma</summary>
+      <div class="manual-corpo">
+        <p><b>1. Primeiro, libere.</b> O cronograma só marca <em>quando</em> abre o que já está liberado para ela em <b>Liberar conteúdo</b>. Os dias do módulo não liberam nada sozinhos: se o módulo não estiver liberado, ele continua fechado.</p>
+        <p><b>2. Dias do módulo (o número ao lado de cada módulo).</b> Quantos dias depois da data de entrada da aluna o módulo inteiro abre, à meia-noite (horário de Brasília).</p>
+        <ul>
+          <li>Ela entrou em ${br(ex)}. Com <b>2</b>, o módulo abre em <b>${br(maisDias(ex, 2))}</b>.</li>
+          <li><b>0</b> abre no próprio dia da entrada.</li>
+          <li><b>Vazio</b> (—) abre assim que estiver liberado, sem esperar.</li>
+        </ul>
+        <p><b>3. Data fixa por aula.</b> Clique em "Data fixa por aula" embaixo do módulo e escolha o dia de cada aula. A aula abre nesse dia, à meia-noite.</p>
+        <ul>
+          <li>A data da aula vale mais que os dias do módulo. Exemplo: módulo com 2 dias e a aula 1 com data fixa — a aula 1 abre na data dela; as outras aulas do módulo abrem pelos 2 dias.</li>
+          <li>Pôr uma data também <b>libera aquela aula</b>, mesmo que o módulo não esteja liberado.</li>
+          <li>Apagar a data: a aula volta a seguir o módulo. Se ela estava liberada só por causa da data, fica aberta na hora.</li>
+        </ul>
+        <p><b>4. "Uma aula a cada tantos dias".</b> Atalho para não preencher data por data: escolha de quantos em quantos dias e a partir de quando, e clique em <b>Preencher datas</b>. Ele preenche as aulas já liberadas para ela, uma depois da outra. Confira as datas antes de salvar.</p>
+        <p><b>5. Aula "liberada para todas"</b> não segue cronograma: abre para todo mundo, na hora.</p>
+        <p><b>6. Nada muda até clicar em Salvar cronograma.</b> Cancelar descarta o que foi digitado.</p>
+      </div>
+    </details>`;
+  };
   const ajudaAba = () => {
     const g = AJUDA_ABAS[ui.tab]; if (!g) return "";
     const key = "aba-" + ui.tab;
@@ -1275,6 +1307,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       <form data-f="cronograma" data-id="${a.id}">
         <h2 class="titulo">Cronograma</h2>
         <p class="explica">${h(a.nome)} entrou em ${br(a.entrada)}. Diga quantos dias depois da entrada cada módulo abre para ela. Vazio segue a liberação normal.</p>
+        ${manualCronograma(a)}
         <div class="linha" style="padding:8px 0">
           <span class="nome" style="font-size:14px">Ou uma aula a cada tantos dias, nas aulas liberadas para ela</span>
           <span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto-3)">

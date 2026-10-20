@@ -380,3 +380,14 @@ html { background: var(--fundo); }
   .abre-ficha:hover .nome b, .abre-ficha:focus-visible .nome b { text-decoration: underline; text-underline-offset: 3px; }
   .abre-ficha:focus-visible { outline: 2px solid var(--ouro); outline-offset: 2px; }
   .abre-ficha .seta { flex: 0 0 auto; margin-left: auto; font-size: 20px; line-height: 1; color: var(--texto-3); }
+
+/* O manual do cronograma: "?" que abre o passo a passo dentro da janela. */
+.manual { margin: 4px 0 12px; border: 1px solid var(--linha-suave); border-radius: 10px; }
+.manual > summary { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 14px; font-weight: 600; color: var(--texto); cursor: pointer; list-style: none; }
+.manual > summary::-webkit-details-marker { display: none; }
+.manual[open] > summary .ajuda-btn { color: var(--texto); border-color: var(--texto); }
+.manual-corpo { padding: 0 14px 12px; font-size: 13px; line-height: 1.5; color: var(--texto-2); }
+.manual-corpo p { margin: 10px 0 4px; }
+.manual-corpo ul { margin: 0; padding-left: 18px; }
+.manual-corpo li { margin: 2px 0; }
+.manual-corpo b, .manual-corpo em { color: var(--texto); font-style: normal; }
