@@ -515,22 +515,16 @@ export function montar(app: HTMLElement) {
   }
 
   /*
-   * A lista de "Alunas e acessos" ocupa o espaço que sobra à direita dos
-   * quadros, para nenhum deles ficar escondido; sem espaço (tela menor),
-   * fica com a largura padrão por cima. A seta dourada na borda do painel
-   * aponta para a altura do quadro escolhido.
+   * Lista de "Alunas e acessos" aberta: como na referência, os quadros
+   * continuam nas mesmas posições, só mais estreitos, para caberem à
+   * esquerda do painel e o escolhido ficar à vista, encostado nele. Em
+   * tela estreita o painel fica por cima, na largura toda.
    */
   function ajustarListaLateral() {
-    const painel = document.getElementById("aaLista"); const grade = app.querySelector(".aa-grade");
-    const sel = app.querySelector(".aa-ind.sel");
-    if (!painel || !grade || !sel) return;
-    painel.style.width = ""; painel.removeAttribute("data-liga");
-    const livre = innerWidth - grade.getBoundingClientRect().right - 28;
-    if (innerWidth > 600 && livre >= 420) painel.style.width = Math.min(livre, 640) + "px";
-    const r = sel.getBoundingClientRect();
-    if (innerWidth > 600 && r.right <= painel.getBoundingClientRect().left + 1) {
-      painel.setAttribute("data-liga", ""); painel.style.setProperty("--liga-y", Math.round(r.top + r.height / 2) + "px");
-    }
+    const painel = document.getElementById("aaLista"); const grade = app.querySelector<HTMLElement>(".aa-grade");
+    if (!painel || !grade || innerWidth <= 900) return;
+    grade.classList.add("estreita");
+    grade.style.maxWidth = Math.max(320, painel.getBoundingClientRect().left - 14 - grade.getBoundingClientRect().left) + "px";
   }
 
   const selo = `<span class="marca-bloco"><span class="selo">AION <em>Mentoria</em></span><span class="rotulo">Painel administrativo</span></span>`;
@@ -705,6 +699,13 @@ export function montar(app: HTMLElement) {
     comecar: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg>`,
     novas: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>`,
   };
+  /** Avatar da seção: uma cor suave por pessoa, como na referência (a cor não quer dizer nada). */
+  const AA_CORES = ["#4f8a43", "#b4465f", "#3f6fa8", "#5c8a5a", "#b07a2a", "#7a52a8", "#2f8a8a"];
+  const aaAvatar = (a: Aluna, grande = false) => {
+    let n = 0; for (const c of a.id) n = (n * 31 + c.charCodeAt(0)) >>> 0;
+    return `<span class="avatar${grande ? " grande" : ""}" style="--cor:${AA_CORES[n % AA_CORES.length]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
+  };
+  const pilula = (txt: string, tipo: "ouro" | "verde" | "vermelho" | "neutro") => `<span class="aa-pilula ${tipo}"><i></i>${h(txt)}</span>`;
   const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
   const xis = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
@@ -768,7 +769,7 @@ export function montar(app: HTMLElement) {
           <p class="aa-sub">${d.sub}</p>
           ${l.map((a) => `
           <div class="aa-item">
-            <button type="button" class="aa-item-abre" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${avatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${d.extra(a)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span></button>
+            <button type="button" class="aa-item-abre" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${aaAvatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${d.extra(a)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span></button>
             <span class="acoes">${d.acao(a)}</span>
             <button type="button" class="aa-item-seta" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${seta}</button>
           </div>`).join("") || semNada(d.vazio)}
@@ -787,106 +788,114 @@ export function montar(app: HTMLElement) {
     </section>`;
   }
 
-  /** O cadastro completo, por cima da lista. Tudo o que vem daqui já existia na ficha. */
+  /**
+   * O cadastro completo, por cima da lista, como na referência: visão
+   * geral, acessos, progresso, pagamentos e observações. Só mostra o que
+   * o sistema guarda — "não informado" quando o campo está vazio, e
+   * Pagamentos diz que não há registro, porque o sistema não guarda
+   * pagamentos.
+   */
   function cadastroAluna(entra: boolean) {
     const a = S.alunas.find((x) => x.id === ui.acessoAluna);
     if (!a) { ui.acessoAluna = null; return ""; }
-    const [rot, cor] = sitInfo(situacao(a));
-    const status = !a.ultimoAcesso && !a.bloqueada && !vencida(a) ? etiqueta("Ainda não acessou", "var(--ouro)") : etiqueta(rot, cor);
-    const ult = a.ultimaAula ? acharAula(a.ultimaAula) : null;
+    const sit = situacao(a);
+    const status = !a.ultimoAcesso && !a.bloqueada && !vencida(a) ? pilula("Ainda não acessou", "ouro")
+      : pilula(sitInfo(sit)[0], sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho");
     const hist = S.historico.filter((x) => x.aluna === a.id);
     const coms = comentariosDe(a);
     const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto" };
     const verCod = ui.verCodigo === a.id;
     const libs = new Set(aulasDaLiberacao(a));
     const produtos = S.cursos.map((c) => {
-      const total = c.modulos.reduce((s, m) => s + m.aulas.length, 0);
-      const n = c.modulos.reduce((s, m) => s + m.aulas.filter((k) => libs.has(k.id)).length, 0);
-      return n ? { c, n, total } : null;
-    }).filter(Boolean) as { c: Curso; n: number; total: number }[];
-    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["observacoes", "Observações"], ["historico", "Histórico"]];
+      const n = c.modulos.reduce((s2, m) => s2 + m.aulas.filter((k) => libs.has(k.id)).length, 0);
+      return n ? { c, n } : null;
+    }).filter(Boolean) as { c: Curso; n: number }[];
+    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
     const aba = ABAS_AL.some(([k]) => k === ui.acessoAba) ? ui.acessoAba : "geral";
+    const naoInf = `<span class="aa-vazio">não informado</span>`;
     const linha = (rotulo: string, valor: string) => `<div class="aa-dado"><span>${rotulo}</span><b>${valor}</b></div>`;
+    const IC = {
+      cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4M8 13h2M11 13h2M14 13h2"/></svg>`,
+      cadeado: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5M12 14.5v2.5"/></svg>`,
+      relogio: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
+      play: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`,
+      lapis: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1-4L15.8 5.2a1.8 1.8 0 0 1 2.6 0l.4.4a1.8 1.8 0 0 1 0 2.6L8.5 18.5z"/></svg>`,
+    };
     const resumo = (ic: string, rotulo: string, valor: string) => `<div class="aa-resumo"><span class="aa-icone pequeno">${ic}</span><span><span>${rotulo}</span><b>${valor}</b></span></div>`;
-    const notasHtml = (lim?: number) => (lim ? a.notas.slice().reverse().slice(0, lim) : a.notas.slice().reverse()).map((n) => `<div class="mini"><span class="nome"><b class="leve">${h(n.texto)}</b><span>${h(n.quem)} · ${dataHora(n.quando)}</span></span>${lim ? "" : `<span class="acoes"><button class="botao-neutro botao-remover" data-a="nota-remover" data-id="${a.id}" data-v="${n.id}">Remover</button></span>`}</div>`).join("");
-    const acoes = `
-          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
-          <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
-          <button class="botao-neutro grande" data-a="editar-aluna" data-id="${a.id}">Editar dados</button>
-          <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
-          <button class="botao-neutro grande" data-a="cronograma" data-id="${a.id}">Cronograma</button>
-          <button class="botao-neutro grande" data-a="renovar" data-id="${a.id}">Renovar</button>
-          ${a.bloqueada
-            ? `<button class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
-            : `<button class="botao-neutro grande botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}`;
+    const notas = (comAcoes: boolean) => a.notas.slice().reverse().map((n) => `<div class="mini"><span class="nome"><b class="leve">${h(n.texto)}</b><span>${h(n.quem)} · ${dataHora(n.quando)}</span></span>${comAcoes ? `<span class="acoes"><button class="botao-neutro botao-remover" data-a="nota-remover" data-id="${a.id}" data-v="${n.id}">Remover</button></span>` : ""}</div>`).join("");
 
     let corpo = "";
     if (aba === "geral") corpo = `
         <div class="aa-duas">
           <div class="aa-cartao">
-            <div class="aa-cartao-cab"><h3>Informações da aluna</h3><button type="button" class="aa-editar" data-a="editar-aluna" data-id="${a.id}">Editar</button></div>
+            <div class="aa-cartao-cab"><h3>Informações da aluna</h3><button type="button" class="aa-editar" data-a="editar-aluna" data-id="${a.id}">${IC.lapis}Editar</button></div>
             ${linha("Nome completo", h(a.nome))}
-            ${linha("Login", h(a.login))}
-            ${linha("Código de acesso", `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>`)}
-            ${linha("Celular (WhatsApp)", a.celular ? h(fone(a.celular)) : "não informado")}
-            ${linha("E-mail", a.email ? h(a.email) : "não informado")}
+            ${linha("E-mail", a.email ? h(a.email) : naoInf)}
+            ${linha("Telefone", a.celular ? h(fone(a.celular)) : naoInf)}
+            ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
             ${linha("Data de cadastro", br(a.entrada))}
-            ${linha("Acesso até", vencida(a) ? "venceu em " + br(a.validade) : br(a.validade))}
             ${linha("Status", status)}
           </div>
           <div class="aa-cartao">
             <div class="aa-cartao-cab"><h3>Resumo de acesso</h3></div>
-            ${resumo(ICONE.vencem, "Entrada", br(a.entrada))}
-            ${resumo(ICONE.novas, "Aulas liberadas", p(a.liberadas, "aula", "aulas"))}
-            ${resumo(ICONE.comecar, "Último acesso", a.ultimoAcesso ? haQuanto(a.ultimoAcesso) + " (" + br(a.ultimoAcesso) + ")" : "Nunca acessou")}
-            ${resumo(ICONE.parada, "Aulas concluídas", String(a.concluidas))}
-            ${ult ? resumo(ICONE.novas, "Última aula assistida", h(localAula(ult.a.id) + " · " + ult.a.nome)) : ""}
+            ${resumo(IC.cal, "Acesso liberado em", br(a.entrada))}
+            ${resumo(IC.cadeado, "Aulas liberadas", p(a.liberadas, "aula", "aulas"))}
+            ${resumo(IC.relogio, "Último acesso", a.ultimoAcesso ? br(a.ultimoAcesso) : "Nunca acessou")}
           </div>
         </div>
         <h3 class="aa-secao">Produtos e acessos</h3>
-        ${produtos.map((x) => `<div class="aa-produto"><span class="aa-icone">${`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>`}</span><span class="nome"><b>${h(x.c.nome)}</b><span>${x.n === x.total ? p(x.n, "aula liberada", "aulas liberadas") : x.n + " de " + p(x.total, "aula liberada", "aulas liberadas")}</span></span>${etiqueta(rot, cor)}</div>`).join("") || semNada("Nenhum conteúdo liberado ainda.")}
+        ${produtos.map((x) => `<div class="aa-produto"><span class="aa-icone">${IC.play}</span><span class="nome"><b>${h(x.c.nome)}</b><span>${p(x.n, "aula liberada", "aulas liberadas")}</span></span>${a.bloqueada ? pilula("Bloqueado", "vermelho") : vencida(a) ? pilula("Vencido", "vermelho") : pilula("Ativo", "verde")}</div>`).join("") || `<div class="aa-obs">Nenhum produto liberado.</div>`}
         <h3 class="aa-secao">Observações</h3>
-        <div class="aa-obs">${notasHtml(3) || semNada("Nenhuma observação registrada.")}${a.notas.length > 3 ? `<button type="button" class="link" data-a="aa-aba" data-v="observacoes">Ver todas as ${a.notas.length}</button>` : ""}</div>`;
+        <div class="aa-obs">${a.notas.length ? notas(false) : "Nenhuma observação registrada."}</div>`;
     else if (aba === "acessos") corpo = `
         <div class="aa-cartao">
-          ${linha("Situação", etiqueta(rot, cor))}
-          ${linha("Entrada", br(a.entrada))}
-          ${linha("Acesso até", vencida(a) ? "venceu em " + br(a.validade) : br(a.validade))}
-          ${linha("Aulas liberadas", String(a.liberadas))}
+          <div class="aa-cartao-cab"><h3>Acesso</h3></div>
           ${linha("Login", h(a.login))}
+          ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
+          ${linha("Acesso liberado em", br(a.entrada))}
+          ${linha("Acesso até", a.validade ? br(a.validade) : naoInf)}
+          ${linha("Status", status)}
         </div>
         <h3 class="aa-secao">Ações</h3>
-        <div class="acoes aa-acoes">${acoes}</div>`;
+        <div class="acoes aa-acoes">
+          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
+          <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
+          <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
+          <button class="botao-neutro grande" data-a="cronograma" data-id="${a.id}">Cronograma</button>
+          <button class="botao-neutro grande" data-a="renovar" data-id="${a.id}">Renovar</button>
+          ${a.bloqueada
+            ? `<button class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
+            : `<button class="botao-neutro grande botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}
+        </div>`;
     else if (aba === "progresso") corpo = `
-        <div class="numeros">
-          ${numero(a.concluidas, "Aulas concluídas")}
-          ${numero(a.liberadas, "Aulas liberadas")}
+        <div class="aa-duas">
+          <div class="aa-cartao">${resumo(IC.cadeado, "Aulas liberadas", String(a.liberadas))}</div>
+          <div class="aa-cartao">${resumo(IC.play, "Aulas concluídas", String(a.concluidas))}</div>
         </div>
-        <div class="aa-cartao"><div class="aa-cartao-cab"><h3>Progresso por módulo</h3></div><p class="sub">Aulas concluídas em cada módulo liberado.</p>${progressoModulos(a)}</div>
+        <h3 class="aa-secao">Progresso por módulo</h3>
+        <div class="aa-cartao">${progressoModulos(a)}</div>
         ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
-    else if (aba === "observacoes") corpo = `
-        <div class="aa-cartao">
-          <div class="aa-cartao-cab"><h3>Anotações internas</h3></div>
-          <p class="sub">Só a equipe vê.</p>
-          <form data-f="nota" data-id="${a.id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:6px">
-            <textarea class="campo" name="texto" rows="2" placeholder="Ex.: pediu ajuda com o celular" required></textarea>
-            <div><button class="botao-neutro grande">Adicionar anotação</button></div>
-          </form>
-          ${notasHtml() || semNada("Nenhuma anotação.")}
-        </div>
-        ${a.contatos.length ? `<h3 class="aa-secao">Contatos registrados</h3><div class="aa-cartao">${a.contatos.slice().reverse().map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}</div>` : ""}`;
+    else if (aba === "pagamentos") corpo = `
+        <div class="aa-obs">Nenhuma informação de pagamento registrada.</div>`;
     else corpo = `
         <div class="aa-cartao">
-          <p class="sub">Tudo o que aconteceu com esta aluna, do mais recente ao mais antigo.</p>
-          ${hist.length ? `<ul class="tempo">${hist.map((x) => `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}</p></li>`).join("")}</ul>` : semNada("Nada registrado ainda.")}
-        </div>`;
+          <form data-f="nota" data-id="${a.id}" style="display:flex;flex-direction:column;gap:8px">
+            <textarea class="campo" name="texto" rows="2" placeholder="Escreva uma observação. Só a equipe vê." required></textarea>
+            <div><button class="botao-neutro grande">Adicionar observação</button></div>
+          </form>
+        </div>
+        <div class="aa-obs" style="margin-top:12px">${a.notas.length ? notas(true) : "Nenhuma observação registrada."}</div>
+        ${a.contatos.length ? `<h3 class="aa-secao">Contatos registrados</h3><div class="aa-cartao">${a.contatos.slice().reverse().map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}</div>` : ""}
+        <h3 class="aa-secao">Histórico</h3>
+        <div class="aa-cartao">${hist.length ? `<ul class="tempo">${hist.map((x) => `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}</p></li>`).join("")}</ul>` : semNada("Nada registrado ainda.")}</div>`;
 
     return `
       <div class="aa-fundo dois" data-a="aa-fechar-aluna"></div>
       <aside class="aa-painel largo${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Cadastro de ${h(a.nome)}">
-        <header class="aa-cab">
-          <div class="aa-quem">${avatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.entrada)}</p></div></div>
-          <span class="aa-cab-dir">${status}<button type="button" class="aa-fechar" data-a="aa-fechar-aluna" aria-label="Fechar o cadastro e voltar à lista">${xis}</button></span>
+        <button type="button" class="aa-fechar canto" data-a="aa-fechar-aluna" aria-label="Fechar o cadastro e voltar à lista">${xis}</button>
+        <header class="aa-cab aluna">
+          <div class="aa-quem">${aaAvatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.entrada)}</p></div></div>
+          ${status}
         </header>
         <nav class="aa-abas" role="tablist">${ABAS_AL.map(([k, n]) => `<button type="button" role="tab" class="aa-aba" data-a="aa-aba" data-v="${k}" aria-selected="${k === aba}">${n}</button>`).join("")}</nav>
         <div class="aa-corpo" data-rolagem="aluna-${a.id}-${aba}">${corpo}</div>
