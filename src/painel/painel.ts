@@ -709,55 +709,30 @@ export function montar(app: HTMLElement) {
   const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
   const xis = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
-  function telaAcessos(listas: Record<Lista, Aluna[]>, periodo: (l: Aluna[]) => string) {
-    const DEF: Record<Lista, { titulo: string; resumo: string; sub: string; vazio: string; extra: (a: Aluna) => string; acao: (a: Aluna) => string }> = {
-      vencem: {
-        titulo: "Acessos que vencem em 15 dias",
-        resumo: listas.vencem.length ? "o primeiro " + vaiVencer(listas.vencem[0]) + " · " + br(listas.vencem[0].validade) : "Nenhum vencendo",
-        sub: "Abra o acesso dela e renove por lá antes que vença.", vazio: "Nenhum acesso vencendo.",
-        extra: (a) => vaiVencer(a) + " · " + br(a.validade),
-        acao: (a) => `<button class="botao-verde" data-a="aa-aluna" data-id="${a.id}" data-v="acessos">Ver acesso</button>`,
-      },
-      parada: {
-        titulo: "Sem acesso há mais de 14 dias",
-        resumo: listas.parada.length ? p(listas.parada.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar",
-        sub: "Um recado pode trazê-la de volta.", vazio: "Ninguém parou de entrar.",
-        extra: (a) => "último acesso " + haQuanto(a.ultimoAcesso),
-        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : "",
-      },
-      comecar: {
-        titulo: "Ainda não fizeram o primeiro acesso",
-        resumo: listas.comecar.length ? p(listas.comecar.length, "aluna", "alunas") + " · " + periodo(listas.comecar) : "Todas já entraram",
-        sub: "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.", vazio: "Todas já entraram pelo menos uma vez.",
-        extra: (a) => cadastrada(a),
-        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : "",
-      },
-      novas: {
-        titulo: "Novas nesta semana",
-        resumo: listas.novas.length ? p(listas.novas.length, "cadastrada", "cadastradas") + " · " + periodo(listas.novas) : "Nenhum cadastro nos últimos 7 dias",
-        sub: "Cadastradas nos últimos 7 dias.", vazio: "Nenhum cadastro nos últimos 7 dias.",
-        extra: (a) => "entrou em " + br(a.entrada),
-        acao: () => "",
-      },
-    };
-    const ordem: Lista[] = ["vencem", "parada", "comecar", "novas"];
-    const aberta = ui.acessoLista as Lista | "";
-    const anima = ui.aaAnima; ui.aaAnima = "";
+  /** Um quadro da seção: o número, o resumo e a lista que ele abre. */
+  type Quadro = { titulo: string; resumo: string; sub: string; vazio: string; lista: Aluna[]; icone: string; meta: (a: Aluna) => string; acao: (a: Aluna) => string; acoesAbaixo?: boolean };
 
-    const cartao = (id: Lista) => {
-      const d = DEF[id]; const n = listas[id].length;
+  /*
+   * Quadros → lista lateral → cadastro da aluna. É o mesmo padrão em
+   * "Alunas e acessos" e em "Engajamento": quem chama só diz quais são os
+   * quadros e o que cada lista mostra.
+   */
+  function quadrosComLista(defs: Record<string, Quadro>, ordem: string[]) {
+    const aberta = defs[ui.acessoLista] ? ui.acessoLista : "";
+    const anima = ui.aaAnima; ui.aaAnima = "";
+    const cartao = (id: string) => {
+      const d = defs[id]; const n = d.lista.length;
       return `
         <button type="button" class="aa-ind${aberta === id ? " sel" : ""}" data-a="aa-lista" data-v="${id}" aria-expanded="${aberta === id}" aria-controls="aaLista">
-          <span class="aa-icone">${ICONE[id]}</span>
+          <span class="aa-icone">${d.icone}</span>
           <span class="aa-ind-txt"><b>${d.titulo}</b><span>${h(d.resumo)}</span></span>
           <span class="aa-conta${n ? " tem" : ""}">${n}</span>
           ${seta}
         </button>`;
     };
-
     let lista = "";
-    if (aberta && DEF[aberta]) {
-      const d = DEF[aberta]; const l = listas[aberta];
+    if (aberta) {
+      const d = defs[aberta]; const l = d.lista;
       lista = `
       <div class="aa-fundo" data-a="aa-fechar-lista"></div>
       <aside id="aaLista" class="aa-painel${anima === "lista" ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="${h(d.titulo)}">
@@ -768,23 +743,58 @@ export function montar(app: HTMLElement) {
         <div class="aa-corpo" data-rolagem="lista-${aberta}">
           <p class="aa-sub">${d.sub}</p>
           ${l.map((a) => `
-          <div class="aa-item">
-            <button type="button" class="aa-item-abre" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${aaAvatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${d.extra(a)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span></button>
+          <div class="aa-item${d.acoesAbaixo ? " abaixo" : ""}">
+            <button type="button" class="aa-item-abre" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${aaAvatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${d.meta(a)}</span></span></button>
             <span class="acoes">${d.acao(a)}</span>
             <button type="button" class="aa-item-seta" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir o cadastro de ${h(a.nome)}">${seta}</button>
           </div>`).join("") || semNada(d.vazio)}
         </div>
       </aside>`;
     }
+    return `
+      <div class="aa-grade">${ordem.map(cartao).join("")}</div>
+      ${lista}
+      ${aberta && ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}`;
+  }
 
+  function telaAcessos(listas: Record<Lista, Aluna[]>, periodo: (l: Aluna[]) => string) {
+    const lib = (a: Aluna) => " · " + p(a.liberadas, "aula liberada", "aulas liberadas");
+    const DEF: Record<Lista, Quadro> = {
+      vencem: {
+        titulo: "Acessos que vencem em 15 dias", lista: listas.vencem, icone: ICONE.vencem,
+        resumo: listas.vencem.length ? "o primeiro " + vaiVencer(listas.vencem[0]) + " · " + br(listas.vencem[0].validade) : "Nenhum vencendo",
+        sub: "Abra o acesso dela e renove por lá antes que vença.", vazio: "Nenhum acesso vencendo.",
+        meta: (a) => vaiVencer(a) + " · " + br(a.validade) + lib(a),
+        acao: (a) => `<button class="botao-verde" data-a="aa-aluna" data-id="${a.id}" data-v="acessos">Ver acesso</button>`,
+      },
+      parada: {
+        titulo: "Sem acesso há mais de 14 dias", lista: listas.parada, icone: ICONE.parada,
+        resumo: listas.parada.length ? p(listas.parada.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar",
+        sub: "Um recado pode trazê-la de volta.", vazio: "Ninguém parou de entrar.",
+        meta: (a) => "último acesso " + haQuanto(a.ultimoAcesso) + lib(a),
+        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : "",
+      },
+      comecar: {
+        titulo: "Ainda não fizeram o primeiro acesso", lista: listas.comecar, icone: ICONE.comecar,
+        resumo: listas.comecar.length ? p(listas.comecar.length, "aluna", "alunas") + " · " + periodo(listas.comecar) : "Todas já entraram",
+        sub: "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.", vazio: "Todas já entraram pelo menos uma vez.",
+        meta: (a) => cadastrada(a) + lib(a),
+        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : "",
+      },
+      novas: {
+        titulo: "Novas nesta semana", lista: listas.novas, icone: ICONE.novas,
+        resumo: listas.novas.length ? p(listas.novas.length, "cadastrada", "cadastradas") + " · " + periodo(listas.novas) : "Nenhum cadastro nos últimos 7 dias",
+        sub: "Cadastradas nos últimos 7 dias.", vazio: "Nenhum cadastro nos últimos 7 dias.",
+        meta: (a) => "entrou em " + br(a.entrada) + lib(a),
+        acao: () => "",
+      },
+    };
     return `
     <section class="tela ativa aa">
       <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:18px">← Voltar ao início</button>
       <h2 class="aa-titulo">Alunas e acessos</h2>
       <p class="aa-intro">Clique em um dos quadros para ver a lista.</p>
-      <div class="aa-grade">${ordem.map(cartao).join("")}</div>
-      ${lista}
-      ${aberta && ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
+      ${quadrosComLista(DEF, ["vencem", "parada", "comecar", "novas"])}
     </section>`;
   }
 
@@ -1079,6 +1089,45 @@ export function montar(app: HTMLElement) {
     const key = "aba-" + ui.tab;
     return `<span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="${key}" aria-label="O que é ${g[0]}" aria-expanded="${ui.ajuda === key}">?</button>${ui.ajuda === key ? `<span class="ajuda-pop esq" role="tooltip"><b>${g[0]}</b><span>${g[1]}</span><em>O que fazer: ${g[2]}</em></span>` : ""}</span>`;
   };
+  /*
+   * Engajamento no mesmo padrão de "Alunas e acessos": um quadro por
+   * grupo (os mesmos filtros e a mesma nota de antes), a lista abre ao
+   * lado e a aluna abre no cadastro completo.
+   */
+  const ICONE_ENG: Record<string, string> = {
+    empurrao: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.2v.3"/></svg>`,
+    ritmo: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
+    avancando: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16.5l5-5 4 4 7-7.5M14.5 8H20v5.5"/></svg>`,
+    recem: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8.5" r="3.8"/><path d="M3 20c.8-4 3.5-6 7-6 1.6 0 3 .4 4.1 1.2M18 13.5v6M15 16.5h6"/></svg>`,
+    semcontato: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 4.5h3l1.5 4-2 1.3a10 10 0 0 0 5.2 5.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A15.5 15.5 0 0 1 4.5 6.7a2 2 0 0 1 2-2.2z"/></svg>`,
+    todas: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1.1"/><circle cx="4.8" cy="12" r="1.1"/><circle cx="4.8" cy="17.5" r="1.1"/></svg>`,
+  };
+  function quadrosEng(base: Aluna[], FIL: [string, string, (x: Aluna) => boolean][], media: number): Record<string, Quadro> {
+    const meta = (x: Aluna) => {
+      const uc = x.contatos[x.contatos.length - 1];
+      return `${base.indexOf(x) + 1}º · nota ${x.nota} · ${x.concluidas} de ${x.liberadas} aulas concluídas<br>${x.ultimoAcesso ? "último acesso " + haQuanto(x.ultimoAcesso) : "ainda não entrou"} · ${uc ? "contato " + haQuanto(diaDe(uc.quando)) : "sem contato registrado"}`;
+    };
+    const acao = (x: Aluna) => {
+      const k = nivel(x)[2];
+      return `<button class="botao-verde" data-a="contato" data-id="${x.id}">Registrar contato</button>`
+        + (k === "recem" && x.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${x.id}">Enviar acesso</button>`
+          : k !== "avancando" && x.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${x.id}">Mandar recado</button>` : "");
+    };
+    const filtro = (id: string) => (FIL.find((f) => f[0] === id) || FIL[0])[2];
+    const q = (id: string, titulo: string, resumoCom: string, resumoSem: string, sub: string, vazio: string): Quadro => {
+      const lista = base.filter(filtro(id));
+      return { titulo, lista, icone: ICONE_ENG[id], resumo: lista.length ? resumoCom : resumoSem, sub, vazio, meta, acao, acoesAbaixo: true };
+    };
+    const guia = (k: string) => AJUDA[k][1] + " O que fazer: " + AJUDA[k][2];
+    return {
+      empurrao: q("empurrao", "Precisam de um empurrão", "pararam ou quase não começaram", "Ninguém precisa agora", guia("empurrao"), "Nenhuma aluna precisa de um empurrão agora."),
+      ritmo: q("ritmo", "No ritmo", "assistem, mas devagar ou com intervalos", "Ninguém neste grupo", guia("ritmo"), "Nenhuma aluna neste grupo."),
+      avancando: q("avancando", "Avançando", "assistem e voltam com frequência", "Ninguém neste grupo ainda", guia("avancando"), "Nenhuma aluna neste grupo."),
+      recem: q("recem", "Recém-chegadas", "cadastradas há até 7 dias, sem o primeiro acesso", "Nenhuma recém-chegada", guia("recem"), "Nenhuma recém-chegada."),
+      semcontato: q("semcontato", "Sem contato há 7 dias", "ninguém da equipe falou com elas na semana", "Todas tiveram contato", "Ninguém da equipe registrou contato com elas nos últimos 7 dias. Ligue ou mande recado e clique em Registrar contato.", "Todas tiveram contato nos últimos 7 dias."),
+      todas: q("todas", "Todas as alunas", "ranking pela nota · média " + media, "Nenhuma aluna ativa ainda", "Da maior para a menor nota. A nota vai de 0 a 100: aulas concluídas, último acesso e comentários. Bloqueadas ou com acesso vencido ficam fora.", "Nenhuma aluna ativa ainda."),
+    };
+  }
   function telaEngajamento() {
     const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
     const cont = (k: string) => base.filter((x) => nivel(x)[2] === k).length;
@@ -1086,17 +1135,16 @@ export function montar(app: HTMLElement) {
     const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
     const grupo = (g: string) => (x: Aluna) => nivel(x)[2] === g;
     const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegadas", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
-    const fl = FIL.find((z) => z[0] === ui.filtroEng) || FIL[0];
-    const lista = base.filter(fl[2]);
     return `
-    <section class="tela ativa">
+    <section class="tela ativa aa">
       <div class="numeros">
         ${numero(media, "Engajamento médio")}
         ${numero(cont("avancando"), "Avançando")}
         ${numero(cont("ritmo"), "No ritmo")}
         ${numero(cont("empurrao"), "Precisam de um empurrão", true)}
       </div>
-      <div class="guia">
+      ${quadrosComLista(quadrosEng(base, FIL, media), ["empurrao", "ritmo", "avancando", "recem", "semcontato", "todas"])}
+      <div class="guia" style="margin-top:16px">
         <button type="button" class="guia-topo" data-a="guia-eng" aria-expanded="${ui.guiaEng}"><b>Como usar esta aba</b><span>${ui.guiaEng ? "Esconder" : "Mostrar"}</span></button>
         ${ui.guiaEng ? `
         <ol class="passos">
@@ -1107,26 +1155,6 @@ export function montar(app: HTMLElement) {
         <div class="grupos">${["avancando", "ritmo", "empurrao", "recem"].map((k) => { const g = AJUDA[k]; return `<div class="grupo-eng" style="--cor:${g[3]}"><b>${g[0]}</b><p>${g[1]}</p><em>O que fazer: ${g[2]}</em></div>`; }).join("")}</div>
         <p class="nada" style="margin-top:12px">A nota vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.</p>` : ""}
       </div>
-      <div class="chips" style="margin-bottom:16px">
-        ${FIL.map(([id, n, fn]) => `<button class="chip" style="cursor:pointer" data-a="eng-filtro" data-v="${id}" aria-pressed="${ui.filtroEng === id}">${n} (${base.filter(fn).length})</button>`).join("")}
-      </div>
-      ${lista.length ? lista.map((x) => {
-        const pos = base.indexOf(x) + 1; const [rot, cor, k] = nivel(x);
-        const uc = x.contatos[x.contatos.length - 1];
-        return `
-      <div class="linha">
-        <span class="posicao">${pos}º</span>
-        ${avatar(x)}
-        <span class="nome"><b>${h(x.nome)}</b><span>${x.concluidas} de ${p(x.liberadas, "aula liberada", "aulas liberadas")} concluídas · ${ultimoTxt(x)} · ${p(x.nComentarios, "comentário", "comentários")}</span><span class="contato-linha">${uc ? "Último contato " + haQuanto(diaDe(uc.quando)) + " · " + h(uc.resultado) + " · " + h(uc.quem) : "Nenhum contato registrado"}</span></span>
-        <span class="nota-eng" aria-label="Nota ${x.nota} de 100"><span class="barra"><i style="width:${x.nota}%;background:${cor}"></i></span><b style="color:${cor}">${x.nota}</b></span>
-        ${etiqueta(rot, cor)}
-        <span class="acoes">
-          <button class="botao-verde" data-a="contato" data-id="${x.id}">Registrar contato</button>
-          ${k === "recem" && x.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${x.id}">Enviar acesso</button>` : k !== "avancando" && x.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${x.id}">Mandar recado</button>` : ""}
-          <button class="botao-neutro" data-a="ficha" data-id="${x.id}">Ficha</button>
-        </span>
-      </div>`;
-      }).join("") : `<div class="vazio">${base.length ? "Nenhuma aluna neste grupo." : "Nenhuma aluna ativa ainda."}</div>`}
     </section>`;
   }
 
@@ -2596,7 +2624,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     if (ui.buscaAberta) { ui.buscaAberta = false; atualizarBusca(); return; }
     if (ui.menu || ui.ajuda) { ui.menu = null; ui.ajuda = null; render(); return; }
     if (ui.modal) { guardado("fechar-esc", {}, null, null); return; }
-    if (ui.tab === "inicio" && ui.inicioVista === "acessos" && (ui.acessoAluna || ui.acessoLista)) {
+    if (ui.acessoAluna || ui.acessoLista) {
       if (ui.acessoAluna) ui.acessoAluna = null; else ui.acessoLista = "";
       render();
     }
