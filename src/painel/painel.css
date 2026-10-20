@@ -420,3 +420,4 @@ html { background: var(--fundo); }
 /* Na tela Alunas e acessos, um quadro embaixo do outro, na largura toda:
    abrir um não espreme nem empurra os outros para longe. */
 .lista-blocos { display: flex; flex-direction: column; gap: 12px; }
+.lista-blocos > .sanfona { align-self: stretch; width: 100%; }
