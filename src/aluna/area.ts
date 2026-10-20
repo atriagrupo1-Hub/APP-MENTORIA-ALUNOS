@@ -101,8 +101,8 @@ export function montar(raiz: HTMLElement) {
   const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
   const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
   const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
-  // O módulo abre quando o painel libera e o anterior está concluído (a regra da maquete).
-  const liberado = (m) => moduloAdmin(m) && (m === 0 || modConcluido(m - 1));
+  // O que está liberado no cadastro da aluna fica aberto — sem esperar concluir o anterior.
+  const liberado = (m) => moduloAdmin(m);
   const abre = (m) => { const ds = MODS()[m].aulas.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   const total = () => MODS().reduce((s, x) => s + x.aulas.length, 0);
   function continuar() {
@@ -124,7 +124,6 @@ export function montar(raiz: HTMLElement) {
     if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
     if (!aulaAdmin(id)) return { cls: "fechado", txt: aberturaDe(id) ? "Libera em " + dataCurta(aberturaDe(id)) : "Em breve", fech: true };
     if (feita(m, a)) return { cls: "ok", txt: "✓ Concluída" };
-    if (a > 0 && !feita(m, a - 1)) return { cls: "fechado", txt: "Conclua a Aula " + a + " para liberar", fech: true, seq: true };
     if (posicao(m, a) > 0) return { cls: "andando", txt: "Em andamento" };
     return { cls: "livre", txt: "Disponível" };
   }
@@ -136,7 +135,7 @@ export function montar(raiz: HTMLElement) {
     if (n > 0) return { cls: "andando", txt: n + " de " + t + " aulas feitas" };
     return { cls: "livre", txt: "Disponível · " + p(t, "aula", "aulas") };
   }
-  const msgModFechado = (m) => (m > 0 && moduloAdmin(m) && !modConcluido(m - 1) ? "Desbloqueia assim que você concluir o Módulo " + MODS()[m - 1].num : abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve");
+  const msgModFechado = (m) => (abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve");
 
   /* ---------- ícones (da maquete) ---------- */
   const ICONES = {
@@ -597,10 +596,8 @@ export function montar(raiz: HTMLElement) {
     const ultimaDoMod = a + 1 >= md.aulas.length;
     const modFimAqui = !!S.modFim[m] && ultimaDoMod && feita(m, a);
     const pm = m + 1 < MODS().length ? m + 1 : null;
-    const botaoProx = !feita(m, a)
-      ? `<button class="nav-prox trancado" disabled aria-label="Próxima aula, bloqueada até você concluir esta">${ICONES.cadeado}Próxima aula</button>`
-      : ultimaDoMod
-        ? (!modFimAqui ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
+    const botaoProx = ultimaDoMod
+        ? (!modFimAqui && feita(m, a) ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
           : pm === null ? `<button class="nav-prox trancado" disabled>Última aula</button>`
           : liberado(pm) ? `<button class="nav-prox livre" data-a="modulo" data-m="${pm}">Próximo módulo${ICONES.chev_dir}</button>`
           : `<button class="nav-prox trancado" disabled>${ICONES.cadeado}${h(msgModFechado(pm))}</button>`)
