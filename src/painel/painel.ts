@@ -120,7 +120,7 @@ const MOTIVOS: Record<string, string> = {
   sem_permissao: "Seu papel não permite esta ação.",
   login_em_uso: "Já existe alguém com esse login.",
   login_invalido: "O login aceita letras minúsculas, números, ponto, hífen e sublinhado.",
-  codigo_invalido: "O código precisa ter 4 números.",
+  codigo_invalido: "O código tem de 4 a 6 números.",
   nome_invalido: "Confira o nome.",
   validade_antes_da_entrada: "A validade não pode ser antes da entrada.",
   data_vazia: "Preencha a entrada e a validade.",
@@ -485,9 +485,9 @@ export function montar(app: HTMLElement) {
     <div class="conteudo" style="max-width:460px;margin:48px auto 0">
       <form data-f="entrar" class="cartao" style="padding:22px">
         <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu login e o código de 4 números.</p>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu login e o seu código.</p>
         <label class="grupo" style="margin-bottom:14px"><span class="rotulo">Login</span><input id="loginCampo" class="campo" name="login" autocomplete="username" required /></label>
-        <label class="grupo"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="4" autocomplete="off" required /></label>
+        <label class="grupo"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="off" required /></label>
         ${ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : ""}
         <button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>Entrar</button>
       </form>
