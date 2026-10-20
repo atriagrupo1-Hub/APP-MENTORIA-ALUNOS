@@ -400,6 +400,30 @@ select confere(
 select confere(length(trocar_codigo(:admin)) = 4, 'e troca o do administrador');
 select recusa(format('select bloquear_colaborador(%L, %L)', :dono, 'bloqueada'),
   'o dono não se bloqueia');
+
+-- 0046: editar alguém da equipe.
+select editar_colaborador(:suporte, 'Joana Lima', 'Joana  L.', 'suporte', '');
+select confere(
+  (select nome = 'Joana Lima' and login = 'joana l.' from profiles where id = :suporte),
+  'o dono edita nome e login do suporte');
+select recusa(format('select editar_colaborador(%L, %L, %L, %L, %L)', :dono, 'Dono', 'dono', 'admin', ''),
+  'o dono não muda o próprio papel');
+select recusa(format('select editar_colaborador(%L, %L, %L, %L, %L)', :suporte, 'Joana', 'maria', 'suporte', ''),
+  'login que já é de outra pessoa');
+set request.jwt.claim.sub = :admin;
+select recusa(format('select editar_colaborador(%L, %L, %L, %L, %L)', :suporte, 'Joana', 'joana l.', 'admin', ''),
+  'o administrador não promove ninguém a administrador');
+select recusa(format('select editar_colaborador(%L, %L, %L, %L, %L)', :dono, 'Outro', 'outro', 'dono', ''),
+  'o administrador não edita o dono');
+select editar_colaborador(:suporte, 'Joana Suporte', 'joana', 'suporte', '6543');
+select confere(
+  (select login = 'joana' from profiles where id = :suporte)
+  and (select codigo = '6543' from credenciais where aluna_id = :suporte),
+  'o administrador edita o suporte, inclusive o código');
+set request.jwt.claim.sub = :suporte;
+select recusa(format('select editar_colaborador(%L, %L, %L, %L, %L)', :admin, 'Outro', 'outro', 'admin', ''),
+  'o suporte não edita ninguém da equipe');
+set request.jwt.claim.sub = :dono;
 reset role;
 select confere(
   not exists (
