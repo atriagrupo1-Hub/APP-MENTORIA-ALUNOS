@@ -417,3 +417,6 @@ html { background: var(--fundo); }
 .resumo-acessos { grid-column: 1; margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: var(--texto-3); }
 .resumo-acessos b { display: inline-block; min-width: 22px; color: var(--texto); }
 .resumo-acessos b.atencao { color: var(--perigo); }
+/* Na tela Alunas e acessos, um quadro embaixo do outro, na largura toda:
+   abrir um não espreme nem empurra os outros para longe. */
+.lista-blocos { display: flex; flex-direction: column; gap: 12px; }

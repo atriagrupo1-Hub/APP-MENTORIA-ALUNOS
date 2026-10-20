@@ -618,9 +618,9 @@ export function montar(app: HTMLElement) {
     if (ui.inicioVista === "acessos") return `
     <section class="tela ativa">
       <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:16px">← Voltar ao início</button>
-      <h2 class="titulo" style="margin:0 0 4px">Alunas e acessos</h2>
-      <p class="sub" style="margin:0 0 16px;font-size:14px;color:var(--texto-3)">Clique em Ver em cada quadro para abrir a lista.</p>
-      <div class="grade-2">${blocosAcesso}</div>
+      <h2 style="margin:0 0 4px;font-size:22px;font-weight:700">Alunas e acessos</h2>
+      <p style="margin:0 0 16px;font-size:14px;color:var(--texto-3)">Clique em Ver em cada quadro para abrir a lista.</p>
+      <div class="lista-blocos">${blocosAcesso}</div>
     </section>`;
 
     const linhaResumo = (n: number, txt: string, atencao = false) => `<li><b class="${atencao && n ? "atencao" : ""}">${n}</b> ${txt}</li>`;
