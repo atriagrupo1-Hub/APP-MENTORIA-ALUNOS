@@ -552,3 +552,8 @@ body.aa-trava { overflow: hidden; }
 .aa-item.abaixo .aa-item-abre { flex: 1 1 calc(100% - 40px); }
 .aa-item.abaixo .acoes { order: 3; flex: 1 1 100%; margin-left: 58px; display: flex; flex-wrap: wrap; gap: 8px; }
 .aa-item.abaixo .aa-item-seta { order: 2; }
+/* O "?" dentro dos quadros de Engajamento. */
+.aa-ajuda { display: inline-block; vertical-align: middle; margin-left: 6px; font-weight: 400; }
+.aa-ajuda .ajuda-btn { width: 20px; height: 20px; font-size: 12px; }
+.aa-ajuda .ajuda-pop { left: -8px; right: auto; top: calc(100% + 8px); z-index: 30; width: 290px; max-width: calc(100vw - 48px); text-align: left; white-space: normal; cursor: default; }
+.aa-grade.estreita .aa-ajuda { display: none; }

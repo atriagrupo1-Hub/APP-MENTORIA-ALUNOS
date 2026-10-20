@@ -710,13 +710,22 @@ export function montar(app: HTMLElement) {
   const xis = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
   /** Um quadro da seção: o número, o resumo e a lista que ele abre. */
-  type Quadro = { titulo: string; resumo: string; sub: string; vazio: string; lista: Aluna[]; icone: string; meta: (a: Aluna) => string; acao: (a: Aluna) => string; acoesAbaixo?: boolean };
+  type Quadro = { titulo: string; resumo: string; sub: string; vazio: string; lista: Aluna[]; icone: string; meta: (a: Aluna) => string; acao: (a: Aluna) => string; acoesAbaixo?: boolean; ajuda?: [string, string, string] };
 
   /*
    * Quadros → lista lateral → cadastro da aluna. É o mesmo padrão em
    * "Alunas e acessos" e em "Engajamento": quem chama só diz quais são os
    * quadros e o que cada lista mostra.
    */
+  /*
+   * O "?" de cada quadro: o que o grupo quer dizer e o que fazer com ele.
+   * Fica dentro do cartão, que já é um botão — por isso é um span com
+   * data-a, e o balão também fecha ao clicar nele, sem abrir a lista.
+   */
+  const ajudaQuadro = (id: string, [titulo, texto, oque]: [string, string, string]) => {
+    const key = "quadro-" + id;
+    return ` <span class="ajuda aa-ajuda"><span role="button" tabindex="0" class="ajuda-btn" data-a="ajuda" data-v="${key}" aria-label="O que é ${h(titulo)}" aria-expanded="${ui.ajuda === key}">?</span>${ui.ajuda === key ? `<span class="ajuda-pop" role="tooltip" data-a="ajuda" data-v="${key}"><b>${h(titulo)}</b><span>${texto}</span>${oque ? `<em>O que fazer: ${oque}</em>` : ""}</span>` : ""}</span>`;
+  };
   function quadrosComLista(defs: Record<string, Quadro>, ordem: string[]) {
     const aberta = defs[ui.acessoLista] ? ui.acessoLista : "";
     const anima = ui.aaAnima; ui.aaAnima = "";
@@ -725,7 +734,7 @@ export function montar(app: HTMLElement) {
       return `
         <button type="button" class="aa-ind${aberta === id ? " sel" : ""}" data-a="aa-lista" data-v="${id}" aria-expanded="${aberta === id}" aria-controls="aaLista">
           <span class="aa-icone">${d.icone}</span>
-          <span class="aa-ind-txt"><b>${d.titulo}</b><span>${h(d.resumo)}</span></span>
+          <span class="aa-ind-txt"><b>${d.titulo}${d.ajuda ? ajudaQuadro(id, d.ajuda) : ""}</b><span>${h(d.resumo)}</span></span>
           <span class="aa-conta${n ? " tem" : ""}">${n}</span>
           ${seta}
         </button>`;
@@ -1015,7 +1024,7 @@ export function montar(app: HTMLElement) {
     inicio: ["Início", "O resumo do dia: o que pede atenção agora.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
     alunas: ["Alunas", "Todas as alunas cadastradas, com a situação de cada uma.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
     ficha: ["Ficha da aluna", "Tudo sobre uma aluna: dados, aulas liberadas, progresso, anotações e histórico.", "confira o que ela já tem liberado antes de responder qualquer dúvida. Anote o que conversou para a equipe saber."],
-    engajamento: ["Engajamento", "Quem está avançando e quem parou. A nota vai de 0 a 100.", "comece por quem precisa de um empurrão, ligue ou mande recado, e clique em Registrar contato para anotar como foi."],
+    engajamento: ["Engajamento", "Quem está avançando e quem parou. Cada quadro tem um ? explicando o grupo.", "comece por “Precisam de um empurrão”; ligue ou mande o recado pelo WhatsApp (o botão já abre a conversa com a mensagem pronta); e clique em “Registrar contato” para anotar como foi — assim ninguém da equipe liga duas vezes para a mesma pessoa."],
     layout: ["Categorias / Layout", "As seções que a aluna vê na área de membros, como Mentoria, Ebooks e Documentários.", "arraste para mudar a ordem em que aparecem. Renomeie ou crie uma categoria nova quando precisar."],
     cursos: ["Cursos e conteúdos", "Todos os produtos: a mentoria e os presentes.", "clique num produto para montar os módulos e as aulas. Use + Criar novo para um produto novo."],
     curso: ["Curso aberto", "Um produto por dentro: configurações, módulos e aulas.", "adicione, renomeie, reordene ou bloqueie módulos e aulas. Clique em Abrir na aula para colocar vídeo, capa e texto."],
@@ -1119,7 +1128,8 @@ export function montar(app: HTMLElement) {
       return { titulo, lista, icone: ICONE_ENG[id], resumo: lista.length ? resumoCom : resumoSem, sub, vazio, meta, acao, acoesAbaixo: true };
     };
     const guia = (k: string) => AJUDA[k][1] + " O que fazer: " + AJUDA[k][2];
-    return {
+    const ajudaDe = (k: string): [string, string, string] => [AJUDA[k][0], AJUDA[k][1], AJUDA[k][2]];
+    const quadros: Record<string, Quadro> = {
       empurrao: q("empurrao", "Precisam de um empurrão", "pararam ou quase não começaram", "Ninguém precisa agora", guia("empurrao"), "Nenhuma aluna precisa de um empurrão agora."),
       ritmo: q("ritmo", "No ritmo", "assistem, mas devagar ou com intervalos", "Ninguém neste grupo", guia("ritmo"), "Nenhuma aluna neste grupo."),
       avancando: q("avancando", "Avançando", "assistem e voltam com frequência", "Ninguém neste grupo ainda", guia("avancando"), "Nenhuma aluna neste grupo."),
@@ -1127,6 +1137,13 @@ export function montar(app: HTMLElement) {
       semcontato: q("semcontato", "Sem contato há 7 dias", "ninguém da equipe falou com elas na semana", "Todas tiveram contato", "Ninguém da equipe registrou contato com elas nos últimos 7 dias. Ligue ou mande recado e clique em Registrar contato.", "Todas tiveram contato nos últimos 7 dias."),
       todas: q("todas", "Todas as alunas", "ranking pela nota · média " + media, "Nenhuma aluna ativa ainda", "Da maior para a menor nota. A nota vai de 0 a 100: aulas concluídas, último acesso e comentários. Bloqueadas ou com acesso vencido ficam fora.", "Nenhuma aluna ativa ainda."),
     };
+    quadros.empurrao.ajuda = ajudaDe("empurrao");
+    quadros.ritmo.ajuda = ajudaDe("ritmo");
+    quadros.avancando.ajuda = ajudaDe("avancando");
+    quadros.recem.ajuda = ajudaDe("recem");
+    quadros.semcontato.ajuda = ["Sem contato há 7 dias", "Ninguém da equipe registrou contato com ela nos últimos 7 dias.", "ligue ou mande recado e clique em Registrar contato para anotar como foi — assim ninguém liga duas vezes para a mesma pessoa."];
+    quadros.todas.ajuda = ["A nota", "Vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.", ""];
+    return quadros;
   }
   function telaEngajamento() {
     const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
@@ -1144,17 +1161,6 @@ export function montar(app: HTMLElement) {
         ${numero(cont("empurrao"), "Precisam de um empurrão", true)}
       </div>
       ${quadrosComLista(quadrosEng(base, FIL, media), ["empurrao", "ritmo", "avancando", "recem", "semcontato", "todas"])}
-      <div class="guia" style="margin-top:16px">
-        <button type="button" class="guia-topo" data-a="guia-eng" aria-expanded="${ui.guiaEng}"><b>Como usar esta aba</b><span>${ui.guiaEng ? "Esconder" : "Mostrar"}</span></button>
-        ${ui.guiaEng ? `
-        <ol class="passos">
-          <li><b>Comece por “Precisa de um empurrão”.</b> São as alunas que pararam ou quase não começaram.</li>
-          <li><b>Ligue ou mande o recado pelo WhatsApp.</b> O botão já abre a conversa com a mensagem pronta.</li>
-          <li><b>Clique em “Registrar contato” e anote como foi.</b> Assim ninguém da equipe liga duas vezes para a mesma pessoa.</li>
-        </ol>
-        <div class="grupos">${["avancando", "ritmo", "empurrao", "recem"].map((k) => { const g = AJUDA[k]; return `<div class="grupo-eng" style="--cor:${g[3]}"><b>${g[0]}</b><p>${g[1]}</p><em>O que fazer: ${g[2]}</em></div>`; }).join("")}</div>
-        <p class="nada" style="margin-top:12px">A nota vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.</p>` : ""}
-      </div>
     </section>`;
   }
 
