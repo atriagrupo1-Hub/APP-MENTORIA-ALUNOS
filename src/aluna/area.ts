@@ -320,7 +320,8 @@ export function montar(raiz: HTMLElement) {
   }
 
   function telaInicio() {
-    const primeiraVez = !D || ![...D.prog.values()].some((l) => l.atualizadaEm || l.concluida);
+    // Primeiro acesso: nenhuma aula concluída nem começada (o progresso vem do banco).
+    const primeiraVez = !D || ![...D.prog.values()].some((l) => l.concluida || (l.posicaoSegundos || 0) > 0);
     const c = continuar();
     const primeiro = (S.nome || "").split(" ")[0];
     let heroi = "";
@@ -338,8 +339,8 @@ export function montar(raiz: HTMLElement) {
       </section>`;
     } else heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. As próximas aparecem aqui assim que forem liberadas.</div>`;
     const cardsExtra = `
-      <section class="ex-card vivo" aria-labelledby="h-vivo">
-        <span class="ex-img ex-ph"><span class="ex-ph-txt">arte do cartão<br>Aulas ao vivo</span>${img("/inicio/aulas-ao-vivo.png", "")}</span>
+      <section class="ex-card vivo ex-banner" aria-labelledby="h-vivo">
+        <button class="ex-img ex-img-banner" data-a="ir" data-v="modulos" aria-label="Ver aulas ao vivo">${img("/inicio/aulas-ao-vivo.webp", "Aulas ao vivo")}</button>
         <div class="ex-info">
           <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Aulas ao vivo</p>
           <h2 class="serif" id="h-vivo">Encontros ao vivo</h2>
@@ -375,31 +376,51 @@ export function montar(raiz: HTMLElement) {
           <button class="ex-botao" data-a="ir-cat" data-v="Documentários">Ver documentários</button>
         </div>
       </section>`;
+    const cabMentoria = `
+          <div class="mt-cab">
+            <p class="mt-rot">Sua mentoria</p>
+            <h2 class="mt-tit serif">Caminho do Desbloqueio <em>para Bênçãos Ilimitadas</em></h2>
+          </div>`;
     if (primeiraVez && MODS().length) {
+      const m0 = MODS()[0];
       return `
       <div class="pa">
         <section class="pa-ola">
-          <h1 class="pa-nome serif"><span class="pa-saud">Bem-vinda,</span> ${h(primeiro)}</h1>
+          <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
           ${versiculoHoje()}
         </section>
-        <section class="pa-comece-mc" aria-labelledby="h-comece">
-          <p class="pa-rot" id="h-comece">Comece por aqui</p>
-          <div class="lista">${linhaModulo(0, true)}</div>
+        <section class="mt-bloco" aria-labelledby="h-comece">
+          ${cabMentoria}
+          <p class="pa-rot mt-passo" id="h-comece">Comece por aqui</p>
+          <section class="ex-card ex-banner mh-card" aria-labelledby="h-m0">
+            <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o Módulo ${m0.num}">${img("/capas/modulo-0-horizontal.webp", "Módulo " + m0.num + " — " + titulo(m0.titulo))}</button>
+            <div class="ex-info">
+              <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>Módulo ${m0.num}</p>
+              <h2 class="serif" id="h-m0">${h(titulo(m0.titulo))}</h2>
+              <p class="ex-desc">${h(m0.intro)}</p>
+              <button class="ex-botao" data-a="modulo" data-m="0">Ver aulas</button>
+            </div>
+          </section>
+          <button class="mt-todos" data-a="ir" data-v="modulos">Ver todos os módulos da mentoria<span aria-hidden="true">›</span></button>
         </section>
+        <div class="mt-divisor" role="separator"><span>Também para você</span></div>
         ${cardsExtra}
       </div>`;
     }
     return `
     <div class="pa">
       <section class="pa-ola">
-        <h1 class="pa-nome serif"><span class="pa-saud">Bem-vinda,</span> ${h(primeiro)}</h1>
+        <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
         <p class="pa-intro">Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.</p>
         ${versiculoHoje()}
       </section>
-      <section class="pa-comece-mc" aria-labelledby="h-cont-rot">
-        <p class="pa-rot" id="h-cont-rot">Continue de onde parou</p>
+      <section class="mt-bloco" aria-labelledby="h-cont-rot">
+        ${cabMentoria}
+        <p class="pa-rot mt-passo" id="h-cont-rot">Continue de onde parou</p>
         ${heroi}
+        <button class="mt-todos" data-a="ir" data-v="modulos">Ver todos os módulos da mentoria<span aria-hidden="true">›</span></button>
       </section>
+      <div class="mt-divisor" role="separator"><span>Também para você</span></div>
       ${cardsExtra}
     </div>`;
   }
