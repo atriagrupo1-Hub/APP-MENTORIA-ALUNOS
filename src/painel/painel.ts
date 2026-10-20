@@ -1296,7 +1296,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         <span class="nome"><b>${h(e.nome)}</b><span>${h(e.login)} · ${h(e.papel.toLowerCase())}</span></span>
         ${e.bloqueada ? etiqueta("Bloqueada", VERMELHO) : ""}
         <span class="acoes">
-          ${e.codigo ? `<button class="botao-neutro" data-a="copiar-acesso-equipe" data-id="${e.id}">Copiar login e código</button><button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
+          ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="equipe-editar" data-id="${e.id}">Editar</button>` : ""}
+          ${e.codigo ? `<button class="botao-neutro" data-a="copiar-acesso-equipe" data-id="${e.id}">Copiar acesso</button><button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
           ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="trocar-codigo" data-id="${e.id}">Trocar código</button>` : ""}
           ${!gere(e) ? "" : e.bloqueada
             ? `<button class="botao-neutro" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>`
@@ -1473,6 +1474,24 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         ${ant.length ? `<p class="rotulo" style="margin:18px 0 2px">Contatos anteriores</p>${ant.slice(0, 4).map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}` : ""}
         <div class="rodape-modal"><button class="botao">Salvar contato</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
       </form>`;
+    } else if (m.tipo === "equipe-editar") {
+      const e = pessoa(m.id);
+      const papeis: Papel[] = eu?.papel === "Dono" ? ["Suporte", "Administrador"] : ["Suporte"];
+      corpo = `
+      <form data-f="equipe-editar" data-id="${e.id}">
+        <h2 class="titulo">Editar ${h(e.nome)}</h2>
+        <p class="explica">O login e o código são o que ${h(primeiroNome(e.nome))} digita para entrar no painel. Código vazio continua o mesmo.</p>
+        <div class="campos">
+          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" value="${h(e.nome)}" autocomplete="off" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(e.login)}" autocomplete="off" required /></label>
+          ${gere(e) ? `<label class="grupo" style="flex:1 1 200px"><span class="rotulo">Papel</span><select class="campo" name="papel">${papeis.map((x) => `<option ${x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}
+          ${e.codigo != null ? `<label class="grupo" style="flex:1 1 160px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e.codigo)}" autocomplete="off" /></label>` : ""}
+        </div>
+        <div class="rodape-modal">
+          <button class="botao">Salvar</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+        </div>
+      </form>`;
     } else if (m.tipo === "info") {
       corpo = `
         <h2 class="titulo">${h(m.titulo)}</h2>
@@ -1561,11 +1580,12 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         window.scrollTo(0, 0);
         break;
       }
+      case "equipe-editar": ui.modal = { tipo: "equipe-editar", id: d.id }; break;
       case "copiar-acesso-equipe": {
         const e = pessoa(d.id);
-        const txt = "Login: " + e.login + "\nCódigo: " + (e.codigo ?? "");
+        const txt = "Nome: " + e.nome + "\nLogin: " + e.login + "\nCódigo: " + (e.codigo ?? "");
         const falha = () => toast("Login " + e.login + " · código " + (e.codigo ?? ""));
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Login e código de " + primeiroNome(e.nome) + " copiados."), falha); else falha();
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Nome, login e código de " + primeiroNome(e.nome) + " copiados."), falha); else falha();
         return;
       }
       case "copiar-acesso": {
@@ -2044,6 +2064,24 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           };
         });
         return;
+      case "equipe-editar": {
+        const e = pessoa(id);
+        const nome = v("nome").trim(); const login = v("login").trim().toLowerCase().replace(/\s+/g, " ");
+        const papelTxt = form.elements.namedItem("papel") ? v("papel") : e.papel;
+        const papel = papelTxt === "Administrador" ? "admin" : papelTxt === "Dono" ? "dono" : "suporte";
+        const codigo = form.elements.namedItem("codigo") ? v("codigo").trim() : "";
+        if (nome.length < 2) { toast("Preencha o nome."); return; }
+        if (codigo && !/^\d{4,6}$/.test(codigo)) { toast("O código tem de 4 a 6 números."); return; }
+        if (S.equipe.some((x) => x.login === login && x.id !== e.id)) { toast("Esse login já está na equipe."); return; }
+        const antes = { nome: e.nome, login: e.login, papel: e.papel === "Administrador" ? "admin" : e.papel === "Dono" ? "dono" : "suporte", codigo: e.codigo ?? "" };
+        void executar(async () => {
+          await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
+          await registrar(null, "Editou " + nome + " na equipe");
+          ui.modal = null;
+          return { msg: "Dados de " + nome + " salvos.", texto: "edição de " + nome + " na equipe", desfazer: async () => { await rpc("editar_colaborador", { p_id: e.id, p_nome: antes.nome, p_login: antes.login, p_papel: antes.papel, p_codigo: antes.codigo }); } };
+        });
+        return;
+      }
       case "equipe-add": {
         const login = v("login").toLowerCase();
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
