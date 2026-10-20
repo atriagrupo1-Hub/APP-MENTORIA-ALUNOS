@@ -1,10 +1,4 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
-import { App } from "./App";
 import { portaAtual } from "./enderecos";
-import { ProvedorEstado } from "./data/estado";
-import "./index.css";
 
 /*
  * Qual porta foi aberta decide o que esta tela é.
@@ -34,18 +28,10 @@ if ("serviceWorker" in navigator) {
 
 const raiz = document.getElementById("root")!;
 
-// O painel da equipe é a maquete aprovada ligada ao banco, sem React:
-// carregado só nesta porta, para a área da aluna não levar o peso dele.
+// O painel da equipe e a área da aluna são as maquetes aprovadas ligadas
+// ao banco, sem React: cada porta carrega só o que é dela.
 if (porta.ehPainel) {
-  void import("./painel/painel").then((m) => m.montar(raiz));
+  void import("./index.css").then(() => import("./painel/painel")).then((m) => m.montar(raiz));
 } else {
-  createRoot(raiz).render(
-    <StrictMode>
-      <BrowserRouter basename={porta.base}>
-        <ProvedorEstado>
-          <App />
-        </ProvedorEstado>
-      </BrowserRouter>
-    </StrictMode>,
-  );
+  void import("./aluna/area").then((m) => m.montar(raiz));
 }
