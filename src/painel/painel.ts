@@ -340,7 +340,7 @@ export function montar(app: HTMLElement) {
     abertos: new Set<string>(), primeiraVez: true,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
-    buscaGeral: "", buscaAberta: false, filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
+    buscaGeral: "", buscaAberta: false, inicioVista: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
   };
   const previas: Record<string, string> = {};
@@ -601,6 +601,29 @@ export function montar(app: HTMLElement) {
       return ds[0] === ds[ds.length - 1] ? "cadastro em " + br(ds[0]) : "cadastros de " + br(ds[0]) + " a " + br(ds[ds.length - 1]);
     };
     const mini = (a: Aluna, extra: string, botoes: string) => `<div class="mini"><button type="button" class="abre-ficha" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${avatar(a)}<span class="nome"><b>${h(a.nome)}</b><span>${extra} · ${p(a.liberadas, "aula liberada", "aulas liberadas")}</span></span><span class="seta" aria-hidden="true">›</span></button><span class="acoes">${botoes}</span></div>`;
+    const blocosAcesso = `
+        ${bloco("vencem", "Acessos que vencem em 15 dias", venc.length, venc.length ? "o primeiro " + vaiVencer(venc[0]) + " · " + br(venc[0].validade) : "Nenhum vencendo", "Abra o acesso dela e renove por lá antes que vença.",
+          venc.map((a) => mini(a, vaiVencer(a) + " · " + br(a.validade), `<button class="botao-verde" data-a="ficha" data-id="${a.id}">Ver acesso</button>`)).join("") || semNada("Nenhum acesso vencendo."))}
+        ${bloco("parada", "Sem acesso há mais de 14 dias", par.length, par.length ? p(par.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar", "Um recado pode trazê-la de volta.",
+          par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Ninguém parou de entrar."))}
+        ${bloco("comecar", "Ainda não fizeram o primeiro acesso", comecar.length, comecar.length ? p(comecar.length, "aluna", "alunas") + " · " + periodo(comecar) : "Todas já entraram", "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.",
+          comecar.map((a) => mini(a, cadastrada(a), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : ""}`)).join("") || semNada("Todas já entraram pelo menos uma vez."))}
+        ${bloco("novas", "Novas nesta semana", novas.length, novas.length ? p(novas.length, "cadastrada", "cadastradas") + " · " + periodo(novas) : "Nenhum cadastro nos últimos 7 dias", "Cadastradas nos últimos 7 dias.",
+          novas.map((a) => mini(a, "entrou em " + br(a.entrada), "")).join("") || semNada("Nenhum cadastro nos últimos 7 dias."))}`;
+
+    /*
+     * "Alunas e acessos" abre numa tela só dela, isolando o resto do
+     * Início: os quatro quadros de acesso, cada um fechado com o número.
+     */
+    if (ui.inicioVista === "acessos") return `
+    <section class="tela ativa">
+      <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:16px">← Voltar ao início</button>
+      <h2 class="titulo" style="margin:0 0 4px">Alunas e acessos</h2>
+      <p class="sub" style="margin:0 0 16px;font-size:14px;color:var(--texto-3)">Clique em Ver em cada quadro para abrir a lista.</p>
+      <div class="grade-2">${blocosAcesso}</div>
+    </section>`;
+
+    const linhaResumo = (n: number, txt: string, atencao = false) => `<li><b class="${atencao && n ? "atencao" : ""}">${n}</b> ${txt}</li>`;
     return `
     <section class="tela ativa">
       <p class="saudacao">${saud}, ${h(primeiroNome(eu!.nome))}. ${pendencias ? "Isto pede sua atenção hoje." : "Tudo em dia por aqui."}</p>
@@ -614,14 +637,16 @@ export function montar(app: HTMLElement) {
         ${bloco("comentarios", "Comentários esperando", moder.length, moder.length ? p(moder.length, "comentário esperando", "comentários esperando") : "Nenhum esperando", "Publique, oculte ou responda.",
           (moder.slice(0, 3).map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${h(k.autora)} · ${localAula(k.aula)} · ${h(k.quando)}</span></span></div>`).join("") || semNada("Nenhum comentário esperando."))
           + (moder.length ? `<button class="botao-neutro grande" style="margin-top:12px" data-a="ir-moderar">${moder.length > 3 ? "Ver os " + moder.length + " comentários" : "Moderar agora"}</button>` : ""))}
-        ${bloco("vencem", "Acessos que vencem em 15 dias", venc.length, venc.length ? "o primeiro " + vaiVencer(venc[0]) + " · " + br(venc[0].validade) : "Nenhum vencendo", "Abra o acesso dela e renove por lá antes que vença.",
-          venc.map((a) => mini(a, vaiVencer(a) + " · " + br(a.validade), `<button class="botao-verde" data-a="ficha" data-id="${a.id}">Ver acesso</button>`)).join("") || semNada("Nenhum acesso vencendo."))}
-        ${bloco("parada", "Sem acesso há mais de 14 dias", par.length, par.length ? p(par.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar", "Um recado pode trazê-la de volta.",
-          par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Ninguém parou de entrar."))}
-        ${bloco("comecar", "Ainda não fizeram o primeiro acesso", comecar.length, comecar.length ? p(comecar.length, "aluna", "alunas") + " · " + periodo(comecar) : "Todas já entraram", "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.",
-          comecar.map((a) => mini(a, cadastrada(a), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : ""}`)).join("") || semNada("Todas já entraram pelo menos uma vez."))}
-        ${bloco("novas", "Novas nesta semana", novas.length, novas.length ? p(novas.length, "cadastrada", "cadastradas") + " · " + periodo(novas) : "Nenhum cadastro nos últimos 7 dias", "Cadastradas nos últimos 7 dias.",
-          novas.map((a) => mini(a, "entrou em " + br(a.entrada), "")).join("") || semNada("Nenhum cadastro nos últimos 7 dias."))}
+        <button type="button" class="painel-bloco cartao-acessos" data-a="inicio-acessos">
+          <span class="sanfona-topo"><h3>Alunas e acessos</h3></span>
+          <ul class="resumo-acessos">
+            ${linhaResumo(comecar.length, "ainda não fizeram o primeiro acesso")}
+            ${linhaResumo(novas.length, "novas nesta semana")}
+            ${linhaResumo(venc.length, "acessos vencem em 15 dias", true)}
+            ${linhaResumo(par.length, "sem acesso há mais de 14 dias", true)}
+          </ul>
+          <span class="sanfona-ver" aria-hidden="true"></span>
+        </button>
       </div>
     </section>`;
   }
@@ -1510,7 +1535,10 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
     if (a !== "menu") ui.menu = null;
     if (a !== "ajuda") ui.ajuda = null;
     switch (a) {
+      case "inicio-acessos": ui.inicioVista = "acessos"; window.scrollTo(0, 0); break;
+      case "inicio-voltar": ui.inicioVista = ""; window.scrollTo(0, 0); break;
       case "aba":
+        ui.inicioVista = "";
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
         window.scrollTo(0, 0);

@@ -408,3 +408,12 @@ html { background: var(--fundo); }
 .sanfona-ver::after { content: "Ver"; }
 .sanfona[open] .sanfona-ver::after { content: "Fechar"; }
 .sanfona-corpo { padding: 0 20px 20px; }
+
+/* Início: o cartão "Alunas e acessos", que abre a tela dos acessos. */
+.cartao-acessos { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; align-self: start; width: 100%; padding: 16px 20px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.cartao-acessos .sanfona-topo { grid-column: 1; }
+.cartao-acessos .sanfona-ver { grid-column: 2; grid-row: 1 / span 2; }
+.cartao-acessos .sanfona-ver::after { content: "Abrir"; }
+.resumo-acessos { grid-column: 1; margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 13px; color: var(--texto-3); }
+.resumo-acessos b { display: inline-block; min-width: 22px; color: var(--texto); }
+.resumo-acessos b.atencao { color: var(--perigo); }
