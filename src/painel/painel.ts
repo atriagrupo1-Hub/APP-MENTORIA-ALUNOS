@@ -817,6 +817,7 @@ export function montar(app: HTMLElement) {
       <button class="botao-neutro grande" name="acao" value="liberar">Liberar módulo</button>
       <button class="botao-neutro grande" name="acao" value="renovar">Renovar por 1 ano</button>
       <button type="button" class="botao-neutro grande" data-a="sel-limpar">Limpar seleção</button>
+      <button type="button" class="botao-neutro grande botao-remover" data-a="lote-remover">Remover ${ui.sel.length === 1 ? "aluna" : "alunas"}</button>
     </form>`;
   }
   function menuAluna(a: Aluna) {
@@ -1406,6 +1407,30 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
       case "al-filtro": ui.filtroAl = d.v; break;
       case "sel-limpar": ui.sel = []; break;
+      case "lote-remover": {
+        const ids = ui.sel.filter((id) => S.alunas.some((x) => x.id === id));
+        if (!ids.length) break;
+        const todas = ids.length === S.alunas.length;
+        const qtd = p(ids.length, "aluna", "alunas");
+        confirmar({
+          titulo: todas ? "Remover todas as " + qtd + "?" : ids.length === 1 ? "Remover " + aluna(ids[0]).nome + "?" : "Remover as " + qtd + " selecionadas?",
+          texto: "As fichas, as liberações e os cronogramas são apagados. Não dá para desfazer.",
+          palavra: "REMOVER",
+          rotulo: todas ? "Remover todas" : "Remover " + qtd,
+        }, async () => {
+          // Uma por vez, pela mesma função da remoção individual: o banco
+          // confere a permissão em cada uma, e uma recusa não leva as outras.
+          const removidas: string[] = []; const falhas: string[] = [];
+          for (const id of ids) {
+            const nome = aluna(id).nome;
+            try { await rpc("remover_aluna", { p_aluna: id }); removidas.push(id); } catch { falhas.push(nome); }
+          }
+          ui.sel = ui.sel.filter((x) => !removidas.includes(x));
+          if (removidas.length) await registrar(null, "Removeu em lote " + p(removidas.length, "aluna", "alunas"));
+          return p(removidas.length, "aluna removida", "alunas removidas") + "." + (falhas.length ? " Não removidas: " + falhas.join(", ") + "." : "");
+        });
+        break;
+      }
       case "eng-filtro": ui.filtroEng = d.v; break;
       case "guia-eng": ui.guiaEng = !ui.guiaEng; break;
       case "ajuda": ui.ajuda = ui.ajuda === d.v ? null : d.v; break;
