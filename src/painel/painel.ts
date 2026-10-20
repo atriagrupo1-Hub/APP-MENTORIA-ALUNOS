@@ -504,7 +504,7 @@ export function montar(app: HTMLElement) {
     <div class="marca">
       ${selo}
       <div class="busca-geral">
-        <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+        <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, celular, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
         <div id="buscaResultados">${resultadosBusca()}</div>
       </div>
       <span class="quem" style="font-size:13px;color:var(--texto-2)">${h(eu!.nome)} · ${h(eu!.papel)}</span>
@@ -849,19 +849,39 @@ export function montar(app: HTMLElement) {
 
   /* ---------- BUSCA GERAL ---------- */
   const norm = (s: unknown) => String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  /*
+   * Toda busca do painel passa por aqui.
+   *
+   * Palavra por palavra, em qualquer ordem: "angela fatima" acha
+   * "Angela de Fátima". Uma palavra feita de números (e parênteses,
+   * traço, +) procura nos dígitos do celular, então "(31) 99696",
+   * "3199696" e "9711" acham o mesmo número, digitado como for.
+   */
+  const casa = (consulta: string, texto: string, celular = "") => {
+    const alvo = norm(texto); const digitos = celular.replace(/\D/g, "");
+    return norm(consulta).split(/\s+/).filter(Boolean).every((w) => {
+      if (alvo.includes(w)) return true;
+      const d = w.replace(/\D/g, "");
+      return !!d && /^[\d()+.\-]+$/.test(w) && digitos.includes(d);
+    });
+  };
   function resultadosBusca() {
     const q = norm(ui.buscaGeral).trim();
     if (!q || !ui.buscaAberta) return "";
     const r: [string, string, string, string, string][] = [];
-    S.alunas.forEach((a) => { if (norm(a.nome + " " + a.login + " " + a.celular).includes(q)) r.push(["Aluna", a.nome, a.login + " · " + sitInfo(situacao(a))[0], "aluna", a.id]); });
+    // Os números do celular, juntos ou separados, acham a aluna mesmo
+    // espalhados em várias palavras: "31 99696 9711".
+    const soDigitos = q.replace(/\D/g, "");
+    const pelosDigitos = (a: Aluna) => soDigitos.length >= 4 && /^[\d\s()+.\-]+$/.test(q) && a.celular.replace(/\D/g, "").includes(soDigitos);
+    S.alunas.forEach((a) => { if (casa(q, a.nome + " " + a.login + " " + a.email, a.celular) || pelosDigitos(a)) r.push(["Aluna", a.nome, a.login + (a.celular ? " · " + fone(a.celular) : "") + " · " + sitInfo(situacao(a))[0], "aluna", a.id]); });
     S.cursos.forEach((c) => {
-      if (norm(c.nome).includes(q)) r.push(["Produto", c.nome, p(c.modulos.length, "módulo", "módulos"), "curso", c.id]);
+      if (casa(q, c.nome)) r.push(["Produto", c.nome, p(c.modulos.length, "módulo", "módulos"), "curso", c.id]);
       c.modulos.forEach((m, i) => {
-        if (norm(m.nome).includes(q)) r.push(["Módulo", m.nome, c.nome + " · Módulo " + numModulo(c, i), "curso", c.id]);
-        m.aulas.forEach((au) => { if (norm(au.nome).includes(q)) r.push(["Aula", au.nome, localAula(au.id), "aula", au.id]); });
+        if (casa(q, m.nome + " " + c.nome)) r.push(["Módulo", m.nome, c.nome + " · Módulo " + numModulo(c, i), "curso", c.id]);
+        m.aulas.forEach((au) => { if (casa(q, au.nome + " " + m.nome)) r.push(["Aula", au.nome, localAula(au.id), "aula", au.id]); });
       });
     });
-    S.comentarios.forEach((k) => { if (norm(k.texto + " " + k.autora).includes(q)) r.push(["Comentário", k.texto, k.autora + " · " + localAula(k.aula), "comentario", k.id]); });
+    S.comentarios.forEach((k) => { if (casa(q, k.texto + " " + k.autora)) r.push(["Comentário", k.texto, k.autora + " · " + localAula(k.aula), "comentario", k.id]); });
     if (!r.length) return `<div class="busca-pop"><p class="nada" style="padding:10px 12px;margin:0">Nada encontrado para “${h(ui.buscaGeral.trim())}”.</p></div>`;
     return `<div class="busca-pop" role="listbox">${r.slice(0, 12).map(([tipo, tit, sub, k, id]) => `<button data-a="busca-ir" data-k="${k}" data-id="${id}" role="option"><span class="tipo">${tipo}</span><span class="txt"><b>${h(tit)}</b><span>${h(sub)}</span></span></button>`).join("")}${r.length > 12 ? `<p class="nada" style="padding:8px 12px;margin:0">Mais ${r.length - 12} resultados. Escreva mais para refinar.</p>` : ""}</div>`;
   }
@@ -933,7 +953,9 @@ export function montar(app: HTMLElement) {
   function listaAlunas() {
     const q = norm(ui.busca).trim();
     const f = FILTROS_AL.find((x) => x[0] === ui.filtroAl) || FILTROS_AL[0];
-    return { f, lista: S.alunas.filter((a) => norm(a.nome + " " + a.login).includes(q) && f[2](a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
+    const soDigitos = q.replace(/\D/g, "");
+    const pelosDigitos = (a: Aluna) => soDigitos.length >= 4 && /^[\d\s()+.\-]+$/.test(q) && a.celular.replace(/\D/g, "").includes(soDigitos);
+    return { f, lista: S.alunas.filter((a) => (casa(q, a.nome + " " + a.login + " " + a.email, a.celular) || pelosDigitos(a)) && f[2](a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
   }
   function telaAlunas() {
     const { lista } = listaAlunas();
@@ -950,7 +972,7 @@ export function montar(app: HTMLElement) {
         ${numero(S.alunas.filter(naoEntrou).length, "Ainda não entraram")}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
-        <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar pelo nome" value="${h(ui.busca)}" data-i="busca" />
+        <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" />
         <button class="botao" data-a="aluna-nova">Cadastrar aluna</button>
         <button class="botao-neutro grande" data-a="exportar">Exportar planilha</button>
         <label class="ordenar"><span>Ordenar por</span>
