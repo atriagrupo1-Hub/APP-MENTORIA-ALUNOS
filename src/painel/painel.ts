@@ -1331,7 +1331,6 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         <span class="acoes">
           ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="equipe-editar" data-id="${e.id}">Editar</button>` : ""}
           ${e.codigo ? `<button class="botao-neutro" data-a="copiar-acesso-equipe" data-id="${e.id}">Copiar acesso</button><button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
-          ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="trocar-codigo" data-id="${e.id}">Trocar código</button>` : ""}
           ${!gere(e) ? "" : e.bloqueada
             ? `<button class="botao-neutro" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>`
             : `<button class="botao-neutro botao-remover" data-a="equipe-bloquear" data-id="${e.id}">Bloquear</button>`}
@@ -1342,7 +1341,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         <p class="rotulo" style="margin:0 0 12px">Adicionar alguém à equipe</p>
         <div class="campos">
           <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" placeholder="ex.: joana" autocomplete="off" required /></label>
+          <label class="grupo" style="flex:0 0 150px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" placeholder="4 a 6 números" autocomplete="off" required /></label>
           <label class="grupo" style="flex:0 0 150px"><span class="rotulo">Papel</span>
             <select class="campo" name="papel"><option>Suporte</option>${eu?.papel === "Dono" ? "<option>Administrador</option>" : ""}</select>
           </label>
@@ -1518,7 +1518,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" value="${h(e.nome)}" autocomplete="off" required /></label>
           <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(e.login)}" autocomplete="off" required /></label>
           ${gere(e) ? `<label class="grupo" style="flex:1 1 200px"><span class="rotulo">Papel</span><select class="campo" name="papel">${papeis.map((x) => `<option ${x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}
-          ${e.codigo != null ? `<label class="grupo" style="flex:1 1 160px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e.codigo)}" autocomplete="off" /></label>` : ""}
+          <label class="grupo" style="flex:1 1 160px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e.codigo ?? "")}" placeholder="${e.codigo != null ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" /></label>
         </div>
         <div class="rodape-modal">
           <button class="botao">Salvar</button>
@@ -2104,7 +2104,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const nome = v("nome").trim(); const login = v("login").trim().toLowerCase().replace(/\s+/g, " ");
         const papelTxt = form.elements.namedItem("papel") ? v("papel") : e.papel;
         const papel = papelTxt === "Administrador" ? "admin" : papelTxt === "Dono" ? "dono" : "suporte";
-        const codigo = form.elements.namedItem("codigo") ? v("codigo").trim() : "";
+        const codigo = v("codigo").trim();
         if (nome.length < 2) { toast("Preencha o nome."); return; }
         if (codigo && !/^\d{4,6}$/.test(codigo)) { toast("O código tem de 4 a 6 números."); return; }
         if (S.equipe.some((x) => x.login === login && x.id !== e.id)) { toast("Esse login já está na equipe."); return; }
@@ -2118,11 +2118,15 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         return;
       }
       case "equipe-add": {
-        const login = v("login").toLowerCase();
+        const login = v("login").trim().toLowerCase();
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
+        if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
+        // O código é quem cadastra que escolhe — nunca sorteado.
+        const codigo = v("codigo").trim();
+        if (!/^\d{4,6}$/.test(codigo)) { toast("Escolha um código de 4 a 6 números."); return; }
         const papel = v("papel") === "Administrador" ? "admin" : "suporte";
         void executar(async () => {
-          const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel });
+          const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo });
           await registrar(null, "Adicionou " + v("nome") + " à equipe");
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "info", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para ela entrar no painel.", destaque: String(r.codigo ?? "") };
