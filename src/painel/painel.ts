@@ -581,7 +581,15 @@ export function montar(app: HTMLElement) {
     if (a.validade && diasEntre(hoje(), a.validade) <= 15) return "vencendo";
     return "ativa";
   }
-  const parada = (a: Aluna) => !a.bloqueada && !vencida(a) && (!a.ultimoAcesso || diasEntre(a.ultimoAcesso, hoje()) > 14);
+  /*
+   * Quem nunca entrou não "parou": ainda não começou. Misturar as duas
+   * coisas punha a aluna cadastrada há uma hora em "sem acesso há mais
+   * de 14 dias". A data de cadastro é a entrada.
+   */
+  const parada = (a: Aluna) => !a.bloqueada && !vencida(a) && !!a.ultimoAcesso && diasEntre(a.ultimoAcesso, hoje()) > 14;
+  const naoEntrou = (a: Aluna) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso;
+  const cadastrada = (a: Aluna) => "cadastrada " + (a.entrada ? haQuanto(a.entrada) + " (" + br(a.entrada) + ")" : "sem data");
+  const ultimoTxt = (a: Aluna) => a.ultimoAcesso ? "último acesso " + haQuanto(a.ultimoAcesso) : "ainda não entrou · " + cadastrada(a);
   const sitInfo = (s: Sit): [string, string] => ({ ativa: ["Ativa", "var(--verde)"], vencendo: ["Vence em breve", "var(--ouro-txt)"], vencida: ["Vencida", VERMELHO], bloqueada: ["Bloqueada", VERMELHO] } as Record<Sit, [string, string]>)[s];
   const avatar = (a: Aluna, grande = false) => `<span class="avatar${grande ? " grande" : ""}" style="--cor:${sitInfo(situacao(a))[1]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
   const numero = (n: number, rotulo: string, atencao = false) => `<div class="numero${atencao && n ? " atencao" : ""}"><b>${n}</b><span>${h(rotulo)}</span></div>`;
@@ -596,6 +604,7 @@ export function montar(app: HTMLElement) {
     const moder = S.comentarios.filter((k) => k.estado === "moderar");
     const venc = S.alunas.filter((a) => situacao(a) === "vencendo").sort((x, y) => x.validade.localeCompare(y.validade));
     const par = S.alunas.filter(parada);
+    const comecar = S.alunas.filter(naoEntrou).sort((x, y) => (x.entrada || "").localeCompare(y.entrada || ""));
     const novas = S.alunas.filter(nova);
     const concl = S.alunas.reduce((s, a) => s + a.concluidas, 0);
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
@@ -627,7 +636,12 @@ export function montar(app: HTMLElement) {
         <div class="painel-bloco">
           <h3>Sem acesso há mais de 14 dias</h3>
           <p class="sub">Um recado pode trazê-la de volta.</p>
-          ${par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Todas acessaram recentemente.")}
+          ${par.map((a) => mini(a, "último acesso " + haQuanto(a.ultimoAcesso), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : ""}`)).join("") || semNada("Ninguém parou de entrar.")}
+        </div>
+        <div class="painel-bloco">
+          <h3>Ainda não fizeram o primeiro acesso</h3>
+          <p class="sub">Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.</p>
+          ${comecar.map((a) => mini(a, cadastrada(a), `${a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : ""}`)).join("") || semNada("Todas já entraram pelo menos uma vez.")}
         </div>
         <div class="painel-bloco">
           <h3>Novas nesta semana</h3>
@@ -692,7 +706,7 @@ export function montar(app: HTMLElement) {
       <div class="numeros">
         ${numero(a.concluidas, "Aulas concluídas")}
         ${numero(a.liberadas, "Aulas liberadas")}
-        ${numeroTxt(haQuanto(a.ultimoAcesso), "Último acesso")}
+        ${a.ultimoAcesso ? numeroTxt(haQuanto(a.ultimoAcesso), "Último acesso") : numeroTxt("ainda não entrou", "Último acesso", cadastrada(a))}
         ${numeroTxt(ult ? localAula(ult.a.id) : "—", "Última aula assistida", ult ? ult.a.nome : "")}
       </div>
 
@@ -728,11 +742,14 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- ENGAJAMENTO (a nota vem do banco) ---------- */
+  /** Recém-chegada: cadastrada há até 7 dias e ainda sem o primeiro acesso. Depois disso, a nota decide. */
+  const nivel = (x: Aluna): [string, string, string] => !x.ultimoAcesso && nova(x) ? ["Recém-chegada", "var(--texto-2)", "recem"] : nivelEng(x.nota);
   const nivelEng = (n: number): [string, string, string] => n >= 60 ? ["Avançando", "var(--verde)", "avancando"] : n >= 35 ? ["No ritmo", "var(--ouro-txt)", "ritmo"] : ["Precisa de um empurrão", VERMELHO, "empurrao"];
   const AJUDA: Record<string, [string, string, string, string]> = {
     avancando: ["Avançando", "Está assistindo e voltando com frequência.", "um elogio rápido, ou nada — ela está bem.", "var(--verde)"],
     ritmo: ["No ritmo", "Assiste, mas devagar ou com intervalos.", "uma mensagem de incentivo, lembrando a próxima aula.", "var(--ouro-txt)"],
     empurrao: ["Precisa de um empurrão", "Parou de entrar ou quase não começou.", "ligue ou mande WhatsApp perguntando se precisa de ajuda para entrar.", "var(--perigo)"],
+    recem: ["Recém-chegada", "Cadastrada nos últimos 7 dias e ainda sem o primeiro acesso. É normal.", "confira se ela recebeu o login e o código. Passando 7 dias sem entrar, ela vai para “Precisa de um empurrão”.", "var(--texto-2)"],
   };
   const AJUDA_ABAS: Record<string, [string, string, string]> = {
     inicio: ["Início", "O resumo do dia: o que pede atenção agora.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
@@ -814,11 +831,11 @@ export function montar(app: HTMLElement) {
   };
   function telaEngajamento() {
     const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
-    const cont = (k: string) => base.filter((x) => nivelEng(x.nota)[2] === k).length;
+    const cont = (k: string) => base.filter((x) => nivel(x)[2] === k).length;
     const media = base.length ? Math.round(base.reduce((s, x) => s + x.nota, 0) / base.length) : 0;
     const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
-    const grupo = (g: string) => (x: Aluna) => nivelEng(x.nota)[2] === g;
-    const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["semcontato", "Sem contato há 7 dias", semContato]];
+    const grupo = (g: string) => (x: Aluna) => nivel(x)[2] === g;
+    const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegadas", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
     const fl = FIL.find((z) => z[0] === ui.filtroEng) || FIL[0];
     const lista = base.filter(fl[2]);
     return `
@@ -837,25 +854,25 @@ export function montar(app: HTMLElement) {
           <li><b>Ligue ou mande o recado pelo WhatsApp.</b> O botão já abre a conversa com a mensagem pronta.</li>
           <li><b>Clique em “Registrar contato” e anote como foi.</b> Assim ninguém da equipe liga duas vezes para a mesma pessoa.</li>
         </ol>
-        <div class="grupos">${["avancando", "ritmo", "empurrao"].map((k) => { const g = AJUDA[k]; return `<div class="grupo-eng" style="--cor:${g[3]}"><b>${g[0]}</b><p>${g[1]}</p><em>O que fazer: ${g[2]}</em></div>`; }).join("")}</div>
+        <div class="grupos">${["avancando", "ritmo", "empurrao", "recem"].map((k) => { const g = AJUDA[k]; return `<div class="grupo-eng" style="--cor:${g[3]}"><b>${g[0]}</b><p>${g[1]}</p><em>O que fazer: ${g[2]}</em></div>`; }).join("")}</div>
         <p class="nada" style="margin-top:12px">A nota vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.</p>` : ""}
       </div>
       <div class="chips" style="margin-bottom:16px">
         ${FIL.map(([id, n, fn]) => `<button class="chip" style="cursor:pointer" data-a="eng-filtro" data-v="${id}" aria-pressed="${ui.filtroEng === id}">${n} (${base.filter(fn).length})</button>`).join("")}
       </div>
       ${lista.length ? lista.map((x) => {
-        const pos = base.indexOf(x) + 1; const [rot, cor, k] = nivelEng(x.nota);
+        const pos = base.indexOf(x) + 1; const [rot, cor, k] = nivel(x);
         const uc = x.contatos[x.contatos.length - 1];
         return `
       <div class="linha">
         <span class="posicao">${pos}º</span>
         ${avatar(x)}
-        <span class="nome"><b>${h(x.nome)}</b><span>${x.concluidas} de ${p(x.liberadas, "aula liberada", "aulas liberadas")} concluídas · último acesso ${haQuanto(x.ultimoAcesso)} · ${p(x.nComentarios, "comentário", "comentários")}</span><span class="contato-linha">${uc ? "Último contato " + haQuanto(diaDe(uc.quando)) + " · " + h(uc.resultado) + " · " + h(uc.quem) : "Nenhum contato registrado"}</span></span>
+        <span class="nome"><b>${h(x.nome)}</b><span>${x.concluidas} de ${p(x.liberadas, "aula liberada", "aulas liberadas")} concluídas · ${ultimoTxt(x)} · ${p(x.nComentarios, "comentário", "comentários")}</span><span class="contato-linha">${uc ? "Último contato " + haQuanto(diaDe(uc.quando)) + " · " + h(uc.resultado) + " · " + h(uc.quem) : "Nenhum contato registrado"}</span></span>
         <span class="nota-eng" aria-label="Nota ${x.nota} de 100"><span class="barra"><i style="width:${x.nota}%;background:${cor}"></i></span><b style="color:${cor}">${x.nota}</b></span>
         ${etiqueta(rot, cor)}
         <span class="acoes">
           <button class="botao-verde" data-a="contato" data-id="${x.id}">Registrar contato</button>
-          ${k !== "avancando" && x.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${x.id}">Mandar recado</button>` : ""}
+          ${k === "recem" && x.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${x.id}">Enviar acesso</button>` : k !== "avancando" && x.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${x.id}">Mandar recado</button>` : ""}
           <button class="botao-neutro" data-a="ficha" data-id="${x.id}">Ficha</button>
         </span>
       </div>`;
@@ -963,6 +980,7 @@ export function montar(app: HTMLElement) {
         ${numero(ativas, "Ativas")}
         ${numero(S.alunas.filter((a) => situacao(a) === "vencendo").length, "Vencem em 15 dias", true)}
         ${numero(S.alunas.filter(parada).length, "Sem acesso há 14 dias", true)}
+        ${numero(S.alunas.filter(naoEntrou).length, "Ainda não entraram")}
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
         <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar pelo nome" value="${h(ui.busca)}" data-i="busca" />
@@ -990,7 +1008,7 @@ export function montar(app: HTMLElement) {
     <div class="linha${marc ? " marcada" : ""}">
       <input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" />
       ${avatar(a)}
-      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · ${vencida(a) ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")} · último acesso ${haQuanto(a.ultimoAcesso)}</span></span>
+      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · ${vencida(a) ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")} · ${ultimoTxt(a)}</span></span>
       ${etiqueta(rot, cor)}
       <span class="acoes">
         <button class="botao-neutro" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
