@@ -746,6 +746,34 @@ export function montar(app: HTMLElement) {
       </div>
     </details>`;
   };
+  /*
+   * "Mesmo de outra aluna": copiar a liberação ou o cronograma de quem
+   * já está configurada.
+   *
+   * A anterior é a de entrada mais recente (o banco não guarda a ordem
+   * de cadastro na lista do painel); as outras ficam no seletor. Copiar
+   * só preenche a janela — quem grava continua sendo o Salvar.
+   */
+  const modelosPara = (a: Aluna, tem: (x: Aluna) => boolean) =>
+    S.alunas.filter((x) => x.id !== a.id && tem(x))
+      .sort((x, y) => (y.entrada || "").localeCompare(x.entrada || "") || x.nome.localeCompare(y.nome));
+  const temLiberacao = (x: Aluna) => x.acesso.cursos.length + x.acesso.modulos.length + x.acesso.aulas.length > 0;
+  const temCronograma = (x: Aluna) => Object.keys(x.cronograma).length + Object.keys(x.datas).length > 0;
+  const copiarDe = (a: Aluna, tipo: "liberacao" | "cronograma") => {
+    const lista = modelosPara(a, tipo === "liberacao" ? temLiberacao : temCronograma);
+    if (!lista.length) return "";
+    const oque = tipo === "liberacao" ? "liberação" : "cronograma";
+    return `
+    <div class="copiar-de">
+      <span class="nome" style="font-size:14px">Mesm${tipo === "liberacao" ? "a" : "o"} ${oque} da aluna anterior</span>
+      <span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px">
+        <select class="campo" id="copiarDe" style="flex:1 1 220px;max-width:320px" aria-label="Copiar de qual aluna">
+          ${lista.map((x) => `<option value="${x.id}">${h(x.nome)} — entrou em ${br(x.entrada)}</option>`).join("")}
+        </select>
+        <button type="button" class="botao-neutro grande" data-a="copiar-${tipo}" data-id="${a.id}">Usar ${tipo === "liberacao" ? "esta liberação" : "este cronograma"}</button>
+      </span>
+    </div>`;
+  };
   const ajudaAba = () => {
     const g = AJUDA_ABAS[ui.tab]; if (!g) return "";
     const key = "aba-" + ui.tab;
@@ -1279,6 +1307,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
       <form data-f="liberar" data-id="${a.id}">
         <h2 class="titulo">Liberar conteúdo</h2>
         <p class="explica">${h(a.nome)}. Marque o curso inteiro, módulos inteiros ou aulas avulsas.</p>
+        ${copiarDe(a, "liberacao")}
         ${S.cursos.map((c) => {
           const cOn = ac.cursos.includes(c.id);
           return `
@@ -1308,6 +1337,7 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         <h2 class="titulo">Cronograma</h2>
         <p class="explica">${h(a.nome)} entrou em ${br(a.entrada)}. Diga quantos dias depois da entrada cada módulo abre para ela. Vazio segue a liberação normal.</p>
         ${manualCronograma(a)}
+        ${copiarDe(a, "cronograma")}
         <div class="linha" style="padding:8px 0">
           <span class="nome" style="font-size:14px">Ou uma aula a cada tantos dias, nas aulas liberadas para ela</span>
           <span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--texto-3)">
@@ -1543,6 +1573,40 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         ids.forEach((id, i) => { const c = form.elements.namedItem("dt_" + id) as HTMLInputElement | null; if (c) c.value = maisDias(inicio, i * n); });
         form.querySelectorAll("details").forEach((x) => { x.open = true; });
         toast(ids.length ? p(ids.length, "data preenchida", "datas preenchidas") + ". Confira e salve." : "Ela ainda não tem aulas liberadas.");
+        return;
+      }
+      case "copiar-liberacao": {
+        const form = el.closest("form") as HTMLFormElement;
+        const mod = aluna((document.getElementById("copiarDe") as HTMLSelectElement).value); if (!mod) return;
+        const ac = mod.acesso;
+        S.cursos.forEach((c) => {
+          const cOn = ac.cursos.includes(c.id);
+          const cx = form.querySelector<HTMLInputElement>('input[name="c"][value="' + c.id + '"]'); if (cx) cx.checked = cOn;
+          c.modulos.forEach((mo) => {
+            const mOn = cOn || ac.modulos.includes(mo.id);
+            const mx = form.querySelector<HTMLInputElement>('input[name="m"][value="' + mo.id + '"]'); if (mx) mx.checked = mOn;
+            mo.aulas.forEach((au) => {
+              const ax = form.querySelector<HTMLInputElement>('input[name="a"][value="' + au.id + '"]'); if (ax) ax.checked = mOn || ac.aulas.includes(au.id);
+            });
+          });
+        });
+        toast("Liberação de " + mod.nome + " copiada. Confira e clique em Salvar liberação.");
+        return;
+      }
+      case "copiar-cronograma": {
+        const form = el.closest("form") as HTMLFormElement;
+        const mod = aluna((document.getElementById("copiarDe") as HTMLSelectElement).value); if (!mod) return;
+        // Os dias do módulo já contam da entrada de cada uma; as datas
+        // fixas andam junto com a diferença entre as duas entradas.
+        const desloca = mod.entrada && al!.entrada ? diasEntre(mod.entrada, al!.entrada) : 0;
+        form.querySelectorAll<HTMLInputElement>('input[name^="d_"]').forEach((x) => {
+          const n = mod.cronograma[x.name.slice(2)]; x.value = n != null ? String(n) : "";
+        });
+        form.querySelectorAll<HTMLInputElement>('input[name^="dt_"]').forEach((x) => {
+          const dt = mod.datas[x.name.slice(3)]; x.value = dt ? maisDias(dt, desloca) : "";
+        });
+        form.querySelectorAll("details:not(.manual)").forEach((x) => { (x as HTMLDetailsElement).open = Object.keys(mod.datas).length > 0; });
+        toast("Cronograma de " + mod.nome + " copiado" + (desloca && Object.keys(mod.datas).length ? ", com as datas ajustadas à entrada de " + al!.nome : "") + ". Confira e clique em Salvar cronograma.");
         return;
       }
       case "renovar": {

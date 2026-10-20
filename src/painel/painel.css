@@ -391,3 +391,6 @@ html { background: var(--fundo); }
 .manual-corpo ul { margin: 0; padding-left: 18px; }
 .manual-corpo li { margin: 2px 0; }
 .manual-corpo b, .manual-corpo em { color: var(--texto); font-style: normal; }
+
+/* "Mesmo da aluna anterior", no alto das janelas de liberação e cronograma. */
+.copiar-de { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 0 0 12px; padding: 10px 12px; background: var(--superficie); border: 1px solid var(--linha-suave); border-radius: 10px; }
