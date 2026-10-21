@@ -1293,20 +1293,11 @@ export function montar(app: HTMLElement) {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
     const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
-    const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
     const anima = ui.aaAnima; ui.aaAnima = "";
-    const ind = (ic: string, cor: string, n: number, rotulo: string) => `<div class="al-ind"><span class="al-ind-ic ${cor}">${ic}</span><span><b>${n}</b><span>${h(rotulo)}</span></span></div>`;
     return `
     <section class="tela ativa al">
       <h2 class="al-titulo">Alunas</h2>
       <p class="al-sub">Gerencie todas as alunas da mentoria.</p>
-      <div class="al-inds">
-        ${ind(ICONE_AL.todas, "ouro", S.alunas.length, "Alunas")}
-        ${ind(ICONE_AL.ativas, "verde", ativas, "Ativas")}
-        ${ind(ICONE_AL.vencem, "ouro", S.alunas.filter((a) => situacao(a) === "vencendo").length, "Vencem em 15 dias")}
-        ${ind(ICONE_AL.parada, "ouro", S.alunas.filter(parada).length, "Sem acesso há 14 dias")}
-        ${ind(ICONE_AL.entrar, "ouro", S.alunas.filter(naoEntrou).length, "Ainda não entraram")}
-      </div>
       <div class="al-barra">
         <label class="al-busca">${ICONE_AL.lupa}<input id="busca" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" aria-label="Procurar aluna" /></label>
         <button class="al-botao-ouro" data-a="aluna-nova">${ICONE_AL.mais}Cadastrar aluna</button>
