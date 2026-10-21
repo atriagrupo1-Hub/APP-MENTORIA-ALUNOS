@@ -912,6 +912,8 @@ export function montar(raiz: HTMLElement) {
   const cursoLiberado = (curso) => curso.liberadoDireto || curso.itens.some((x) => aulaAdmin(x.id));
   // Categoria ainda sem curso abre vazia ("Em breve…"): não há nada nela para liberar.
   const catAberta = (c) => !c.bloqueada && (!c.cursos.length || c.cursos.some(cursoLiberado));
+  // Curso bloqueado para ela: só o cartão com o cadeado; não entra no curso.
+  const msgCursoFechado = (curso) => (abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Libera em breve");
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   function telaPresentes() {
     return `
@@ -970,10 +972,10 @@ export function montar(raiz: HTMLElement) {
     const plural = ebook ? "Leitura" : freq ? p(curso.itens.length, "frequência", "frequências") : curso.itens.length ? p(curso.itens.length, tipo, tipo + "s") : "Será adicionado em breve";
     const meta = `<p class="mc-meta"><span>${ebook ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`}${h(plural)}</span></p>`;
     if (!cursoLiberado(curso)) {
-      const msg = abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Em breve";
+      const msg = msgCursoFechado(curso);
       return `
     <div class="mod-bloco mc mc-tr-curso" style="--mc:${COR}">
-      <button class="mc-top" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado. ${h(msg)}. Toque para ver o que vem aí.">
+      <button class="mc-top" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado. ${h(msg)}.">
         <span class="mc-capa" aria-hidden="true">${img(curso.capa, "")}</span>
         <span class="mc-info" aria-hidden="true">
           <span class="mc-cab"><span class="mc-rot">${h(cat)}</span><b class="mc-tit serif">${h(curso.nome)}</b></span>
@@ -1027,31 +1029,7 @@ export function montar(raiz: HTMLElement) {
     if (!curso) { S.tela = "presentes"; return telaPresentes(); }
     const cat = c.nome, COR = CORES_CAT[ci % CORES_CAT.length], freq = cat === "Frequências";
     const nomeTipo = freq ? ["frequência", "frequências"] : ["vídeo", "vídeos"];
-    if (!cursoLiberado(curso)) {
-      const quando = abreCurso(curso) ? dataCurta(abreCurso(curso)) : null;
-      return `
-    ${cabMp(`data-a="categoria" data-v="${ci}"`, cat)}
-    <div class="mp mv cp-tr" style="--mc:${COR}">
-      <section class="cp-tr-heroi" aria-labelledby="h-cptr">
-        <button class="cp-tr-fechar" data-a="categoria" data-v="${ci}" aria-label="Fechar e voltar para ${h(cat)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-        <span class="cp-tr-capa" aria-hidden="true">${img(curso.capa, "")}</span>
-        <span class="cp-tr-ic" aria-hidden="true">${ICONES.cadeado}</span>
-        <p class="mv-rot">${h(cat)}<span></span></p>
-        <h1 class="cp-tr-tit serif" id="h-cptr">${h(curso.nome)}</h1>
-        <p class="cp-tr-txt">Este conteúdo ainda está guardado.${quando ? ` Ele fica liberado para você em <b>${quando}</b>.` : " Em breve, só para você."}</p>
-        ${quando ? `<span class="cp-tr-data">${ICONES.cadeado}Libera em ${quando}</span>` : ""}
-      </section>
-      ${curso.itens.length ? `<section class="mv-aulas" aria-labelledby="h-cptr-l">
-        <div class="mv-aulas-topo"><h2 id="h-cptr-l">O que vem aí</h2><span>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</span></div>
-        <ul class="mv-lista cp-tr-lista">${curso.itens.map((t, j) => `
-          <li class="mv-aula cp-tr-item">
-            <span class="mv-num">${j + 1}</span>
-            <span class="mv-capa">${img(t.capa || curso.capa, "")}<span class="cp-tr-mini">${ICONES.cadeado}</span></span>
-            <span class="mv-info"><b>${h(t.titulo)}</b><span class="mv-meta">${ICONES.cadeado}${quando ? "Libera em " + quando : "Em breve"}</span></span>
-          </li>`).join("")}</ul>
-      </section>` : ""}
-    </div>`;
-    }
+    if (!cursoLiberado(curso)) { S.tela = "categoria"; S.cat = ci; return telaCategoria(); }
     const feitos = curso.itens.filter((t) => feitaId(t.id)).length;
     const pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
     const totalC = c.cursos.length;
@@ -1589,7 +1567,8 @@ export function montar(raiz: HTMLElement) {
       case "leitor-zoom": { const atual = S.leitorZoom == null ? 1 : S.leitorZoom; S.leitorZoom = Math.max(0, Math.min(ZOOMS.length - 1, atual + Number(d.v))); aplicarZoomLeitor(); return; }
       case "fechar-leitor": { const o = S.leitorDe || {}; S.leitorDe = null; S.presente = o.presente || S.presente; S.tela = "presente"; render(); window.scrollTo({ top: o.y || 0 }); return; }
       case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
-      case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return; pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
+      case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
+        if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": " + msgCursoFechado(CATS()[ci].cursos[i]).toLowerCase() + "."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
