@@ -15,6 +15,7 @@ import "./painel.css";
 import { supabase } from "@/data/supabase";
 import * as api from "@/data/api";
 import { idDoVideo, provedorDoLink } from "@/admin/video";
+import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 
 /* ---------- tipos ---------- */
 
@@ -68,6 +69,8 @@ type Dados = {
   cats: Cat[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; equipe: Pessoa[];
   historico: Hist[]; sugestoes: Sugestao[];
+  /** Foto de cada aluna (o recorte redondo), quando tem. */
+  fotos: Record<string, string>;
 };
 
 /* ---------- utilidades (as mesmas da maquete) ---------- */
@@ -180,7 +183,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("contatos_das_alunas"),
   ]);
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro] = await Promise.all([
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl] = await Promise.all([
     supabase.rpc("engajamento_alunas"),
     emPaginas((de, ate) => supabase.rpc("aulas_concluidas_alunas").order("aluna_id").order("aula_id").range(de, ate)),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
@@ -188,6 +191,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
+    supabase.from("fotos_aluna").select("aluna_id, foto"),
   ]);
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
@@ -304,6 +308,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
+    fotos: Object.fromEntries(((fotosAl.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto])),
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
@@ -350,7 +355,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [] };
+  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {} };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -375,8 +380,10 @@ export function montar(app: HTMLElement) {
   toastEl.id = "toast"; toastEl.className = "toast"; toastEl.setAttribute("role", "status"); toastEl.hidden = true;
   const arquivoCapa = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCapa", accept: "image/*", hidden: true });
   const arquivoCat = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCat", accept: "image/*", hidden: true });
+  const arquivoFoto = Object.assign(document.createElement("input"), { type: "file", id: "arquivoFoto", accept: "image/*", hidden: true });
+  let fotoPara: string | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
-  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat);
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat, arquivoFoto);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -720,7 +727,8 @@ export function montar(app: HTMLElement) {
   const AA_CORES = ["#4f8a43", "#b4465f", "#3f6fa8", "#5c8a5a", "#b07a2a", "#7a52a8", "#2f8a8a"];
   const aaAvatar = (a: Aluna, grande = false) => {
     let n = 0; for (const c of a.id) n = (n * 31 + c.charCodeAt(0)) >>> 0;
-    return `<span class="avatar${grande ? " grande" : ""}" style="--cor:${AA_CORES[n % AA_CORES.length]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
+    const foto = S.fotos[a.id];
+    return `<span class="avatar${grande ? " grande" : ""}${foto ? " com-foto" : ""}" style="--cor:${AA_CORES[n % AA_CORES.length]}" aria-hidden="true">${foto ? `<img src="${foto}" alt="" />` : h(iniciais(a.nome))}</span>`;
   };
   const pilula = (txt: string, tipo: "ouro" | "verde" | "vermelho" | "neutro") => `<span class="aa-pilula ${tipo}"><i></i>${h(txt)}</span>`;
   const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
@@ -936,7 +944,10 @@ export function montar(app: HTMLElement) {
       <aside class="aa-painel largo${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Cadastro de ${h(a.nome)}">
         <button type="button" class="aa-fechar canto" data-a="aa-fechar-aluna" aria-label="Fechar o cadastro e voltar à lista">${xis}</button>
         <header class="aa-cab aluna">
-          <div class="aa-quem">${aaAvatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada)} • ${p(a.liberadas, "aula liberada", "aulas liberadas")}</p></div></div>
+          <div class="aa-quem">${aaAvatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada)} • ${p(a.liberadas, "aula liberada", "aulas liberadas")}</p>
+            <span class="aa-foto-acoes">${S.fotos[a.id]
+              ? `<button type="button" class="link" data-a="foto-aluna-escolher" data-id="${a.id}">Trocar foto</button><button type="button" class="link" data-a="foto-aluna-ajustar" data-id="${a.id}">Ajustar</button><button type="button" class="link perigo" data-a="foto-aluna-remover" data-id="${a.id}">Remover foto</button>`
+              : `<button type="button" class="link" data-a="foto-aluna-escolher" data-id="${a.id}">Colocar foto</button>`}</span></div></div>
           ${status}
         </header>
         <nav class="aa-abas" role="tablist">${ABAS_AL.map(([k, n]) => `<button type="button" role="tab" class="aa-aba" data-a="aa-aba" data-v="${k}" aria-selected="${k === aba}">${n}</button>`).join("")}</nav>
@@ -2201,6 +2212,25 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       }
 
+      case "foto-aluna-escolher": fotoPara = d.id; arquivoFoto.click(); return;
+      case "foto-aluna-ajustar": {
+        const al = S.alunas.find((x) => x.id === d.id); if (!al) return;
+        void (async () => {
+          const r = await supabase.from("fotos_aluna").select("original, ajuste").eq("aluna_id", al.id).maybeSingle();
+          if (!r.data?.original || !r.data.ajuste) { fotoPara = al.id; arquivoFoto.click(); return; }
+          await abrirEditorFoto(al, r.data.original, r.data.ajuste as Ajuste);
+        })();
+        return;
+      }
+      case "foto-aluna-remover": {
+        const al = S.alunas.find((x) => x.id === d.id)!;
+        confirmar({ titulo: "Remover a foto de " + al.nome + "?", texto: "No lugar dela volta a aparecer a inicial do nome, aqui e na área de membros.", palavra: "REMOVER", rotulo: "Remover foto" }, async () => {
+          await rpc("salvar_foto_aluna", { p_aluna: al.id, p_foto: null, p_original: null, p_ajuste: null });
+          await registrar(al.id, "Removeu a foto");
+          return { msg: "Foto removida.", texto: "foto de " + al.nome };
+        });
+        break;
+      }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
@@ -2755,6 +2785,19 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         if (mods.length) cx.querySelector<HTMLInputElement>('input[name="c"]')!.checked = [...mods].every((x) => x.checked);
       });
     }
+  });
+  async function abrirEditorFoto(al: Aluna, src: string, aj: Ajuste) {
+    const pronta = await editarFoto(src, aj, al.nome, () => { fotoPara = al.id; arquivoFoto.click(); });
+    if (!pronta) return;
+    void executar(async () => {
+      await rpc("salvar_foto_aluna", { p_aluna: al.id, p_foto: pronta.foto, p_original: pronta.original, p_ajuste: pronta.ajuste });
+      await registrar(al.id, "Colocou a foto");
+      return { msg: "Foto salva. Ela já aparece na área de membros de " + primeiroNome(al.nome) + ".", texto: "foto de " + al.nome };
+    });
+  }
+  arquivoFoto.addEventListener("change", () => {
+    const file = arquivoFoto.files?.[0]; arquivoFoto.value = ""; const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
+    void lerImagem(file).then((im) => abrirEditorFoto(al, im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e)));
   });
   arquivoCat.addEventListener("change", () => {
     const file = arquivoCat.files?.[0]; arquivoCat.value = ""; const id = ui.catEditar; if (!file || !id) return;

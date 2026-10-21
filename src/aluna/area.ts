@@ -95,8 +95,19 @@ export function montar(raiz: HTMLElement) {
       }));
     D = { perfil, mods, cats, prog, abert, user: perfil?.id };
     S.nome = perfil?.nome || "";
-    S.foto = ler("aion-foto-" + (perfil?.id || ""), "") || "";
-    try { S.fotoOrig = JSON.parse(ler("aion-foto-orig-" + (perfil?.id || ""), "null")); } catch { S.fotoOrig = null; }
+    // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
+    // foto antiga, salva só neste aparelho, sobe uma vez e sai daqui.
+    const fotoBanco = await api.minhaFoto().catch(() => undefined);
+    const kF = "aion-foto-" + (perfil?.id || ""), kO = "aion-foto-orig-" + (perfil?.id || "");
+    if (fotoBanco) {
+      S.foto = fotoBanco.foto;
+      S.fotoOrig = fotoBanco.original && fotoBanco.ajuste ? Object.assign({ src: fotoBanco.original }, fotoBanco.ajuste) : null;
+    } else if (fotoBanco === null && ler(kF, "")) {
+      S.foto = ler(kF, "");
+      try { S.fotoOrig = JSON.parse(ler(kO, "null")); } catch { S.fotoOrig = null; }
+      const o = S.fotoOrig;
+      void api.salvarMinhaFoto(S.foto, o ? o.src : null, o ? { w: o.w, h: o.h, z: o.z, x: o.x, y: o.y } : null).then(() => { gravar(kF, null); gravar(kO, null); }).catch(() => {});
+    } else { S.foto = ""; S.fotoOrig = null; }
   }
 
   const MODS = () => (D ? D.mods : []);
@@ -1245,9 +1256,11 @@ export function montar(raiz: HTMLElement) {
     c.getContext("2d").drawImage(im, t / 2 - dw / 2 + FE.x * k, t / 2 - dh / 2 + FE.y * k, dw, dh);
     S.foto = c.toDataURL("image/jpeg", 0.88);
     S.fotoOrig = { src: FE.src, w: FE.w, h: FE.h, z: FE.z, x: FE.x, y: FE.y };
-    gravar("aion-foto-" + (D?.user || ""), S.foto); gravar("aion-foto-orig-" + (D?.user || ""), JSON.stringify(S.fotoOrig));
+    const o = S.fotoOrig;
     camada.innerHTML = ""; FE = null;
-    aviso("Foto salva. Ela já aparece no topo e nos seus comentários.");
+    void api.salvarMinhaFoto(S.foto, o.src, { w: o.w, h: o.h, z: o.z, x: o.x, y: o.y })
+      .then(() => aviso("Foto salva. Ela já aparece no topo e nos seus comentários."))
+      .catch(() => aviso("Não conseguimos salvar a foto agora. Tente de novo."));
     render();
   }
   function folha(conteudo) { camada.innerHTML = `<div class="fundo-folha" data-a="fechar-folha"><div class="folha" role="dialog" aria-modal="true">${conteudo}</div></div>`; const b = camada.querySelector("button"); if (b) b.focus(); }
@@ -1447,7 +1460,7 @@ export function montar(raiz: HTMLElement) {
       case "abrir-config": S.config = true; break;
       case "fechar-config": S.config = false; break;
       case "tirar-foto": folha(`<h2 class="serif" style="margin:0 0 6px">Remover sua foto?</h2><p class="apoio">No lugar dela volta a aparecer a letra do seu nome.</p><div class="folha-botoes"><button class="botao-2" data-a="fechar-folha">Cancelar</button><button class="botao" data-a="foto-remover-ok">Remover foto</button></div>`); return;
-      case "foto-remover-ok": S.foto = ""; S.fotoOrig = null; gravar("aion-foto-" + (D?.user || ""), null); gravar("aion-foto-orig-" + (D?.user || ""), null); camada.innerHTML = ""; aviso("Foto removida."); break;
+      case "foto-remover-ok": S.foto = ""; S.fotoOrig = null; void api.salvarMinhaFoto(null, null, null).catch(() => aviso("Não conseguimos remover a foto agora. Tente de novo.")); camada.innerHTML = ""; aviso("Foto removida."); break;
       case "cor-nome": S.corNome = d.v; gravar("aion-cor-nome", d.v); aviso("Cor salva."); break;
       case "tema": S.tema = d.v === "claro" ? "claro" : "escuro"; gravar("aion-tema", S.tema); aviso(S.tema === "claro" ? "Tema claro ativado." : "Tema escuro ativado."); break;
       case "letra-mais": S.letra = Math.min(TAM.length - 1, S.letra + 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
