@@ -537,6 +537,12 @@ export function montar(app: HTMLElement) {
     return `${marca(botaoTema())}<div class="conteudo"><div class="vazio">Carregando…</div></div>`;
   }
 
+  // "Salvar login": só o login fica no navegador. O código, o navegador
+  // oferece guardar no gerenciador de senhas dele — nunca em texto aqui.
+  const lerLocal = (k: string) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+  const gravarLocal = (k: string, v: string | null) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* sem armazenamento */ } };
+  const loginSalvo = () => lerLocal("aion-painel-login");
+
   function login() {
     return `
     ${marca(botaoTema())}
@@ -544,8 +550,9 @@ export function montar(app: HTMLElement) {
       <form data-f="entrar" class="cartao" style="padding:22px">
         <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
         <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu login e o seu código.</p>
-        <label class="grupo" style="margin-bottom:14px"><span class="rotulo">Login</span><input id="loginCampo" class="campo" name="login" autocomplete="username" required /></label>
-        <label class="grupo"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="off" required /></label>
+        <label class="grupo" style="margin-bottom:14px"><span class="rotulo">Login</span><input id="loginCampo" class="campo" name="login" autocomplete="username" value="${h(loginSalvo())}" required /></label>
+        <label class="grupo"><span class="rotulo">Código</span><input id="codigoCampo" class="campo" name="codigo" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required /></label>
+        <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;cursor:pointer"><input type="checkbox" name="salvar" ${loginSalvo() || !lerLocal("aion-painel-login-off") ? "checked" : ""} style="width:18px;height:18px" />Salvar login</label>
         ${ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : ""}
         <button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>Entrar</button>
       </form>
@@ -1851,7 +1858,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       case "tema": tema = tema === "claro" ? "escuro" : "claro"; try { localStorage.setItem(KT, tema); } catch { /* sem armazenamento */ } aplicarTema(); break;
       case "sair":
-        void api.sair().finally(() => { eu = null; ui.focar = "loginCampo"; render(); });
+        void api.sair().finally(() => { eu = null; ui.focar = loginSalvo() ? "codigoCampo" : "loginCampo"; render(); });
         return;
       case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
@@ -2204,6 +2211,9 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         void (async () => {
           const r = await api.entrar(v("login").toLowerCase(), v("codigo"));
           if (!r.ok) { ui.erroLogin = r.falha.mensagem; ocupado = false; render(); return; }
+          const salvar = (form.elements.namedItem("salvar") as HTMLInputElement | null)?.checked;
+          gravarLocal("aion-painel-login", salvar ? v("login") : null);
+          gravarLocal("aion-painel-login-off", salvar ? null : "1");
           await abrirSessao(true);
           ocupado = false; render();
         })();
