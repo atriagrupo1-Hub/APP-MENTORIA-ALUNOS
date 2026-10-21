@@ -10,6 +10,8 @@ export type Modulo = {
   id: string;
   /** Capa deitada (16:9) do "Comece por aqui" (0052). */
   capaHorizontalPath?: string | null;
+  /** Cor do módulo (#rrggbb), do painel: contorno, brilho e linha (0054). */
+  cor?: string | null;
   numero: number;
   titulo: string;
   intro: string;
@@ -36,6 +38,8 @@ export type Modulo = {
 
 export type Aula = {
   id: string;
+  /** Só aulas publicadas contam (a equipe também enxerga rascunhos). */
+  publicado?: boolean;
   moduloId: string;
   numero: number;
   titulo: string;
@@ -78,6 +82,8 @@ export type AulaAoVivo = {
   id: string;
   moduloId: string;
   quandoTexto: string | null;
+  /** Data e hora marcadas no painel; nulo = "data a confirmar". */
+  dataHora?: string | null;
   liberada: boolean;
 };
 

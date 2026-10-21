@@ -74,12 +74,17 @@ export function montar(raiz: HTMLElement) {
     const mods = cat.modulos
       .filter((m) => !jornadaOculta && (jornada ? m.produtoId === jornada : true))
       .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
-      .map((m) => ({
-        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""), capa: capaUrl(`modulo-${m.numero}.webp`),
-        aulas: m.aulas.slice().sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-          id: a.id, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
-        })),
-      }));
+      .map((m, k) => {
+        const vivo = cat.aoVivo[m.id];
+        return {
+          id: m.id, num: k, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
+          capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
+          vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
+          aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
+            id: a.id, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
+          })),
+        };
+      });
     // Presentes: as categorias que não são a da jornada, cada uma com seus produtos.
     const prodJ = cat.produtos.find((x) => x.id === jornada);
     const cats = cat.categorias
@@ -119,6 +124,8 @@ export function montar(raiz: HTMLElement) {
   const feita = (m, a) => feitaId(MODS()[m].aulas[a].id);
   const posicaoId = (id) => { const l = D && D.prog.get(id); if (!l || !l.duracaoSegundos) return 0; return Math.min(1, (l.posicaoSegundos || 0) / l.duracaoSegundos); };
   const posicao = (m, a) => posicaoId(MODS()[m].aulas[a].id);
+  // Dentro do módulo, a aula abre quando a anterior foi concluída (0054).
+  const seqOk = (m, a) => a === 0 || feita(m, a - 1);
   const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
   const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
   const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
@@ -136,7 +143,7 @@ export function montar(raiz: HTMLElement) {
   function continuar() {
     if (!D) return null;
     const ordem = [];
-    MODS().forEach((md, m) => md.aulas.forEach((x, a) => { if (aulaAdmin(x.id)) ordem.push({ m, a, id: x.id }); }));
+    MODS().forEach((md, m) => md.aulas.forEach((x, a) => { if (aulaAdmin(x.id) && seqOk(m, a)) ordem.push({ m, a, id: x.id }); }));
     let melhor = null;
     for (const o of ordem) {
       const l = D.prog.get(o.id);
@@ -159,6 +166,7 @@ export function montar(raiz: HTMLElement) {
     const id = MODS()[m].aulas[a].id;
     if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
     if (!aulaAdmin(id)) return { cls: "fechado", txt: aberturaDe(id) ? "Libera em " + dataCurta(aberturaDe(id)) : "Em breve", fech: true };
+    if (!seqOk(m, a)) return { cls: "fechado", txt: "Conclua a Aula " + a + " para liberar", fech: true, seq: true };
     if (feita(m, a)) return { cls: "ok", txt: "✓ Concluída" };
     if (posicao(m, a) > 0) return { cls: "andando", txt: "Em andamento" };
     return { cls: "livre", txt: "Disponível" };
@@ -172,6 +180,9 @@ export function montar(raiz: HTMLElement) {
     return { cls: "livre", txt: "Disponível · " + p(t, "aula", "aulas") };
   }
   const msgModFechado = (m) => (abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve");
+  // O aviso dentro da página do módulo bloqueado.
+  const avisoModFechado = (m) => (abre(m) ? "Este módulo abre em " + dataCurta(abre(m)) + "." : m > 0 && !modConcluido(m - 1) ? "Libera depois da conclusão do módulo anterior." : "Este módulo ainda não foi liberado para você.");
+  const dataVivo = (v) => { if (v.data) { const d = new Date(v.data); return dataCurta(d) + " às " + String(d.getHours()).padStart(2, "0") + "h" + (d.getMinutes() ? String(d.getMinutes()).padStart(2, "0") : ""); } return v.texto || "data a confirmar"; };
 
   /* ---------- ícones (da maquete) ---------- */
   const ICONES = {
@@ -297,7 +308,7 @@ export function montar(raiz: HTMLElement) {
   function linhaModulo(m, irModulo) {
     const md = MODS()[m], e = estadoMod(m), n = feitasMod(m), t = md.aulas.length;
     const aberto = !!(S.verAulas || {})[m];
-    const COR = CORES_MOD[m % CORES_MOD.length];
+    const COR = md.cor;
     const meta = `<p class="mc-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>${t ? p(t, "aula", "aulas") : "Aula será adicionada em breve"}</span></p>`;
     if (e.fech) {
       const msg = msgModFechado(m);
@@ -469,7 +480,7 @@ export function montar(raiz: HTMLElement) {
     const n = feitasMod(m), t = md.aulas.length;
     const c = md.aulas.findIndex((_, a) => !feita(m, a));
     const pct = t ? Math.round((n / t) * 100) : 0;
-    const COR = CORES_MOD[m % CORES_MOD.length];
+    const COR = md.cor;
     const cardAula = (a) => {
       const e = estadoAula(m, a), ps = posicao(m, a), feitaA = feita(m, a);
       return `
@@ -492,16 +503,16 @@ export function montar(raiz: HTMLElement) {
           <p class="mv-desc">${h(md.intro)}</p>
         </div>
       </section>
-      <div class="mv-ind">
+      <div class="mv-ind"${md.vivo ? "" : ' style="grid-template-columns:1fr"'}>
         <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><span><b>${p(t, "aula", "aulas")}</b><em>neste módulo</em></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><span><b>1 aula ao vivo</b><em>data a confirmar</em></span></div>
+        ${md.vivo ? `<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><span><b>1 aula ao vivo</b><em>${h(dataVivo(md.vivo))}</em></span></div>` : ""}
       </div>
       <section class="mv-prog" aria-label="Progresso do módulo">
         <div class="mv-prog-topo"><span>Progresso do módulo</span><b>${pct}%</b></div>
         <div class="barra"><i style="width:${pct}%"></i></div>
         <p>${n} de ${p(t, "aula concluída", "aulas concluídas")}</p>
       </section>
-      ${!liberado(m) ? `<div class="mp-fechado"><span class="cadeado"></span>${h(msgModFechado(m))}.</div>` : ""}
+      ${!liberado(m) ? `<div class="mp-fechado"><span class="cadeado"></span>${h(avisoModFechado(m))}</div>` : ""}
       <section class="mv-aulas" aria-labelledby="h-aulas">
         <div class="mv-aulas-topo"><h2 id="h-aulas">Aulas do módulo</h2><span>${p(t, "aula", "aulas")}</span></div>
         <div class="mv-lista">${t ? md.aulas.map((_, a) => cardAula(a)).join("") : `<div class="vazio">Aula será adicionada em breve.</div>`}</div>
@@ -1320,7 +1331,6 @@ export function montar(raiz: HTMLElement) {
       }
       case "modulo": {
         const m = +d.m; if (!MODS()[m]) return; pararVideo();
-        if (!liberado(m)) { aviso("O Módulo " + MODS()[m].num + ": " + msgModFechado(m).charAt(0).toLowerCase() + msgModFechado(m).slice(1) + "."); return; }
         if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
         S.mod = m; S.tela = "modulo"; topo(); break;
       }
@@ -1328,7 +1338,7 @@ export function montar(raiz: HTMLElement) {
       case "aula": {
         const m = +d.m, i = +d.i; if (!MODS()[m] || !MODS()[m].aulas[i]) return;
         const ea = estadoAula(m, i);
-        if (ea.fech) { aviso(ea.seq ? "Conclua a Aula " + i + " para liberar esta." : ea.txt === "Em breve" ? "Esta aula ainda não foi liberada para você." : "Esta aula " + ea.txt.charAt(0).toLowerCase() + ea.txt.slice(1) + "."); return; }
+        if (ea.fech) { aviso("Esta aula será liberada no momento certo da sua jornada."); return; }
         pararVideo();
         if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
         S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = "sobre"; S.autoTocar = d.tocar === "1"; void abrirAula(); topo(); break;
