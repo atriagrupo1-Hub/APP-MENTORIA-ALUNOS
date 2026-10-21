@@ -402,6 +402,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
+    curMenu: "" as string, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -522,6 +523,7 @@ export function montar(app: HTMLElement) {
   const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
+    cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
     layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
   };
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
@@ -1861,18 +1863,73 @@ export function montar(app: HTMLElement) {
     </section>`;
   }
 
+  /*
+   * Cursos e conteúdos (referência aprovada): um cartão por curso, com a
+   * capa do próprio curso (editada dentro dele), a categoria, as alunas
+   * ativas com acesso, os módulos, a data e o progresso médio delas.
+   */
+  const IC_CUR = {
+    pasta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2v7.5a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
+    pessoas: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.8 19.5c.7-3.6 3.2-5.5 6.2-5.5s5.5 1.9 6.2 5.5M16 5.2a3.5 3.5 0 0 1 0 6.6M18 14.3c1.8.7 3 2.4 3.4 5.2"/></svg>`,
+    camadas: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/></svg>`,
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`,
+    seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+    grade: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>`,
+    lista: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.8" cy="6.5" r="1"/><circle cx="4.8" cy="12" r="1"/><circle cx="4.8" cy="17.5" r="1"/></svg>`,
+    lupa: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20.5 20.5"/></svg>`,
+  };
+  // Alunas ativas com acesso ao curso e o progresso médio delas nas aulas dele.
+  function numerosCurso(c: Curso) {
+    const aulas = c.modulos.flatMap((m) => m.aulas.map((a) => a.id));
+    const mods = new Set(c.modulos.map((m) => m.id)), setA = new Set(aulas);
+    const comAcesso = S.alunas.filter((a) => !a.bloqueada && !vencida(a) && (a.acesso.cursos.includes(c.id) || a.acesso.modulos.some((m) => mods.has(m)) || a.acesso.aulas.some((x) => setA.has(x))));
+    const pct = comAcesso.length && aulas.length ? Math.round((comAcesso.reduce((s, a) => s + aulas.filter((x) => a.feitas.has(x)).length / aulas.length, 0) / comAcesso.length) * 100) : 0;
+    return { alunas: comAcesso.length, pct };
+  }
   function telaCursos() {
+    const q = norm(ui.cursoBusca || "").trim();
+    const ordem = ui.cursoOrdem || "recentes";
+    const lista = S.cursos.filter((c) => !q || casa(q, c.nome + " " + (cat(c.cat)?.nome || "")))
+      .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : (y.criado || "").localeCompare(x.criado || ""));
+    const vista = ui.cursoVista || "grade";
+    const cartao = (c: Curso) => {
+      const n = numerosCurso(c), k = cat(c.cat);
+      const capa = capaSite(c.capa);
+      return `
+        <article class="cur-card">
+          <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button>
+          <span class="cur-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Opções de ${h(c.nome)}" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
+            <button role="menuitem" data-a="abrir-curso" data-id="${c.id}">Abrir e editar</button>
+            <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
+          </span>` : ""}</span>
+          <div class="cur-corpo">
+            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>
+            ${c.descricao ? `<p class="cur-desc">${h(c.descricao)}</p>` : `<p class="cur-desc cur-sem-desc">Sem descrição.</p>`}
+            <div class="cur-dado">${IC_CUR.pasta}<span><em>Categoria</em><b>${h(k?.nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</b></span></div>
+            <div class="cur-nums">
+              <div class="cur-dado">${IC_CUR.pessoas}<span><b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span></div>
+              <div class="cur-dado">${IC_CUR.camadas}<span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span></div>
+            </div>
+            <div class="cur-rodape">
+              <span class="cur-data">${IC_CUR.cal}${c.criado ? "Adicionado em " + br(diaDe(c.criado)) : ""}</span>
+              <button type="button" class="cur-ir" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${IC_CUR.seta}</button>
+            </div>
+            <div class="cur-prog"><span class="cur-barra"><i style="width:${n.pct}%"></i></span><b>${n.pct}%</b></div>
+          </div>
+        </article>`;
+    };
     return `
-    <section class="tela ativa">
-      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:16px">
-        <span style="flex:1;color:var(--texto-2);font-size:14px">Todos os produtos. Clique num deles para montar o conteúdo.</span>
-        <button class="botao" data-a="curso-novo">+ Criar novo</button>
+    <section class="tela ativa cur">
+      <div class="cur-barra-topo">
+        <p class="cur-sub">Todos os cursos cadastrados. Clique em um curso para gerenciar seus módulos e conteúdos.</p>
+        <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
+        <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
-      ${S.cursos.length ? `<div class="cartoes">
-        ${S.cursos.map((c) => `<button class="cartao-curso" data-a="abrir-curso" data-id="${c.id}"><b>${h(c.nome)}</b><span>${h((cat(c.cat) || { nome: "" }).nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</span></button>`).join("")}
-      </div>` : `<div class="vazio">Nenhum produto ainda. Crie o primeiro.</div>`}
+      ${lista.length ? `<div class="cur-grade${vista === "lista" ? " em-lista" : ""}">${lista.map(cartao).join("")}</div>` : `<div class="vazio">${q ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`}
     </section>`;
   }
+
 
   /*
    * Uma frase direta para cada campo: o que vai ali e onde a aluna vê.
@@ -1892,6 +1949,7 @@ export function montar(app: HTMLElement) {
     rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
+    capaCurso: "A capa do curso: aparece no cartão dele em Cursos e conteúdos e, nos presentes, no cartão da aba Presentes da aluna. Imagem deitada (16:9).",
     modCapa: "A capa em pé do módulo, que aparece no topo da página do módulo e na aba Módulos.",
     modCor: "A cor do contorno, do brilho e da linha na página do módulo. Os botões continuam dourados.",
     modVivo: "Marque se o módulo tem aula ao vivo. A data aparece na página do módulo; sem data, aparece \"data a confirmar\". Desmarcado, essa parte some.",
@@ -1934,6 +1992,11 @@ export function montar(app: HTMLElement) {
         <div class="campos" style="margin-top:14px">
           <div class="grupo" style="flex:1 1 220px"><span class="rotulo rotulo-ajuda">Rótulo no Início ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" aria-label="Rótulo no Início" /></div>
           <div class="grupo" style="flex:1 1 280px"><span class="rotulo rotulo-ajuda">Nome curto no Início ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" aria-label="Nome curto no Início" /></div>
+        </div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Capa do curso ${dicaCampo(AJ.capaCurso)}</span>
+          <span class="mod-capa" data-previa="cur-${c.id}">${(previas["cur-" + c.id] || capaSite(c.capa)) ? `<img src="${h(previas["cur-" + c.id] || capaSite(c.capa))}" alt="" />` : ""}</span>
+          <input type="hidden" name="capa" value="${h(c.capa)}" />
+          <span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="botao-neutro grande" data-a="curso-capa" data-id="${c.id}">Escolher imagem</button>${c.capa ? `<button type="button" class="botao-neutro grande botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">Tirar capa</button>` : ""}</span>
         </div>
         <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.desc)}</span><textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
         <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Fundação — o que é este curso ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
@@ -2378,6 +2441,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     if (a !== "menu") ui.menu = null;
     if (a !== "ajuda") ui.ajuda = null;
     if (a !== "eng-menu") ui.engMenu = "";
+    if (a !== "cur-menu") ui.curMenu = "";
     switch (a) {
       case "inicio-acessos": ui.inicioVista = "acessos"; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
       case "inicio-voltar": ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
@@ -2635,6 +2699,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       }
       case "ini-periodo": ui.periodoAberto = !ui.periodoAberto; break;
       case "eng-menu": ui.engMenu = ui.engMenu === d.id ? "" : d.id; break;
+      case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
+      case "cur-vista": ui.cursoVista = d.v; break;
       case "ini-periodo-rapido": {
         const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
         ui.iniAte = hj; ui.iniDe = d.v === "hoje" ? hj : d.v === "7" ? menos(6) : d.v === "30" ? menos(29) : hj.slice(0, 8) + "01";
@@ -2697,6 +2763,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         });
         break;
       }
+      case "curso-capa": imgPara = { form: 'form[data-f="curso-config"]', campo: "capa", previa: "cur-" + d.id, pasta: "cursos" }; arquivoImg.click(); return;
+      case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="cur-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar para guardar."); return; }
       case "mod-capa-v": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capa", previa: "modv-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
       case "mod-capa-h": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capaH", previa: "modh-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
       case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
@@ -3011,10 +3079,10 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         return;
       case "curso-config": {
         const c = curso(ui.curso)!; const cid = c.id;
-        const velho = { titulo: c.nome, categoria_id: c.cat || null, publicado: c.visivel, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null, rotulo_inicio: c.rotuloInicio || null, nome_curto: c.nomeCurto || null };
+        const velho = { titulo: c.nome, capa_path: c.capa || null, categoria_id: c.cat || null, publicado: c.visivel, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null, rotulo_inicio: c.rotuloInicio || null, nome_curto: c.nomeCurto || null };
         void executar(async () => {
           falhou(await supabase.from("produtos").update({
-            titulo: v("nome"), categoria_id: v("cat"), publicado: v("visivel") === "1",
+            titulo: v("nome"), capa_path: v("capa") || null, categoria_id: v("cat"), publicado: v("visivel") === "1",
             descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
             rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
           }).eq("id", cid).select("id").single());
@@ -3285,12 +3353,14 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     marcarSujo(t);
     if (t.dataset.conta) { const c = document.getElementById(t.dataset.conta); if (c) c.textContent = t.value.length + "/200"; }
     if (t.dataset.i === "busca") { ui.busca = t.value; ui.paginaAl = 1; render(); return; }
+    if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
+    if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
