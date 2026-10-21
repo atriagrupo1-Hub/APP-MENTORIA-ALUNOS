@@ -364,8 +364,9 @@ export function montar(raiz: HTMLElement) {
   }
 
   // Destaques do Início (painel → Categorias / Layout → Destaques do Início).
-  const COR_DESTAQUE = { violeta: "mestres", verde: "pres", azul: "doc", vermelho: "vivo", dourado: "" };
+  const COR_DESTAQUE = { violeta: "mestres", verde: "pres", azul: "doc", vermelho: "vivo", turquesa: "desc", dourado: "" };
   const ICONE_DESTAQUE = {
+    lupa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L20.5 20.5"/></svg>',
     estrela: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg>',
     presente: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>',
     filme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/></svg>',
@@ -930,9 +931,9 @@ export function montar(raiz: HTMLElement) {
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   // Os presentes (Mestres espirituais, Documentários, Frequências, E-books…), cada um num cartão.
   const PRESENTES = () => CATS().flatMap((c, ci) => c.cursos.map((curso, i) => ({ c, ci, i, curso })));
-  const icPresente = (c, curso) => (/e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
-  const corPresente = (c, curso) => (/e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
-  const botaoPresente = (curso) => (/e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
+  const icPresente = (c, curso) => (/descobert/i.test(curso.nome) ? ICONE_DESTAQUE.lupa : /e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
+  const corPresente = (c, curso) => (/descobert/i.test(curso.nome) ? "desc" : /e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
+  const botaoPresente = (curso) => (/descobert/i.test(curso.nome) ? "Ver as descobertas" : /e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
   function cartaoPresente({ c, ci, i, curso }) {
     const key = ci + "-" + i;
     if (!cursoLiberado(curso)) return `
