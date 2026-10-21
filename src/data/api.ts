@@ -135,6 +135,7 @@ export async function meuPerfil(): Promise<PerfilSessao | null> {
 
 type LinhaModulo = {
   id: string;
+  capa_horizontal_path?: string | null;
   numero: number;
   titulo: string;
   intro: string | null;
@@ -182,6 +183,8 @@ type LinhaPresente = {
 
 type LinhaProduto = {
   id: string;
+  rotulo_inicio?: string | null;
+  nome_curto?: string | null;
   categoria_id: string;
   titulo: string;
   descricao: string | null;
@@ -356,6 +359,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     ordem: m.ordem,
     produtoId: m.produto_id,
     capaPath: m.capa_path,
+    capaHorizontalPath: m.capa_horizontal_path ?? null,
     bloqueadoGeral: m.bloqueado_geral,
     tituloNaArte: m.titulo_na_arte,
     avisoMaterial: avisoDoProduto.get(m.produto_id ?? "") ?? null,
@@ -407,6 +411,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
   const listaProdutos: Produto[] = ((produtos.data ?? []) as LinhaProduto[]).map(
     (p): Produto => ({
       id: p.id,
+      rotuloInicio: p.rotulo_inicio ?? null,
+      nomeCurto: p.nome_curto ?? null,
       categoriaId: p.categoria_id,
       titulo: p.titulo,
       descricao: p.descricao ?? "",
@@ -694,6 +700,33 @@ export async function salvarMinhaFoto(foto: string | null, original: string | nu
   if (!sessao.user) throw new Error("sem sessão");
   const { error } = await supabase.rpc("salvar_foto_aluna", { p_aluna: sessao.user.id, p_foto: foto, p_original: original, p_ajuste: ajuste });
   if (error) throw new Error(`salvar foto: ${error.message}`);
+}
+
+export type Destaque = {
+  id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
+  destino: "presentes" | "categoria"; categoriaId: string | null; categoriaNome: string;
+  icone: string; cor: string;
+};
+/**
+ * O que o Início mostra e o painel edita (0052): o nome no cabeçalho, os
+ * versículos (um por dia, em sequência) e os destaques visíveis, na ordem.
+ */
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; versiculos: [string, string][]; destaques: Destaque[] }> {
+  const [cfg, vs, ds] = await Promise.all([
+    supabase.from("configuracoes").select("marca_titulo, marca_sub").maybeSingle(),
+    supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
+    supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
+  ]);
+  for (const r of [cfg, vs, ds]) if (r.error) throw new Error(`início: ${r.error.message}`);
+  return {
+    marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
+    versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
+    destaques: ((ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
+      id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",
+      botao: d.botao ?? "", destino: d.destino === "categoria" ? "categoria" : "presentes", categoriaId: d.categoria_id ?? null,
+      categoriaNome: d.categoria_nome ?? "", icone: d.icone ?? "estrela", cor: d.cor ?? "dourado",
+    })),
+  };
 }
 
 export async function alternarCurtidaComentario(id: string): Promise<boolean> {

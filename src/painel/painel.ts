@@ -30,11 +30,18 @@ type Aula = {
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string };
+type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
   criado: string; capa: string;
+  /** Início da área da aluna (0052): rótulo e nome curto do bloco da mentoria. */
+  rotuloInicio: string; nomeCurto: string;
+};
+type Versiculo = { id: string; texto: string; ref: string };
+type Destaque = {
+  id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
+  destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
 };
 type Cat = { id: string; nome: string; visivel: boolean; capa: string; descricao: string; criado: string };
 type Aluna = {
@@ -74,6 +81,10 @@ type Dados = {
   historico: Hist[]; sugestoes: Sugestao[];
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
+  /** Configurações gerais e Destaques do Início (0052). */
+  config: { marcaTitulo: string; marcaSub: string };
+  versiculos: Versiculo[];
+  destaques: Destaque[];
 };
 
 /* ---------- utilidades (as mesmas da maquete) ---------- */
@@ -174,8 +185,8 @@ async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ da
 async function lerTudo(eu: Eu): Promise<Dados> {
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
-    supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em").not("produto_id", "is", null).order("ordem"),
+    supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
+    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
@@ -186,7 +197,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("contatos_das_alunas"),
   ]);
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl] = await Promise.all([
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests] = await Promise.all([
     supabase.rpc("engajamento_alunas"),
     emPaginas((de, ate) => supabase.rpc("aulas_concluidas_alunas").order("aluna_id").order("aula_id").range(de, ate)),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
@@ -195,6 +206,9 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     supabase.from("fotos_aluna").select("aluna_id, foto"),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub").maybeSingle(),
+    supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
+    supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
   ]);
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
@@ -228,7 +242,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const modsDo = new Map<string, Modulo[]>();
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "" });
+    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "" });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -237,6 +251,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     inicio: c.inicio ?? 1, descricao: c.descricao ?? "", fundacao: c.fundacao ?? "",
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
     criado: c.criado_em ?? "", capa: c.capa_path ?? "",
+    rotuloInicio: c.rotulo_inicio ?? "", nomeCurto: c.nome_curto ?? "",
   }));
 
   // Celular e e-mail (0041). Se a leitura falhar, a lista abre do mesmo jeito, só sem eles.
@@ -312,6 +327,13 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "" },
+    versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
+    destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
+      id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
+      destino: x.destino === "categoria" ? "categoria" : "presentes", categoriaId: x.categoria_id ?? "", categoriaNome: x.categoria_nome ?? "",
+      icone: x.icone ?? "estrela", cor: x.cor ?? "dourado", visivel: !!x.visivel,
+    })),
     fotos: Object.fromEntries(((fotosAl.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto])),
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
@@ -359,7 +381,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {} };
+  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -370,7 +392,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -386,8 +408,11 @@ export function montar(app: HTMLElement) {
   const arquivoCat = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCat", accept: "image/*", hidden: true });
   const arquivoFoto = Object.assign(document.createElement("input"), { type: "file", id: "arquivoFoto", accept: "image/*", hidden: true });
   let fotoPara: string | null = null;
+  // Imagem para um campo de formulário: envia ao depósito "capas", guarda o caminho no campo escondido e mostra a prévia.
+  const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
+  let imgPara: { form: string; campo: string; previa: string; pasta: string } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
-  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat, arquivoFoto);
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat, arquivoFoto, arquivoImg);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -485,6 +510,7 @@ export function montar(app: HTMLElement) {
     layout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
     comentarios: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`,
     equipe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.5c.6-3.4 3.3-5.3 6.5-5.3s5.9 1.9 6.5 5.3"/></svg>`,
+    config: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
     registro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M9 11h6M9 14.5h6M9 18h4"/></svg>`,
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
@@ -494,6 +520,7 @@ export function montar(app: HTMLElement) {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
   };
+  const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias / Layout"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
@@ -512,6 +539,7 @@ export function montar(app: HTMLElement) {
       case "aula": return x ? [x.a.nome, localAula(x.a.id)] : ["Aula aberta", "nenhuma aula aberta"];
       case "comentarios": return ["Comentários", p(moderar, "para moderar", "para moderar")];
       case "equipe": return ["Equipe", p(S.equipe.length, "pessoa", "pessoas")];
+      case "config": return ["Configurações", "Configurações gerais da área de membros."];
     }
     return ["", ""];
   }
@@ -579,8 +607,8 @@ export function montar(app: HTMLElement) {
   function painel() {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" || id === "registro") && !podeEquipe();
-    const abas = ABAS.filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaLayout, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaLayout, config: telaConfig, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     const papel: Record<string, string> = { dono: "Dono", admin: "Administrador", suporte: "Suporte" };
     return `
@@ -1532,7 +1560,8 @@ export function montar(app: HTMLElement) {
     alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>`,
     caixa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>`,
   };
-  const capaCat = (k: Cat) => (k.capa ? (k.capa.startsWith("/") ? k.capa : urlDaCapa(k.capa)) : "");
+  const capaSite = (c: string) => (c ? (c.startsWith("/") ? c : urlDaCapa(c)) : "");
+  const capaCat = (k: Cat) => capaSite(k.capa);
   const chave = (on: boolean, acao: string, id: string, rotulo: string) => `<button type="button" class="cat-chave" role="switch" aria-checked="${on}" data-a="${acao}" data-id="${id}" aria-label="${h(rotulo)}"><i></i></button>`;
   function telaLayout() {
     const anima = ui.catAnima; ui.catAnima = false;
@@ -1566,8 +1595,66 @@ export function montar(app: HTMLElement) {
         <input id="catNova" class="campo" name="nome" placeholder="Nome da nova categoria" required />
         <button class="al-botao-ouro">Adicionar categoria</button>
       </form>
+      ${blocoDestaques()}
       ${ui.catEditar ? editarCategoria(anima) : ""}
+      ${ui.destEditar ? editarDestaque() : ""}
     </section>`;
+  }
+  const COR_DEST: Record<string, string> = { dourado: "Dourado", violeta: "Violeta", verde: "Verde", azul: "Azul", vermelho: "Vermelho" };
+  const ICONE_DEST: Record<string, string> = { estrela: "Estrela", presente: "Presente", filme: "Filme", video: "Vídeo", livro: "Livro", som: "Som" };
+  const destinoTxt = (d: Destaque) => d.destino === "presentes" ? "Aba Presentes" : (cat(d.categoriaId)?.nome || d.categoriaNome || "categoria") + (d.categoriaId && cat(d.categoriaId) ? "" : " (categoria ainda não criada)");
+  function blocoDestaques() {
+    return `
+      <h3 class="dest-titulo">Destaques do Início</h3>
+      <p class="al-sub">Os cartões que aparecem no Início da aluna, depois de "Também para você", nesta ordem.</p>
+      ${S.destaques.map((d, i) => `
+        <div class="cat-linha dest-linha${ui.destEditar === d.id ? " sel" : ""}">
+          <div class="cat-linha-topo">
+            <span class="cat-img">${capaSite(d.imagem) ? `<img src="${h(capaSite(d.imagem))}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
+            <span class="cat-nome"><b>${h(d.titulo)}</b><span>${h(d.rotulo)} · leva para ${h(destinoTxt(d))} · ${COR_DEST[d.cor] || d.cor}</span></span>
+            <span class="cat-vis">${chave(d.visivel, "dest-visivel", d.id, (d.visivel ? "Esconder " : "Mostrar ") + d.titulo)}<span>${d.visivel ? "Visível" : "Escondido"}</span></span>
+            <span class="cat-acoes">
+              <button class="al-botao pequeno" data-a="dest-editar" data-id="${d.id}">${IC_CAT.lapis}Editar</button>
+              <button class="al-botao pequeno quadrado" data-a="dest-sobe" data-id="${d.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="al-botao pequeno quadrado" data-a="dest-desce" data-id="${d.id}" ${i === S.destaques.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+              <button class="al-botao pequeno cat-remover" data-a="dest-remover" data-id="${d.id}">${IC_CAT.lixo}Remover</button>
+            </span>
+          </div>
+        </div>`).join("") || `<div class="vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}
+      <button class="al-botao" data-a="dest-editar" data-id="novo" style="margin-top:4px">+ Adicionar destaque</button>`;
+  }
+  function editarDestaque() {
+    const novo = ui.destEditar === "novo";
+    const d: Destaque = novo ? { id: "novo", imagem: "", rotulo: "", titulo: "", descricao: "", botao: "", destino: "presentes", categoriaId: "", categoriaNome: "", icone: "estrela", cor: "dourado", visivel: true } : S.destaques.find((x) => x.id === ui.destEditar)!;
+    if (!d) { ui.destEditar = null; return ""; }
+    const img = previas["dest-" + d.id] || capaSite(d.imagem);
+    const valDest = d.destino === "presentes" ? "presentes" : d.categoriaId ? "cat:" + d.categoriaId : "nome:" + d.categoriaNome;
+    const opcoes: [string, string][] = [["presentes", "Aba Presentes"], ...S.cats.map((k) => ["cat:" + k.id, "Categoria " + k.nome] as [string, string])];
+    if (valDest.startsWith("nome:")) opcoes.push([valDest, "Categoria " + d.categoriaNome + " (ainda não criada)"]);
+    return `
+      <div class="aa-fundo dois" data-a="dest-fechar"></div>
+      <aside class="aa-painel largo cat-painel" role="dialog" aria-modal="true" aria-label="${novo ? "Novo destaque" : "Editar destaque"}">
+        <header class="cat-painel-cab"><h2>${novo ? "Novo destaque" : "Editar destaque"}</h2><button type="button" class="aa-fechar" data-a="dest-fechar" aria-label="Fechar">${xis}</button></header>
+        <form data-f="dest-salvar" data-id="${d.id}" class="aa-corpo cat-form" data-rolagem="dest-${d.id}">
+          <div class="cat-capa" data-previa="dest-${d.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}</div>
+          <input type="hidden" name="imagem" value="${h(d.imagem)}" />
+          <button type="button" class="al-botao pequeno" data-a="dest-imagem" data-id="${d.id}" style="align-self:flex-start">Alterar imagem</button>
+          <label class="cat-campo"><span>Rótulo (pequeno, com ícone)</span><input class="campo" name="rotulo" value="${h(d.rotulo)}" maxlength="40" required /></label>
+          <label class="cat-campo"><span>Título</span><input class="campo" name="titulo" value="${h(d.titulo)}" maxlength="70" required /></label>
+          <label class="cat-campo"><span>Descrição</span><textarea class="campo" name="descricao" rows="3" maxlength="200" data-conta="destConta">${h(d.descricao)}</textarea><small id="destConta" class="cat-conta">${d.descricao.length}/200</small></label>
+          <label class="cat-campo"><span>Texto do botão</span><input class="campo" name="botao" value="${h(d.botao)}" maxlength="40" required /></label>
+          <label class="cat-campo"><span>Leva para</span><select class="campo" name="destino">${opcoes.map(([v2, n]) => `<option value="${h(v2)}" ${v2 === valDest ? "selected" : ""}>${h(n)}</option>`).join("")}</select></label>
+          <div class="campos">
+            <label class="cat-campo" style="flex:1 1 140px"><span>Ícone</span><select class="campo" name="icone">${Object.entries(ICONE_DEST).map(([v2, n]) => `<option value="${v2}" ${v2 === d.icone ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+            <label class="cat-campo" style="flex:1 1 140px"><span>Cor do cartão</span><select class="campo" name="cor">${Object.entries(COR_DEST).map(([v2, n]) => `<option value="${v2}" ${v2 === d.cor ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+          </div>
+          <label class="cat-vis-linha"><input type="checkbox" name="visivel" ${d.visivel ? "checked" : ""} style="width:20px;height:20px" /><span>Aparece no Início</span></label>
+          <div class="cat-rodape">
+            ${novo ? "<span></span>" : `<button type="button" class="al-botao cat-remover" data-a="dest-remover" data-id="${d.id}">${IC_CAT.lixo}Remover destaque</button>`}
+            <button class="al-botao-ouro">Salvar</button>
+          </div>
+        </form>
+      </aside>`;
   }
   function cursosDaCat(k: Cat) {
     const cs = S.cursos.filter((c) => c.cat === k.id);
@@ -1601,6 +1688,52 @@ export function montar(app: HTMLElement) {
       </aside>`;
   }
 
+  /*
+   * Configurações gerais (0052): o nome do cabeçalho da área de membros
+   * e a lista de versículos do Início — um por dia, em sequência.
+   */
+  const versiculoDeHoje = () => { const n = S.versiculos.length; if (!n) return -1; const hj = new Date(); return Math.floor((hj.getTime() - new Date(hj.getFullYear(), 0, 0).getTime()) / 864e5) % n; };
+  function telaConfig() {
+    const vh = versiculoDeHoje();
+    return `
+    <section class="tela ativa cfg">
+      <form data-f="cfg-marca" class="cfg-cartao">
+        <h3>Nome no cabeçalho</h3>
+        <p class="cfg-sub">O que aparece no alto de todas as telas da área de membros, à esquerda.</p>
+        <div class="campos">
+          <label class="grupo" style="flex:1 1 240px"><span class="rotulo">Título</span><input class="campo" name="marcaTitulo" value="${h(S.config.marcaTitulo)}" maxlength="30" required /></label>
+          <label class="grupo" style="flex:1 1 240px"><span class="rotulo">Embaixo, pequeno</span><input class="campo" name="marcaSub" value="${h(S.config.marcaSub)}" maxlength="40" /></label>
+        </div>
+        <div style="margin-top:14px"><button class="al-botao-ouro">Salvar</button></div>
+      </form>
+      <div class="cfg-cartao">
+        <h3>Versículos</h3>
+        <p class="cfg-sub">Aparece um por dia no Início, em sequência, e volta ao primeiro depois do último. ${vh >= 0 ? "Hoje aparece o nº " + (vh + 1) + "." : ""}</p>
+        ${S.versiculos.map((x, i) => editando("vers", x.id) ? `
+          <form data-f="vers-salvar" data-id="${x.id}" class="cfg-vers editando">
+            <textarea id="editarCampo" class="campo" name="texto" rows="3" required>${h(x.texto)}</textarea>
+            <input class="campo" name="ref" value="${h(x.ref)}" placeholder="Referência (ex.: Salmos 23:1)" required />
+            <span style="display:flex;gap:8px">${botoesEdicao("Salvar")}</span>
+          </form>` : `
+          <div class="cfg-vers${i === vh ? " hoje" : ""}">
+            <span class="cfg-vers-n">${i + 1}</span>
+            <span class="cfg-vers-txt"><span>“${h(x.texto)}”</span><b>${h(x.ref)}</b>${i === vh ? `<em>Hoje</em>` : ""}</span>
+            <span class="acoes">
+              <button class="botao-neutro" data-a="vers-editar" data-id="${x.id}">Editar</button>
+              <button class="botao-neutro" data-a="vers-sobe" data-id="${x.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="botao-neutro" data-a="vers-desce" data-id="${x.id}" ${i === S.versiculos.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+              <button class="botao-neutro botao-remover" data-a="vers-remover" data-id="${x.id}">Remover</button>
+            </span>
+          </div>`).join("") || `<p class="ini-vazio">Nenhum versículo. Sem nenhum, o Início não mostra o quadro.</p>`}
+        <form data-f="vers-add" class="cfg-vers-add">
+          <textarea class="campo" name="texto" rows="2" placeholder="Texto do versículo" required></textarea>
+          <input class="campo" name="ref" placeholder="Referência (ex.: Salmos 23:1)" required />
+          <button class="al-botao-ouro">+ Adicionar versículo</button>
+        </form>
+      </div>
+    </section>`;
+  }
+
   function telaCursos() {
     return `
     <section class="tela ativa">
@@ -1629,6 +1762,10 @@ export function montar(app: HTMLElement) {
     conteudo: "Aqui ficam os módulos e as aulas do curso, na ordem em que a aluna vê. ⌄ mostra as aulas · Editar muda o nome · Bloquear para todas fecha o módulo para todas as alunas · ↑ ↓ mudam a ordem.",
     aulas: "Abrir: coloca vídeo, capa e texto da aula · Liberar para todas: abre a aula para todo mundo · Bloquear: fecha para todo mundo · ↑ ↓ mudam a ordem.",
     addMod: "Escreva o nome do novo módulo. Ele entra no fim da lista.",
+    rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
+    nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
+    modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
+    modCapaH: "A capa deitada (16:9) do módulo, usada no \"Comece por aqui\" do Início quando ele é o primeiro módulo do curso. A capa em pé continua a mesma.",
     video: "Cole aqui o link do vídeo da aula (Cloudflare Stream). É o vídeo que a aluna assiste. Vazio, ela vê \"Aula será adicionada em breve\".",
     capa: "A imagem da aula que a aluna vê na lista de aulas e antes de dar o play. Clique em Escolher imagem e o caminho se preenche sozinho.",
     texto: "O texto que a aluna lê embaixo do vídeo, em \"Sobre a aula\". Linha em branco separa parágrafo; *asteriscos* deixam em negrito.",
@@ -1664,6 +1801,10 @@ export function montar(app: HTMLElement) {
             <select class="campo" name="visivel" aria-label="Visibilidade"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select>
           </div>
         </div>
+        <div class="campos" style="margin-top:14px">
+          <div class="grupo" style="flex:1 1 220px"><span class="rotulo rotulo-ajuda">Rótulo no Início ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" aria-label="Rótulo no Início" /></div>
+          <div class="grupo" style="flex:1 1 280px"><span class="rotulo rotulo-ajuda">Nome curto no Início ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" aria-label="Nome curto no Início" /></div>
+        </div>
         <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.desc)}</span><textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
         <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Fundação — o que é este curso ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
         <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
@@ -1693,9 +1834,15 @@ export function montar(app: HTMLElement) {
   function blocoModulo(c: Curso, m: Modulo, i: number) {
     const aberto = ui.abertos.has(m.id);
     const cab = editando("mod", m.id) ? `
-      <form data-f="mod-renomear" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-        <input id="editarCampo" class="campo" style="flex:1 1 280px;max-width:560px" name="nome" value="${h(m.nome)}" required />
-        ${botoesEdicao("Salvar")}
+      <form data-f="mod-renomear" data-id="${m.id}" class="mod-form">
+        <label class="grupo largo"><span class="rotulo">Nome do módulo</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
+        <div class="grupo largo"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="3" aria-label="Descrição do módulo">${h(m.intro)}</textarea></div>
+        <div class="grupo largo"><span class="rotulo rotulo-ajuda">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
+          <span class="mod-capa" data-previa="modh-${m.id}">${(previas["modh-" + m.id] || capaSite(m.capaH)) ? `<img src="${h(previas["modh-" + m.id] || capaSite(m.capaH))}" alt="" />` : ""}</span>
+          <input type="hidden" name="capaH" value="${h(m.capaH)}" />
+          <span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="botao-neutro grande" data-a="mod-capa-h" data-id="${m.id}">Escolher imagem</button>${m.capaH ? `<button type="button" class="botao-neutro grande botao-remover" data-a="mod-capa-h-tirar" data-id="${m.id}">Tirar capa</button>` : ""}</span>
+        </div>
+        <div style="display:flex;gap:8px">${botoesEdicao("Salvar módulo")}</div>
       </form>` : `
       <div class="cabecalho-modulo">
         <span class="nome"><b>Módulo ${numModulo(c, i)} — ${h(m.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(m.aulas.length, "aula", "aulas")}</span></span>
@@ -2377,6 +2524,43 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "ir-comentarios": ui.tab = "comentarios"; window.scrollTo(0, 0); break;
       case "ir-alunas-recentes": ui.tab = "alunas"; ui.filtroAl = "recentes"; ui.paginaAl = 1; window.scrollTo(0, 0); break;
       case "ini-abrir-aluna": ui.acessoAluna = d.id; ui.acessoAba = "geral"; break;
+      case "vers-editar": ui.editando = { tipo: "vers", id: d.id }; ui.focar = "editarCampo"; break;
+      case "vers-sobe": case "vers-desce": {
+        const i = S.versiculos.findIndex((x) => x.id === d.id); const j = a === "vers-sobe" ? i - 1 : i + 1; if (j < 0 || j >= S.versiculos.length) return;
+        const nova = S.versiculos.slice(); [nova[i], nova[j]] = [nova[j], nova[i]];
+        void executar(async () => { for (let k = 0; k < nova.length; k++) falhou(await supabase.from("versiculos").update({ ordem: k + 1 }).eq("id", nova[k].id).select("id").single()); return "Ordem dos versículos salva."; });
+        return;
+      }
+      case "vers-remover": {
+        const x = S.versiculos.find((k) => k.id === d.id)!;
+        confirmar({ titulo: "Remover este versículo?", texto: "“" + x.texto.slice(0, 120) + "” — " + x.ref, palavra: "REMOVER", rotulo: "Remover" }, async () => {
+          falhou(await supabase.from("versiculos").delete().eq("id", x.id)); await registrar(null, "Removeu o versículo " + x.ref); return "Versículo removido.";
+        });
+        break;
+      }
+      case "dest-editar": ui.destEditar = d.id; break;
+      case "dest-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["dest-" + ui.destEditar]; ui.destEditar = null; ui.sujo = null; break;
+      case "dest-imagem": imgPara = { form: 'form[data-f="dest-salvar"]', campo: "imagem", previa: "dest-" + d.id, pasta: "destaques" }; arquivoImg.click(); return;
+      case "dest-visivel": {
+        const x = S.destaques.find((k) => k.id === d.id)!; const on = !x.visivel;
+        void executar(async () => { falhou(await supabase.from("destaques_inicio").update({ visivel: on }).eq("id", x.id).select("id").single()); return { msg: on ? x.titulo + " aparece no Início." : x.titulo + " foi escondido do Início.", texto: "destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").update({ visivel: !on }).eq("id", x.id).select("id").single()); } }; });
+        return;
+      }
+      case "dest-sobe": case "dest-desce": {
+        const i = S.destaques.findIndex((x) => x.id === d.id); const j = a === "dest-sobe" ? i - 1 : i + 1; if (j < 0 || j >= S.destaques.length) return;
+        const nova = S.destaques.slice(); [nova[i], nova[j]] = [nova[j], nova[i]];
+        void executar(async () => { for (let k = 0; k < nova.length; k++) falhou(await supabase.from("destaques_inicio").update({ ordem: k + 1 }).eq("id", nova[k].id).select("id").single()); return "Ordem dos destaques salva."; });
+        return;
+      }
+      case "dest-remover": {
+        const x = S.destaques.find((k) => k.id === d.id)!;
+        confirmar({ titulo: "Remover o destaque " + x.titulo + "?", texto: "O cartão sai do Início da área de membros. Se só quiser tirar por um tempo, use a chave Visível.", palavra: "REMOVER", rotulo: "Remover destaque" }, async () => {
+          falhou(await supabase.from("destaques_inicio").delete().eq("id", x.id)); ui.destEditar = null; await registrar(null, "Removeu o destaque " + x.titulo); return "Destaque removido.";
+        });
+        break;
+      }
+      case "mod-capa-h": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capaH", previa: "modh-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
+      case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
@@ -2625,6 +2809,44 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           return { msg: "Categoria adicionada.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
+      case "cfg-marca": {
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update({ marca_titulo: v("marcaTitulo"), marca_sub: v("marcaSub") }).not("id", "is", null).select("id"));
+          await registrar(null, "Mudou o nome do cabeçalho da área de membros"); return "Nome do cabeçalho salvo.";
+        });
+        return;
+      }
+      case "vers-add": {
+        void executar(async () => {
+          falhou(await supabase.from("versiculos").insert({ texto: v("texto"), referencia: v("ref"), ordem: S.versiculos.length + 1 }).select("id").single());
+          await registrar(null, "Adicionou o versículo " + v("ref")); return "Versículo adicionado.";
+        });
+        return;
+      }
+      case "vers-salvar": {
+        void executar(async () => {
+          falhou(await supabase.from("versiculos").update({ texto: v("texto"), referencia: v("ref") }).eq("id", id).select("id").single());
+          ui.editando = null; await registrar(null, "Editou o versículo " + v("ref")); return "Versículo salvo.";
+        });
+        return;
+      }
+      case "dest-salvar": {
+        const dest = v("destino");
+        const linha: Record<string, unknown> = {
+          imagem_path: v("imagem") || null, rotulo: v("rotulo"), titulo: v("titulo"), descricao: (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim(),
+          botao: v("botao"), icone: v("icone"), cor: v("cor"), visivel: (form.elements.namedItem("visivel") as HTMLInputElement).checked,
+          destino: dest === "presentes" ? "presentes" : "categoria",
+          categoria_id: dest.startsWith("cat:") ? dest.slice(4) : null,
+          categoria_nome: dest.startsWith("cat:") ? cat(dest.slice(4))?.nome ?? null : dest.startsWith("nome:") ? dest.slice(5) : null,
+        };
+        void executar(async () => {
+          if (id === "novo") falhou(await supabase.from("destaques_inicio").insert({ ...linha, ordem: S.destaques.length + 1 }).select("id").single());
+          else falhou(await supabase.from("destaques_inicio").update(linha).eq("id", id).select("id").single());
+          delete previas["dest-" + id]; ui.destEditar = null;
+          await registrar(null, (id === "novo" ? "Criou" : "Editou") + " o destaque " + v("titulo")); return "Destaque salvo.";
+        });
+        return;
+      }
       case "cat-salvar": {
         const k = cat(id)!; const velho = { titulo: k.nome, descricao: k.descricao || null, capa_path: k.capa || null };
         const novaCapa = (form.querySelector<HTMLInputElement>('input[name="capa"]')?.value) || k.capa || null;
@@ -2643,11 +2865,12 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         return;
       case "curso-config": {
         const c = curso(ui.curso)!; const cid = c.id;
-        const velho = { titulo: c.nome, categoria_id: c.cat || null, publicado: c.visivel, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null };
+        const velho = { titulo: c.nome, categoria_id: c.cat || null, publicado: c.visivel, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null, rotulo_inicio: c.rotuloInicio || null, nome_curto: c.nomeCurto || null };
         void executar(async () => {
           falhou(await supabase.from("produtos").update({
             titulo: v("nome"), categoria_id: v("cat"), publicado: v("visivel") === "1",
             descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
+            rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
           }).eq("id", cid).select("id").single());
           return { msg: "Configurações salvas.", texto: "configurações de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(velho).eq("id", cid).select("id").single()); } };
         });
@@ -2665,8 +2888,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         return;
       }
       case "mod-renomear":
-        { const velho = acharModulo(id)!.m.nome;
-          void executar(async () => { falhou(await supabase.from("modulos").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Módulo renomeado.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
+        { const mm = acharModulo(id)!.m; const velho = mm.nome; const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
+          void executar(async () => { falhou(await supabase.from("modulos").update({ titulo: v("nome"), intro, capa_horizontal_path: capaH }).eq("id", id).select("id").single()); ui.editando = null; delete previas["modh-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula-add": {
         const x = acharModulo(id)!;
@@ -2941,6 +3164,21 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       return { msg: "Foto salva. Ela já aparece na área de membros de " + primeiroNome(al.nome) + ".", texto: "foto de " + al.nome };
     });
   }
+  arquivoImg.addEventListener("change", () => {
+    const file = arquivoImg.files?.[0]; arquivoImg.value = ""; const alvo = imgPara; if (!file || !alvo) return;
+    toast("Enviando a imagem…");
+    void (async () => {
+      try {
+        const caminho = await enviarArquivo("capas", alvo.pasta, file);
+        previas[alvo.previa] = URL.createObjectURL(file);
+        const campo = document.querySelector<HTMLInputElement>(alvo.form + ' input[name="' + alvo.campo + '"]');
+        if (campo) campo.value = caminho;
+        const pv = document.querySelector<HTMLElement>('[data-previa="' + alvo.previa + '"]');
+        if (pv) pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />';
+        toast("Imagem enviada. Clique em Salvar para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
+  });
   arquivoFoto.addEventListener("change", () => {
     const file = arquivoFoto.files?.[0]; arquivoFoto.value = ""; const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
     void lerImagem(file).then((im) => abrirEditorFoto(al, im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e)));
