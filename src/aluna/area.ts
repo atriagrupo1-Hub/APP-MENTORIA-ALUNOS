@@ -382,6 +382,26 @@ export function montar(raiz: HTMLElement) {
       const alvo = d.destino === "presentes" ? `data-a="ir" data-v="presentes"`
         : ci >= 0 ? `data-a="categoria" data-v="${ci}"` : `data-a="ir-cat" data-v="${h(d.categoriaNome || d.rotulo)}"`;
       const cls = COR_DESTAQUE[d.cor] ?? "";
+      // Destino ainda não liberado para ela: o cartão fica trancado, igual ao da aba Presentes, e não leva a lugar nenhum.
+      const nomeAlvo = String(d.categoriaNome || d.rotulo || "").toLowerCase();
+      const pr = PRESENTES().find((x) => x.curso.nome.toLowerCase() === nomeAlvo);
+      const trancado = d.destino === "presentes" ? !PRESENTES().some((x) => cursoLiberado(x.curso))
+        : ci >= 0 ? !catAberta(CATS()[ci]) : !(pr && cursoLiberado(pr.curso));
+      if (trancado) return `
+      <section class="ex-card ex-banner pres-banner-card pres-fech ${cls}" aria-labelledby="h-dest-${i}">
+        <button class="pres-fech-alvo" data-a="dest-fechado" aria-label="${h(d.titulo)}. Bloqueado, ainda não liberado.">
+          <span class="pres-fech-area" aria-hidden="true">
+            <span class="ex-img ex-img-banner cat-fech-fosco">${img(fotoOuSite(d.imagem), "")}</span>
+            <span class="cat-fech-veu"><span class="cat-fech-cad">${ICONES.cadeado}</span><span class="cat-fech-chama">Em breve, só para você</span></span>
+          </span>
+          <span class="ex-info">
+            <span class="ex-rot">${ICONE_DESTAQUE[d.icone] || ""}${h(d.rotulo)}</span>
+            <span class="pres-fech-tit serif" id="h-dest-${i}">${h(d.titulo)}</span>
+            ${d.descricao ? `<span class="ex-desc cat-fech-fosco">${h(d.descricao)}</span>` : ""}
+            <span class="ex-botao cat-fech-fosco">${h(d.botao)}</span>
+          </span>
+        </button>
+      </section>`;
       return `
       <section class="ex-card ${cls} ex-banner" aria-labelledby="h-dest-${i}">
         <button class="ex-img ex-img-banner" ${alvo} aria-label="${h(d.botao)}">${img(fotoOuSite(d.imagem), d.titulo)}</button>
@@ -1574,6 +1594,7 @@ export function montar(raiz: HTMLElement) {
       case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
         if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": libera em breve."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
+      case "dest-fechado": aviso("Em breve, só para você."); return;
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
