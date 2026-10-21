@@ -1212,3 +1212,6 @@
 .trilha { touch-action: none; cursor: pointer; }
 .trilha::before { content: ""; position: absolute; left: -6px; right: -6px; top: -14px; bottom: -14px; }
 .trilha b { width: 16px; height: 16px; }
+
+.aviso-material { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; padding: 12px 14px; font-size: 14.5px; line-height: 1.5; color: var(--texto-2); border: 1px solid rgba(212,177,112,.35); border-radius: 6px; background: rgba(212,177,112,.06); }
+.aviso-material svg { width: 20px; height: 20px; flex: 0 0 auto; color: var(--ouro-claro); }
