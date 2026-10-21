@@ -1207,3 +1207,8 @@
 .marcar-concluida { width: 100%; margin-top: 12px; }
 .marcar-concluida svg { width: 20px; height: 20px; flex: 0 0 auto; }
 .player .aula-video { object-fit: contain; }
+
+/* Trilha do vídeo: a linha continua fina, mas o dedo acerta (área de 32px). */
+.trilha { touch-action: none; cursor: pointer; }
+.trilha::before { content: ""; position: absolute; left: -6px; right: -6px; top: -14px; bottom: -14px; }
+.trilha b { width: 16px; height: 16px; }

@@ -53,33 +53,18 @@ $$;
 revoke execute on function denunciar_comentario(uuid) from public, anon;
 grant execute on function denunciar_comentario(uuid) to authenticated;
 
-drop function if exists comentarios_da_aula(uuid);
-create function comentarios_da_aula(p_aula uuid)
-returns table(id uuid, aula_id uuid, texto text, posicao_segundos integer, criado_em timestamptz,
-              autora_nome text, minha boolean, resposta_a uuid, eh_instrutor boolean,
-              curtidas integer, curti boolean)
+-- As curtidas de uma aula, à parte da lista de comentários: a função
+-- `comentarios_da_aula()` fica como está.
+create or replace function curtidas_da_aula(p_aula uuid)
+returns table(comentario_id uuid, curtidas integer, curti boolean)
 language sql stable security definer set search_path = public as $$
   select c.id,
-         c.aula_id,
-         c.texto,
-         c.posicao_segundos,
-         c.criado_em,
-         case when c.nome_visivel then p.nome end,
-         c.autora_id = auth.uid(),
-         c.resposta_a,
-         coalesce(p.papel in ('dono','admin','suporte'), false),
          (select count(*)::integer from curtidas_comentario k where k.comentario_id = c.id),
          exists (select 1 from curtidas_comentario k where k.comentario_id = c.id and k.aluna_id = auth.uid())
   from comentarios c
-  left join profiles p      on p.id = c.autora_id
-  left join comentarios pai on pai.id = c.resposta_a
   where c.aula_id = p_aula
     and c.status = 'publicado'
-    and (c.resposta_a is null or pai.status = 'publicado')
-    and (pode_ver_aula(p_aula) or eh_equipe())
-  order by coalesce(pai.criado_em, c.criado_em) desc,
-           c.resposta_a nulls first,
-           c.criado_em asc;
+    and (pode_ver_aula(p_aula) or eh_equipe());
 $$;
-revoke execute on function comentarios_da_aula(uuid) from public, anon;
-grant execute on function comentarios_da_aula(uuid) to authenticated;
+revoke execute on function curtidas_da_aula(uuid) from public, anon;
+grant execute on function curtidas_da_aula(uuid) to authenticated;

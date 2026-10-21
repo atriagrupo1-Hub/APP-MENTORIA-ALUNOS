@@ -591,8 +591,14 @@ export type ComentarioPublico = {
  * nome de quem escreveu sabendo que ele apareceria.
  */
 export async function comentariosDaAula(aulaId: string): Promise<ComentarioPublico[]> {
-  const { data, error } = await supabase.rpc("comentarios_da_aula", { p_aula: aulaId });
+  const [{ data, error }, curt] = await Promise.all([
+    supabase.rpc("comentarios_da_aula", { p_aula: aulaId }),
+    supabase.rpc("curtidas_da_aula", { p_aula: aulaId }),
+  ]);
   if (error) throw new Error(`comentarios: ${error.message}`);
+  const curtidas = new Map<string, { curtidas: number; curti: boolean }>(
+    ((curt.data ?? []) as Array<{ comentario_id: string; curtidas: number; curti: boolean }>).map((k) => [k.comentario_id, k]),
+  );
 
   return (data ?? []).map(
     (c: {
@@ -605,8 +611,6 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: boolean;
       resposta_a: string | null;
       eh_instrutor: boolean;
-      curtidas?: number;
-      curti?: boolean;
     }) => ({
       id: c.id,
       aulaId: c.aula_id,
@@ -617,9 +621,9 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: c.minha,
       respostaA: c.resposta_a,
       ehInstrutor: c.eh_instrutor,
-      // Vêm da 0047; antes dela, zero e não curtido.
-      curtidas: c.curtidas ?? 0,
-      curti: !!c.curti,
+      // `curtidas_da_aula()` (0047); sem ela, zero e não curtido.
+      curtidas: curtidas.get(c.id)?.curtidas ?? 0,
+      curti: !!curtidas.get(c.id)?.curti,
     }),
   );
 }

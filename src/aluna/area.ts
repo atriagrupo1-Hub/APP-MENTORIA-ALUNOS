@@ -61,7 +61,11 @@ export function montar(raiz: HTMLElement) {
 
   /* ---------- dados ---------- */
   async function carregar() {
-    const [perfil, cat, libs, abert] = await Promise.all([api.meuPerfil(), api.carregarCatalogo(), api.minhasAulas(), api.minhasAberturas().catch(() => new Map())]);
+    // Tudo de uma vez: a pergunta dos presentes sai assim que o catálogo chega,
+    // sem esperar o resto.
+    const pCat = api.carregarCatalogo();
+    const pProd = pCat.then((c) => api.produtosLiberados(c.produtos.filter((x) => x.id !== c.produtoJornada && !x.modulos.length).map((x) => x.id))).catch(() => new Set());
+    const [perfil, cat, libs, abert, prodLib] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd]);
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
     const jornada = cat.produtoJornada;
     const mods = cat.modulos
@@ -75,8 +79,6 @@ export function montar(raiz: HTMLElement) {
       }));
     // Presentes: as categorias que não são a da jornada, cada uma com seus produtos.
     const prodJ = cat.produtos.find((x) => x.id === jornada);
-    const semModulo = cat.produtos.filter((x) => x.id !== jornada && !x.modulos.length).map((x) => x.id);
-    const prodLib = await api.produtosLiberados(semModulo).catch(() => new Set());
     const cats = cat.categorias
       .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
       .map((c) => ({
@@ -523,16 +525,27 @@ export function montar(raiz: HTMLElement) {
     catch { S.videos[aulaId] = null; }
     return S.videos[aulaId];
   }
-  function ligarFonte(ref) {
+  // `comecar`: já baixa o vídeo. Sem ele, só o índice (o manifesto) — a
+  // aula aberta fica pronta para tocar no toque, sem gastar dados à toa.
+  let hlsEsperando = false;
+  const inicioDe = (aulaId) => { const l = D.prog.get(aulaId); const ini = l && !l.concluida ? l.posicaoSegundos || 0 : 0; const dur = l && l.duracaoSegundos; return ini > 0 && (!dur || ini < dur - 15) ? ini : 0; };
+  function ligarFonte(ref, comecar) {
     const url = `https://videodelivery.net/${ref}/manifest/video.m3u8`;
-    if (VID.canPlayType("application/vnd.apple.mpegurl")) { VID.src = url; return; }
+    const v = VID, id = VID_ID;
+    if (v.canPlayType("application/vnd.apple.mpegurl")) { v.preload = comecar ? "auto" : "metadata"; v.src = url; return; }
+    hlsEsperando = !comecar;
     void import("hls.js").then(({ default: Hls }) => {
-      if (!VID) return;
-      if (!Hls.isSupported()) { VID.src = url; return; }
-      const hls = new Hls({ enableWorker: true }); hlsAtual = hls;
+      if (VID !== v) return;
+      if (!Hls.isSupported()) { v.src = url; return; }
+      const hls = new Hls({ enableWorker: true, autoStartLoad: false, startFragPrefetch: true, maxBufferLength: 20 }); hlsAtual = hls;
       hls.on(Hls.Events.ERROR, (_e, dados) => { if (dados.fatal) void renovarVideo(); });
-      hls.loadSource(url); hls.attachMedia(VID);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => { if (!hlsEsperando && hlsAtual === hls) hls.startLoad(inicioDe(id) || -1); });
+      hls.loadSource(url); hls.attachMedia(v);
     });
+  }
+  function comecarCarga() {
+    if (!hlsEsperando) return; hlsEsperando = false;
+    if (hlsAtual && hlsAtual.levels && hlsAtual.levels.length) hlsAtual.startLoad(VID && VID.currentTime ? VID.currentTime : inicioDe(VID_ID) || -1);
   }
   async function renovarVideo() {
     if (renovou || !VID_ID) { aviso("Não conseguimos carregar este vídeo agora. Tente de novo."); return; }
@@ -540,12 +553,25 @@ export function montar(raiz: HTMLElement) {
     delete S.videos[id]; const ref = await pedirVideo(id);
     if (!ref || !VID) return;
     if (hlsAtual) { try { hlsAtual.destroy(); } catch { /* */ } hlsAtual = null; }
-    ligarFonte(ref); VID.addEventListener("loadedmetadata", () => { VID.currentTime = t; void VID.play().catch(() => {}); }, { once: true });
+    ligarFonte(ref, true); VID.addEventListener("loadedmetadata", () => { VID.currentTime = t; void VID.play().catch(() => {}); }, { once: true });
   }
   async function tocar(aulaId) {
+    // Já preparado ao abrir a aula: toca na hora, dentro do toque.
+    if (VID && VID_ID === aulaId) { comecarCarga(); S.tocando = true; atualizarControles(); await VID.play().catch(() => { S.tocando = false; atualizarControles(); }); return; }
     const ref = await pedirVideo(aulaId);
     if (!ref) { render(); if (ref === null) aviso("Não conseguimos carregar este vídeo agora. Tente de novo."); return; }
-    if (VID && VID_ID === aulaId) { await VID.play().catch(() => {}); return; }
+    criarVideo(aulaId, ref, true);
+    S.tocando = true;
+    render();
+    void VID.play().catch(() => { S.tocando = false; atualizarControles(); });
+  }
+  // Ao abrir a aula: o vídeo nasce parado, com o índice carregado.
+  function prepararVideo(aulaId, ref) {
+    if (!ref || (VID && VID_ID === aulaId)) return;
+    criarVideo(aulaId, ref, false);
+    encaixarVideo();
+  }
+  function criarVideo(aulaId, ref, comecar) {
     pararVideo();
     renovou = false;
     VID = document.createElement("video"); VID_ID = aulaId;
@@ -553,14 +579,16 @@ export function montar(raiz: HTMLElement) {
     VID.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:1";
     VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
     VID.muted = !!S.mudo;
+    // Preparado e ainda parado, fica escondido: a capa da aula aparece por baixo.
+    if (!comecar) VID.style.visibility = "hidden";
     const l = D.prog.get(aulaId);
     VID.addEventListener("loadedmetadata", () => {
       if (l && !l.duracaoSegundos && Number.isFinite(VID.duration)) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
-      const ini = l && !l.concluida ? l.posicaoSegundos || 0 : 0;
-      if (ini > 0 && ini < VID.duration - 15) VID.currentTime = ini;
+      const ini = inicioDe(aulaId);
+      if (ini > 0 && ini < VID.duration - 15 && VID.currentTime < 1) VID.currentTime = ini;
       VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
     }, { once: true });
-    VID.addEventListener("play", () => { S.tocando = true; atualizarControles(); });
+    VID.addEventListener("play", () => { VID.style.visibility = ""; S.tocando = true; atualizarControles(); });
     VID.addEventListener("pause", () => { S.tocando = false; gravarPosicao(true); atualizarControles(); });
     VID.addEventListener("timeupdate", () => { gravarPosicao(false); atualizarControles(); });
     VID.addEventListener("ended", () => {
@@ -570,10 +598,7 @@ export function montar(raiz: HTMLElement) {
       const k = chaveAtual(); S.fim[k] = 1; render();
     });
     VID.addEventListener("error", () => void renovarVideo());
-    ligarFonte(ref);
-    S.tocando = true;
-    render();
-    void VID.play().catch(() => { S.tocando = false; atualizarControles(); });
+    ligarFonte(ref, comecar);
   }
   const chaveAtual = () => (S.tela === "presente" ? "p-" + S.presente : S.mod + "-" + S.aula);
   function encaixarVideo() {
@@ -1246,13 +1271,15 @@ export function montar(raiz: HTMLElement) {
   async function abrirAula() {
     const au = MODS()[S.mod]?.aulas[S.aula]; if (!au) return;
     const id = au.id;
-    void pedirVideo(id).then(() => { if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) render(); });
+    void import("hls.js").catch(() => {});
+    void pedirVideo(id).then((ref) => { if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) { render(); prepararVideo(id, ref); } });
     api.comentariosDaAula(id).then((l) => { S.coms[id] = l; if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) render(); }).catch(() => {});
   }
   async function abrirPresente() {
     const [ci, i, j] = String(S.presente || "").split("-").map(Number);
     const t = CATS()[ci]?.cursos[i]?.itens[j]; if (!t || !aulaAdmin(t.id)) return;
-    void pedirVideo(t.id).then(() => { if (S.tela === "presente") render(); });
+    void import("hls.js").catch(() => {});
+    void pedirVideo(t.id).then((ref) => { if (S.tela === "presente") { render(); prepararVideo(t.id, ref); } });
   }
 
   /* ---------- ações ---------- */
@@ -1294,7 +1321,7 @@ export function montar(raiz: HTMLElement) {
         if (VID && VID_ID === id && !VID.paused) { VID.pause(); return; }
         void tocar(id); return;
       }
-      case "buscar": { if (!VID || !Number.isFinite(VID.duration)) return; const r = d._el.getBoundingClientRect(); VID.currentTime = Math.max(0, Math.min(1, (d._x - r.left) / r.width)) * VID.duration; return; }
+      case "buscar": return; // arrastar e tocar na trilha: ver "trilha do vídeo" abaixo
       case "de-novo": { const k = chaveAtual(); delete S.fim[k]; if (VID) { VID.currentTime = 0; void VID.play().catch(() => {}); render(); } else acao("tocar", {}); return; }
       case "ver-aulas": {
         S.verAulas = S.verAulas || {}; const ab = (S.verAulas[d.m] = !S.verAulas[d.m]);
@@ -1488,6 +1515,19 @@ export function montar(raiz: HTMLElement) {
     acao(b.dataset.a, Object.assign({}, b.dataset, { _alvo: e.target, _el: b, _x: e.clientX }));
     marcarHistorico();
   });
+  // Trilha do vídeo: tocar ou arrastar leva ao ponto. A área de toque é
+  // maior que a linha (ver .trilha::before no CSS).
+  let arrastando = null;
+  const irPara = (tr, x) => {
+    if (!VID || !Number.isFinite(VID.duration)) return;
+    const r = tr.getBoundingClientRect(), f = Math.max(0, Math.min(1, (x - r.left) / r.width));
+    comecarCarga(); VID.currentTime = f * VID.duration; atualizarControles();
+  };
+  document.addEventListener("pointerdown", (e) => { const tr = e.target.closest(".trilha"); if (!tr || !raiz.contains(tr)) return; e.preventDefault(); arrastando = tr; try { tr.setPointerCapture(e.pointerId); } catch { /* */ } irPara(tr, e.clientX); });
+  document.addEventListener("pointermove", (e) => { if (arrastando) irPara(arrastando, e.clientX); });
+  document.addEventListener("pointerup", () => { if (arrastando) { arrastando = null; gravarPosicao(true); } });
+  document.addEventListener("pointercancel", () => { arrastando = null; });
+
   document.addEventListener("submit", (e) => { const f = e.target.closest("form[data-f]"); if (!f || !raiz.contains(f)) return; e.preventDefault(); void enviar(f.dataset.f, f); });
   document.addEventListener("input", (e) => { if (e.target.id === "txtCom") S.rascunho = e.target.value; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && camada.innerHTML) camada.innerHTML = ""; });
