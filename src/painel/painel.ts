@@ -405,7 +405,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2003,6 +2003,45 @@ export function montar(app: HTMLElement) {
     voltar: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
     mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
   };
+  const ESTADO_COM: Record<Estado, [string, "ouro" | "verde" | "neutro"]> = { moderar: ["Para moderar", "ouro"], publicado: ["Publicado", "verde"], oculto: ["Oculto", "neutro"] };
+  const comentariosDoCurso = (c: Curso) => { const ids = new Set(c.modulos.flatMap((m) => m.aulas.map((x) => x.id))); return S.comentarios.filter((k) => ids.has(k.aula)).sort((x, y) => y.criado.localeCompare(x.criado)); };
+  function comentariosCursoResumo(c: Curso) {
+    const todos = comentariosDoCurso(c), esperando = todos.filter((k) => k.estado === "moderar").length;
+    return `
+      <section class="cs-cartao cs-coms">
+        <header><h3>Últimos comentários</h3>${esperando ? `<span class="aa-pilula ouro"><i></i>${p(esperando, "para moderar", "para moderar")}</span>` : ""}<button type="button" class="link" data-a="curso-aba" data-v="comentarios">Ver todos</button></header>
+        ${todos.slice(0, 4).map((k) => `
+        <div class="cs-com">
+          ${avatarDe(k.autoraId, k.autora)}
+          <div class="cs-com-txt">
+            <div class="cs-com-cab"><b>${h(k.autora)}</b><span>${h(localAula(k.aula))} · ${haTempo(k.criado)}</span>${pilula(ESTADO_COM[k.estado][0], ESTADO_COM[k.estado][1])}</div>
+            <p>${h(k.texto)}</p>
+            ${k.resposta ? `<p class="cs-com-resp"><b>Equipe AION:</b> ${h(k.resposta)}</p>` : ""}
+            ${ui.respondendo === k.id ? `
+              <form data-f="com-resposta" data-id="${k.id}" class="cs-com-form">
+                <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta" required>${h(k.resposta)}</textarea>
+                <div class="acoes"><button class="al-botao-ouro">Enviar resposta</button><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button></div>
+              </form>` : `
+              <div class="cs-com-acoes">
+                ${k.estado !== "publicado" ? `<button type="button" class="al-botao-ouro pequeno" data-a="com-publicar" data-id="${k.id}">Aprovar</button>` : ""}
+                <button type="button" class="al-botao pequeno" data-a="com-responder" data-id="${k.id}">${k.resposta ? "Editar resposta" : "Responder"}</button>
+                ${k.estado !== "oculto" ? `<button type="button" class="al-botao pequeno" data-a="com-ocultar" data-id="${k.id}">Ocultar</button>` : ""}
+              </div>`}
+          </div>
+        </div>`).join("") || `<p class="ini-vazio">Nenhum comentário neste curso ainda.</p>`}
+      </section>`;
+  }
+  function comentariosCursoAba(c: Curso) {
+    const todos = comentariosDoCurso(c);
+    const f = (ui.csComFiltro || "moderar") as Estado;
+    const n = (e: Estado) => todos.filter((k) => k.estado === e).length;
+    const lista = todos.filter((k) => k.estado === f);
+    return `
+      <div class="cs-filtros">
+        ${(["moderar", "publicado", "oculto"] as Estado[]).map((e) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-filtro" data-v="${e}" aria-pressed="${f === e}">${{ moderar: "Para moderar", publicado: "Publicados", oculto: "Ocultos" }[e]} (${n(e)})</button>`).join("")}
+      </div>
+      ${lista.map(cartaoComentario).join("") || `<div class="vazio">${{ moderar: "Nada esperando moderação neste curso.", publicado: "Nenhum comentário publicado neste curso.", oculto: "Nenhum comentário oculto neste curso." }[f]}</div>`}`;
+  }
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
     const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a));
@@ -2028,6 +2067,7 @@ export function montar(app: HTMLElement) {
         ${ind(IC_CURSO.play, String(aulas.length), "Aulas", varMes(aulas.length, antAulas))}
         ${ind(IC_CUR.cal, c.criado ? br(diaDe(c.criado)) : "—", "Data de criação", c.criado ? `<em>Criado há ${diasCriado} ${diasCriado === 1 ? "dia" : "dias"}</em>` : "")}
       </div>
+      ${comentariosCursoResumo(c)}
       <div class="cs-meio">
         <section class="cs-cartao">
           <header><h3>Últimas alunas adicionadas</h3><button type="button" class="link" data-a="curso-aba" data-v="alunas">Ver todas</button></header>
@@ -2275,9 +2315,10 @@ export function montar(app: HTMLElement) {
     const todas = alunasDoCurso(c);
     const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a)).length;
     const capa = capaSite(c.capa);
-    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["config", "Configurações"], ["relatorios", "Relatórios"]];
+    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["config", "Configurações"], ["relatorios", "Relatórios"]];
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
+      : aba === "comentarios" ? comentariosCursoAba(c)
       : aba === "config" ? configCurso(c)
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
@@ -2477,18 +2518,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   }
 
   /* ---------- COMENTÁRIOS ---------- */
-  function telaComentarios() {
-    const n = (e: Estado) => S.comentarios.filter((k) => k.estado === e).length;
-    const lista = S.comentarios.filter((k) => k.estado === ui.filtroCom);
-    const vazio = { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
-    return `
-    <section class="tela ativa">
-      <div class="chips" style="margin-bottom:20px">
-        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="moderar" aria-pressed="${ui.filtroCom === "moderar"}">Para moderar (${n("moderar")})</button>
-        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="publicado" aria-pressed="${ui.filtroCom === "publicado"}">Publicados (${n("publicado")})</button>
-        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
-      </div>
-      ${lista.map((k) => `
+  // Um comentário com as ações de moderação (aba Comentários e página do curso).
+  const cartaoComentario = (k: Comentario) => `
       <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
           <b style="flex:1 1 220px">${h(k.autora)}</b>
@@ -2507,7 +2538,19 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
             <button class="botao-neutro" data-a="com-responder" data-id="${k.id}">${k.resposta ? "Editar resposta" : "Responder"}</button>
             <button class="botao-neutro botao-remover" data-a="com-remover" data-id="${k.id}">Remover</button>
           </div>`}
-      </div>`).join("") || `<div class="vazio">${vazio}</div>`}
+      </div>`;
+  function telaComentarios() {
+    const n = (e: Estado) => S.comentarios.filter((k) => k.estado === e).length;
+    const lista = S.comentarios.filter((k) => k.estado === ui.filtroCom);
+    const vazio = { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
+    return `
+    <section class="tela ativa">
+      <div class="chips" style="margin-bottom:20px">
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="moderar" aria-pressed="${ui.filtroCom === "moderar"}">Para moderar (${n("moderar")})</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="publicado" aria-pressed="${ui.filtroCom === "publicado"}">Publicados (${n("publicado")})</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
+      </div>
+      ${lista.map(cartaoComentario).join("") || `<div class="vazio">${vazio}</div>`}
     </section>`;
   }
 
@@ -2998,6 +3041,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
       case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
       case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
+      case "cs-com-filtro": ui.csComFiltro = d.v; break;
       case "cs-pag": ui.csPag = Math.max(1, Number(d.v) || 1); break;
       case "cs-add-aluna": ui.csAddAluna = !ui.csAddAluna; break;
       case "cs-add-aluna-fundo": if (alvo !== el) return; ui.csAddAluna = false; break;
