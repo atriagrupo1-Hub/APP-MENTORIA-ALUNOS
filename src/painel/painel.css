@@ -1150,3 +1150,84 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 @media (max-width: 1100px) { .cs-heroi { grid-template-columns: minmax(0, 1fr); padding: 0; } .cs-capa { min-height: 180px; } .cs-heroi-txt { padding: 0 18px; } .cs-heroi-acoes { padding: 0 18px 18px; } .cs-inds { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cs-meio { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 520px) { .cs-inds { grid-template-columns: minmax(0, 1fr); } }
 .cs-abas button, .cs-abas button[aria-current="page"] { background: none !important; border-radius: 0 !important; }
+
+/* ---------- Página do curso: abas internas ---------- */
+.cs-trilha .al-botao-ouro svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.cs-mods-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+.cs-mods-topo .cs-nota { flex: 1 1 auto; }
+.cs-mods-topo svg, .cs-filtros .al-botao-ouro svg, .cs-rel-per .al-botao-ouro svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.cs-add-mod { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.cs-add-mod input { flex: 1 1 260px; }
+.cs-mods { padding: 6px 18px; }
+.cs-mod { border-bottom: 1px solid var(--linha-suave); }
+.cs-mod:last-child { border-bottom: 0; }
+.cs-mod.alvo { outline: 2px dashed var(--aa-ouro); outline-offset: 2px; }
+.cs-mod.arrastando { opacity: .5; }
+.cs-mod-linha { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+.cs-alca { flex: none; display: grid; place-items: center; width: 28px; height: 28px; color: var(--aa-ouro); cursor: grab; }
+.cs-alca svg { width: 18px; height: 18px; fill: currentColor; stroke: none; }
+.cs-mod-capa { flex: none; display: block; width: 64px; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 6px; }
+.cs-mod-capa img { width: 100%; height: 100%; object-fit: cover; }
+.cs-mod-txt { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; padding: 0; font: inherit; color: var(--texto); text-align: left; background: none; border: 0; cursor: pointer; }
+.cs-mod-txt b { overflow: hidden; font-size: 15px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.cs-mod-txt span { font-size: 12px; color: var(--texto-3); }
+.cs-mod-acoes { flex: none; display: flex; align-items: center; gap: 4px; }
+.cs-mod-acoes button { display: grid; place-items: center; width: 38px; height: 38px; color: var(--texto-2); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.cs-mod-acoes button:hover { background: var(--aa-cinza); }
+.cs-mod-acoes button.perigo { color: var(--aa-verm); }
+.cs-mod-acoes svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cs-mod.aberto .cs-mod-abre svg { transform: rotate(180deg); }
+.cs-mod-aulas { padding: 4px 0 16px 40px; }
+.cs-mod-extra { margin-bottom: 8px; }
+.cs-mod-edita { padding: 10px 0; border-bottom: 1px solid var(--linha-suave); }
+.cs-pags { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 14px; }
+.cs-pag-nums { display: inline-flex; align-items: center; gap: 4px; }
+.cs-pag-nums button { min-width: 34px; height: 34px; padding: 0 8px; font: inherit; font-size: 14px; color: var(--texto); background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+.cs-pag-nums button[aria-current="page"] { border-color: var(--aa-ouro); color: var(--aa-ouro); font-weight: 700; }
+.cs-pag-nums button:disabled { opacity: .35; cursor: default; }
+.cs-porpag { width: auto; }
+.cs-config { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 14px; align-items: start; }
+.cs-form h3, .cs-config .cs-cartao h3 { margin: 0 0 14px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600; }
+.cs-campo { position: relative; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 13px; color: var(--texto-2); }
+.cs-campo > span { display: inline-flex; align-items: center; gap: 6px; }
+.cs-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cs-conta { align-self: flex-end; font-style: normal; font-size: 12px; color: var(--texto-3); }
+.cs-salvar { display: flex; justify-content: flex-end; }
+.cs-capa-ed { position: relative; display: block; aspect-ratio: 16 / 9; margin-bottom: 12px; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 10px; }
+.cs-capa-ed img { width: 100%; height: 100%; object-fit: cover; }
+.cs-config .cs-duas .al-botao { justify-content: center; }
+.cs-config .cs-duas svg, .cs-rapidas svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.cs-rapidas { display: flex; flex-direction: column; gap: 8px; }
+.cs-rapidas button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; font: inherit; font-size: 14px; color: var(--texto); text-align: left; background: none; border: 1px solid var(--linha-suave); border-radius: 10px; cursor: pointer; }
+.cs-rapidas button:hover { border-color: var(--aa-ouro); }
+.cs-rapidas button.perigo { color: var(--aa-verm); border-color: color-mix(in srgb, var(--aa-verm) 45%, transparent); }
+.cs-rel-per { margin-bottom: 14px; }
+.cs-inds5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.cs-rel-graf { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.cs-rel-graf .cs-cartao { margin-top: 0; }
+.cs-rel-graf h3 { margin: 0 0 12px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 19px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.cs-rel-graf .eng-graf { height: 170px; }
+.cs-rel-graf .eng-barra i { background: #e9a53b; }
+.cs-linha { display: block; width: 100%; height: 150px; overflow: visible; }
+.cs-linha .area { fill: color-mix(in srgb, #e9a53b 18%, transparent); }
+.cs-linha .traco { fill: none; stroke: #e07b39; stroke-width: 2.2; vector-effect: non-scaling-stroke; }
+.cs-linha circle { fill: #e07b39; }
+.cs-linha-dias { display: flex; justify-content: space-between; margin-top: 6px; }
+.cs-linha-dias em { font-style: normal; font-size: 11px; color: var(--texto-3); }
+.cs-leg { flex: 1 1 140px; display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.cs-leg li { display: flex; align-items: center; gap: 8px; }
+.cs-leg li span:nth-child(2) { flex: 1 1 auto; color: var(--texto-2); }
+.cs-top { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--linha-suave); font-size: 14px; }
+.cs-top:first-of-type { border-top: 0; }
+.cs-top > span { color: var(--texto-3); }
+.cs-top i { display: grid; place-items: center; color: #e07b39; }
+.cs-top i svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.cs-top b { flex: 1 1 auto; overflow: hidden; font-weight: 500; white-space: nowrap; text-overflow: ellipsis; }
+.cs-top em { flex: none; font-style: normal; font-size: 12px; color: var(--texto-3); }
+.cs-eng3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
+.cs-eng3 span { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.cs-eng3 b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 28px; font-weight: 600; }
+.cs-eng3 em { font-style: normal; font-size: 12px; color: var(--texto-3); }
+@media (max-width: 1200px) { .cs-inds5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cs-rel-graf { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .cs-config { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 600px) { .cs-duas { grid-template-columns: minmax(0, 1fr); } .cs-inds5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cs-mod-capa { display: none; } .cs-mod-aulas { padding-left: 0; } .cs-mod-linha { flex-wrap: wrap; } }

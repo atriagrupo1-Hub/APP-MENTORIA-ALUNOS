@@ -405,6 +405,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
+    csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2002,50 +2003,6 @@ export function montar(app: HTMLElement) {
     voltar: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
     mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
   };
-  function filtrarAlunasCurso(lista: AlunaCurso[]) {
-    const q = norm(ui.curAlBusca || "").trim(), f = ui.curAlFiltro || "", hj = hoje();
-    const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
-    return lista.filter(({ a, incluida }) => {
-      if (q && !casa(q, a.nome + " " + a.login + " " + a.email, a.celular)) return false;
-      const d = diaDe(incluida);
-      if (f === "hoje" && d !== hj) return false;
-      if (f === "ontem" && d !== menos(1)) return false;
-      if (f === "7" && d < menos(6)) return false;
-      if (ui.curAlDe && d < ui.curAlDe) return false;
-      if (ui.curAlAte && d > ui.curAlAte) return false;
-      return true;
-    }).sort((x, y) => y.incluida.localeCompare(x.incluida));
-  }
-  function tabelaAlunasCurso(todas: AlunaCurso[]) {
-    const lista = filtrarAlunasCurso(todas);
-    return `
-      <section class="cs-cartao cs-todas">
-        <header><h3>Todas as alunas do curso</h3></header>
-        <div class="cs-filtros">
-          <label class="cur-busca">${IC_CUR.lupa}<input class="campo" data-cur-al-busca value="${h(ui.curAlBusca || "")}" placeholder="Buscar aluna..." aria-label="Buscar aluna" /></label>
-          ${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cur-al-filtro" data-v="${v}" aria-pressed="${ui.curAlFiltro === v}">${t}</button>`).join("")}
-          <span class="cs-datas">${IC_CUR.cal}<input type="date" class="campo" data-cur-al-de value="${h(ui.curAlDe || "")}" aria-label="De" /><span aria-hidden="true">→</span><input type="date" class="campo" data-cur-al-ate value="${h(ui.curAlAte || "")}" aria-label="Até" /></span>
-          <button type="button" class="al-botao" data-a="cur-exportar">${IC_CURSO.mais}Exportar</button>
-        </div>
-        <div class="cs-tabela-rola"><table class="cs-tabela">
-          <thead><tr><th>Aluna</th><th>E-mail / contato</th><th>Data de inclusão</th><th>Último acesso</th><th>Status</th><th>Progresso</th><th class="dir">Ações</th></tr></thead>
-          <tbody>${lista.map(({ a, incluida, pct }) => `
-            <tr>
-              <td><button type="button" class="cs-aluna" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td>
-              <td>${h(a.email || (a.celular ? fone(a.celular) : "—"))}</td>
-              <td>${dataHoraCurta(incluida)}</td>
-              <td>${a.ultimoAcessoEm ? dataHoraCurta(a.ultimoAcessoEm) : "Ainda não acessou"}</td>
-              <td>${statusAluna(a)}</td>
-              <td><span class="cs-prog"><span class="cur-barra"><i style="width:${pct}%"></i></span><b>${pct}%</b></span></td>
-              <td class="dir"><span class="eng-menu"><button type="button" class="eng-mais" data-a="cur-al-menu" data-id="${a.id}" aria-label="Opções de ${h(a.nome)}" aria-expanded="${ui.curAlMenu === a.id}">⋯</button>${ui.curAlMenu === a.id ? `<span class="eng-menu-pop" role="menu">
-                <button role="menuitem" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
-                <button role="menuitem" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
-                <button role="menuitem" data-a="contato" data-id="${a.id}">Registrar contato</button>
-              </span>` : ""}</span></td>
-            </tr>`).join("") || `<tr><td colspan="7" class="cs-vazio">Nenhuma aluna encontrada.</td></tr>`}</tbody>
-        </table></div>
-      </section>`;
-  }
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
     const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a));
@@ -2089,25 +2046,228 @@ export function montar(app: HTMLElement) {
             ${liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)).join("") || `<p class="ini-vazio">Nenhuma aula liberada ainda.</p>`}
           </section>
         </div>
-      </div>
-      ${tabelaAlunasCurso(todas)}`;
+      </div>`;
   }
-  function relatoriosCurso(c: Curso, todas: AlunaCurso[]) {
-    const n = todas.length;
-    const coms = new Map<string, number>(); for (const k of S.comentarios) coms.set(k.aula, (coms.get(k.aula) || 0) + 1);
+  /* --- Módulos e aulas: uma linha por módulo; a seta abre as aulas --- */
+  const IC_MOD = {
+    alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6.5" r="1.3"/><circle cx="15" cy="6.5" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="17.5" r="1.3"/><circle cx="15" cy="17.5" r="1.3"/></svg>`,
+    copiar: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>`,
+    lixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10.5 11v5.5M13.5 11v5.5"/></svg>`,
+    seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
+  };
+  function modulosCurso(c: Curso) {
+    return `
+      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
+      ${ui.csAddMod ? `
+      <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
+        <input id="novoModulo" class="campo" name="nome" placeholder="Nome do novo módulo" required />
+        <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
+      </form>` : ""}
+      <div class="cs-cartao cs-mods">
+        ${c.modulos.map((m, i) => {
+          const aberto = ui.abertos.has(m.id);
+          if (editando("mod", m.id)) return `<div class="cs-mod-edita">${blocoModulo(c, m, i)}</div>`;
+          const capa = capaSite(m.capaH) || capaSite(m.capa);
+          return `
+          <div class="cs-mod${aberto ? " aberto" : ""}" draggable="true" data-arrasta="${m.id}">
+            <div class="cs-mod-linha">
+              <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
+              <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
+              <button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>
+              ${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}
+              <span class="cs-mod-acoes">
+                <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
+                <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
+                <button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}" aria-label="Remover o módulo" title="Remover">${IC_MOD.lixo}</button>
+                <button type="button" class="cs-mod-abre" data-a="mod-abrir-fechar" data-id="${m.id}" aria-label="${aberto ? "Esconder as aulas" : "Mostrar as aulas"}" aria-expanded="${aberto}">${IC_MOD.seta}</button>
+              </span>
+            </div>
+            ${aberto ? `<div class="cs-mod-aulas">
+              <div class="cs-mod-extra"><button class="al-botao pequeno" data-a="mod-bloquear" data-id="${m.id}">${m.ativo ? "Bloquear para todas" : "Desbloquear"}</button></div>
+              ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}
+              ${ui.addAula === m.id ? `
+                <form data-f="aula-add" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
+                  <input id="novaAula" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" placeholder="Nome da nova aula" required />
+                  <button class="botao-neutro grande">Adicionar</button>
+                  <button type="button" class="botao-neutro grande" data-a="aula-add-cancelar">Cancelar</button>
+                </form>` : `<button class="botao-neutro grande" style="margin-top:12px" data-a="aula-add-abrir" data-id="${m.id}">+ Adicionar aula</button>`}
+            </div>` : ""}
+          </div>`;
+        }).join("") || `<p class="ini-vazio">Este curso ainda não tem módulos. Clique em Adicionar módulo.</p>`}
+      </div>`;
+  }
+
+  /* --- Alunas: abas por situação, busca, exportar e páginas de 10 --- */
+  const SIT_CURSO: Record<string, [string, (a: Aluna) => boolean]> = {
+    todas: ["Todas", () => true],
+    ativas: ["Ativas", (a) => !a.bloqueada && !vencida(a)],
+    inativas: ["Inativas", (a) => a.bloqueada],
+    canceladas: ["Canceladas", (a) => !a.bloqueada && vencida(a)],
+  };
+  function alunasCursoAba(c: Curso, todas: AlunaCurso[]) {
+    const sit = ui.csSit || "todas";
+    const q = norm(ui.curAlBusca || "").trim();
+    const lista = todas.filter(({ a }) => SIT_CURSO[sit][1](a) && (!q || casa(q, a.nome + " " + a.login + " " + a.email, a.celular))).sort((x, y) => y.incluida.localeCompare(x.incluida));
+    const porPag = ui.csPorPag || 10, pags = Math.max(1, Math.ceil(lista.length / porPag)), pag = Math.min(ui.csPag || 1, pags);
+    const vis = lista.slice((pag - 1) * porPag, pag * porPag);
+    const nums: (number | string)[] = []; for (let k = 1; k <= pags; k++) if (k <= 5 || k === pags || Math.abs(k - pag) <= 1) nums.push(k); else if (nums[nums.length - 1] !== "…") nums.push("…");
     return `
       <section class="cs-cartao">
-        <header><h3>Conclusão por aula</h3><span class="cs-nota">${p(n, "aluna com acesso", "alunas com acesso")} a este curso</span></header>
-        ${c.modulos.map((m, mi) => {
-          const media = m.aulas.length && n ? Math.round((m.aulas.reduce((s, x) => s + todas.filter((t) => t.a.feitas.has(x.id)).length, 0) / (m.aulas.length * n)) * 100) : 0;
-          return `
-          <div class="cs-rel-mod"><b>Módulo ${numModulo(c, mi)} — ${h(m.nome)}</b><span class="cs-prog"><span class="cur-barra"><i style="width:${media}%"></i></span><b>${media}%</b></span></div>
-          <table class="cs-tabela cs-tabela-pq"><thead><tr><th>Aula</th><th>Concluíram</th><th>Comentários</th></tr></thead><tbody>
-            ${m.aulas.map((x, ai) => { const f = todas.filter((t) => t.a.feitas.has(x.id)).length; return `<tr><td>${ai + 1}. ${h(x.nome)}</td><td>${f} de ${n}</td><td>${coms.get(x.id) || 0}</td></tr>`; }).join("") || `<tr><td colspan="3" class="cs-vazio">Nenhuma aula neste módulo.</td></tr>`}
-          </tbody></table>`;
-        }).join("") || `<p class="ini-vazio">Este curso ainda não tem módulos.</p>`}
-      </section>`;
+        <div class="cs-filtros">
+          <label class="cur-busca">${IC_CUR.lupa}<input class="campo" data-cur-al-busca value="${h(ui.curAlBusca || "")}" placeholder="Buscar aluna por nome, e-mail ou celular" aria-label="Buscar aluna" /></label>
+          <span style="flex:1"></span>
+          <button type="button" class="al-botao-ouro" data-a="cs-add-aluna">${IC_CURSO.mais}Adicionar aluna</button>
+        </div>
+        <div class="cs-filtros">
+          ${Object.entries(SIT_CURSO).map(([k, [nome, f]]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-sit" data-v="${k}" aria-pressed="${sit === k}">${nome} (${todas.filter((t) => f(t.a)).length})</button>`).join("")}
+          <span style="flex:1"></span>
+          <button type="button" class="al-botao" data-a="cur-exportar">${IC_CURSO.mais}Exportar lista</button>
+        </div>
+        <div class="cs-tabela-rola"><table class="cs-tabela">
+          <thead><tr><th>Nome</th><th>E-mail / contato</th><th>Data de inclusão</th><th>Status</th><th class="dir">Ações</th></tr></thead>
+          <tbody>${vis.map(({ a, incluida }) => `
+            <tr>
+              <td><button type="button" class="cs-aluna" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td>
+              <td>${h(a.email || (a.celular ? fone(a.celular) : "—"))}</td>
+              <td>${dataHoraCurta(incluida)}</td>
+              <td>${statusAluna(a)}</td>
+              <td class="dir"><span class="eng-menu"><button type="button" class="eng-mais" data-a="cur-al-menu" data-id="${a.id}" aria-label="Opções de ${h(a.nome)}" aria-expanded="${ui.curAlMenu === a.id}">⋯</button>${ui.curAlMenu === a.id ? `<span class="eng-menu-pop" role="menu">
+                <button role="menuitem" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
+                <button role="menuitem" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
+                <button role="menuitem" data-a="contato" data-id="${a.id}">Registrar contato</button>
+              </span>` : ""}</span></td>
+            </tr>`).join("") || `<tr><td colspan="5" class="cs-vazio">Nenhuma aluna encontrada.</td></tr>`}</tbody>
+        </table></div>
+        <div class="cs-pags">
+          <span class="cs-pag-nums"><button type="button" data-a="cs-pag" data-v="${pag - 1}" ${pag <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${nums.map((n) => n === "…" ? `<span>…</span>` : `<button type="button" data-a="cs-pag" data-v="${n}" aria-current="${n === pag ? "page" : "false"}">${n}</button>`).join("")}<button type="button" data-a="cs-pag" data-v="${pag + 1}" ${pag >= pags ? "disabled" : ""} aria-label="Próxima página">›</button></span>
+          <span style="flex:1"></span>
+          <select class="campo cs-porpag" data-cs-porpag aria-label="Alunas por página">${[10, 25, 50].map((n) => `<option value="${n}" ${porPag === n ? "selected" : ""}>${n} por página</option>`).join("")}</select>
+          <span class="cs-nota">${lista.length ? (pag - 1) * porPag + 1 : 0}–${Math.min(pag * porPag, lista.length)} de ${lista.length}</span>
+        </div>
+      </section>
+      ${ui.csAddAluna ? (() => { const fora = S.alunas.filter((a) => !todas.some((t) => t.a.id === a.id)).sort((x, y) => x.nome.localeCompare(y.nome)); return `
+      <div class="modal-fundo" data-a="cs-add-aluna-fundo"><div class="modal" role="dialog" aria-modal="true" aria-label="Adicionar aluna ao curso">
+        <h2>Adicionar aluna a ${h(c.nome)}</h2>
+        ${fora.length ? `<p>Escolha a aluna. Em seguida abre a liberação dela, para marcar o que fica aberto deste curso.</p>
+        <select class="campo" id="csAlunaNova" aria-label="Aluna">${fora.map((a) => `<option value="${a.id}">${h(a.nome)}${a.celular ? " · " + fone(a.celular) : ""}</option>`).join("")}</select>
+        <div class="acoes" style="margin-top:16px"><button class="al-botao-ouro" data-a="cs-add-aluna-ir">Continuar</button><button class="al-botao" data-a="cs-add-aluna">Cancelar</button></div>`
+        : `<p>Todas as alunas cadastradas já estão neste curso. Para uma aluna nova, use Cadastrar aluna na aba Alunas.</p><div class="acoes" style="margin-top:16px"><button class="al-botao" data-a="cs-add-aluna">Fechar</button></div>`}
+      </div>`; })() : ""}`;
   }
+
+  /* --- Configurações: informações à esquerda; capa e ações rápidas à direita --- */
+  function configCurso(c: Curso) {
+    const capa = previas["cur-" + c.id] || capaSite(c.capa);
+    const IC_V = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const IC_EXP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
+    return `
+      <div class="cs-config">
+        <form data-f="curso-config" class="cs-cartao cs-form">
+          <h3>Informações do curso</h3>
+          <label class="cs-campo"><span>Nome do curso</span><input class="campo" name="nome" value="${h(c.nome)}" required /></label>
+          <div class="cs-duas">
+            <label class="cs-campo"><span>Categoria ${dicaCampo(AJ.cat)}</span><select class="campo" name="cat" required>${S.cats.map((k) => `<option value="${k.id}" ${k.id === c.cat ? "selected" : ""}>${h(k.nome)}</option>`).join("")}</select></label>
+            <label class="cs-campo"><span>Visibilidade ${dicaCampo(AJ.vis)}</span><select class="campo" name="visivel"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select></label>
+          </div>
+          <div class="cs-duas">
+            <label class="cs-campo"><span>Rótulo no Início (opcional) ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" /></label>
+            <label class="cs-campo"><span>Nome curto no Início (opcional) ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" /></label>
+          </div>
+          <label class="cs-campo"><span>Descrição ${dicaCampo(AJ.desc)}</span><textarea class="campo" name="descricao" rows="3" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea><em class="cs-conta">${c.descricao.length}/500</em></label>
+          <label class="cs-campo"><span>Fundação — o que é este curso? ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="4" maxlength="1000" data-conta-max="1000" placeholder="Para quem é, o que promete, com que voz se fala aqui.">${h(c.fundacao)}</textarea><em class="cs-conta">${c.fundacao.length}/1000</em></label>
+          <label class="cs-campo"><span>Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="3" placeholder="Orientações, avisos importantes e materiais complementares.">${h(c.aviso)}</textarea></label>
+          <input type="hidden" name="capa" value="${h(c.capa)}" />
+          <div class="cs-salvar"><button class="al-botao-ouro">Salvar alterações</button></div>
+        </form>
+        <div class="cs-col">
+          <section class="cs-cartao">
+            <h3>Capa do curso ${dicaCampo(AJ.capaCurso)}</h3>
+            <span class="cs-capa-ed" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+            <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_CURSO.lapis}Alterar imagem</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
+            <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
+          </section>
+          <section class="cs-cartao cs-rapidas">
+            <h3>Ações rápidas</h3>
+            <button type="button" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
+            <button type="button" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
+            <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
+            <button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Remover curso</button>
+          </section>
+        </div>
+      </div>`;
+  }
+
+  /* --- Relatórios: período, números com a variação, gráficos e os mais vistos --- */
+  type RelCurso = { dias: { dia: string; novas: number; assistidas: number }[]; totais: Record<string, number>; modulos: { id: string; titulo: string; n: number }[]; aulas: { id: string; titulo: string; n: number }[] };
+  let relCurso: { chave: string; r: RelCurso | null } | null = null;
+  let relCarregando = "";
+  function periodoRel() {
+    const hj = hoje(), menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
+    const f = ui.relPer || "7";
+    if (f === "hoje") return { de: hj, ate: hj };
+    if (f === "ontem") return { de: menos(1), ate: menos(1) };
+    if (f === "30") return { de: menos(29), ate: hj };
+    if (f === "perso" && ui.relDe && ui.relAte) return { de: ui.relDe, ate: ui.relAte };
+    return { de: menos(6), ate: hj };
+  }
+  function relatoriosCurso(c: Curso, todas: AlunaCurso[]) {
+    const { de, ate } = periodoRel(), chave = c.id + "|" + de + "|" + ate;
+    if ((!relCurso || relCurso.chave !== chave) && relCarregando !== chave) {
+      relCarregando = chave;
+      void (async () => { const r = await supabase.rpc("relatorio_curso", { p_produto: c.id, p_de: de, p_ate: ate }); relCarregando = ""; relCurso = { chave, r: r.error ? null : (r.data as RelCurso) }; if (ui.tab === "curso") render(); })();
+    }
+    const r = relCurso && relCurso.chave === chave ? relCurso.r : null;
+    const t = r ? r.totais : {};
+    const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a)).length;
+    const inativas = todas.filter((x) => x.a.bloqueada).length, canceladas = todas.filter((x) => !x.a.bloqueada && vencida(x.a)).length;
+    const varP = (cur: number, ant: number) => (ant && cur !== ant ? `<span class="eng-var ${cur > ant ? "bom" : "ruim"}">${cur > ant ? "↑" : "↓"} ${Math.abs(Math.round(((cur - ant) / ant) * 100))}%</span>` : "");
+    const mil = (n: number) => (n >= 1000 ? (Math.round(n / 100) / 10).toString().replace(".", ",") + " mil" : String(n));
+    const card = (ic: string, n: number | string, rot: string, v: string) => `<div class="cs-ind"><span class="eng-ind-ic">${ic}</span><span class="cs-ind-txt"><b>${n}</b><span>${rot}</span>${v}</span></div>`;
+    const dias = r ? r.dias : [];
+    const maxN = Math.max(1, ...dias.map((d) => d.novas)), maxA = Math.max(1, ...dias.map((d) => d.assistidas));
+    const barras = dias.map((d) => `<span class="eng-barra" title="${br(d.dia)}: ${p(d.novas, "nova aluna", "novas alunas")}"><i style="height:${(d.novas / maxN) * 100}%"></i><em>${br(d.dia).slice(0, 5)}</em></span>`).join("");
+    const W = 300, H = 120, nD = Math.max(1, dias.length - 1);
+    const pts = dias.map((d, k) => `${((k / nD) * W).toFixed(1)},${(H - (d.assistidas / maxA) * (H - 10)).toFixed(1)}`).join(" ");
+    const soma = ativas + inativas + canceladas, fat = (n: number) => (soma ? (n / soma) * 100 : 0);
+    const IC_B = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`, IC_C = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>`, IC_N = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8.5" r="3.8"/><path d="M3 20c.8-4 3.5-6 7-6 1.6 0 3 .4 4.1 1.2M18 13.5v6M15 16.5h6"/></svg>`;
+    return `
+      <div class="cs-filtros cs-rel-per">
+        <b>Período</b>
+        ${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"], ["perso", "Personalizado"]].map(([v, n]) => `<button type="button" class="al-filtro cs-fil" data-a="rel-per" data-v="${v}" aria-pressed="${(ui.relPer || "7") === v}">${n}</button>`).join("")}
+        ${(ui.relPer || "7") === "perso" ? `<span class="cs-datas">${IC_CUR.cal}<input type="date" class="campo" data-rel-de value="${h(ui.relDe || de)}" aria-label="De" /><span aria-hidden="true">→</span><input type="date" class="campo" data-rel-ate value="${h(ui.relAte || ate)}" aria-label="Até" /></span>` : ""}
+        <span style="flex:1"></span>
+        <button type="button" class="al-botao-ouro" data-a="rel-exportar">${IC_CURSO.mais}Exportar relatório</button>
+      </div>
+      ${r ? `
+      <div class="cs-inds cs-inds5">
+        ${card(IC_CUR.pessoas, ativas, "Alunas ativas", varP(ativas, ativas - (t.novas || 0)))}
+        ${card(IC_N, t.novas || 0, "Novas alunas", varP(t.novas || 0, t.novas_ant || 0))}
+        ${card(IC_CURSO.play, mil(t.assistidas || 0), "Aulas assistidas", varP(t.assistidas || 0, t.assistidas_ant || 0))}
+        ${card(IC_B, t.comentarios || 0, "Comentários", varP(t.comentarios || 0, t.comentarios_ant || 0))}
+        ${card(IC_C, t.curtidas || 0, "Curtidas", varP(t.curtidas || 0, t.curtidas_ant || 0))}
+      </div>
+      <div class="cs-rel-graf">
+        <section class="cs-cartao"><h3>Novas alunas no período</h3><div class="eng-graf"><div class="eng-barras">${barras}</div></div></section>
+        <section class="cs-cartao"><h3>Aulas assistidas no período</h3>
+          <svg class="cs-linha" viewBox="-6 -6 ${W + 12} ${H + 12}" preserveAspectRatio="none" aria-label="Aulas assistidas por dia">${dias.length > 1 ? `<polygon points="0,${H} ${pts} ${W},${H}" class="area"/><polyline points="${pts}" class="traco"/>` : ""}${dias.map((d, k) => `<circle cx="${((k / nD) * W).toFixed(1)}" cy="${(H - (d.assistidas / maxA) * (H - 10)).toFixed(1)}" r="3"><title>${br(d.dia)}: ${d.assistidas}</title></circle>`).join("")}</svg>
+          <div class="cs-linha-dias">${dias.map((d) => `<em>${br(d.dia).slice(0, 5)}</em>`).join("")}</div>
+        </section>
+        <section class="cs-cartao"><h3>Status das alunas ${ajudaQuadro("status-curso", ["Status das alunas", "Ativas: com acesso em dia. Inativas: bloqueadas no painel. Canceladas: o acesso venceu.", ""])}</h3>
+          <div class="eng-dist-corpo"><span class="eng-rosca" style="background:${soma ? `conic-gradient(var(--eng-verde) 0 ${fat(ativas)}%, var(--eng-ouro) ${fat(ativas)}% ${fat(ativas) + fat(inativas)}%, var(--eng-rosa) ${fat(ativas) + fat(inativas)}% 100%)` : "var(--aa-cinza)"}"><span><b>${soma}</b>Total</span></span>
+          <ul class="cs-leg"><li><span class="eng-ponto verde"></span><span>Ativas</span><b>${ativas} (${Math.round(fat(ativas))}%)</b></li><li><span class="eng-ponto ouro"></span><span>Inativas</span><b>${inativas} (${Math.round(fat(inativas))}%)</b></li><li><span class="eng-ponto rosa"></span><span>Canceladas</span><b>${canceladas} (${Math.round(fat(canceladas))}%)</b></li></ul></div>
+        </section>
+      </div>
+      <div class="cs-rel-graf">
+        <section class="cs-cartao"><h3>Módulos mais acessados</h3>${r.modulos.map((m, k) => { const mi = c.modulos.findIndex((x) => x.id === m.id); return `<div class="cs-top"><span>${k + 1}.</span><b>Módulo ${mi >= 0 ? numModulo(c, mi) : ""} — ${h(m.titulo.charAt(0) + m.titulo.slice(1).toLowerCase())}</b><em>${p(m.n, "acesso", "acessos")}</em></div>`; }).join("") || `<p class="ini-vazio">Nenhum acesso no período.</p>`}</section>
+        <section class="cs-cartao"><h3>Aulas mais assistidas</h3>${r.aulas.map((a) => `<div class="cs-top"><i>${IC_CURSO.play}</i><b>${h(a.titulo)}</b><em>${p(a.n, "acesso", "acessos")}</em></div>`).join("") || `<p class="ini-vazio">Nenhuma aula assistida no período.</p>`}</section>
+        <section class="cs-cartao"><h3>Engajamento no período</h3><div class="cs-eng3">
+          <span><b>${t.comentarios || 0}</b><em>comentários</em>${varP(t.comentarios || 0, t.comentarios_ant || 0)}</span>
+          <span><b>${t.curtidas || 0}</b><em>curtidas</em>${varP(t.curtidas || 0, t.curtidas_ant || 0)}</span>
+          <span><b>${mil(t.minutos || 0)}</b><em>minutos assistidos</em>${varP(t.minutos || 0, t.minutos_ant || 0)}</span>
+        </div></section>
+      </div>` : `<p class="ini-vazio">Carregando…</p>`}`;
+  }
+
   function telaCurso() {
     const c = curso(ui.curso);
     if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
@@ -2116,53 +2276,9 @@ export function montar(app: HTMLElement) {
     const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a)).length;
     const capa = capaSite(c.capa);
     const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["config", "Configurações"], ["relatorios", "Relatórios"]];
-    const conteudo = aba === "modulos" ? `<div class="cs-modulos">      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px">
-        <span class="rotulo rotulo-ajuda">Conteúdo do produto ${dicaCampo(AJ.conteudo)}</span>
-        <span style="font-size:13px;color:var(--texto-2)">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</span>
-      </div>
-
-      ${c.modulos.map((m, i) => blocoModulo(c, m, i)).join("") || `<div class="vazio" style="margin-bottom:14px">Este produto ainda não tem módulos.</div>`}
-
-      <form data-f="mod-add" data-id="${c.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding:16px;border:1px dashed rgba(255,255,255,.16);border-radius:14px">
-        <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome do novo módulo" required />
-        <button class="botao-neutro grande">+ Adicionar módulo</button>
-        <span style="align-self:center">${dicaCampo(AJ.addMod)}</span>
-      </form>
-</div>`
-      : aba === "alunas" ? tabelaAlunasCurso(todas)
-      : aba === "config" ? `      <form data-f="curso-config" class="cartao" style="padding:16px;margin-bottom:26px">
-        <div class="campos">
-          <div class="grupo nome"><span class="rotulo rotulo-ajuda">Nome ${dicaCampo(AJ.nome)}</span><input class="campo" name="nome" value="${h(c.nome)}" required aria-label="Nome" /></div>
-          <div class="grupo" style="flex:1 1 240px"><span class="rotulo rotulo-ajuda">Categoria onde aparece ${dicaCampo(AJ.cat)}</span>
-            <select class="campo" name="cat" required aria-label="Categoria onde aparece">
-              ${S.cats.map((k) => `<option value="${k.id}" ${k.id === c.cat ? "selected" : ""}>${h(k.nome)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="grupo" style="flex:0 0 150px"><span class="rotulo rotulo-ajuda">Visibilidade ${dicaCampo(AJ.vis)}</span>
-            <select class="campo" name="visivel" aria-label="Visibilidade"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select>
-          </div>
-        </div>
-        <div class="campos" style="margin-top:14px">
-          <div class="grupo" style="flex:1 1 220px"><span class="rotulo rotulo-ajuda">Rótulo no Início ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" aria-label="Rótulo no Início" /></div>
-          <div class="grupo" style="flex:1 1 280px"><span class="rotulo rotulo-ajuda">Nome curto no Início ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" aria-label="Nome curto no Início" /></div>
-        </div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Capa do curso ${dicaCampo(AJ.capaCurso)}</span>
-          <span class="mod-capa" data-previa="cur-${c.id}">${(previas["cur-" + c.id] || capaSite(c.capa)) ? `<img src="${h(previas["cur-" + c.id] || capaSite(c.capa))}" alt="" />` : ""}</span>
-          <input type="hidden" name="capa" value="${h(c.capa)}" />
-          <span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="botao-neutro grande" data-a="curso-capa" data-id="${c.id}">Escolher imagem</button>${c.capa ? `<button type="button" class="botao-neutro grande botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">Tirar capa</button>` : ""}</span>
-        </div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.desc)}</span><textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Fundação — o que é este curso ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px">
-          <button class="botao">Salvar</button>
-          <button type="button" class="botao-neutro grande" data-a="curso-cancelar">Cancelar</button>
-          <button type="button" class="botao-neutro grande botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
-          <span style="align-self:center">${dicaCampo(AJ.botoes)}</span>
-        </div>
-      </form>
-
-`
+    const conteudo = aba === "modulos" ? modulosCurso(c)
+      : aba === "alunas" ? alunasCursoAba(c, todas)
+      : aba === "config" ? configCurso(c)
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
     return `
@@ -2171,7 +2287,8 @@ export function montar(app: HTMLElement) {
         <button type="button" class="cs-volta-ic" data-a="aba" data-v="cursos" aria-label="Voltar para Cursos e conteúdos">${IC_CURSO.voltar}</button>
         <span><button type="button" class="link" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true"> › </span><b>${h(c.nome)}</b></span>
         <span style="flex:1"></span>
-        <button type="button" class="al-botao" data-a="aba" data-v="cursos">${IC_CURSO.voltar}Voltar</button>
+        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna</button>
+        <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
       </div>
       <div class="cs-heroi">
         <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
@@ -2187,9 +2304,10 @@ export function montar(app: HTMLElement) {
           </div>
         </div>
         <div class="cs-heroi-acoes">
-          <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
           <span class="eng-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Mais opções" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
             <button role="menuitem" data-a="curso-aba" data-v="modulos">Módulos e aulas</button>
+            <button role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
+            <button role="menuitem" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button>
             <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover curso</button>
           </span>` : ""}</span>
         </div>
@@ -2877,12 +2995,47 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "eng-menu": ui.engMenu = ui.engMenu === d.id ? "" : d.id; break;
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
-      case "curso-aba": ui.cursoAba = d.v; window.scrollTo(0, 0); break;
+      case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
+      case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
+      case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
+      case "cs-pag": ui.csPag = Math.max(1, Number(d.v) || 1); break;
+      case "cs-add-aluna": ui.csAddAluna = !ui.csAddAluna; break;
+      case "cs-add-aluna-fundo": if (alvo !== el) return; ui.csAddAluna = false; break;
+      case "cs-add-aluna-ir": { const sel = document.getElementById("csAlunaNova") as HTMLSelectElement | null; ui.csAddAluna = false; if (sel && sel.value) { render(); acao("liberar", { id: sel.value }, el, alvo); return; } break; }
+      case "cs-ver-aluna": window.open("/", "_blank", "noopener"); return;
+      case "rel-per": ui.relPer = d.v; if (d.v === "perso" && !ui.relDe) { ui.relDe = diaDe(new Date(Date.now() - 6 * 864e5)); ui.relAte = hoje(); } break;
+      case "rel-exportar": {
+        const c = curso(ui.curso); const rr = relCurso && relCurso.r; if (!c || !rr) return;
+        const { de, ate } = periodoRel(); const t = rr.totais;
+        const linhas = ["Relatório;" + c.nome, "Período;" + br(de) + " a " + br(ate), "", "Novas alunas;" + (t.novas || 0), "Aulas assistidas;" + (t.assistidas || 0), "Comentários;" + (t.comentarios || 0), "Curtidas;" + (t.curtidas || 0), "Minutos assistidos;" + (t.minutos || 0), "", "Dia;Novas alunas;Aulas assistidas"].concat(rr.dias.map((x) => br(x.dia) + ";" + x.novas + ";" + x.assistidas));
+        const url = URL.createObjectURL(new Blob(["\ufeff" + linhas.join("\n")], { type: "text/csv;charset=utf-8" }));
+        const el2 = Object.assign(document.createElement("a"), { href: url, download: "relatório - " + c.nome + ".csv" }); document.body.append(el2); el2.click(); el2.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+        toast("Relatório exportado."); return;
+      }
+      case "cs-exportar-conteudo": {
+        const c = curso(d.id || ui.curso); if (!c) return;
+        const q = (x: string) => '"' + String(x ?? "").replace(/"/g, '""') + '"';
+        const linhas = ["Módulo;Aula;Vídeo;Capa;Tem texto;Instruções;Extras"].concat(c.modulos.flatMap((m, mi) => m.aulas.map((a) => [ "Módulo " + numModulo(c, mi) + " — " + m.nome, a.nome, a.video, a.capa, a.texto ? "sim" : "não", a.exercicio ? "sim" : "não", String(a.extras.length)].map(q).join(";"))));
+        const url = URL.createObjectURL(new Blob(["\ufeff" + linhas.join("\n")], { type: "text/csv;charset=utf-8" }));
+        const el2 = Object.assign(document.createElement("a"), { href: url, download: "conteúdo - " + c.nome + ".csv" }); document.body.append(el2); el2.click(); el2.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+        toast("Conteúdo exportado."); return;
+      }
+      case "cs-duplicar": {
+        const c = curso(d.id); if (!c) return;
+        void executar(async () => { const novo = String(await rpc("duplicar_produto", { p_produto: c.id })); return { msg: "Curso duplicado. A cópia está oculta para as alunas.", texto: "cópia de " + c.nome, desfazer: async () => { await rpc("remover_produto", { p_produto: novo }); } }; });
+        return;
+      }
+      case "mod-duplicar": {
+        const x = acharModulo(d.id); if (!x) return;
+        void executar(async () => { await rpc("duplicar_modulo", { p_modulo: x.m.id }); return "Módulo duplicado. A cópia foi para o fim da lista."; });
+        return;
+      }
       case "cur-al-menu": ui.curAlMenu = ui.curAlMenu === d.id ? "" : d.id; break;
       case "cur-al-filtro": ui.curAlFiltro = ui.curAlFiltro === d.v ? "" : d.v; ui.curAlDe = ""; ui.curAlAte = ""; break;
       case "cur-exportar": {
         const c = curso(ui.curso); if (!c) return;
-        const linhas = filtrarAlunasCurso(alunasDoCurso(c));
+        const qb = norm(ui.curAlBusca || "").trim(), fs = SIT_CURSO[ui.csSit || "todas"][1];
+        const linhas = alunasDoCurso(c).filter(({ a }) => fs(a) && (!qb || casa(qb, a.nome + " " + a.login + " " + a.email, a.celular))).sort((x, y) => y.incluida.localeCompare(x.incluida));
         const q = (x: string) => '"' + String(x).replace(/"/g, '""') + '"';
         const csv = ["Aluna;E-mail;Celular;Data de inclusão;Último acesso;Status;Progresso"].concat(linhas.map(({ a, incluida, pct }) => [a.nome, a.email, a.celular ? fone(a.celular) : "", dataHoraCurta(incluida), a.ultimoAcessoEm ? dataHoraCurta(a.ultimoAcessoEm) : "", sitInfo(situacao(a))[0], pct + "%"].map(q).join(";"))).join("\n");
         const url = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
@@ -3543,13 +3696,17 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     if (t.dataset.conta) { const c = document.getElementById(t.dataset.conta); if (c) c.textContent = t.value.length + "/200"; }
     if (t.dataset.i === "busca") { ui.busca = t.value; ui.paginaAl = 1; render(); return; }
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
-    if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; ui.csPag = 1; render(); return; }
+    if (t.dataset.contaMax) { const em = t.parentElement?.querySelector(".cs-conta"); if (em) em.textContent = t.value.length + "/" + t.dataset.contaMax; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
+    if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
+    if (t.hasAttribute("data-rel-de")) { ui.relDe = t.value; render(); return; }
+    if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
@@ -3679,6 +3836,16 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   app.addEventListener("drop", (e) => {
     const t = (e.target as HTMLElement).closest?.<HTMLElement>("[data-arrasta]"); if (!t || !ui.arrasto) return;
     e.preventDefault();
+    const mx = acharModulo(ui.arrasto), my = acharModulo(t.dataset.arrasta!);
+    if (mx && my && mx.c.id === my.c.id) {
+      ui.arrasto = null;
+      if (mx.i !== my.i) {
+        const nova = mx.c.modulos.slice(); const [k] = nova.splice(mx.i, 1); nova.splice(my.i, 0, k);
+        const velha = mx.c.modulos.map((x) => x.id);
+        void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + mx.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
+      } else render();
+      return;
+    }
     const de = S.cats.findIndex((k) => k.id === ui.arrasto), para = S.cats.findIndex((k) => k.id === t.dataset.arrasta);
     ui.arrasto = null;
     if (de >= 0 && para >= 0 && de !== para) {
