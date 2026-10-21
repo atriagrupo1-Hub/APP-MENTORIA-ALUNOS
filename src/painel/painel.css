@@ -567,3 +567,5 @@ body.aa-trava { overflow: hidden; }
 .ajuda-campo .ajuda-pop { left: 0; right: auto; width: 300px; max-width: calc(100vw - 40px); font-weight: 400; line-height: 1.45; }
 .ajuda-campo .ajuda-pop i { font-style: normal; font-weight: 700; color: var(--texto); }
 .campos > .grupo:last-child .ajuda-campo .ajuda-pop { left: auto; right: 0; }
+/* Frase de orientação embaixo de cada campo: sempre à vista. */
+.dica-campo { display: block; flex: 1 1 100%; margin: 2px 0 6px; font-size: 13px; line-height: 1.45; color: var(--texto-2); text-transform: none; letter-spacing: 0; }
