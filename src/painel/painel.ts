@@ -25,6 +25,8 @@ type TipoExtra = "Vídeo" | "Áudio" | "Texto" | "PDF / e-book" | "Link" | "Imag
 type Extra = { id: string; tipo: TipoExtra; nome: string; arquivo: string };
 type Aula = {
   id: string; nome: string; video: string; capa: string; texto: string;
+  // Nulos enquanto a 0047 não estiver no banco: aí os campos não aparecem.
+  resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[];
 };
 type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[] };
@@ -150,7 +152,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("categorias").select("id, titulo, ordem").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem").order("ordem"),
     supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral").not("produto_id", "is", null).order("ordem"),
-    supabase.from("aulas").select("id, modulo_id, titulo, ordem, numero, capa_path, texto, liberada_geral, bloqueado_geral").order("ordem").order("numero"),
+    supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
     supabase.rpc("alunas_do_painel"),
@@ -189,6 +191,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     lista.push({
       id: a.id, nome: a.titulo, video: video.get(a.id) ?? "", capa: a.capa_path ?? "",
       texto: a.texto ?? "",
+      resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [],
     });
@@ -1495,6 +1498,19 @@ Uma linha em branco separa parágrafo.
 Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
           <span class="dica">Deixe vazio e a aula fica só com o vídeo.</span>
         </label>
+        ${a.resumo === null ? "" : `
+        <label class="grupo largo" style="margin-bottom:18px">
+          <span class="rotulo">Resumo — aba "Resumo" da aula</span>
+          <textarea class="campo" name="resumo" rows="5" placeholder="Um ponto por linha.">${h(a.resumo)}</textarea>
+          <span class="dica">Cada linha vira um item da lista. Vazio: a aluna vê "Resumo será adicionado em breve".</span>
+        </label>
+        <label class="grupo largo" style="margin-bottom:18px">
+          <span class="rotulo">Exercício — aba "Exercícios" da aula</span>
+          <textarea class="campo" name="exercicio" rows="7" placeholder="Título do exercício na primeira linha.
+
+Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}</textarea>
+          <span class="dica">A primeira linha é o título. Vazio: a aluna vê "Exercício será adicionado em breve".</span>
+        </label>`}
 
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px">
           <button class="botao">Salvar aula</button>
@@ -2298,16 +2314,21 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         const video = v("video"); const ref = idDoVideo(video);
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
-        const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video };
+        const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
+        const extrasAula: Record<string, string | null> = {};
+        if (x0.resumo !== null) {
+          const r = (form.elements.namedItem("resumo") as HTMLTextAreaElement).value, e = (form.elements.namedItem("exercicio") as HTMLTextAreaElement).value;
+          extrasAula.resumo = r.trim() ? r : null; extrasAula.exercicio = e.trim() ? e : null;
+        }
         void executar(async () => {
-          falhou(await supabase.from("aulas").update({ capa_path: v("capa") || null, texto: texto.trim() ? texto : null }).eq("id", id).select("id").single());
+          falhou(await supabase.from("aulas").update({ capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
           delete previas[id];
           return {
             msg: "Aula salva.", texto: "conteúdo da aula " + x0.nome,
             desfazer: async () => {
-              falhou(await supabase.from("aulas").update({ capa_path: velho.capa || null, texto: velho.texto || null }).eq("id", id).select("id").single());
+              falhou(await supabase.from("aulas").update({ capa_path: velho.capa || null, texto: velho.texto || null, ...(velho.resumo === null ? {} : { resumo: velho.resumo || null, exercicio: velho.exercicio || null }) }).eq("id", id).select("id").single());
               const vref = velho.video ? idDoVideo(velho.video) : null;
               if (vref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(velho.video), video_ref: vref }));
               else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));

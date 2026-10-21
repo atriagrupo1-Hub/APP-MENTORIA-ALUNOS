@@ -56,6 +56,8 @@ export type Aula = {
    * destaque são de quem escreve; a tela repete o que recebeu.
    */
   texto: string | null;
+  resumo?: string | null;
+  exercicio?: string | null;
   capaPath: string | null;
   bloqueadoGeral: boolean;
   /** Conteúdos extras desta aula, além do vídeo e do material de sempre. */
