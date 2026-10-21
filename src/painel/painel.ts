@@ -368,7 +368,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -724,6 +724,7 @@ export function montar(app: HTMLElement) {
         ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
           <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
       </div>
+      ${blocoAcessos()}
       ${ui.ativTodas ? `
         <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Últimas atividades">
@@ -732,6 +733,59 @@ export function montar(app: HTMLElement) {
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
+  }
+  /*
+   * "Alunas e acessos" (segunda parte do Início): três listas lado a
+   * lado — acessos que vencem em 15 dias, sem acesso há mais de 14 dias
+   * e quem ainda não fez o primeiro acesso — com as três primeiras de
+   * cada uma; o cabeçalho de cada coluna abre a lista inteira.
+   */
+  type ListaIni = { id: string; titulo: string; sub: string; icone: string; lista: Aluna[]; direita: (a: Aluna) => string };
+  const cursoPrincipal = (a: Aluna) => {
+    const libs = new Set(aulasDaLiberacao(a));
+    const c = S.cursos.find((k) => k.modulos.some((m) => m.aulas.some((x) => libs.has(x.id))));
+    return c ? c.nome : "Sem conteúdo liberado";
+  };
+  function listasAcessos(): ListaIni[] {
+    const nunca = (a: Aluna) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso;
+    return [
+      { id: "vencem", titulo: "Acessos que vencem em 15 dias", sub: "Alunas com acesso próximo do vencimento.", icone: IC_INI.cal,
+        lista: S.alunas.filter((a) => situacao(a) === "vencendo").sort((x, y) => x.validade.localeCompare(y.validade)), direita: (a) => br(a.validade) },
+      { id: "parada", titulo: "Sem acesso há mais de 14 dias", sub: "Alunas que não acessam há mais de 14 dias.", icone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.2" height="14" rx="1" class="cheio"/><rect x="13.8" y="5" width="3.2" height="14" rx="1" class="cheio"/></svg>`,
+        lista: S.alunas.filter(parada).sort((x, y) => x.ultimoAcesso.localeCompare(y.ultimoAcesso)), direita: (a) => "há " + diasEntre(a.ultimoAcesso, hoje()) + " dias" },
+      { id: "comecar", titulo: "Ainda não fizeram o primeiro acesso", sub: "Alunas cadastradas recentemente.", icone: IC_INI.pessoa,
+        lista: S.alunas.filter(nunca).sort((x, y) => (y.criadaEm || "").localeCompare(x.criadaEm || "")), direita: (a) => br(cadastroDe(a)) },
+    ];
+  }
+  const linhaIni = (l: ListaIni, a: Aluna) => `
+        <div class="ac-item">
+          <button class="ac-quem" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b><span>${h(cursoPrincipal(a))}</span></span></button>
+          <span class="ini-quando">${l.direita(a)}</span>
+          <span class="menu-acoes"><button class="ini-mais" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>${ui.menu === a.id ? menuAluna(a) : ""}</span>
+        </div>`;
+  function blocoAcessos() {
+    const ls = listasAcessos();
+    const aberta = ls.find((l) => l.id === ui.iniLista);
+    return `
+      <section class="ac-bloco">
+        <header class="ac-cab"><span class="ini-cab-ic">${IC_INI.pessoas}</span><span class="ac-cab-txt"><h3>Alunas e acessos</h3><span>Acompanhe o acesso das alunas na sua mentoria.</span></span><button class="al-botao pequeno" data-a="aba" data-v="alunas">Ver todos ${IC_INI.seta}</button></header>
+        <div class="ac-colunas">${ls.map((l) => `
+          <div class="ac-coluna">
+            <button class="ac-topo" data-a="ini-lista" data-v="${l.id}" aria-label="Ver a lista inteira: ${h(l.titulo)}">
+              <span class="ac-ic">${l.icone}</span>
+              <span class="ac-topo-txt"><b>${l.titulo}</b><span>${l.sub}</span></span>
+              <span class="aa-conta${l.lista.length ? " tem" : ""}">${l.lista.length}</span>${seta}
+            </button>
+            ${l.lista.slice(0, 3).map((a) => linhaIni(l, a)).join("") || `<p class="ini-vazio">Nenhuma aluna aqui agora.</p>`}
+          </div>`).join("")}
+        </div>
+      </section>
+      ${aberta ? `
+        <div class="aa-fundo" data-a="ini-lista-fechar"></div>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${h(aberta.titulo)}">
+          <header class="aa-cab"><div><h2>${aberta.titulo}</h2><p><span class="aa-conta tem">${aberta.lista.length}</span> ${aberta.sub}</p></div><button type="button" class="aa-fechar" data-a="ini-lista-fechar" aria-label="Fechar">${xis}</button></header>
+          <div class="aa-corpo" data-rolagem="ini-${aberta.id}">${aberta.lista.map((a) => linhaIni(aberta, a)).join("") || `<p class="ini-vazio">Nenhuma aluna aqui agora.</p>`}</div>
+        </aside>` : ""}`;
   }
   /** O seletor de período, no alto do Início. */
   function seletorPeriodo() {
@@ -2237,6 +2291,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         if (!de || !ate || de > ate) { toast("Confira as datas: o início vem antes do fim."); return; }
         ui.iniDe = de; ui.iniAte = ate; ui.periodoAberto = false; break;
       }
+      case "ini-lista": ui.iniLista = d.v; break;
+      case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
       case "ir-comentarios": ui.tab = "comentarios"; window.scrollTo(0, 0); break;

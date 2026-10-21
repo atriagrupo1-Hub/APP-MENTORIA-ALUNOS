@@ -857,3 +857,37 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ini .aa-corpo .ini-item { padding: 10px 0; }
 .ini-cartao h3 { font-size: 18.5px; line-height: 1.2; }
 @media (min-width: 1101px) and (max-width: 1500px) { .ini-cartao h3 { font-size: 17px; } }
+/* Início — Alunas e acessos */
+.ac-bloco { margin-top: 18px; padding: 20px; background: var(--al-cab); border: 1px solid var(--linha-suave); border-radius: 16px; }
+.ac-cab { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.ac-cab .ini-cab-ic svg { width: 34px; height: 34px; }
+.ac-cab-txt { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+.ac-cab-txt h3 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; }
+.ac-cab-txt span { font-size: 14px; color: var(--texto-2); }
+.ac-cab .al-botao svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ac-colunas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 1100px) { .ac-colunas { grid-template-columns: 1fr; } }
+.ac-coluna { padding: 14px 16px 6px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; }
+.ac-topo { display: flex; align-items: center; gap: 14px; width: 100%; padding: 2px 0 14px; font: inherit; color: inherit; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--linha-suave); cursor: pointer; }
+[data-painel] .ac-topo:not(:disabled):hover, [data-painel] .ac-quem:not(:disabled):hover { box-shadow: none; background: none; }
+.ac-topo:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.ac-ic { flex: 0 0 auto; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 10px; color: var(--al-ouro); background: var(--al-ouro-fundo); }
+.ac-ic svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ac-ic svg .cheio { fill: currentColor; stroke: none; }
+.ac-topo-txt { flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ac-topo-txt b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 17px; font-weight: 600; }
+.ac-topo-txt span { font-size: 13px; color: var(--texto-2); }
+.ac-item { display: flex; align-items: center; gap: 10px; min-height: 64px; border-top: 1px solid var(--linha-suave); }
+.ac-coluna .ac-item:nth-child(2) { border-top: 0; }
+.ac-quem { flex: 1 1 auto; display: flex; align-items: center; gap: 14px; min-width: 0; padding: 8px 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: pointer; }
+.ac-quem .avatar { width: 46px; height: 46px; }
+.ac-quem:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.aa-corpo .ac-item:first-child { border-top: 0; }
+@media (min-width: 901px) { .casca { background: linear-gradient(90deg, #141210 232px, transparent 232px); } }
+.ac-topo-txt b { font-size: 16px; line-height: 1.25; }
+.ac-topo-txt span { font-size: 12.5px; }
+.ac-item .ini-txt > span { -webkit-line-clamp: 1; }
+.ac-item .ini-txt b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ac-coluna { padding: 14px 14px 6px; }
+.ac-topo { gap: 12px; }
+.ac-ic { width: 42px; height: 42px; }
