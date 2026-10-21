@@ -134,7 +134,7 @@ export function montar(raiz: HTMLElement) {
   const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
   const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
   const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
-  // O que está liberado no cadastro da aluna fica aberto — sem esperar concluir o anterior.
+  // Liberado pelo cadastro da aluna (datas e bloqueios do painel); dentro do módulo, ainda em sequência (seqOk).
   const liberado = (m) => moduloAdmin(m);
   const abre = (m) => { const ds = MODS()[m].aulas.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   const total = () => MODS().reduce((s, x) => s + x.aulas.length, 0);
@@ -622,9 +622,13 @@ export function montar(raiz: HTMLElement) {
     VID.addEventListener("pause", () => { S.tocando = false; gravarPosicao(true); atualizarControles(); });
     VID.addEventListener("timeupdate", () => { gravarPosicao(false); atualizarControles(); });
     VID.addEventListener("ended", () => {
-      S.tocando = false; gravarPosicao(true);
-      const lx = D.prog.get(aulaId); if (lx) lx.concluida = true;
-      ultimaConclusao = api.marcarConcluida(aulaId, true).catch(() => {});
+      S.tocando = false;
+      // Terminou o vídeo: a aula fica concluída sozinha. Primeiro a posição
+      // final chega ao banco, que só aceita a conclusão de quem chegou ao fim.
+      const fimEm = Number.isFinite(VID.duration) ? VID.duration : VID.currentTime;
+      const lx = D.prog.get(aulaId); if (lx) { lx.concluida = true; lx.posicaoSegundos = fimEm; }
+      ultimaGravacao = fimEm;
+      ultimaConclusao = api.salvarPosicao(aulaId, fimEm).then(() => api.marcarConcluida(aulaId, true)).catch(() => {});
       const k = chaveAtual(); S.fim[k] = 1; render();
     });
     VID.addEventListener("error", () => void renovarVideo());
@@ -1514,19 +1518,6 @@ export function montar(raiz: HTMLElement) {
       }
       case "voltar-aula-fim": delete S.modFim[S.mod]; render(); window.scrollTo({ top: 0 }); return;
       case "finalizar-mod": { parar(); delete S.fim[chaveAtual()]; S.modFim[S.mod] = 1; render(); window.scrollTo({ top: 0 }); return; }
-      case "concluir": {
-        const id = conteudoAtual()?.id; if (!id) return;
-        const l = D.prog.get(id); if (l) l.concluida = true;
-        ultimaConclusao = api.marcarConcluida(id, true);
-        void ultimaConclusao.then(() => aviso("Aula concluída. Parabéns pelo passo de hoje!")).catch(() => { if (l) l.concluida = false; aviso("Não conseguimos marcar agora. Tente de novo."); render(); });
-        break;
-      }
-      case "desfazer-concluir": {
-        const id = MODS()[S.mod]?.aulas[S.aula]?.id; if (!id) return;
-        const l = D.prog.get(id); if (l) l.concluida = false;
-        void api.marcarConcluida(id, false).then(() => aviso("A aula voltou a ficar pendente.")).catch(() => { if (l) l.concluida = true; aviso("Não conseguimos desmarcar agora. Tente de novo."); render(); });
-        break;
-      }
       case "aba-aula": {
         S.abaAula = S.abaAula === d.v ? null : d.v;
         render();
