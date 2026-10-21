@@ -428,6 +428,8 @@ export function TelaAula() {
       minha: true,
       respostaA: respostaA ?? null,
       ehInstrutor: estado.aluna?.papel === "admin",
+      curtidas: 0,
+      curti: false,
     };
     // Comentário novo entra em cima, que é onde a lista o mostraria.
     // Resposta entra no fim, porque é assim que ela é lida: embaixo da

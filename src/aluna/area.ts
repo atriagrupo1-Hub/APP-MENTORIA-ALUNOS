@@ -41,6 +41,9 @@ export function montar(raiz: HTMLElement) {
   };
   const mmss = (s) => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
 
+  // Número do suporte no WhatsApp, só dígitos com o país (ex.: 5511999990000).
+  const SUPORTE_WHATS = "";
+
   /* ---------- preferências do aparelho ---------- */
   const ler = (k, padrao) => { try { const v = localStorage.getItem(k); return v == null ? padrao : v; } catch { return padrao; } };
   const gravar = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* sem armazenamento */ } };
@@ -67,7 +70,7 @@ export function montar(raiz: HTMLElement) {
       .map((m) => ({
         id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", capa: capaUrl(`modulo-${m.numero}.webp`),
         aulas: m.aulas.slice().sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-          id: a.id, titulo: a.titulo, texto: a.texto || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
+          id: a.id, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
         })),
       }));
     // Presentes: as categorias que não são a da jornada, cada uma com seus produtos.
@@ -75,7 +78,7 @@ export function montar(raiz: HTMLElement) {
     const semModulo = cat.produtos.filter((x) => x.id !== jornada && !x.modulos.length).map((x) => x.id);
     const prodLib = await api.produtosLiberados(semModulo).catch(() => new Set());
     const cats = cat.categorias
-      .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada))
+      .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
@@ -139,6 +142,9 @@ export function montar(raiz: HTMLElement) {
 
   /* ---------- ícones (da maquete) ---------- */
   const ICONES = {
+    resumo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
+    exercicio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M11 6h9M11 12h9M11 18h9"/></svg>',
+    mais: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>',
     inicio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
     modulos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="18" height="6" rx="1.5"/></svg>',
     presentes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>',
@@ -222,6 +228,14 @@ export function montar(raiz: HTMLElement) {
         <p class="ent-nome serif">CAMINHO DO DESBLOQUEIO</p>
         <p class="ent-nome serif">PARA BÊNÇÃOS ILIMITADAS</p>
       </div>
+      ${S.bloqueado ? `
+      <div class="ent-cartao ent-bloq" role="alert">
+        <span class="ent-bloq-ic" aria-hidden="true">${ICONES.cadeado}</span>
+        <h1>Acesso bloqueado</h1>
+        <p class="ent-bloq-txt">${h(S.bloqueado)}</p>
+        <p class="ent-bloq-txt">Fale com o suporte para desbloquear. É rápido.</p>
+        <button class="ent-entrar" data-a="suporte-whats">Falar com o suporte no WhatsApp<span aria-hidden="true">→</span></button>
+      </div>` : `
       <form class="ent-cartao" data-f="entrar" novalidate>
         <h1>Bem-vindo(a)</h1>
         <label class="ent-rot" for="nome">Seu nome</label>
@@ -238,7 +252,7 @@ export function montar(raiz: HTMLElement) {
         ${S.erroEntrada ? `<p class="erro" role="alert">${h(S.erroEntrada)}</p>` : ""}
         <button class="ent-entrar" ${S.entrando ? "disabled" : ""}>${S.entrando ? "Entrando…" : "Entrar na mentoria"}<span aria-hidden="true">→</span></button>
         <p class="ent-nota" style="margin-top:20px">Acesso reservado às alunas da mentoria.</p>
-      </form>
+      </form>`}
       <div class="ent-selos">
         <span><i>✓</i>Acesso protegido</span>
         <span><i>⌘</i>Dados privados</span>
@@ -678,10 +692,42 @@ export function montar(raiz: HTMLElement) {
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}
             </div>
-            ${feita(m, a) ? "" : `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>`}
+            ${feita(m, a) ? `<button class="botao-2 marcar-concluida" data-a="desfazer-concluir" aria-pressed="true">${ICONES.check}Aula concluída · desmarcar</button>` : `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>`}
             <div class="abas-aula" role="tablist">
-              <button role="tab" data-a="aba-aula" data-v="sobre" aria-selected="true">${ICONES.livro}Sobre a aula</button>
+              <button role="tab" data-a="aba-aula" data-v="sobre" aria-selected="${S.abaAula === "sobre"}">${ICONES.livro}Sobre a aula</button>
+              <button role="tab" data-a="aba-aula" data-v="resumo" aria-selected="${S.abaAula === "resumo"}">${ICONES.resumo}Resumo</button>
+              <button role="tab" data-a="aba-aula" data-v="exercicios" aria-selected="${S.abaAula === "exercicios"}">${ICONES.exercicio}Exercícios</button>
             </div>
+            ${S.abaAula === "resumo" ? `
+            <div class="sobre-cartao">
+              <span class="sobre-ic">${ICONES.resumo}</span>
+              <div style="flex:1;min-width:0">
+                <h3>Resumo da aula</h3>
+                ${au.resumo.trim() ? `<ul class="resumo-lista">${au.resumo.split(/\n+/).map((x) => x.replace(/^\s*[-•*]\s*/, "").trim()).filter(Boolean).map((x) => `<li>${h(x)}</li>`).join("")}</ul>` : `<p>Resumo será adicionado em breve.</p>`}
+              </div>
+            </div>` : ""}
+            ${S.abaAula === "exercicios" ? (() => { const [tit, ...resto] = au.exercicio.trim().split(/\n/); const txt = resto.join("\n").trim(); return au.exercicio.trim() ? `
+            <div class="ex-cartao">
+              <div class="ex-topo">
+                <span class="ex-ic">${ICONES.exercicio}</span>
+                <div style="flex:1;min-width:0">
+                  <p class="rotulo">Exercício da aula</p>
+                  <h3 class="serif">${h(tit)}</h3>
+                </div>
+              </div>
+              ${txt ? `<p class="ex-texto">${h(txt.split(/\n\s*\n/)[0])}</p>` : ""}
+              <button class="ex-botao" data-a="ver-exercicio">${ICONES.resumo}<span>Ver exercício completo</span>${ICONES.chev_dir}</button>
+            </div>` : `
+            <div class="ex-cartao">
+              <div class="ex-topo">
+                <span class="ex-ic">${ICONES.exercicio}</span>
+                <div style="flex:1;min-width:0">
+                  <p class="rotulo">Exercício da aula</p>
+                  <h3 class="serif">Exercício será adicionado em breve.</h3>
+                </div>
+              </div>
+            </div>`; })() : ""}
+            ${S.abaAula === "sobre" ? `
             <div class="sobre-cartao">
               <span class="sobre-ic">${ICONES.livro}</span>
               <div style="flex:1;min-width:0">
@@ -690,7 +736,7 @@ export function montar(raiz: HTMLElement) {
                 ${au.texto ? au.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("") : ""}
                 ${extras.length ? `<div class="opcoes" style="margin-top:12px">${extras.map((x) => `<button data-a="extra" data-id="${x.id}">${ICONES.material}${h(x.titulo || "Material da aula")}</button>`).join("")}</div>` : ""}
               </div>
-            </div>
+            </div>` : ""}
 
             <section class="coms" aria-labelledby="h-com">
               <div class="coms-cab">
@@ -710,9 +756,12 @@ export function montar(raiz: HTMLElement) {
                 return `<div class="com">
                 ${avCom(nm, x.minha ? S.corNome : corDe(nm), x.minha ? S.foto : "")}
                 <div class="com-corpo">
-                  <div class="com-topo"><b class="com-nome">${h(nm)}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span></div>
+                  <div class="com-topo"><b class="com-nome">${h(nm)}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span>${x.minha ? "" : `<button class="com-mais" data-a="com-mais" data-id="${x.id}" aria-label="Opções do comentário">${ICONES.mais}</button>`}</div>
                   <p>${h(x.texto)}</p>
-                  <div class="com-acoes"><button data-a="com-responder" data-v="${h(nm)}" data-id="${x.id}">${ICONES.balao}Responder</button></div>
+                  <div class="com-acoes">
+                    <button data-a="com-curtir" data-id="${x.id}" aria-pressed="${!!x.curti}">${ICONES.curtido}<span>${x.curtidas || 0}</span></button>
+                    <button data-a="com-responder" data-v="${h(nm)}" data-id="${x.id}">${ICONES.balao}Responder</button>
+                  </div>
                   ${vis.length ? `<div class="resps">${vis.map((r) => { const rn = nomeDe(r); return `<div class="resp">${avCom(rn, r.minha ? S.corNome : corDe(rn), r.minha ? S.foto : "", true)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(rn)}</b><span class="quando">${h(quandoTxt(r.criadoEm))}</span></div><p>${h(r.texto)}</p></div></div>`; }).join("")}
                     ${rs.length > 2 ? `<button class="ver-mais pq" data-a="resp-ver-mais" data-v="${x.id}">${todas ? "Ver menos respostas" : "Ver mais " + (rs.length - 2) + (rs.length - 2 === 1 ? " resposta" : " respostas")}</button>` : ""}</div>` : ""}
                 </div>
@@ -932,6 +981,7 @@ export function montar(raiz: HTMLElement) {
         <h1 class="eb-tit serif" style="margin-top:18px">${h(curso.nome)}</h1>
         <p class="eb-desc">${h(curso.descricao || "Um livro da mentoria para ler no seu tempo. Abra quando quiser, no celular ou no computador.")}</p>
         <button class="botao largo eb-ler" data-a="abrir-ebook" data-v="${ci}-${i}">${ICONES.livro}Ler ebook completo</button>
+        <button class="botao largo eb-ler eb-ler-2" data-a="abrir-oracoes" data-v="${ci}-${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6M9 6h6"/><path d="M6 21V11l6-2 6 2v10"/><path d="M10 21v-5h4v5"/></svg>Ler apenas as orações</button>
         <p class="eb-dica">O ebook abre aqui mesmo, dentro do aplicativo.</p>
       </div>
     </div>`;
@@ -1260,6 +1310,26 @@ export function montar(raiz: HTMLElement) {
         void api.marcarConcluida(id, true).then(() => aviso("Aula concluída. Parabéns pelo passo de hoje!")).catch(() => { if (l) l.concluida = false; aviso("Não conseguimos marcar agora. Tente de novo."); render(); });
         break;
       }
+      case "desfazer-concluir": {
+        const id = MODS()[S.mod]?.aulas[S.aula]?.id; if (!id) return;
+        const l = D.prog.get(id); if (l) l.concluida = false;
+        void api.marcarConcluida(id, false).then(() => aviso("A aula voltou a ficar pendente.")).catch(() => { if (l) l.concluida = true; aviso("Não conseguimos desmarcar agora. Tente de novo."); render(); });
+        break;
+      }
+      case "aba-aula": S.abaAula = d.v; break;
+      case "ver-exercicio": {
+        const au = MODS()[S.mod]?.aulas[S.aula]; if (!au || !au.exercicio.trim()) return;
+        const [tit, ...resto] = au.exercicio.trim().split(/\n/);
+        folha(`<p class="rotulo">Exercício da aula</p><h2 class="serif" style="margin-top:6px">${h(tit)}</h2><div style="margin-top:14px;font-size:1.0625rem;line-height:1.7;color:var(--texto-2)">${resto.join("\n").trim().split(/\n\s*\n/).filter(Boolean).map((par, i) => `<p${i ? ' style="margin-top:12px"' : ""}>${h(par).replace(/\n/g, "<br>")}</p>`).join("")}</div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Fechar</button>`); return;
+      }
+      case "com-curtir": {
+        const au = MODS()[S.mod]?.aulas[S.aula]; const x = au && (S.coms[au.id] || []).find((c) => c.id === d.id); if (!x) return;
+        x.curti = !x.curti; x.curtidas = Math.max(0, (x.curtidas || 0) + (x.curti ? 1 : -1)); render();
+        void api.alternarCurtidaComentario(x.id).then((v) => { if (v !== x.curti) { x.curti = v; x.curtidas = Math.max(0, x.curtidas + (v ? 1 : -1)); render(); } }).catch(() => { x.curti = !x.curti; x.curtidas = Math.max(0, x.curtidas + (x.curti ? 1 : -1)); aviso("Não conseguimos curtir agora. Tente de novo."); render(); });
+        return;
+      }
+      case "com-mais": folha(`<h2 class="serif">Opções do comentário</h2><div class="opcoes" style="margin-top:14px"><button data-a="com-denunciar" data-id="${h(d.id)}">Denunciar comentário</button></div><button class="botao-2 largo" data-a="fechar-folha" style="margin-top:14px">Cancelar</button>`); return;
+      case "com-denunciar": camada.innerHTML = ""; void api.denunciarComentario(d.id).then(() => aviso("Obrigada. A equipe vai olhar este comentário.")).catch(() => aviso("Não conseguimos enviar agora. Tente de novo.")); return;
       case "velocidade": folha(`<h2 class="serif">Velocidade do vídeo</h2><div class="opcoes">${["0,75x", "Normal", "1,25x", "1,5x"].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${S.velocidade === v}">${v === "Normal" ? "Normal (1x)" : v}</button>`).join("")}</div>`); return;
       case "vel": S.velocidade = d.v; if (VID) VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[d.v] || 1; camada.innerHTML = ""; aviso("Velocidade: " + (d.v === "Normal" ? "normal" : d.v) + "."); break;
       case "fechar-folha": if (d._alvo && d._alvo !== d._el && d._el.classList.contains("fundo-folha")) return; camada.innerHTML = ""; return;
@@ -1277,9 +1347,13 @@ export function montar(raiz: HTMLElement) {
         return;
       }
       case "ebook": { const [ci, i] = d.v.split("-").map(Number); S.presente = ci + "-" + i; S.tela = "presente"; topo(); break; }
-      case "abrir-ebook": {
+      case "abrir-ebook": case "abrir-oracoes": {
         const [ci, i] = d.v.split("-").map(Number); const curso = CATS()[ci]?.cursos[i]; if (!curso) return;
-        const x = curso.conteudos.find((c) => c.url || c.arquivoPath);
+        // O ebook é o arquivo do curso; as orações, o arquivo cujo nome fala em oração.
+        const arqs = curso.conteudos.filter((c) => c.url || c.arquivoPath);
+        const ehOracao = (c) => /ora[çc][ãaõo]/i.test(c.titulo || "");
+        const x = d.a === "abrir-oracoes" ? arqs.find(ehOracao) : arqs.find((c) => !ehOracao(c)) || arqs[0];
+        if (!x) { aviso(d.a === "abrir-oracoes" ? "As orações deste ebook serão adicionadas em breve." : "O ebook será adicionado em breve."); return; }
         const abrir = (href) => { S.leitorDe = { presente: S.presente, y: window.scrollY }; S.leitor = { titulo: curso.nome, href }; S.tela = "leitor"; topo(); render(); };
         if (x && x.url) abrir(x.url);
         else if (x && x.arquivoPath) void api.enderecoDoArquivo("materiais", x.arquivoPath).then((u) => (u ? abrir(u) : aviso("Não conseguimos abrir o ebook agora.")));
@@ -1347,6 +1421,12 @@ export function montar(raiz: HTMLElement) {
       case "letra-mais": S.letra = Math.min(TAM.length - 1, S.letra + 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
       case "letra-menos": S.letra = Math.max(0, S.letra - 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
       case "instalar": folha(`<h2 class="serif">Colocar na tela do celular</h2><div style="margin-top:14px;font-size:1.0625rem;line-height:1.7;color:var(--texto-2)"><p><b style="color:var(--texto)">No iPhone:</b> toque em Compartilhar e depois em “Adicionar à Tela de Início”.</p><p style="margin-top:12px"><b style="color:var(--texto)">No Android:</b> toque nos três pontinhos do navegador e depois em “Instalar aplicativo”.</p></div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Entendi</button>`); return;
+      case "suporte-whats": {
+        const msg = encodeURIComponent("Olá! Meu acesso à área de membros da mentoria foi bloqueado. Meu nome é " + (S.nomeDigitado || "") + ". Pode me ajudar a desbloquear?");
+        if (!SUPORTE_WHATS) { aviso("O número do suporte ainda não foi configurado."); return; }
+        window.open("https://wa.me/" + SUPORTE_WHATS + "?text=" + msg, "_blank", "noopener");
+        return;
+      }
       case "sair": folha(`<h2 class="serif">Sair da área de membros?</h2><p class="apoio" style="margin-top:8px">Para entrar de novo, use seu nome e seu código.</p><div style="display:grid;gap:10px;margin-top:18px"><button class="botao" data-a="sair-sim">Sair</button><button class="botao-2" data-a="fechar-folha">Continuar aqui</button></div>`); return;
       case "sair-sim": {
         camada.innerHTML = ""; pararVideo();
@@ -1372,6 +1452,8 @@ export function montar(raiz: HTMLElement) {
       else {
         S.erroEntrada = ""; S.entrando = true; render();
         const r = await api.entrar(n, c);
+        // Conta travada (erros demais) ou suspensa: quem diz é o banco.
+        if (!r.ok && (r.falha.erro === "conta_travada" || r.falha.erro === "conta_bloqueada")) { S.entrando = false; S.erroEntrada = ""; S.bloqueado = r.falha.mensagem; render(); return; }
         if (!r.ok) { S.entrando = false; S.erroEntrada = r.falha.mensagem; render(); document.getElementById("codigo")?.focus(); return; }
         try { await iniciarSessao(); } catch { S.entrando = false; S.erroEntrada = "Não foi possível abrir sua área agora. Tente de novo."; render(); }
         return;

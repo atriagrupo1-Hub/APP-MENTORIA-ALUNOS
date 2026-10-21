@@ -159,6 +159,8 @@ type LinhaAula = {
   ordem: number;
   duracao_segundos: number | null;
   texto: string | null;
+  resumo?: string | null;
+  exercicio?: string | null;
   capa_path: string | null;
   bloqueado_geral: boolean;
 };
@@ -376,6 +378,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         videoRef: null,
         materialPath: null,
         texto: a.texto,
+        resumo: a.resumo ?? null,
+        exercicio: a.exercicio ?? null,
         capaPath: a.capa_path,
         bloqueadoGeral: a.bloqueado_geral,
         conteudos: emOrdem(conteudoDaAula.get(a.id)),
@@ -573,6 +577,8 @@ export type ComentarioPublico = {
    * navegador, então a tela não teria como descobrir sozinha.
    */
   ehInstrutor: boolean;
+  curtidas: number;
+  curti: boolean;
 };
 
 /**
@@ -604,6 +610,8 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: boolean;
       resposta_a: string | null;
       eh_instrutor: boolean;
+      curtidas?: number;
+      curti?: boolean;
     }) => ({
       id: c.id,
       aulaId: c.aula_id,
@@ -614,6 +622,9 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: c.minha,
       respostaA: c.resposta_a,
       ehInstrutor: c.eh_instrutor,
+      // Vêm da 0047; antes dela, zero e não curtido.
+      curtidas: c.curtidas ?? 0,
+      curti: !!c.curti,
     }),
   );
 }
@@ -667,6 +678,17 @@ export async function marcarConcluida(aulaId: string, concluida: boolean): Promi
     p_concluida: concluida,
   });
   if (error) throw new Error(`marcar concluída: ${error.message}`);
+}
+
+export async function alternarCurtidaComentario(id: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("alternar_curtida_comentario", { p_comentario: id });
+  if (error) throw new Error(`curtir comentário: ${error.message}`);
+  return Boolean(data);
+}
+
+export async function denunciarComentario(id: string): Promise<void> {
+  const { error } = await supabase.rpc("denunciar_comentario", { p_comentario: id });
+  if (error) throw new Error(`denunciar: ${error.message}`);
 }
 
 export async function alternarCurtida(aulaId: string): Promise<boolean> {
