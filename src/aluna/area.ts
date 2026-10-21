@@ -65,7 +65,7 @@ export function montar(raiz: HTMLElement) {
     // sem esperar o resto.
     const pCat = api.carregarCatalogo();
     const pProd = pCat.then((c) => api.produtosLiberados(c.produtos.filter((x) => x.id !== c.produtoJornada && !x.modulos.length).map((x) => x.id))).catch(() => new Set());
-    const [perfil, cat, libs, abert, prodLib] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd]);
+    const [perfil, cat, libs, abert, prodLib, inicio] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd, api.dadosDoInicio().catch(() => null)]);
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
     const jornada = cat.produtoJornada;
     // Categoria desligada no painel ("Visível" apagado): some daqui inteira.
@@ -75,7 +75,7 @@ export function montar(raiz: HTMLElement) {
       .filter((m) => !jornadaOculta && (jornada ? m.produtoId === jornada : true))
       .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
       .map((m) => ({
-        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capa: capaUrl(`modulo-${m.numero}.webp`),
+        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""), capa: capaUrl(`modulo-${m.numero}.webp`),
         aulas: m.aulas.slice().sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
           id: a.id, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
         })),
@@ -93,7 +93,8 @@ export function montar(raiz: HTMLElement) {
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.slice().sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, titulo: a.titulo, texto: a.texto || "", capa: capaUrl(a.capaPath) })),
         })),
       }));
-    D = { perfil, mods, cats, prog, abert, user: perfil?.id };
+    const pj = cat.produtos.find((x) => x.id === jornada);
+    D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
     S.nome = perfil?.nome || "";
     // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
     // foto antiga, salva só neste aparelho, sobe uma vez e sai daqui.
@@ -197,7 +198,7 @@ export function montar(raiz: HTMLElement) {
   const cabMp = (voltar, rotulo) => `
     <header class="mp-cab">
       <button class="mp-voltar" ${voltar} aria-label="Voltar para ${h(rotulo)}"><span aria-hidden="true">‹</span>Voltar</button>
-      <button class="mp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início"><b>Mentoria</b><span>Área de Alunos</span></button>
+      <button class="mp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
       <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
     </header>`;
 
@@ -225,7 +226,7 @@ export function montar(raiz: HTMLElement) {
     const n = navAtual();
     app.innerHTML = `
       ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
-        <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início"><b>Mentoria</b><span>Área de Alunos</span></button>
+        <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
         <nav class="nav-topo" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
       </div></header>`}
@@ -323,25 +324,12 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
 
-  const VERSICULOS = [
-    ["Não vos conformeis com este mundo, mas transformai-vos pela renovação do vosso entendimento.", "Romanos 12:2"],
-    ["Se alguém está em Cristo, nova criatura é; as coisas velhas já passaram; eis que tudo se fez novo.", "2 Coríntios 5:17"],
-    ["Eu bem sei os pensamentos que tenho a vosso respeito, diz o Senhor; pensamentos de paz e não de mal, para vos dar o fim que esperais.", "Jeremias 29:11"],
-    ["Porque, como imaginou na sua alma, assim é.", "Provérbios 23:7"],
-    ["Eis que faço uma coisa nova; agora sairá à luz; porventura não a percebeis?", "Isaías 43:19"],
-    ["Posso todas as coisas naquele que me fortalece.", "Filipenses 4:13"],
-    ["Fazei prova de mim, diz o Senhor dos Exércitos, se eu não vos abrir as janelas do céu e não derramar sobre vós uma bênção.", "Malaquias 3:10"],
-    ["Assim também a fé, se não tiver as obras, é morta em si mesma.", "Tiago 2:17"],
-    ["A morte e a vida estão no poder da língua.", "Provérbios 18:21"],
-    ["Tudo o que pedirdes, orando, crede que o recebereis, e tê-lo-eis.", "Marcos 11:24"],
-    ["Àquele que é poderoso para fazer tudo muito mais abundantemente além daquilo que pedimos ou pensamos.", "Efésios 3:20"],
-    ["Os que esperam no Senhor renovarão as suas forças; subirão com asas como águias.", "Isaías 40:31"],
-    ["Tudo o que é verdadeiro, tudo o que é amável, tudo o que é de boa fama, nisso pensai.", "Filipenses 4:8"],
-    ["Amado, desejo que te vá bem em todas as coisas e que tenhas saúde, assim como bem vai a tua alma.", "3 João 1:2"],
-  ];
   function versiculoHoje() {
+    // A lista vem do painel (Configurações gerais → Versículos); um por dia, em sequência.
+    const vs = (D && D.inicio && D.inicio.versiculos) || [];
+    if (!vs.length) return "";
     const dia = Math.floor((HOJE - new Date(HOJE.getFullYear(), 0, 0)) / 864e5);
-    const [txt, ref] = VERSICULOS[dia % VERSICULOS.length];
+    const [txt, ref] = vs[dia % vs.length];
     return `
           <figure class="vers" aria-label="Versículo de hoje">
             <p class="vers-rot"><span aria-hidden="true"></span>Versículo de hoje<span aria-hidden="true"></span></p>
@@ -350,9 +338,42 @@ export function montar(raiz: HTMLElement) {
           </figure>`;
   }
 
+  // Destaques do Início (painel → Categorias / Layout → Destaques do Início).
+  const COR_DESTAQUE = { violeta: "mestres", verde: "pres", azul: "doc", vermelho: "vivo", dourado: "" };
+  const ICONE_DESTAQUE = {
+    estrela: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg>',
+    presente: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>',
+    filme: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/></svg>',
+    video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>',
+    livro: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg>',
+    som: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 10v4M21 12h0"/></svg>',
+  };
+  const fotoOuSite = (c) => (c ? (c.startsWith("/") ? c : capaUrl(c)) : "");
+  function cartoesDestaque() {
+    const ds = (D && D.inicio && D.inicio.destaques) || [];
+    return ds.map((d, i) => {
+      const ci = d.destino === "categoria" && d.categoriaId ? CATS().findIndex((c) => c.id === d.categoriaId) : -1;
+      const alvo = d.destino === "presentes" ? `data-a="ir" data-v="presentes"`
+        : ci >= 0 ? `data-a="categoria" data-v="${ci}"` : `data-a="ir-cat" data-v="${h(d.categoriaNome || d.rotulo)}"`;
+      const cls = COR_DESTAQUE[d.cor] ?? "";
+      return `
+      <section class="ex-card ${cls} ex-banner" aria-labelledby="h-dest-${i}">
+        <button class="ex-img ex-img-banner" ${alvo} aria-label="${h(d.botao)}">${img(fotoOuSite(d.imagem), d.titulo)}</button>
+        <div class="ex-info">
+          <p class="ex-rot">${ICONE_DESTAQUE[d.icone] || ""}${h(d.rotulo)}</p>
+          <h2 class="serif" id="h-dest-${i}">${h(d.titulo)}</h2>
+          ${d.descricao ? `<p class="ex-desc">${h(d.descricao)}</p>` : ""}
+          <button class="ex-botao${cls === "mestres" ? " mestres-botao" : ""}" ${alvo}>${h(d.botao)}</button>
+        </div>
+      </section>`;
+    }).join("");
+  }
+  // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
+  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return `<b>${h(m.titulo || "")}</b><span>${h(m.sub || "")}</span>`; };
   function telaInicio() {
     // Primeiro acesso: nenhuma aula concluída nem começada (o progresso vem do banco).
-    const primeiraVez = !D || ![...D.prog.values()].some((l) => l.concluida || (l.posicaoSegundos || 0) > 0);
+    // Uma linha de progresso existe quando a aula foi começada (tem data de atualização).
+    const primeiraVez = !D || ![...D.prog.values()].some((l) => l.concluida || (l.posicaoSegundos || 0) > 0 || !!l.atualizadaEm);
     const c = continuar();
     const primeiro = (S.nome || "").split(" ")[0];
     let heroi = "";
@@ -369,48 +390,12 @@ export function montar(raiz: HTMLElement) {
         </div>
       </section>`;
     } else heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. As próximas aparecem aqui assim que forem liberadas.</div>`;
-    const cardsExtra = `
-      <section class="ex-card vivo ex-banner" aria-labelledby="h-vivo">
-        <button class="ex-img ex-img-banner" data-a="ir" data-v="modulos" aria-label="Ver aulas ao vivo">${img("/inicio/aulas-ao-vivo.webp", "Aulas ao vivo")}</button>
-        <div class="ex-info">
-          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="2.6" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></svg>Aulas ao vivo</p>
-          <h2 class="serif" id="h-vivo">Encontros ao vivo</h2>
-          <p class="ex-desc">Um encontro ao vivo em cada módulo, para tirar dúvidas e seguir junto com a mentoria.</p>
-          <button class="ex-botao" data-a="ir" data-v="modulos">Ver aulas ao vivo</button>
-        </div>
-      </section>
-      <section class="ex-card mestres" aria-labelledby="h-mestres">
-        <span class="ex-img">${img("/inicio/jornada.png", "")}</span>
-        <div class="ex-info">
-          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg>Mestres espirituais</p>
-          <h2 class="serif" id="h-mestres">Mestres espirituais secretos</h2>
-          <p class="ex-desc">Coleção de vídeos gravados e escondidos em VHS, que nunca foram ao ar na internet.</p>
-          <p class="ex-alerta">Conteúdo proibido em 89 países</p>
-          <button class="ex-botao mestres-botao" data-a="ir-cat" data-v="Mestres espirituais">Ver os vídeos ocultos</button>
-        </div>
-      </section>
-      <section class="ex-card pres" aria-labelledby="h-pres">
-        <span class="ex-img">${img("/inicio/presentes.png", "")}</span>
-        <div class="ex-info">
-          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>Seus presentes</p>
-          <h2 class="serif" id="h-pres">Acesse seus presentes</h2>
-          <p class="ex-desc">Materiais especiais, bônus e conteúdos exclusivos para acelerar sua transformação.</p>
-          <button class="ex-botao" data-a="ir" data-v="presentes">Ver presentes</button>
-        </div>
-      </section>
-      <section class="ex-card doc" aria-labelledby="h-doc">
-        <span class="ex-img ex-ph"><span class="ex-ph-txt">arte do cartão<br>Documentários</span>${img("/inicio/documentarios.png", "")}</span>
-        <div class="ex-info">
-          <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M7 5v14M17 5v14M3 9.5h4M3 14.5h4M17 9.5h4M17 14.5h4"/></svg>Documentários</p>
-          <h2 class="serif" id="h-doc">Assista aos documentários</h2>
-          <p class="ex-desc">Histórias reais e conteúdos que aprofundam a sua jornada, para assistir com calma.</p>
-          <button class="ex-botao" data-a="ir-cat" data-v="Documentários">Ver documentários</button>
-        </div>
-      </section>`;
+    const cardsExtra = cartoesDestaque();
+    const jr = (D && D.jornada) || {};
     const cabMentoria = `
           <div class="mt-cab">
-            <p class="mt-rot">Sua mentoria</p>
-            <h2 class="mt-tit serif">Caminho do Desbloqueio <em>para Bênçãos Ilimitadas</em></h2>
+            ${jr.rotulo ? `<p class="mt-rot">${h(jr.rotulo)}</p>` : ""}
+            ${jr.nome ? `<h2 class="mt-tit serif">${h(jr.nome)}</h2>` : ""}
           </div>`;
     if (primeiraVez && MODS().length) {
       const m0 = MODS()[0];
@@ -424,7 +409,7 @@ export function montar(raiz: HTMLElement) {
           ${cabMentoria}
           <p class="pa-rot mt-passo" id="h-comece">Comece por aqui</p>
           <section class="ex-card ex-banner mh-card" aria-labelledby="h-m0">
-            <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o Módulo ${m0.num}">${img("/capas/modulo-0-horizontal.webp", "Módulo " + m0.num + " — " + titulo(m0.titulo))}</button>
+            <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o Módulo ${m0.num}">${img(m0.capaH, "Módulo " + m0.num + " — " + titulo(m0.titulo))}</button>
             <div class="ex-info">
               <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>Módulo ${m0.num}</p>
               <h2 class="serif" id="h-m0">${h(titulo(m0.titulo))}</h2>
@@ -432,7 +417,6 @@ export function montar(raiz: HTMLElement) {
               <button class="ex-botao" data-a="modulo" data-m="0">Ver aulas</button>
             </div>
           </section>
-          <button class="mt-todos" data-a="ir" data-v="modulos">Ver todos os módulos da mentoria<span aria-hidden="true">›</span></button>
         </section>
         <div class="mt-divisor" role="separator"><span>Também para você</span></div>
         ${cardsExtra}

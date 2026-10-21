@@ -8,6 +8,8 @@
 
 export type Modulo = {
   id: string;
+  /** Capa deitada (16:9) do "Comece por aqui" (0052). */
+  capaHorizontalPath?: string | null;
   numero: number;
   titulo: string;
   intro: string;
@@ -120,6 +122,9 @@ export type Conteudo = {
  */
 export type Produto = {
   id: string;
+  /** Início: rótulo ("Sua mentoria") e nome curto ("Bênçãos Ilimitadas"), 0052. */
+  rotuloInicio?: string | null;
+  nomeCurto?: string | null;
   categoriaId: string;
   titulo: string;
   descricao: string;
