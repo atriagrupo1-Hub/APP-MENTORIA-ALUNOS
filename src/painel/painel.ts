@@ -605,8 +605,6 @@ export function montar(app: HTMLElement) {
     const par = S.alunas.filter(parada);
     const comecar = S.alunas.filter(naoEntrou).sort((x, y) => (x.entrada || "").localeCompare(y.entrada || ""));
     const novas = S.alunas.filter(nova);
-    const concl = S.alunas.reduce((s, a) => s + a.concluidas, 0);
-    const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
     const hora = Number(new Date().toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", hour12: false }).slice(0, 2));
     const saud = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
     const pendencias = moder.length + venc.length + par.length;
@@ -637,12 +635,6 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa">
       <p class="saudacao">${saud}, ${h(primeiroNome(eu!.nome))}. ${pendencias ? "Isto pede sua atenção hoje." : "Tudo em dia por aqui."}</p>
-      <div class="numeros">
-        ${numero(ativas, "Alunas ativas")}
-        ${numero(concl, "Aulas concluídas")}
-        ${numero(moder.length, "Comentários para moderar", true)}
-        ${numero(venc.length, "Vencem em 15 dias", true)}
-      </div>
       <div class="grade-2">
         ${bloco("comentarios", "Comentários esperando", moder.length, moder.length ? p(moder.length, "comentário esperando", "comentários esperando") : "Nenhum esperando", "Publique, oculte ou responda.",
           (moder.slice(0, 3).map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${h(k.autora)} · ${localAula(k.aula)} · ${h(k.quando)}</span></span></div>`).join("") || semNada("Nenhum comentário esperando."))
