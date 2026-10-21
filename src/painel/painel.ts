@@ -1908,8 +1908,9 @@ export function montar(app: HTMLElement) {
         <article class="cur-card">
           <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</button>
           <span class="cur-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Opções de ${h(c.nome)}" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
-            <button role="menuitem" data-a="abrir-curso" data-id="${c.id}">Abrir e editar</button>
-            <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
+            <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="visao">Visão geral</button>
+            <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
+            <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button>
           </span>` : ""}</span>
           <div class="cur-corpo">
             <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
@@ -2239,7 +2240,6 @@ export function montar(app: HTMLElement) {
             <button type="button" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
             <button type="button" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
             <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
-            <button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Remover curso</button>
           </section>
         </div>
       </div>`;
@@ -2357,7 +2357,7 @@ export function montar(app: HTMLElement) {
           <span class="eng-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Mais opções" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
             <button role="menuitem" data-a="curso-aba" data-v="modulos">Módulos e aulas</button>
             <button role="menuitem" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button>
-            <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover curso</button>
+
           </span>` : ""}</span>
         </div>
       </div>
