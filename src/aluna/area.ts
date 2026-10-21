@@ -126,19 +126,34 @@ export function montar(raiz: HTMLElement) {
   const liberado = (m) => moduloAdmin(m);
   const abre = (m) => { const ds = MODS()[m].aulas.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   const total = () => MODS().reduce((s, x) => s + x.aulas.length, 0);
+  /*
+   * "Continue de onde parou" (Início da aluna que volta), nesta ordem:
+   * 1) a última aula começada e não terminada (pela data em que parou);
+   * 2) a próxima aula liberada depois da última concluída, na ordem do curso;
+   * 3) nada: ela terminou tudo o que está liberado (o Início mostra a data
+   *    da próxima liberação). Aula bloqueada nunca entra. Tudo vem do banco.
+   */
   function continuar() {
     if (!D) return null;
+    const ordem = [];
+    MODS().forEach((md, m) => md.aulas.forEach((x, a) => { if (aulaAdmin(x.id)) ordem.push({ m, a, id: x.id }); }));
     let melhor = null;
-    for (const [id, l] of D.prog) {
-      if (!l.atualizadaEm || l.concluida) continue;
-      if (!melhor || l.atualizadaEm > melhor.t) melhor = { id, t: l.atualizadaEm };
+    for (const o of ordem) {
+      const l = D.prog.get(o.id);
+      if (!l || l.concluida || !(l.atualizadaEm || (l.posicaoSegundos || 0) > 0)) continue;
+      if (!melhor || (l.atualizadaEm || "") > melhor.t) melhor = { o, t: l.atualizadaEm || "" };
     }
-    if (melhor) for (let m = 0; m < MODS().length; m++) { const a = MODS()[m].aulas.findIndex((x) => x.id === melhor.id); if (a >= 0 && liberado(m)) return { m, a }; }
-    for (let m = 0; m < MODS().length; m++) {
-      if (!liberado(m)) continue;
-      for (let a = 0; a < MODS()[m].aulas.length; a++) if (!feita(m, a) && aulaAdmin(MODS()[m].aulas[a].id)) return { m, a };
-    }
-    return null;
+    if (melhor) return { m: melhor.o.m, a: melhor.o.a };
+    let ultima = -1;
+    ordem.forEach((o, k) => { if (feitaId(o.id)) ultima = k; });
+    const depois = ordem.slice(ultima + 1).find((o) => !feitaId(o.id)) || ordem.find((o) => !feitaId(o.id));
+    return depois ? { m: depois.m, a: depois.a } : null;
+  }
+  /** A data da próxima liberação para ela (a mais próxima no futuro), ou null. */
+  function proximaLiberacao() {
+    let menor = null;
+    for (const md of MODS()) for (const x of md.aulas) { const ab = aberturaDe(x.id); if (ab && (!menor || ab < menor)) menor = ab; }
+    return menor;
   }
   function estadoAula(m, a) {
     const id = MODS()[m].aulas[a].id;
@@ -379,17 +394,18 @@ export function montar(raiz: HTMLElement) {
     let heroi = "";
     if (c) {
       const md = MODS()[c.m], ps = posicao(c.m, c.a);
+      const lc = D.prog.get(md.aulas[c.a].id); const comecou = !!(lc && !lc.concluida && (lc.atualizadaEm || (lc.posicaoSegundos || 0) > 0));
       heroi = `
       <section class="heroi" aria-labelledby="h-cont">
-        <button class="capa" data-a="aula" data-m="${c.m}" data-i="${c.a}" style="border:0;padding:0;width:100%" aria-label="Assistir a aula">${img(md.aulas[c.a].capa, "")}<span class="play-capa"></span></button>
+        <button class="capa" data-a="aula" data-m="${c.m}" data-i="${c.a}" data-tocar="1" style="border:0;padding:0;width:100%" aria-label="Continuar assistindo a aula">${img(md.aulas[c.a].capa, "")}<span class="play-capa"></span></button>
         <div class="corpo">
-          <p class="onde-parou">Módulo ${md.num} · Aula ${c.a + 1}</p>
+          <p class="onde-parou onde-parou-ini">Módulo ${md.num} · Aula ${c.a + 1}</p>
           <h2 class="serif" id="h-cont">${h(md.aulas[c.a].titulo)}</h2>
-          ${ps > 0 ? `<div class="barra"><i style="width:${ps * 100}%"></i></div><p class="apoio">Em andamento</p>` : ""}
-          <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}"><span class="ic-play"></span>Continuar assistindo</button>
+          ${comecou ? `<div class="barra"><i style="width:${ps * 100}%"></i></div><p class="apoio">Em andamento</p>` : ""}
+          <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}" data-tocar="1"><span class="ic-play"></span>Continuar assistindo</button>
         </div>
       </section>`;
-    } else heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. As próximas aparecem aqui assim que forem liberadas.</div>`;
+    } else { const pl = proximaLiberacao(); heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. ${pl ? "A próxima abre em " + dataCurta(pl) + "." : "A próxima será liberada em breve."}</div>`; }
     const cardsExtra = cartoesDestaque();
     const jr = (D && D.jornada) || {};
     const cabMentoria = `
@@ -426,14 +442,13 @@ export function montar(raiz: HTMLElement) {
     <div class="pa">
       <section class="pa-ola">
         <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
-        <p class="pa-intro">Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.</p>
+        ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
         ${versiculoHoje()}
       </section>
       <section class="mt-bloco" aria-labelledby="h-cont-rot">
         ${cabMentoria}
         <p class="pa-rot mt-passo" id="h-cont-rot">Continue de onde parou</p>
         ${heroi}
-        <button class="mt-todos" data-a="ir" data-v="modulos">Ver todos os módulos da mentoria<span aria-hidden="true">›</span></button>
       </section>
       <div class="mt-divisor" role="separator"><span>Também para você</span></div>
       ${cardsExtra}
@@ -513,7 +528,7 @@ export function montar(raiz: HTMLElement) {
   function gravarPosicao(agoraJa) {
     if (!VID || !VID_ID || !Number.isFinite(VID.duration)) return;
     const t = VID.currentTime;
-    if (!agoraJa && Math.abs(t - ultimaGravacao) < 5) return;
+    if (!agoraJa && Math.abs(t - ultimaGravacao) < 15) return;
     ultimaGravacao = t;
     const l = D.prog.get(VID_ID); if (l) { l.posicaoSegundos = t; l.duracaoSegundos = l.duracaoSegundos || VID.duration; l.atualizadaEm = new Date().toISOString(); }
     void api.salvarPosicao(VID_ID, t).catch(() => {});
@@ -1274,7 +1289,12 @@ export function montar(raiz: HTMLElement) {
     const au = MODS()[S.mod]?.aulas[S.aula]; if (!au) return;
     const id = au.id;
     void import("hls.js").catch(() => {});
-    void pedirVideo(id).then((ref) => { if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) { render(); prepararVideo(id, ref); } });
+    void pedirVideo(id).then((ref) => {
+      if (S.tela !== "aula" || MODS()[S.mod]?.aulas[S.aula]?.id !== id) return;
+      render(); prepararVideo(id, ref);
+      // "Continuar assistindo" no Início: já toca, do ponto salvo no banco.
+      if (S.autoTocar && ref) { S.autoTocar = false; void tocar(id); }
+    });
     api.comentariosDaAula(id).then((l) => { S.coms[id] = l; if (S.tela === "aula" && MODS()[S.mod]?.aulas[S.aula]?.id === id) render(); }).catch(() => {});
   }
   async function abrirPresente() {
@@ -1311,7 +1331,7 @@ export function montar(raiz: HTMLElement) {
         if (ea.fech) { aviso(ea.seq ? "Conclua a Aula " + i + " para liberar esta." : ea.txt === "Em breve" ? "Esta aula ainda não foi liberada para você." : "Esta aula " + ea.txt.charAt(0).toLowerCase() + ea.txt.slice(1) + "."); return; }
         pararVideo();
         if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
-        S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = "sobre"; void abrirAula(); topo(); break;
+        S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = "sobre"; S.autoTocar = d.tocar === "1"; void abrirAula(); topo(); break;
       }
       case "anterior": if (S.aula > 0) acao("aula", { m: S.mod, i: S.aula - 1 }); else if (S.mod > 0) acao("aula", { m: S.mod - 1, i: MODS()[S.mod - 1].aulas.length - 1 }); return;
       case "seguinte":
