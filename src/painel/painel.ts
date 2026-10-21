@@ -58,6 +58,8 @@ type Estado = "moderar" | "publicado" | "oculto";
 type Comentario = {
   id: string; autora: string; autoraId: string; aula: string; quando: string;
   texto: string; estado: Estado; resposta: string;
+  /** Data e hora em que foi escrito (ISO). */
+  criado: string;
 };
 type Pessoa = {
   id: string; nome: string; login: string; codigo: string | null;
@@ -290,7 +292,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const comentarios: Comentario[] = linhas
     .filter((c) => !c.eh_instrutor && c.status !== "removido")
     .map((c) => ({
-      id: c.id, autora: c.autora_nome, autoraId: c.autora_id ?? "", aula: c.aula_id, quando: quando(c.criado_em), texto: c.texto,
+      id: c.id, autora: c.autora_nome, autoraId: c.autora_id ?? "", aula: c.aula_id, quando: quando(c.criado_em), criado: c.criado_em, texto: c.texto,
       estado: c.status === "pendente" ? "moderar" : (c.status as Estado),
       resposta: resposta.get(c.id) ?? "",
     }));
@@ -366,7 +368,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -485,7 +487,7 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
@@ -602,7 +604,7 @@ export function montar(app: HTMLElement) {
           <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
         </div>
         <div class="conteudo">
-          <div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ACAO_ABA[ui.tab] || ""}</div>
+          <div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -642,71 +644,109 @@ export function montar(app: HTMLElement) {
    * de 14 dias". A data de cadastro é a entrada.
    */
   const parada = (a: Aluna) => !a.bloqueada && !vencida(a) && !!a.ultimoAcesso && diasEntre(a.ultimoAcesso, hoje()) > 14;
-  const naoEntrou = (a: Aluna) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso;
   const cadastrada = (a: Aluna) => "cadastrada " + (a.entrada ? haQuanto(a.entrada) + " (" + br(a.entrada) + ")" : "sem data");
   const sitInfo = (s: Sit): [string, string] => ({ ativa: ["Ativa", "var(--verde)"], vencendo: ["Vence em breve", "var(--ouro-txt)"], vencida: ["Vencida", VERMELHO], bloqueada: ["Bloqueada", VERMELHO] } as Record<Sit, [string, string]>)[s];
   const avatar = (a: Aluna, grande = false) => `<span class="avatar${grande ? " grande" : ""}" style="--cor:${sitInfo(situacao(a))[1]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
   const numero = (n: number, rotulo: string, atencao = false) => `<div class="numero${atencao && n ? " atencao" : ""}"><b>${n}</b><span>${h(rotulo)}</span></div>`;
   const numeroTxt = (txt: string, rotulo: string, sub = "") => `<div class="numero"><b class="txt">${h(txt)}</b><span>${h(rotulo)}</span>${sub ? `<em>${h(sub)}</em>` : ""}</div>`;
-  const vaiVencer = (a: Aluna) => { const n = diasEntre(hoje(), a.validade); return n <= 0 ? "vence hoje" : n === 1 ? "vence amanhã" : "vence em " + n + " dias"; };
   const semNada = (t: string) => `<p class="nada">${t}</p>`;
   const nova = (a: Aluna) => !!a.entrada && diasEntre(a.entrada, hoje()) >= 0 && diasEntre(a.entrada, hoje()) <= 7;
   const comentariosDe = (a: Aluna) => S.comentarios.filter((k) => k.autoraId === a.id);
 
   /* ---------- INÍCIO ---------- */
+  /*
+   * Início, no desenho da referência: o período no alto e três quadros —
+   * últimos comentários, últimas atividades das alunas e alunas
+   * adicionadas recentemente. Tudo dentro do período escolhido.
+   */
+  type Atividade = { tipo: "assistiu" | "comentou" | "acessou"; aluna: string; nome: string; aula: string; quando: string };
+  let ativ: { chave: string; lista: Atividade[] } | null = null; let ativCarregando = "";
+  const periodoIni = () => {
+    const ate = ui.iniAte || hoje();
+    const de = ui.iniDe || ate.slice(0, 8) + "01";
+    return { de, ate, chave: de + "|" + ate };
+  };
+  function carregarAtividades() {
+    const { de, ate, chave } = periodoIni();
+    if ((ativ && ativ.chave === chave) || ativCarregando === chave) return;
+    ativCarregando = chave;
+    void (async () => {
+      const r = await supabase.rpc("atividades_recentes", { p_de: de + "T00:00:00-03:00", p_ate: ate + "T23:59:59-03:00", p_limite: 200 });
+      ativCarregando = "";
+      ativ = { chave, lista: ((r.data ?? []) as Record<string, string>[]).map((x) => ({ tipo: x.tipo as Atividade["tipo"], aluna: x.aluna_id, nome: x.aluna_nome, aula: x.aula_titulo ?? "", quando: x.quando })) };
+      if (ui.tab === "inicio") render();
+    })();
+  }
+  const haTempo = (iso: string) => {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 3600) { const m = Math.max(1, Math.round(s / 60)); return "há " + m + (m === 1 ? " minuto" : " minutos"); }
+    if (s < 86400) { const hh = Math.round(s / 3600); return "há " + hh + (hh === 1 ? " hora" : " horas"); }
+    const d = Math.round(s / 86400); return "há " + d + (d === 1 ? " dia" : " dias");
+  };
+  const IC_INI = {
+    balao: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`,
+    onda: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12h3l2-5 3 11 3-14 2.5 11 1.5-3h4"/></svg>`,
+    pessoas: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.3"/><path d="M3 19.5c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9.5" r="2.6"/><path d="M16.5 14.3c2.4.2 4 1.7 4.5 4.4"/></svg>`,
+    play: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M10.3 8.8v6.4l5-3.2z"/></svg>`,
+    pessoa: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5c.7-3.6 3.5-5.6 7-5.6s6.3 2 7 5.6"/></svg>`,
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4"/></svg>`,
+    seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
+  };
+  const avatarDe = (id: string, nome: string) => {
+    const al = S.alunas.find((x) => x.id === id);
+    return al ? aaAvatar(al) : `<span class="avatar" style="--cor:#b07a2a" aria-hidden="true">${h(iniciais(nome))}</span>`;
+  };
+  const linhaAtividade = (x: Atividade) => {
+    const [cls, ic, txt] = x.tipo === "assistiu" ? ["verde", IC_INI.play, `assistiu a aula <b>"${h(x.aula)}"</b>`]
+      : x.tipo === "comentou" ? ["roxo", IC_INI.balao, `comentou na aula <b>"${h(x.aula)}"</b>`]
+      : ["azul", IC_INI.pessoa, "acessou a plataforma"];
+    return `<div class="ini-item"><span class="ini-ic ${cls}">${ic}</span><span class="ini-txt"><span><b>${h(x.nome)}</b> ${txt}</span></span><span class="ini-quando">${haTempo(x.quando)}</span></div>`;
+  };
   function telaInicio() {
-    const moder = S.comentarios.filter((k) => k.estado === "moderar");
-    const venc = S.alunas.filter((a) => situacao(a) === "vencendo").sort((x, y) => x.validade.localeCompare(y.validade));
-    const par = S.alunas.filter(parada);
-    const comecar = S.alunas.filter(naoEntrou).sort((x, y) => (x.entrada || "").localeCompare(y.entrada || ""));
-    const novas = S.alunas.filter(nova);
-    const hora = Number(new Date().toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", hour12: false }).slice(0, 2));
-    const saud = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
-    const pendencias = moder.length + venc.length + par.length;
-    /*
-     * Cada quadro do Início nasce fechado, mostrando só o título, o
-     * número e um resumo de uma linha (quantas e de quando). "Ver" abre
-     * a lista para baixo. É <details>: abrir não redesenha a tela, e o
-     * que ficou aberto continua aberto depois de uma ação (inicioAberto).
-     */
-    const bloco = (id: string, titulo: string, n: number, resumo: string, sub: string, corpo: string) => `
-        <details class="painel-bloco sanfona" data-bloco="${id}" ${inicioAberto.has(id) ? "open" : ""}>
-          <summary>
-            <span class="sanfona-topo"><h3>${titulo}</h3><span class="conta${n ? " tem" : ""}">${n}</span></span>
-            <span class="sanfona-resumo">${h(resumo)}</span>
-            <span class="sanfona-ver" aria-hidden="true"></span>
-          </summary>
-          <div class="sanfona-corpo"><p class="sub">${sub}</p>${corpo}</div>
-        </details>`;
-    const periodo = (l: Aluna[]) => {
-      const ds = l.map((a) => a.entrada).filter(Boolean).sort();
-      if (!ds.length) return "sem data";
-      return ds[0] === ds[ds.length - 1] ? "cadastro em " + br(ds[0]) : "cadastros de " + br(ds[0]) + " a " + br(ds[ds.length - 1]);
-    };
-    // "Alunas e acessos" abre numa tela só dela (telaAcessos, logo abaixo).
-    if (ui.inicioVista === "acessos") return telaAcessos({ vencem: venc, parada: par, comecar, novas }, periodo);
-
-    const linhaResumo = (n: number, txt: string, atencao = false) => `<li><b class="${atencao && n ? "atencao" : ""}">${n}</b> ${txt}</li>`;
+    const { de, ate, chave } = periodoIni();
+    carregarAtividades();
+    const noPeriodo = (iso: string) => { if (!iso) return false; const d = diaDe(iso); return d >= de && d <= ate; };
+    const coms = S.comentarios.filter((k) => noPeriodo(k.criado)).sort((x, y) => y.criado.localeCompare(x.criado));
+    const novas = S.alunas.filter((a) => noPeriodo(a.criadaEm)).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm));
+    const atv = ativ && ativ.chave === chave ? ativ.lista : null;
+    const cartao = (ic: string, titulo: string, acao: string, corpo: string) => `
+      <section class="ini-cartao">
+        <header><span class="ini-cab-ic">${ic}</span><h3>${titulo}</h3><button class="al-botao pequeno" data-a="${acao}">Ver todos ${IC_INI.seta}</button></header>
+        <div class="ini-lista">${corpo}</div>
+      </section>`;
+    const vazio = (t: string) => `<p class="ini-vazio">${t}</p>`;
     return `
-    <section class="tela ativa">
-      <p class="saudacao">${saud}, ${h(primeiroNome(eu!.nome))}. ${pendencias ? "Isto pede sua atenção hoje." : "Tudo em dia por aqui."}</p>
-      <div class="grade-2">
-        ${bloco("comentarios", "Comentários esperando", moder.length, moder.length ? p(moder.length, "comentário esperando", "comentários esperando") : "Nenhum esperando", "Publique, oculte ou responda.",
-          (moder.slice(0, 3).map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${h(k.autora)} · ${localAula(k.aula)} · ${h(k.quando)}</span></span></div>`).join("") || semNada("Nenhum comentário esperando."))
-          + (moder.length ? `<button class="botao-neutro grande" style="margin-top:12px" data-a="ir-moderar">${moder.length > 3 ? "Ver os " + moder.length + " comentários" : "Moderar agora"}</button>` : ""))}
-        <button type="button" class="painel-bloco cartao-acessos" data-a="inicio-acessos">
-          <span class="sanfona-topo"><h3>Alunas e acessos</h3></span>
-          <ul class="resumo-acessos">
-            ${linhaResumo(comecar.length, "ainda não fizeram o primeiro acesso")}
-            ${linhaResumo(novas.length, "novas nesta semana")}
-            ${linhaResumo(venc.length, "acessos vencem em 15 dias", true)}
-            ${linhaResumo(par.length, "sem acesso há mais de 14 dias", true)}
-          </ul>
-          <span class="sanfona-ver" aria-hidden="true"></span>
-        </button>
+    <section class="tela ativa ini">
+      <div class="ini-grade">
+        ${cartao(IC_INI.balao, "Últimos comentários", "ir-comentarios", coms.slice(0, 3).map((k) => `
+          <div class="ini-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="ini-mais" data-a="ir-comentarios" aria-label="Abrir em Comentários">⋮</button></div>`).join("") || vazio("Nenhum comentário no período."))}
+        ${cartao(IC_INI.onda, "Últimas atividades", "ini-ativ-todas", atv ? (atv.slice(0, 3).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")) : vazio("Carregando…"))}
+        ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
+          <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
       </div>
+      ${ui.ativTodas ? `
+        <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Últimas atividades">
+          <header class="aa-cab"><div><h2>Últimas atividades</h2><p>${br(de)} a ${br(ate)} · ${p((atv || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
+          <div class="aa-corpo" data-rolagem="ativ">${(atv || []).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")}</div>
+        </aside>` : ""}
+      ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
   }
+  /** O seletor de período, no alto do Início. */
+  function seletorPeriodo() {
+    const { de, ate } = periodoIni();
+    return `<span class="ini-periodo">
+      <button class="al-botao" data-a="ini-periodo" aria-expanded="${ui.periodoAberto}">${IC_INI.cal}${br(de)} - ${br(ate)}<span aria-hidden="true">⌄</span></button>
+      ${ui.periodoAberto ? `<span class="ini-periodo-pop" role="dialog" aria-label="Escolher período">
+        <span class="ini-rapidos">${[["hoje", "Hoje"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"], ["mes", "Este mês"]].map(([v, n]) => `<button class="al-filtro" data-a="ini-periodo-rapido" data-v="${v}">${n}</button>`).join("")}</span>
+        <label>De <input id="iniDe" type="date" class="campo" value="${de}" /></label>
+        <label>Até <input id="iniAte" type="date" class="campo" value="${ate}" /></label>
+        <button class="al-botao-ouro" data-a="ini-periodo-aplicar">Aplicar</button>
+      </span>` : ""}
+    </span>`;
+  }
+
 
   /* ---------- ALUNAS E ACESSOS ----------
    *
@@ -716,13 +756,7 @@ export function montar(app: HTMLElement) {
    * volta à lista; fechar a lista volta aos quadros. As listas e o
    * cálculo de cada uma são os mesmos de antes — só a apresentação muda.
    */
-  type Lista = "vencem" | "parada" | "comecar" | "novas";
-  const ICONE: Record<Lista, string> = {
-    vencem: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><circle cx="16.5" cy="16" r="2.6"/><path d="M16.5 14.9v1.2l.8.6"/></svg>`,
-    parada: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.2" height="14" rx="1"/><rect x="13.8" y="5" width="3.2" height="14" rx="1"/></svg>`,
-    comecar: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg>`,
-    novas: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></svg>`,
-  };
+
   /** Avatar da seção: uma cor suave por pessoa, como na referência (a cor não quer dizer nada). */
   const AA_CORES = ["#4f8a43", "#b4465f", "#3f6fa8", "#5c8a5a", "#b07a2a", "#7a52a8", "#2f8a8a"];
   const aaAvatar = (a: Aluna, grande = false) => {
@@ -791,46 +825,7 @@ export function montar(app: HTMLElement) {
       ${aberta && ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}`;
   }
 
-  function telaAcessos(listas: Record<Lista, Aluna[]>, periodo: (l: Aluna[]) => string) {
-    const lib = (a: Aluna) => " · " + p(a.liberadas, "aula liberada", "aulas liberadas");
-    const DEF: Record<Lista, Quadro> = {
-      vencem: {
-        titulo: "Acessos que vencem em 15 dias", lista: listas.vencem, icone: ICONE.vencem,
-        resumo: listas.vencem.length ? "o primeiro " + vaiVencer(listas.vencem[0]) + " · " + br(listas.vencem[0].validade) : "Nenhum vencendo",
-        sub: "Abra o acesso dela e renove por lá antes que vença.", vazio: "Nenhum acesso vencendo.",
-        meta: (a) => vaiVencer(a) + " · " + br(a.validade) + lib(a),
-        acao: (a) => `<button class="botao-verde" data-a="aa-aluna" data-id="${a.id}" data-v="acessos">Ver acesso</button>`,
-      },
-      parada: {
-        titulo: "Sem acesso há mais de 14 dias", lista: listas.parada, icone: ICONE.parada,
-        resumo: listas.parada.length ? p(listas.parada.length, "aluna parou de entrar", "alunas pararam de entrar") : "Ninguém parou de entrar",
-        sub: "Um recado pode trazê-la de volta.", vazio: "Ninguém parou de entrar.",
-        meta: (a) => "último acesso " + haQuanto(a.ultimoAcesso) + lib(a),
-        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button>` : "",
-      },
-      comecar: {
-        titulo: "Ainda não fizeram o primeiro acesso", lista: listas.comecar, icone: ICONE.comecar,
-        resumo: listas.comecar.length ? p(listas.comecar.length, "aluna", "alunas") + " · " + periodo(listas.comecar) : "Todas já entraram",
-        sub: "Cadastradas que ainda não entraram, das mais antigas para as mais novas. Confira se receberam o login e o código.", vazio: "Todas já entraram pelo menos uma vez.",
-        meta: (a) => cadastrada(a) + lib(a),
-        acao: (a) => a.celular ? `<button class="botao-neutro" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>` : "",
-      },
-      novas: {
-        titulo: "Novas nesta semana", lista: listas.novas, icone: ICONE.novas,
-        resumo: listas.novas.length ? p(listas.novas.length, "cadastrada", "cadastradas") + " · " + periodo(listas.novas) : "Nenhum cadastro nos últimos 7 dias",
-        sub: "Cadastradas nos últimos 7 dias.", vazio: "Nenhum cadastro nos últimos 7 dias.",
-        meta: (a) => "entrou em " + br(a.entrada) + lib(a),
-        acao: () => "",
-      },
-    };
-    return `
-    <section class="tela ativa aa">
-      <button type="button" class="botao-neutro grande" data-a="inicio-voltar" style="margin-bottom:18px">← Voltar ao início</button>
-      <h2 class="aa-titulo">Alunas e acessos</h2>
-      <p class="aa-intro">Clique em um dos quadros para ver a lista.</p>
-      ${quadrosComLista(DEF, ["vencem", "parada", "comecar", "novas"])}
-    </section>`;
-  }
+
 
   /**
    * O cadastro completo, por cima da lista, como na referência: visão
@@ -2231,6 +2226,22 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         });
         break;
       }
+      case "ini-periodo": ui.periodoAberto = !ui.periodoAberto; break;
+      case "ini-periodo-rapido": {
+        const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
+        ui.iniAte = hj; ui.iniDe = d.v === "hoje" ? hj : d.v === "7" ? menos(6) : d.v === "30" ? menos(29) : hj.slice(0, 8) + "01";
+        ui.periodoAberto = false; break;
+      }
+      case "ini-periodo-aplicar": {
+        const de = (document.getElementById("iniDe") as HTMLInputElement).value, ate = (document.getElementById("iniAte") as HTMLInputElement).value;
+        if (!de || !ate || de > ate) { toast("Confira as datas: o início vem antes do fim."); return; }
+        ui.iniDe = de; ui.iniAte = ate; ui.periodoAberto = false; break;
+      }
+      case "ini-ativ-todas": ui.ativTodas = true; break;
+      case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
+      case "ir-comentarios": ui.tab = "comentarios"; window.scrollTo(0, 0); break;
+      case "ir-alunas-recentes": ui.tab = "alunas"; ui.filtroAl = "recentes"; ui.paginaAl = 1; window.scrollTo(0, 0); break;
+      case "ini-abrir-aluna": ui.acessoAluna = d.id; ui.acessoAba = "geral"; break;
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
