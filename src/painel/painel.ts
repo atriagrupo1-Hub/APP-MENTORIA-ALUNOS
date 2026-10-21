@@ -361,7 +361,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true,
+    abertos: new Set<string>(), primeiraVez: true, catVer: new Set<string>(),
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1362,12 +1362,18 @@ export function montar(app: HTMLElement) {
           <div class="cabecalho-modulo">
             <span class="nome"><b>${h(k.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(n, "curso", "cursos")}</span></span>
             <span class="acoes">
+              <button class="botao-neutro" data-a="cat-ver" data-id="${k.id}" aria-expanded="${ui.catVer.has(k.id)}">${ui.catVer.has(k.id) ? "Fechar" : "Ver"}</button>
               <button class="botao-neutro" data-a="cat-editar" data-id="${k.id}">Editar</button>
               <button class="botao-neutro" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
               <button class="botao-neutro" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
               <button class="botao-neutro botao-remover" data-a="cat-remover" data-id="${k.id}">Remover</button>
             </span>
           </div>
+          ${ui.catVer.has(k.id) ? `<div style="margin-top:12px">${S.cursos.filter((c) => c.cat === k.id).map((c) => `
+            <div class="linha">
+              <span class="nome"><b>${h(c.nome)}</b><span>${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}${c.visivel ? "" : " · oculto"}</span></span>
+              <span class="acoes"><button class="botao-neutro" data-a="abrir-curso" data-id="${c.id}">Abrir</button></span>
+            </div>`).join("") || `<p style="margin:0;padding:10px 0;font-size:13px;color:var(--texto-3)">Nenhum curso nesta categoria. Crie em Cursos e conteúdos e escolha esta categoria.</p>`}</div>` : ""}
         </div>`;
       }).join("")}
       <form data-f="cat-add" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
@@ -2107,6 +2113,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       }
 
+      case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "abrir-curso": {
         ui.curso = d.id; ui.tab = "curso"; ui.editando = null;
         const c = curso(d.id); if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
