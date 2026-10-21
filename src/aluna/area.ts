@@ -764,7 +764,7 @@ export function montar(raiz: HTMLElement) {
                 <span class="com-abrir-txt">${ICONES.balao}${h(rotComentar)}</span>
               </button>
               <p class="com-aviso">A equipe lê cada comentário antes de publicar.</p>
-              ${pend.map((x) => `<div class="com">${avCom(S.nome, S.corNome, S.foto)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(nomeDe(x))}</b><span class="pendente">Aguardando aprovação</span></div><p>${h(x.texto)}</p><span class="com-nota">Só você vê este comentário até a equipe aprovar.</span></div></div>`).join("")}
+              ${pend.map((x) => `<div class="com">${avCom(S.nome, S.corNome, S.foto)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(nomeDe(x))}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span></div><p>${h(x.texto)}</p></div></div>`).join("")}
               ${(S.comTodos[id] ? raizes : raizes.slice(0, 2)).map((x) => {
                 const rs = respsDe(x.id), todas = !!S.respTodas[x.id], vis = todas ? rs : rs.slice(0, 2);
                 const nm = nomeDe(x);
@@ -819,7 +819,6 @@ export function montar(raiz: HTMLElement) {
     const ultimaDoMod = a + 1 >= md.aulas.length;
     const modFimAqui = !!S.modFim[m] && ultimaDoMod && feita(m, a);
     const pm = m + 1 < MODS().length ? m + 1 : null;
-    const semVideo = S.videos[au.id] === "";
     // A próxima aula só abre quando esta foi concluída (o banco confere o mesmo).
     const botaoProx = !feita(m, a)
       ? `<button class="nav-prox trancado" disabled aria-label="Próxima aula, bloqueada até você concluir esta">${ICONES.cadeado}Próxima aula</button>`
@@ -879,7 +878,6 @@ export function montar(raiz: HTMLElement) {
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}
             </div>
-            ${semVideo && !feita(m, a) ? `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>` : ""}
             ${abasConteudo({ rot: R, idTxt: "Módulo " + md.num + " · Aula " + (a + 1), titulo: au.titulo, sobre: au.texto, aviso: md.aviso, instr: au.exercicio, pdf, extras })}
             ${secaoComs(au.id, R.comentar)}
             ${prox.length ? `
@@ -1117,7 +1115,6 @@ export function montar(raiz: HTMLElement) {
     const est = estadoItem(curso, j, R), livre = !est.fech;
     const ultimo = j + 1 >= curso.itens.length;
     const feito = feitaId(t.id);
-    const semVideo = S.videos[t.id] === "";
     const botaoProx = ultimo
       ? `<button class="nav-prox trancado" disabled>Último deste curso</button>`
       : !feito
@@ -1139,7 +1136,6 @@ export function montar(raiz: HTMLElement) {
               <button class="nav-ant" ${j > 0 ? `data-a="presente" data-v="${ci}-${i}-${j - 1}"` : "disabled"}>${ICONES.chev_esq}${h(R.ant)}</button>
               ${botaoProx}
             </div>
-            ${livre && semVideo && !feito ? `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluído</button>` : ""}
             ${abasConteudo({ rot: R, idTxt: curso.nome + " · " + (j + 1) + " de " + curso.itens.length, titulo: t.titulo, sobre: t.texto, instr: t.exercicio, pdf: livre ? pdf : null, extras: livre ? extras : [], sobrePadrao: "Um presente da mentoria para acompanhar a sua jornada, no seu tempo." })}
             ${livre ? secaoComs(t.id, R.comentar) : ""}
             ${prox.length ? `
@@ -1721,7 +1717,7 @@ export function montar(raiz: HTMLElement) {
         await api.comentar(c.id, t, pos, S.respondendo || undefined);
         S.rascunho = ""; S.respondendo = null; camada.innerHTML = "";
         S.coms[c.id] = await api.comentariosDaAula(c.id).catch(() => S.coms[c.id] || []); render();
-        aviso("Recebemos seu comentário. Ele aparece aqui depois que a equipe aprovar.");
+        aviso("Comentário enviado.");
       } catch { if (btn) btn.disabled = false; aviso("Não conseguimos enviar agora. Tente de novo."); }
     }
   }
