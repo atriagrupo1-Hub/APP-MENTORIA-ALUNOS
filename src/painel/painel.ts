@@ -30,12 +30,13 @@ type Aula = {
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[] };
+type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
+  criado: string; capa: string;
 };
-type Cat = { id: string; nome: string; visivel: boolean; capa: string; descricao: string };
+type Cat = { id: string; nome: string; visivel: boolean; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
   celular: string; email: string;
@@ -173,8 +174,8 @@ async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ da
 async function lerTudo(eu: Eu): Promise<Dados> {
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
-    supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral").not("produto_id", "is", null).order("ordem"),
+    supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path").order("ordem"),
+    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
@@ -227,7 +228,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const modsDo = new Map<string, Modulo[]>();
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [] });
+    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "" });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -235,6 +236,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     id: c.id, nome: c.titulo, cat: c.categoria_id ?? "", visivel: !!c.publicado,
     inicio: c.inicio ?? 1, descricao: c.descricao ?? "", fundacao: c.fundacao ?? "",
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
+    criado: c.criado_em ?? "", capa: c.capa_path ?? "",
   }));
 
   // Celular e e-mail (0041). Se a leitura falhar, a lista abre do mesmo jeito, só sem eles.
@@ -308,7 +310,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   }
 
   return {
-    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "" })),
+    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
     fotos: Object.fromEntries(((fotosAl.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto])),
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
@@ -368,7 +370,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -725,6 +727,7 @@ export function montar(app: HTMLElement) {
           <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
       </div>
       ${blocoAcessos()}
+      ${blocoConteudo()}
       ${ui.ativTodas ? `
         <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Últimas atividades">
@@ -786,6 +789,72 @@ export function montar(app: HTMLElement) {
           <header class="aa-cab"><div><h2>${aberta.titulo}</h2><p><span class="aa-conta tem">${aberta.lista.length}</span> ${aberta.sub}</p></div><button type="button" class="aa-fechar" data-a="ini-lista-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ini-${aberta.id}">${aberta.lista.map((a) => linhaIni(aberta, a)).join("") || `<p class="ini-vazio">Nenhuma aluna aqui agora.</p>`}</div>
         </aside>` : ""}`;
+  }
+  /*
+   * Terceira parte do Início: aulas liberadas (hoje, ontem ou na última
+   * semana), o último curso, os últimos módulos e as últimas categorias.
+   * "Liberada" é o dia em que a aula abriu para a aluna: a data marcada
+   * na aula ou o cronograma do módulo (dias depois da entrada dela).
+   */
+  type Liberacao = { aula: Aula; m: Modulo; c: Curso; dia: string; alunas: number };
+  function aulasLiberadas(de: string, ate: string): Liberacao[] {
+    const conta = new Map<string, { dia: string; n: number }>();
+    for (const al of S.alunas) {
+      if (al.bloqueada || vencida(al)) continue;
+      const libs = new Set(aulasDaLiberacao(al));
+      for (const c of S.cursos) for (const m of c.modulos) for (const a of m.aulas) {
+        if (!libs.has(a.id)) continue;
+        let dia = al.datas[a.id] || "";
+        if (!dia && al.cronograma[m.id] != null && al.entrada) dia = diaDe(new Date(Date.parse(al.entrada + "T12:00:00") + al.cronograma[m.id] * 864e5));
+        if (!dia || dia < de || dia > ate) continue;
+        const k = a.id + "|" + dia; const x = conta.get(k); if (x) x.n++; else conta.set(k, { dia, n: 1 });
+      }
+    }
+    const out: Liberacao[] = [];
+    for (const [k, v] of conta) {
+      const x = acharAula(k.split("|")[0]); if (!x) continue;
+      out.push({ aula: x.a, m: x.m, c: x.c, dia: v.dia, alunas: v.n });
+    }
+    return out.sort((x, y) => y.dia.localeCompare(x.dia) || x.c.modulos.indexOf(x.m) - y.c.modulos.indexOf(y.m) || x.m.aulas.indexOf(x.aula) - y.m.aulas.indexOf(y.aula));
+  }
+  const quandoDia = (dia: string) => { const n = diasEntre(dia, hoje()); return n === 0 ? "hoje" : n === 1 ? "ontem" : n > 0 ? "há " + n + " dias" : br(dia); };
+  function blocoConteudo() {
+    const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
+    const f = ui.iniLib || "hoje";
+    const [de, ate] = f === "hoje" ? [hj, hj] : f === "ontem" ? [menos(1), menos(1)] : [menos(6), hj];
+    const libs = aulasLiberadas(de, ate);
+    const nomeAula = (x: Liberacao) => `Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} - Aula ${x.m.aulas.indexOf(x.aula) + 1}`;
+    const capaAula = (a: Aula) => (a.capa ? urlDaCapa(a.capa) : "");
+    const ultimoCurso = S.cursos.slice().sort((x, y) => y.criado.localeCompare(x.criado))[0];
+    const mods = S.cursos.flatMap((c) => c.modulos.map((m, i) => ({ c, m, i }))).sort((x, y) => y.m.criado.localeCompare(x.m.criado)).slice(0, 4);
+    const cats = S.cats.slice().sort((x, y) => y.criado.localeCompare(x.criado)).slice(0, 4);
+    const capaCurso = (c: Curso) => { if (c.capa) return urlDaCapa(c.capa); const k = cat(c.cat); return k ? capaCat(k) : ""; };
+    const img = (src: string) => (src ? `<img src="${h(src)}" alt="" loading="lazy" onerror="this.remove()" />` : "");
+    const cab = (ic: string, titulo: string, sub: string, extra = "") => `<header class="ct-cab"><span class="ini-cab-ic">${ic}</span><span class="ct-cab-txt"><h3>${titulo}</h3><span>${sub}</span></span>${extra}</header>`;
+    return `
+      <div class="ct-grade">
+        <section class="ini-cartao ct">
+          ${cab(IC_INI.play, "Aulas liberadas", "As aulas que abriram para as alunas.")}
+          <div class="ct-filtros">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["semana", "Última semana"]].map(([v, n]) => `<button class="al-filtro" data-a="ini-lib" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</div>
+          <div class="ini-lista">${libs.slice(0, ui.iniLibTodas ? 999 : 4).map((x) => `
+            <button class="ct-item" data-a="abrir-aula" data-id="${x.aula.id}"><span class="ct-mini">${img(capaAula(x.aula))}</span><span class="ini-txt"><b>${nomeAula(x)}</b><span>${p(x.alunas, "aluna", "alunas")} · ${quandoDia(x.dia)}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhuma aula liberada ${f === "hoje" ? "hoje" : f === "ontem" ? "ontem" : "na última semana"}.</p>`}
+          ${libs.length > 4 ? `<button class="al-botao pequeno ct-mais" data-a="ini-lib-todas">${ui.iniLibTodas ? "Ver menos" : "Ver todas (" + libs.length + ")"}</button>` : ""}</div>
+        </section>
+        <section class="ini-cartao ct">
+          ${cab(`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.5c1.5 1.5 3.4 2.2 5.5 2.2s4-.7 5.5-2.2v-4.5M21.5 9.5v5"/></svg>`, "Último curso adicionado", "Curso mais recente na plataforma.", ultimoCurso ? `<button class="al-botao pequeno" data-a="aba" data-v="cursos">Ver todos ${IC_INI.seta}</button>` : "")}
+          ${ultimoCurso ? `<button class="ct-curso" data-a="abrir-curso" data-id="${ultimoCurso.id}"><span class="ct-curso-img">${img(capaCurso(ultimoCurso))}</span><span class="ct-curso-txt"><b>${h(ultimoCurso.nome)}</b><span>${p(totalAulas(ultimoCurso), "aula", "aulas")} · ${p(ultimoCurso.modulos.length, "módulo", "módulos")}</span></span>${seta}</button>` : `<p class="ini-vazio">Nenhum curso ainda.</p>`}
+        </section>
+        <section class="ini-cartao ct">
+          ${cab(`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/></svg>`, "Últimos módulos adicionados", "Módulos mais recentes na plataforma.", `<button class="al-botao pequeno" data-a="aba" data-v="cursos">Ver todos ${IC_INI.seta}</button>`)}
+          <div class="ini-lista">${mods.map(({ c, m, i }) => `
+            <button class="ct-item" data-a="abrir-curso" data-id="${c.id}"><span class="ct-num">${numModulo(c, i)}</span><span class="ini-txt"><b>Módulo ${numModulo(c, i)} - ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${m.criado ? haTempo(m.criado) : ""}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhum módulo ainda.</p>`}</div>
+        </section>
+        <section class="ini-cartao ct">
+          ${cab(ICONE_MENU.layout, "Últimas categorias adicionadas", "Categorias mais recentes na plataforma.")}
+          <div class="ini-lista">${cats.map((k) => `
+            <button class="ct-item" data-a="ini-abrir-cat" data-id="${k.id}"><span class="ct-mini">${img(capaCat(k))}</span><span class="ini-txt"><b>${h(k.nome)}</b><span>${k.criado ? haTempo(k.criado) : ""}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhuma categoria ainda.</p>`}</div>
+        </section>
+      </div>`;
   }
   /** O seletor de período, no alto do Início. */
   function seletorPeriodo() {
@@ -2292,6 +2361,9 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         ui.iniDe = de; ui.iniAte = ate; ui.periodoAberto = false; break;
       }
       case "ini-lista": ui.iniLista = d.v; break;
+      case "ini-lib": ui.iniLib = d.v; ui.iniLibTodas = false; break;
+      case "ini-lib-todas": ui.iniLibTodas = !ui.iniLibTodas; break;
+      case "ini-abrir-cat": ui.tab = "layout"; ui.catEditar = d.id; ui.catAnima = true; window.scrollTo(0, 0); break;
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
