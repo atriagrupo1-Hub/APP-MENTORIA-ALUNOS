@@ -1721,8 +1721,8 @@ export function montar(app: HTMLElement) {
       ${ui.destEditar ? editarDestaque() : ""}
     </section>`;
   }
-  const COR_DEST: Record<string, string> = { dourado: "Dourado", violeta: "Violeta", verde: "Verde", azul: "Azul", vermelho: "Vermelho" };
-  const ICONE_DEST: Record<string, string> = { estrela: "Estrela", presente: "Presente", filme: "Filme", video: "Vídeo", livro: "Livro", som: "Som" };
+  const COR_DEST: Record<string, string> = { dourado: "Dourado", violeta: "Violeta", verde: "Verde", azul: "Azul", vermelho: "Vermelho", turquesa: "Turquesa" };
+  const ICONE_DEST: Record<string, string> = { estrela: "Estrela", presente: "Presente", filme: "Filme", video: "Vídeo", livro: "Livro", som: "Som", lupa: "Lupa" };
   const destinoTxt = (d: Destaque) => d.destino === "presentes" ? "Aba Presentes" : (cat(d.categoriaId)?.nome || d.categoriaNome || "categoria") + (d.categoriaId && cat(d.categoriaId) ? "" : " (categoria ainda não criada)");
   function blocoDestaques() {
     return `

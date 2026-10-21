@@ -1290,3 +1290,8 @@
   .ent-campo input.ent-cod-aberto { padding: 0 16px !important; }
   .ent-campo.ent-erro input { border-color: #e07a6a !important; box-shadow: 0 0 0 3px rgba(224,122,106,.18); }
   .ent-erro-txt { margin: 8px 0 0 !important; font-size: 15px; font-weight: 700; color: #f0a090; }
+  /* Descobertas: contorno e rótulo turquesa; o botão continua dourado. */
+  .ex-card.desc { background: linear-gradient(135deg, #061416 0%, #040708 70%); border-color: rgba(96,186,186,.6); box-shadow: 0 0 22px -12px rgba(96,186,186,.7); }
+  .ex-card.desc .ex-rot { color: #9fe3df; }
+  html[data-tema="claro"] .ex-card.desc { background: linear-gradient(135deg, #e9f6f5 0%, #ffffff 70%); border-color: rgba(40,130,130,.45); box-shadow: 0 8px 20px -14px rgba(20,90,90,.4); }
+  html[data-tema="claro"] .ex-card.desc .ex-rot { color: #1f6f6c; }
