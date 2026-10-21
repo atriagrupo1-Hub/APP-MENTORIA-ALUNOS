@@ -283,17 +283,16 @@ export function montar(raiz: HTMLElement) {
       <form class="ent-cartao" data-f="entrar" novalidate>
         <h1>Bem-vindo(a)</h1>
         <label class="ent-rot" for="nome">Seu nome</label>
-        <div class="ent-campo">
+        <div class="ent-campo${S.erroCampo === "nome" ? " ent-erro" : ""}">
           <span class="ent-ic" aria-hidden="true"><span class="cab"></span><span class="corpo"></span></span>
-          <input id="nome" name="nome" autocomplete="username" placeholder="Digite seu nome" value="${h(S.nomeDigitado || "")}" />
+          <input id="nome" name="nome" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Digite seu nome" value="${h(S.nomeDigitado || "")}"${S.erroCampo === "nome" ? ' aria-invalid="true" aria-describedby="erro-entrada"' : ""} />
         </div>
+        ${S.erroEntrada && S.erroCampo === "nome" ? `<p class="erro ent-erro-txt" id="erro-entrada" role="alert">${h(S.erroEntrada)}</p>` : ""}
         <label class="ent-rot" for="codigo">Seu código</label>
-        <div class="ent-campo">
-          <span class="ent-ic cad" aria-hidden="true"><span class="arco"></span><span class="caixa"></span></span>
-          <input id="codigo" name="codigo" class="ent-cod" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Digite seu código" type="${S.verCodigo ? "text" : "password"}" />
-          <button type="button" class="ent-olho" data-a="ver-codigo" aria-pressed="${!!S.verCodigo}" aria-label="${S.verCodigo ? "Ocultar código" : "Mostrar código"}"><span class="${S.verCodigo ? "vazio" : ""}"></span></button>
+        <div class="ent-campo${S.erroCampo === "codigo" ? " ent-erro" : ""}">
+          <input id="codigo" name="codigo" class="ent-cod ent-cod-aberto" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Digite seu código" value="${h(S.codigoDigitado || "")}"${S.erroCampo === "codigo" ? ' aria-invalid="true" aria-describedby="erro-entrada"' : ""} />
         </div>
-        ${S.erroEntrada ? `<p class="erro" role="alert">${h(S.erroEntrada)}</p>` : ""}
+        ${S.erroEntrada && S.erroCampo !== "nome" ? `<p class="erro ent-erro-txt" id="erro-entrada" role="alert">${h(S.erroEntrada)}</p>` : ""}
         <button class="ent-entrar" ${S.entrando ? "disabled" : ""}>${S.entrando ? "Entrando…" : "Entrar na mentoria"}<span aria-hidden="true">→</span></button>
         <p class="ent-nota" style="margin-top:20px">Acesso reservado às alunas da mentoria.</p>
       </form>`}
@@ -1681,7 +1680,6 @@ export function montar(raiz: HTMLElement) {
         return;
       }
       case "entrar-de-novo": S.saiu = false; break;
-      case "ver-codigo": { const v = document.getElementById("codigo").value, n = document.getElementById("nome").value; S.verCodigo = !S.verCodigo; S.nomeDigitado = n; render(); document.getElementById("codigo").value = v; document.getElementById("codigo").focus(); return; }
       default: return;
     }
     render();
@@ -1689,20 +1687,24 @@ export function montar(raiz: HTMLElement) {
   async function enviar(f, form) {
     if (f === "entrar") {
       const n = form.nome.value.trim(), c = form.codigo.value.trim();
-      S.nomeDigitado = n;
-      if (!n) S.erroEntrada = "Escreva o seu nome.";
-      else if (!/^\d{4,6}$/.test(c)) S.erroEntrada = "O código tem 4 números. Confira e tente de novo.";
+      S.nomeDigitado = n; S.codigoDigitado = c;
+      if (!n) { S.erroEntrada = "Escreva o seu nome."; S.erroCampo = "nome"; }
+      else if (!c) { S.erroEntrada = "Escreva o seu código."; S.erroCampo = "codigo"; }
       else {
-        S.erroEntrada = ""; S.entrando = true; render();
+        S.erroEntrada = ""; S.erroCampo = ""; S.entrando = true; render();
         const r = await api.entrar(n, c);
         // Conta travada (erros demais) ou suspensa: quem diz é o banco.
         if (!r.ok && (r.falha.erro === "conta_travada" || r.falha.erro === "conta_bloqueada")) { S.entrando = false; S.erroEntrada = ""; S.bloqueado = r.falha.mensagem; render(); return; }
-        if (!r.ok) { S.entrando = false; S.erroEntrada = r.falha.mensagem; render(); document.getElementById("codigo")?.focus(); return; }
+        if (!r.ok) {
+          // O banco diz onde ela errou: no nome ou no código.
+          S.entrando = false; S.erroEntrada = r.falha.mensagem; S.erroCampo = r.falha.erro === "nome_invalido" ? "nome" : r.falha.erro === "codigo_invalido" ? "codigo" : "";
+          render(); const alvo = document.getElementById(S.erroCampo === "nome" ? "nome" : "codigo"); if (alvo) { alvo.focus(); alvo.select && alvo.select(); } return;
+        }
         try { await iniciarSessao(); } catch { S.entrando = false; S.erroEntrada = "Não foi possível abrir sua área agora. Tente de novo."; render(); }
         return;
       }
       render();
-      document.getElementById(!n ? "nome" : "codigo")?.focus();
+      document.getElementById(S.erroCampo === "nome" ? "nome" : "codigo")?.focus();
       return;
     }
     if (f === "comentar") {
