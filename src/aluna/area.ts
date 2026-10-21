@@ -873,7 +873,7 @@ export function montar(raiz: HTMLElement) {
           ${playerHtml(au.id, au.capa, true, Object.assign({ titulo: au.titulo, ultima: ultimaDoMod }, R))}
           <div class="pagina">
             ${modFimAqui ? cardModFim : ""}
-            <p class="aula-local"><b>${h(titulo(md.titulo))}</b> · Aula ${a + 1}</p>
+            <p class="aula-local"><b>Módulo ${md.num} · Aula ${a + 1}</b></p>
             <div class="dois-botoes">
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}

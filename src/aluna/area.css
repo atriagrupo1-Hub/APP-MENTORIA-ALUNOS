@@ -1283,6 +1283,6 @@
 .aviso-material { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; padding: 12px 14px; font-size: 14.5px; line-height: 1.5; color: var(--texto-2); border: 1px solid rgba(212,177,112,.35); border-radius: 6px; background: rgba(212,177,112,.06); }
 .aviso-material svg { width: 20px; height: 20px; flex: 0 0 auto; color: var(--ouro-claro); }
 .onde-parou-ini { text-transform: uppercase; letter-spacing: .08em; font-size: .8125rem; color: var(--ouro); }
-  /* Embaixo do vídeo: o nome do módulo e o número da aula, para ela se localizar. */
+  /* Embaixo do vídeo: "Módulo N · Aula N", para ela se localizar. */
   .aula-local { margin: 14px 0 0; font-size: 1rem; line-height: 1.35; color: var(--texto-2); }
   .aula-local b { font-weight: 700; color: var(--ouro-txt); }
