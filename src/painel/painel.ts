@@ -444,7 +444,7 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- moldura ---------- */
-  const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["layout", "Categorias / Layout"], ["cursos", "Cursos e conteúdos"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias / Layout"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
