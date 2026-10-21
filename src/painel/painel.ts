@@ -34,7 +34,7 @@ type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
 };
-type Cat = { id: string; nome: string };
+type Cat = { id: string; nome: string; visivel: boolean; capa: string; descricao: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
   celular: string; email: string;
@@ -89,45 +89,12 @@ const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
 /** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
 function formatarCelular(valor: string): string {
-  // De fora do Brasil: "+", o código do país e o número, sem máscara —
-  // cada país agrupa de um jeito. Só os dígitos e os espaços ficam.
-  if (valor.trim().startsWith("+")) return "+" + valor.replace(/[^\d ]/g, "").replace(/\s+/g, " ").trimStart().slice(0, 19);
   const d = valor.replace(/\D/g, "").slice(0, 11);
   if (d.length === 0) return "";
   if (d.length <= 2) return "(" + d;
   if (d.length <= 7) return "(" + d.slice(0, 2) + ") " + d.slice(2);
   return "(" + d.slice(0, 2) + ") " + d.slice(2, 7) + "-" + d.slice(7);
 }
-
-/*
- * Nome e login da aluna.
- *
- * O nome ganha a primeira letra maiúscula em cada palavra, menos nas
- * partículas ("Angela de Fátima"). O login é o primeiro nome e a
- * inicial do primeiro sobrenome que não é partícula, com ponto:
- * "Angela F.". Sem acento, porque é o que a aluna digita para entrar —
- * a tela de entrada tira o acento do que ela escreve. No banco ele fica
- * em minúsculas; aqui é mostrado como ela vê.
- */
-const PARTICULAS = new Set(["de", "da", "do", "das", "dos", "e", "di", "du", "del", "van", "von"]);
-const maiuscula = (w: string) => w.charAt(0).toLocaleUpperCase("pt-BR") + w.slice(1);
-function nomeProprio(nome: string, final = false): string {
-  return nome.replace(/\s+/g, " ").replace(final ? /^ | $/g : /^ /, "").split(" ").map((w, i) => {
-    const min = w.toLocaleLowerCase("pt-BR");
-    if (i > 0 && PARTICULAS.has(min)) return min;
-    return maiuscula(final ? min : w);
-  }).join(" ");
-}
-const semAcento = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-function loginDoNome(nome: string): string {
-  const ws = semAcento(nome).split(/\s+/).map((w) => w.replace(/[^A-Za-z0-9]/g, "")).filter(Boolean);
-  if (!ws.length) return "";
-  const sobrenome = ws.slice(1).find((w) => !PARTICULAS.has(w.toLowerCase()));
-  return maiuscula(ws[0].toLowerCase()) + (sobrenome ? " " + sobrenome[0].toUpperCase() + "." : "");
-}
-const loginVisivel = (login: string) => login.split(" ").map(maiuscula).join(" ");
-const loginGuardado = (login: string) => semAcento(login).toLowerCase().replace(/[^a-z0-9._ -]/g, "").replace(/\s+/g, " ").trim();
-const whatsappDe = (celular: string) => celular.startsWith("+") ? celular.replace(/\D/g, "") : "55" + celular.replace(/\D/g, "");
 
 const vencida = (a: Aluna) => !!a.validade && a.validade < hoje();
 function quando(iso: string): string {
@@ -200,7 +167,7 @@ async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ da
 
 async function lerTudo(eu: Eu): Promise<Dados> {
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
-    supabase.from("categorias").select("id, titulo, ordem").order("ordem"),
+    supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem").order("ordem"),
     supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
@@ -268,7 +235,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const contato = new Map<string, { celular?: string; email?: string }>();
   for (const c of contatos.data ?? []) contato.set(c.id, c);
   const listaAlunas: Aluna[] = (alunas.data ?? []).map((a: Record<string, unknown>) => ({
-    id: String(a.id), nome: String(a.nome), login: loginVisivel(String(a.login)), codigo: String(a.codigo ?? ""),
+    id: String(a.id), nome: String(a.nome), login: String(a.login), codigo: String(a.codigo ?? ""),
     celular: String(a.celular ?? contato.get(String(a.id))?.celular ?? ""),
     email: String(contato.get(String(a.id))?.email ?? ""),
     entrada: String(a.entrada ?? ""), validade: a.validade ? String(a.validade) : "",
@@ -335,7 +302,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   }
 
   return {
-    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo })),
+    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
@@ -394,7 +361,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, catVer: new Set<string>(),
+    abertos: new Set<string>(), primeiraVez: true, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -407,8 +374,9 @@ export function montar(app: HTMLElement) {
   const toastEl = document.createElement("div");
   toastEl.id = "toast"; toastEl.className = "toast"; toastEl.setAttribute("role", "status"); toastEl.hidden = true;
   const arquivoCapa = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCapa", accept: "image/*", hidden: true });
+  const arquivoCat = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCat", accept: "image/*", hidden: true });
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
-  document.body.append(toastEl, arquivoCapa, arquivoExtra);
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -498,6 +466,23 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- moldura ---------- */
+  const ICONE_MENU: Record<string, string> = {
+    inicio: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-6.5 8 6.5V20h-5.5v-5.5h-5V20H4z"/></svg>`,
+    alunas: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8.5" r="3.3"/><path d="M3 19.5c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9.5" r="2.6"/><path d="M16.5 14.3c2.4.2 4 1.7 4.5 4.4"/></svg>`,
+    engajamento: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7.5 15l3.5-4 3 2.5 5-6.5"/></svg>`,
+    cursos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10.5 9.3v5.4l4.5-2.7z"/></svg>`,
+    layout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
+    comentarios: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`,
+    equipe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.5c.6-3.4 3.3-5.3 6.5-5.3s5.9 1.9 6.5 5.3"/></svg>`,
+    registro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M9 11h6M9 14.5h6M9 18h4"/></svg>`,
+    sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
+    ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
+  };
+  const SUB_ABA: Record<string, string> = { alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros." };
+  const ACAO_ABA: Record<string, string> = {
+    alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
+    layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
+  };
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias / Layout"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
@@ -586,24 +571,34 @@ export function montar(app: HTMLElement) {
     const abas = ABAS.filter(([id]) => !restrita(id));
     const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaLayout, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
+    const papel: Record<string, string> = { dono: "Dono", admin: "Administrador", suporte: "Suporte" };
     return `
-    <div class="marca">
-      ${selo}
-      <div class="busca-geral">
-        <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, celular, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
-        <div id="buscaResultados">${resultadosBusca()}</div>
+    <div class="casca">
+      <aside class="lado" aria-label="Menu do painel">
+        <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
+        <nav class="lado-menu">
+          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span></button>`; }).join("")}
+        </nav>
+        <div class="lado-pe">
+          <div class="lado-quem"><span class="lado-av">${h(iniciais(eu!.nome))}</span><span><b>${h(eu!.nome)}</b><span>${h(papel[eu!.papel] || eu!.papel)}</span></span></div>
+          <button class="lado-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
+        </div>
+      </aside>
+      <div class="principal">
+        <div class="topo">
+          <div class="busca-geral">
+            <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, celular, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+            <div id="buscaResultados">${resultadosBusca()}</div>
+          </div>
+          <button class="al-botao topo-sug" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
+          ${botaoTema()}
+          <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
+        </div>
+        <div class="conteudo">
+          <div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ACAO_ABA[ui.tab] || ""}</div>
+          ${(telas[ui.tab] || telaInicio)()}
+        </div>
       </div>
-      <span class="quem" style="font-size:13px;color:var(--texto-2)">${h(eu!.nome)} · ${h(eu!.papel)}</span>
-      <button class="botao-neutro" data-a="sugestoes">Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
-      ${botaoTema()}
-      <button class="botao-neutro" data-a="sair">Sair</button>
-    </div>
-    <div class="conteudo">
-      <div class="cabecalho"><h1>${h(t)}</h1>${ajudaAba()}<span class="contagem">${h(cont)}</span>${pilha.length ? `<span style="flex:1"></span><button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}</div>
-      <div class="abas" role="tablist">
-        ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); return `<button class="aba" role="tab" data-a="aba" data-v="${id}" ${on ? 'aria-selected="true"' : ""}>${nome}</button>`; }).join("")}
-      </div>
-      ${(telas[ui.tab] || telaInicio)()}
     </div>
     ${modal()}`;
   }
@@ -1315,18 +1310,26 @@ export function montar(app: HTMLElement) {
   };
   const cadastroDe = (a: Aluna) => (a.criadaEm ? diaDe(a.criadaEm) : a.entrada);
   const ultimoAcessoTxt = (a: Aluna) => (!a.ultimoAcesso ? "Nunca acessou" : a.ultimoAcesso === hoje() ? "Hoje" : br(a.ultimoAcesso));
+  const POR_PAGINA = 20;
+  // Progresso: aulas concluídas entre as liberadas para ela.
+  const progressoDe = (a: Aluna) => { const libs = aulasDaLiberacao(a); return libs.length ? Math.round(libs.filter((id) => a.feitas.has(id)).length / libs.length * 100) : 0; };
+  const categoriasDe = (a: Aluna) => {
+    const libs = new Set(aulasDaLiberacao(a));
+    const ids = new Set(S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((k) => libs.has(k.id)))).map((c) => c.cat));
+    return S.cats.filter((k) => ids.has(k.id)).map((k) => k.nome).join(", ");
+  };
   function telaAlunas() {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
     const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
     const anima = ui.aaAnima; ui.aaAnima = "";
+    const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
+    const pg = Math.min(Math.max(1, ui.paginaAl), paginas); ui.paginaAl = pg;
+    const ini = (pg - 1) * POR_PAGINA; const pagina = lista.slice(ini, ini + POR_PAGINA);
     return `
     <section class="tela ativa al">
-      <h2 class="al-titulo">Alunas</h2>
-      <p class="al-sub">Gerencie todas as alunas da mentoria.</p>
       <div class="al-barra">
         <label class="al-busca">${ICONE_AL.lupa}<input id="busca" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" aria-label="Procurar aluna" /></label>
-        <button class="al-botao-ouro" data-a="aluna-nova">${ICONE_AL.mais}Cadastrar aluna</button>
         <button class="al-botao" data-a="exportar">${ICONE_AL.planilha}Exportar planilha</button>
         <label class="al-ordenar"><span>Ordenar por</span>
           <select class="campo" data-ordem aria-label="Ordenar alunas">
@@ -1342,9 +1345,19 @@ export function montar(app: HTMLElement) {
       <div class="al-tabela" role="table" aria-label="Alunas">
         <div class="al-linha al-cab" role="row">
           <span role="columnheader"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></span>
-          <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Situação</span><span role="columnheader">Acesso até</span><span role="columnheader">Aulas liberadas</span><span role="columnheader">Último acesso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
+          <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Telefone</span><span role="columnheader">Categoria</span><span role="columnheader">Status</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
         </div>
-        ${lista.map(linhaAluna).join("")}
+        ${pagina.map(linhaAluna).join("")}
+        <div class="al-pag">
+          <span>Mostrando ${ini + 1} a ${Math.min(ini + POR_PAGINA, lista.length)} de ${p(lista.length, "aluna", "alunas")}</span>
+          ${paginas > 1 ? `<span class="al-pag-bts">
+            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="1" ${pg === 1 ? "disabled" : ""} aria-label="Primeira página">«</button>
+            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${pg - 1}" ${pg === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>
+            ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) => `<button class="al-botao pequeno quadrado${n === pg ? " atual" : ""}" data-a="al-pag" data-v="${n}" ${n === pg ? 'aria-current="page"' : ""}>${n}</button>`).join("")}
+            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${pg + 1}" ${pg === paginas ? "disabled" : ""} aria-label="Próxima página">›</button>
+            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${paginas}" ${pg === paginas ? "disabled" : ""} aria-label="Última página">»</button>
+          </span>` : ""}
+        </div>
       </div>` : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
       ${ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
     </section>`;
@@ -1352,71 +1365,113 @@ export function montar(app: HTMLElement) {
   function linhaAluna(a: Aluna) {
     const sit = situacao(a); const [rot] = sitInfo(sit);
     const cor = sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho";
-    const sub = naoEntrou(a) ? "Ainda não entrou" : parada(a) ? "Sem acesso há " + diasEntre(a.ultimoAcesso, hoje()) + " dias" : "";
     const marc = ui.sel.includes(a.id);
+    const pct = progressoDe(a);
     return `
     <div class="al-linha${marc ? " marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}" role="row">
       <span role="cell"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></span>
       <button type="button" class="al-quem" role="cell" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button>
       <span role="cell" class="al-cel" data-rot="Login">${h(a.login)}</span>
-      <span role="cell" class="al-cel al-sit" data-rot="Situação"><span class="al-sit-${cor}"><i></i>${h(rot)}</span>${sub ? `<small>${sub}</small>` : ""}</span>
-      <span role="cell" class="al-cel" data-rot="Acesso até">${a.validade ? br(a.validade) : "—"}</span>
-      <span role="cell" class="al-cel" data-rot="Aulas liberadas">${p(a.liberadas, "aula", "aulas")}</span>
+      <span role="cell" class="al-cel" data-rot="Telefone">${a.celular ? h(fone(a.celular)) : "—"}</span>
+      <span role="cell" class="al-cel" data-rot="Categoria">${h(categoriasDe(a)) || "—"}</span>
+      <span role="cell" class="al-cel" data-rot="Status"><span class="al-status ${cor}">${h(rot)}</span></span>
       <span role="cell" class="al-cel" data-rot="Último acesso">${ultimoAcessoTxt(a)}</span>
+      <span role="cell" class="al-cel al-prog" data-rot="Progresso"><span class="al-prog-n">${pct}%</span><span class="al-barra-p"><i style="width:${pct}%"></i></span></span>
       <span role="cell" class="al-acoes">
-        <button class="al-botao pequeno" data-a="aa-aluna" data-id="${a.id}">Abrir ficha</button>
+        <button class="al-botao pequeno quadrado" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}" title="Abrir ficha">${IC_CAT.olho}</button>
+        <button class="al-botao pequeno quadrado" data-a="editar-aluna" data-id="${a.id}" aria-label="Editar dados de ${h(a.nome)}" title="Editar dados">${IC_CAT.lapis}</button>
         <span class="menu-acoes">
-          <button class="al-botao pequeno quadrado" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋯</button>
+          <button class="al-botao pequeno quadrado" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>
           ${ui.menu === a.id ? menuAluna(a) : ""}
         </span>
       </span>
     </div>`;
   }
 
+
   /* ---------- CATEGORIAS ---------- */
+  /*
+   * Categorias / Layout, no desenho da referência: uma linha por
+   * categoria com imagem, chave Visível, Ver, Editar, ordem e Remover; e
+   * o painel "Editar categoria" por cima. Desligar Visível usa
+   * `bloqueada_geral`: some da área de membros e o banco nega o conteúdo.
+   */
+  const IC_CAT = {
+    olho: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`,
+    lapis: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1-4L15.8 5.2a1.8 1.8 0 0 1 2.6 0l.4.4a1.8 1.8 0 0 1 0 2.6L8.5 18.5z"/></svg>`,
+    lixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>`,
+    alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>`,
+    caixa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>`,
+  };
+  const capaCat = (k: Cat) => (k.capa ? (k.capa.startsWith("/") ? k.capa : urlDaCapa(k.capa)) : "");
+  const chave = (on: boolean, acao: string, id: string, rotulo: string) => `<button type="button" class="cat-chave" role="switch" aria-checked="${on}" data-a="${acao}" data-id="${id}" aria-label="${h(rotulo)}"><i></i></button>`;
   function telaLayout() {
+    const anima = ui.catAnima; ui.catAnima = false;
     return `
-    <section class="tela ativa">
-      <p class="rotulo" style="margin:0 0 10px">A ordem em que a aluna vê — arraste para reordenar</p>
-      <div class="chips" style="margin-bottom:22px">
-        ${S.cats.map((k) => `<button class="chip" draggable="true" data-arrasta="${k.id}">${h(k.nome)}</button>`).join("") || `<span style="font-size:13px;color:var(--texto-3)">Nenhuma categoria.</span>`}
-      </div>
+    <section class="tela ativa cat">
+      <div class="cat-info"><span class="cat-info-ic" aria-hidden="true">i</span><span><b>A ordem em que a aluna vê</b><span>Arraste as categorias para reordenar. A ordem definida aqui será exibida na área de membros.</span></span></div>
       ${S.cats.map((k, i) => {
         const n = S.cursos.filter((c) => c.cat === k.id).length;
-        if (editando("cat", k.id)) return `
-        <div class="bloco-modulo">
-          <form data-f="cat-renomear" data-id="${k.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-            <input id="editarCampo" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" value="${h(k.nome)}" required />
-            ${botoesEdicao("Salvar")}
-          </form>
-        </div>`;
+        const img = capaCat(k);
         return `
-        <div class="bloco-modulo">
-          <div class="cabecalho-modulo">
-            <span class="nome"><b>${h(k.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(n, "curso", "cursos")}</span></span>
-            <span class="acoes">
-              <button class="botao-neutro" data-a="cat-ver" data-id="${k.id}" aria-expanded="${ui.catVer.has(k.id)}">${ui.catVer.has(k.id) ? "Fechar" : "Ver"}</button>
-              <button class="botao-neutro" data-a="cat-editar" data-id="${k.id}">Editar</button>
-              <button class="botao-neutro" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-              <button class="botao-neutro" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
-              <button class="botao-neutro botao-remover" data-a="cat-remover" data-id="${k.id}">Remover</button>
+        <div class="cat-linha${ui.catEditar === k.id ? " sel" : ""}" draggable="true" data-arrasta="${k.id}">
+          <div class="cat-linha-topo">
+            <span class="cat-alca" title="Arraste para mudar a ordem">${IC_CAT.alca}</span>
+            <span class="cat-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
+            <span class="cat-nome"><b>${h(k.nome)}</b><span>${p(n, "curso", "cursos")} · ${k.visivel ? "Visível na área de membros" : "Oculta da área de membros"}</span></span>
+            <span class="cat-vis">${chave(k.visivel, "cat-visivel", k.id, (k.visivel ? "Ocultar " : "Mostrar ") + k.nome + " na área de membros")}<span>${k.visivel ? "Visível" : "Oculta"}</span></span>
+            <span class="cat-acoes">
+              <button class="al-botao pequeno" data-a="cat-ver" data-id="${k.id}" aria-expanded="${ui.catVer.has(k.id)}">${IC_CAT.olho}${ui.catVer.has(k.id) ? "Fechar" : "Ver"}</button>
+              <button class="al-botao pequeno" data-a="cat-abrir-editar" data-id="${k.id}">${IC_CAT.lapis}Editar</button>
+              <button class="al-botao pequeno quadrado" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+              <button class="al-botao pequeno quadrado" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+              <button class="al-botao pequeno cat-remover" data-a="cat-remover" data-id="${k.id}">${IC_CAT.lixo}Remover</button>
             </span>
           </div>
-          ${ui.catVer.has(k.id) ? `<div style="margin-top:12px">${S.cursos.filter((c) => c.cat === k.id).map((c) => `
-            <div class="linha">
-              <span class="nome"><b>${h(c.nome)}</b><span>${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}${c.visivel ? "" : " · oculto"}</span></span>
-              <span class="acoes"><button class="botao-neutro" data-a="abrir-curso" data-id="${c.id}">Abrir</button></span>
-            </div>`).join("") || `<p style="margin:0;padding:10px 0;font-size:13px;color:var(--texto-3)">Nenhum curso nesta categoria. Crie em Cursos e conteúdos e escolha esta categoria.</p>`}</div>` : ""}
+          ${ui.catVer.has(k.id) ? `<div class="cat-cursos">${cursosDaCat(k)}</div>` : ""}
         </div>`;
-      }).join("")}
-      <form data-f="cat-add" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px">
-        <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome da nova categoria" required />
-        <button class="botao-neutro grande">+ Adicionar categoria</button>
+      }).join("") || `<div class="vazio">Nenhuma categoria.</div>`}
+      <form data-f="cat-add" class="cat-add">
+        <span class="cat-add-mais" aria-hidden="true">+</span>
+        <b>Adicionar nova categoria</b>
+        <input id="catNova" class="campo" name="nome" placeholder="Nome da nova categoria" required />
+        <button class="al-botao-ouro">Adicionar categoria</button>
       </form>
+      ${ui.catEditar ? editarCategoria(anima) : ""}
     </section>`;
   }
+  function cursosDaCat(k: Cat) {
+    const cs = S.cursos.filter((c) => c.cat === k.id);
+    return cs.map((c, i) => `
+      <div class="cat-curso">
+        <span class="cat-curso-nome">${i + 1}. ${h(c.nome)}<small>${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}${c.visivel ? "" : " · oculto"}</small></span>
+        <button class="al-botao pequeno" data-a="abrir-curso" data-id="${c.id}">Abrir</button>
+      </div>`).join("") || `<div class="cat-vazio">${IC_CAT.caixa}<b>Nenhum curso adicionado</b><span>Adicione cursos para esta categoria.</span></div>`;
+  }
+  function editarCategoria(entra: boolean) {
+    const k = cat(ui.catEditar!); if (!k) { ui.catEditar = null; return ""; }
+    const img = previas["cat-" + k.id] || capaCat(k);
+    const n = S.cursos.filter((c) => c.cat === k.id).length;
+    return `
+      <div class="aa-fundo dois" data-a="cat-fechar-editar"></div>
+      <aside class="aa-painel largo cat-painel${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Editar categoria">
+        <header class="cat-painel-cab"><h2>Editar categoria</h2><button type="button" class="aa-fechar" data-a="cat-fechar-editar" aria-label="Fechar">${xis}</button></header>
+        <form data-f="cat-salvar" data-id="${k.id}" class="aa-corpo cat-form" data-rolagem="cat-${k.id}">
+          <div class="cat-capa">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}<button type="button" class="cat-capa-btn" data-a="cat-imagem">Alterar imagem</button></div>
+          <label class="cat-campo"><span>Nome da categoria</span><input class="campo" name="nome" value="${h(k.nome)}" required maxlength="60" /></label>
+          <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="3" maxlength="200" data-conta="catConta">${h(k.descricao)}</textarea><small id="catConta" class="cat-conta">${k.descricao.length}/200</small></label>
+          <label class="cat-vis-linha">${chave(k.visivel, "cat-visivel", k.id, "Visível na área de membros")}<span>Visível na área de membros</span></label>
+          <h3 class="cat-sub">Cursos nesta categoria (${n})</h3>
+          <div class="cat-cursos">${cursosDaCat(k)}</div>
+          <button type="button" class="al-botao cat-largo" data-a="cat-add-curso" data-id="${k.id}">+ Adicionar curso</button>
+          <div class="cat-rodape">
+            <button type="button" class="al-botao cat-remover" data-a="cat-remover" data-id="${k.id}">${IC_CAT.lixo}Remover categoria</button>
+            <button class="al-botao-ouro">Salvar alterações</button>
+          </div>
+        </form>
+      </aside>`;
+  }
 
-  /* ---------- CURSOS ---------- */
   function telaCursos() {
     return `
     <section class="tela ativa">
@@ -1731,14 +1786,14 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}">
         <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
-        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Cadastre com nome e sobrenome. O login sai sozinho: o primeiro nome e a inicial do sobrenome, como Angela F. — é com ele e o código de 4 números que ela entra."}</p>
+        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
         <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome completo</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" placeholder="Nome e sobrenome" autocomplete="off" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input id="alunaLogin" class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="Angela F." autocomplete="off" ${!a || a.login.toLowerCase() === loginDoNome(a.nome).toLowerCase() ? "data-auto" : ""} /></label>
+          <label class="grupo nome"><span class="rotulo">Nome</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
             <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
           </label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp) · de fora, comece com +</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="tel" autocomplete="off" maxlength="20" placeholder="(11) 98765-4321 ou +351 912 345 678" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
+          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp)</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
           <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
@@ -1824,7 +1879,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         <div class="campos">
           <label class="grupo nome"><span class="rotulo">Nome</span><input id="cursoNome" class="campo" name="nome" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Categoria</span>
-            <select class="campo" name="cat" required>${S.cats.map((k) => `<option value="${k.id}">${h(k.nome)}</option>`).join("")}</select>
+            <select class="campo" name="cat" required>${S.cats.map((k) => `<option value="${k.id}" ${m.cat === k.id ? "selected" : ""}>${h(k.nome)}</option>`).join("")}</select>
           </label>
         </div>
         <div class="rodape-modal"><button class="botao">Criar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
@@ -1943,7 +1998,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "ver-codigo-aluna": ui.verCodigo = ui.verCodigo === d.id ? null : d.id; break;
       case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
-      case "al-filtro": ui.filtroAl = d.v; break;
+      case "al-filtro": ui.filtroAl = d.v; ui.paginaAl = 1; break;
       case "sel-limpar": ui.sel = []; break;
       case "lote-remover": {
         const ids = ui.sel.filter((id) => S.alunas.some((x) => x.id === id));
@@ -2012,7 +2067,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
-        window.open("https://wa.me/" + whatsappDe(al!.celular) + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+        window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
         void executar(async () => {
           if (a === "whatsapp") await registrar(al!.id, "Acesso enviado pelo WhatsApp");
           else {
@@ -2146,7 +2201,24 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       }
 
+      case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
+      case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
+      case "cat-fechar-editar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["cat-" + ui.catEditar]; ui.catEditar = null; ui.sujo = null; break;
+      case "cat-nova-foco": ui.focar = "catNova"; break;
+      case "cat-imagem": arquivoCat.click(); return;
+      case "cat-add-curso": ui.modal = { tipo: "curso", cat: d.id }; ui.focar = "cursoNome"; break;
+      case "cat-visivel": {
+        const k = cat(d.id)!; const mostrar = !k.visivel;
+        const trabalho = async () => {
+          falhou(await supabase.from("categorias").update({ bloqueada_geral: !mostrar }).eq("id", k.id).select("id").single());
+          await registrar(null, (mostrar ? "Mostrou" : "Ocultou") + " a categoria " + k.nome);
+          return { msg: mostrar ? k.nome + " está visível na área de membros." : k.nome + " foi ocultada da área de membros.", texto: "visibilidade da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update({ bloqueada_geral: mostrar }).eq("id", k.id).select("id").single()); } };
+        };
+        if (mostrar) { void executar(trabalho); return; }
+        confirmar({ titulo: "Ocultar " + k.nome + "?", texto: "A categoria e tudo o que está dentro dela somem da área de membros para todas as alunas, até você ligar de novo.", palavra: "OCULTAR", rotulo: "Ocultar categoria" }, trabalho);
+        break;
+      }
       case "abrir-curso": {
         ui.curso = d.id; ui.tab = "curso"; ui.editando = null;
         const c = curso(d.id); if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
@@ -2291,13 +2363,11 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "aluna": {
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
-        const nome = nomeProprio(v("nome"), true);
-        const loginNovo = loginGuardado(v("login") || loginDoNome(nome));
-        if (loginNovo.length < 2) { toast("Preencha o nome da aluna."); return; }
-        if (S.alunas.some((x) => x.login.toLowerCase() === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginVisivel(loginNovo) + ". Mude o login, por exemplo com a segunda letra do sobrenome."); return; }
-        const fora = v("celular").startsWith("+");
-        const celular = (fora ? "+" : "") + v("celular").replace(/\D/g, "");
-        if (fora ? !/^\+\d{8,15}$/.test(celular) : celular.length !== 11) { toast(fora ? "Confira o número de fora: + , o código do país e o número." : "Preencha o celular com DDD: (11) 98765-4321. Se for de fora do Brasil, comece com +."); return; }
+        const nome = v("nome");
+        const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
+        if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
+        const celular = v("celular").replace(/\D/g, "");
+        if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
         const email = v("email").toLowerCase();
         if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { toast("Confira o e-mail."); return; }
         void executar(async () => {
@@ -2314,7 +2384,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
           if (r.id) await registrar(String(r.id), "Aluna cadastrada");
           ui.modal = null;
-          const msg = nome + " cadastrada. Login " + loginVisivel(loginNovo) + ", código " + cod + ".";
+          const msg = nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
           return r.id ? { msg, texto: "cadastro de " + nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: String(r.id) }); } } : msg;
         });
         return;
@@ -2379,6 +2449,18 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           return { msg: "Categoria adicionada.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
+      case "cat-salvar": {
+        const k = cat(id)!; const velho = { titulo: k.nome, descricao: k.descricao || null, capa_path: k.capa || null };
+        const novaCapa = (form.querySelector<HTMLInputElement>('input[name="capa"]')?.value) || k.capa || null;
+        const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
+        void executar(async () => {
+          falhou(await supabase.from("categorias").update({ titulo: v("nome"), descricao: desc || null, capa_path: novaCapa }).eq("id", id).select("id").single());
+          await registrar(null, "Editou a categoria " + v("nome"));
+          ui.catEditar = null; delete previas["cat-" + id];
+          return { msg: "Categoria salva.", texto: "edição da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(velho).eq("id", id).select("id").single()); } };
+        });
+        return;
+      }
       case "cat-renomear":
         { const velho = cat(id)!.nome;
           void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Categoria renomeada.", texto: "nome da categoria " + velho, desfazer: async () => { falhou(await supabase.from("categorias").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
@@ -2632,14 +2714,6 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     if (solto) return;
     guardado(b.dataset.a!, Object.assign({}, b.dataset) as Record<string, string>, b, e.target);
   });
-  // Dois cliques num campo preenchido selecionam tudo o que está nele,
-  // não só a palavra — é o que a equipe espera para apagar ou copiar.
-  app.addEventListener("dblclick", (e) => {
-    const t = e.target as HTMLInputElement;
-    if (!t.matches?.("input.campo, textarea")) return;
-    if (["checkbox", "radio", "date", "file", "color", "range"].includes(t.type)) return;
-    try { t.select(); } catch { /* campo que não aceita seleção */ }
-  });
   // "toggle" não sobe pela árvore: só na captura dá para ouvir de cima.
   app.addEventListener("toggle", (e) => {
     const d = e.target as HTMLDetailsElement;
@@ -2657,22 +2731,15 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     const t = e.target as HTMLInputElement;
     if (t.dataset.i === "buscaGeral") { ui.buscaGeral = t.value; ui.buscaAberta = true; atualizarBusca(); return; }
     marcarSujo(t);
-    if (t.dataset.i === "busca") { ui.busca = t.value; render(); return; }
+    if (t.dataset.conta) { const c = document.getElementById(t.dataset.conta); if (c) c.textContent = t.value.length + "/200"; }
+    if (t.dataset.i === "busca") { ui.busca = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
-    if (t.id === "alunaNome") {
-      const pos = t.selectionStart; t.value = nomeProprio(t.value); t.setSelectionRange(pos, pos);
-      const lg = document.getElementById("alunaLogin") as HTMLInputElement | null;
-      if (lg && lg.hasAttribute("data-auto")) lg.value = loginDoNome(t.value);
-      return;
-    }
-    if (t.id === "alunaLogin") { t.removeAttribute("data-auto"); if (!t.value.trim()) t.setAttribute("data-auto", ""); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
-    if (t.id === "alunaNome") t.value = nomeProprio(t.value, true);
-    if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; render(); return; }
+    if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
     if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }
     if (t.matches("input[type=checkbox]")) {
@@ -2688,6 +2755,21 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         if (mods.length) cx.querySelector<HTMLInputElement>('input[name="c"]')!.checked = [...mods].every((x) => x.checked);
       });
     }
+  });
+  arquivoCat.addEventListener("change", () => {
+    const file = arquivoCat.files?.[0]; arquivoCat.value = ""; const id = ui.catEditar; if (!file || !id) return;
+    toast("Enviando a imagem…");
+    void (async () => {
+      try {
+        const caminho = await enviarArquivo("capas", "categorias", file);
+        previas["cat-" + id] = URL.createObjectURL(file);
+        render();
+        const f = document.querySelector<HTMLFormElement>('form[data-f="cat-salvar"]');
+        if (f) { const x = Object.assign(document.createElement("input"), { type: "hidden", name: "capa", value: caminho }); f.append(x); }
+        ui.sujo = { f: "cat-salvar", id };
+        toast("Imagem enviada. Clique em Salvar alterações para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
   });
   arquivoCapa.addEventListener("change", () => {
     const file = arquivoCapa.files?.[0]; arquivoCapa.value = ""; if (!file || !ui.aula) return;
@@ -2748,7 +2830,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   app.addEventListener("dragover", (e) => {
     const t = (e.target as HTMLElement).closest?.<HTMLElement>("[data-arrasta]"); if (!t || !ui.arrasto) return;
     e.preventDefault();
-    document.querySelectorAll(".chip.alvo").forEach((x) => x.classList.remove("alvo"));
+    document.querySelectorAll("[data-arrasta].alvo").forEach((x) => x.classList.remove("alvo"));
     if (t.dataset.arrasta !== ui.arrasto) t.classList.add("alvo");
   });
   app.addEventListener("drop", (e) => {
@@ -2762,7 +2844,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem das categorias salva.", texto: "ordem das categorias", desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: velha }); } }; });
     } else render();
   });
-  app.addEventListener("dragend", () => { ui.arrasto = null; document.querySelectorAll(".chip.arrastando, .chip.alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
+  app.addEventListener("dragend", () => { ui.arrasto = null; document.querySelectorAll("[data-arrasta].arrastando, [data-arrasta].alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
 
   /* ---------- sessão ---------- */
   async function abrirSessao(acabouDeEntrar: boolean) {

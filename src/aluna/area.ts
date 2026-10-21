@@ -68,8 +68,11 @@ export function montar(raiz: HTMLElement) {
     const [perfil, cat, libs, abert, prodLib] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd]);
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
     const jornada = cat.produtoJornada;
+    // Categoria desligada no painel ("Visível" apagado): some daqui inteira.
+    const catOculta = new Set(cat.categorias.filter((c) => c.bloqueadaGeral).map((c) => c.id));
+    const jornadaOculta = (() => { const pj = cat.produtos.find((x) => x.id === jornada); return !!(pj && catOculta.has(pj.categoriaId)); })();
     const mods = cat.modulos
-      .filter((m) => (jornada ? m.produtoId === jornada : true))
+      .filter((m) => !jornadaOculta && (jornada ? m.produtoId === jornada : true))
       .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
       .map((m) => ({
         id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capa: capaUrl(`modulo-${m.numero}.webp`),
@@ -81,6 +84,7 @@ export function montar(raiz: HTMLElement) {
     const prodJ = cat.produtos.find((x) => x.id === jornada);
     const cats = cat.categorias
       .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
+      .filter((c) => !c.bloqueadaGeral)
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
