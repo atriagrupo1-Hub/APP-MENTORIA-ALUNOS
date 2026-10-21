@@ -1912,16 +1912,11 @@ export function montar(app: HTMLElement) {
             <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
           </span>` : ""}</span>
           <div class="cur-corpo">
-            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>
-            ${c.descricao ? `<p class="cur-desc">${h(c.descricao)}</p>` : `<p class="cur-desc cur-sem-desc">Sem descrição.</p>`}
-            <div class="cur-dado">${IC_CUR.pasta}<span><em>Categoria</em><b>${h(k?.nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</b></span></div>
-            <div class="cur-nums">
-              <div class="cur-dado">${IC_CUR.pessoas}<span><b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span></div>
-              <div class="cur-dado">${IC_CUR.camadas}<span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span></div>
-            </div>
-            <div class="cur-rodape">
-              <span class="cur-data">${IC_CUR.cal}${c.criado ? "Adicionado em " + br(diaDe(c.criado)) : ""}</span>
-            </div>
+            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
+            <div class="cur-linha">${IC_CUR.pasta}<em>Categoria:</em><b>${h(k?.nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</b></div>
+            <div class="cur-linha">${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></div>
+            <div class="cur-linha">${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></div>
+            <div class="cur-linha">${IC_CUR.cal}<em>Adicionado em</em><b>${c.criado ? br(diaDe(c.criado)) : "—"}</b></div>
             <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button></div>
           </div>
         </article>`;

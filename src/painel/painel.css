@@ -1303,3 +1303,12 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .cur-cat[aria-pressed="true"] span { color: var(--ouro-botao-txt); background: rgba(255, 255, 255, .45); }
 .cur-cat { box-shadow: none; }
 .cur-botoes button { min-height: var(--botao-alto) !important; }
+/* Cartão de curso: tudo em linhas iguais, alinhado entre os cartões */
+.cur-card { height: 100%; }
+.cur-corpo { flex: 1 1 auto; gap: 10px; }
+.cur-tit { display: block; width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cur-linha { display: flex; align-items: center; gap: 8px; min-height: 24px; font-size: 14px; }
+.cur-linha svg { flex: none; width: 20px; height: 20px; fill: none; stroke: var(--aa-ouro); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.cur-linha em { font-style: normal; color: var(--texto-3); }
+.cur-linha b { overflow: hidden; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.cur-botoes { margin-top: auto; padding-top: 6px; }
