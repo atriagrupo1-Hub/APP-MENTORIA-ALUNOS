@@ -1231,3 +1231,16 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 @media (max-width: 1200px) { .cs-inds5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .cs-rel-graf { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 900px) { .cs-config { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 600px) { .cs-duas { grid-template-columns: minmax(0, 1fr); } .cs-inds5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cs-mod-capa { display: none; } .cs-mod-aulas { padding-left: 0; } .cs-mod-linha { flex-wrap: wrap; } }
+/* Página do curso: comentários */
+.cs-coms { margin-top: 14px; }
+.cs-coms header .aa-pilula { flex: none; }
+.cs-com { display: flex; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linha-suave); }
+.cs-com:first-of-type { border-top: 0; }
+.cs-com-txt { flex: 1 1 auto; min-width: 0; }
+.cs-com-cab { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.cs-com-cab b { font-size: 14px; }
+.cs-com-cab > span:not(.aa-pilula) { font-size: 12px; color: var(--texto-3); }
+.cs-com-txt > p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; color: var(--comentario, var(--texto)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.cs-com-resp { padding: 8px 10px; font-size: 13px !important; background: var(--aa-cinza); border-radius: 8px; }
+.cs-com-acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.cs-com-form { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
