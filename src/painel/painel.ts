@@ -149,6 +149,22 @@ function falhou<T extends { error: { message: string } | null }>(r: T): T {
 
 /* ---------- leitura do banco ---------- */
 
+/*
+ * O banco devolve no máximo 1000 linhas por consulta. As liberações já
+ * passam disso (uma linha por aula por aluna), e o que ficava de fora
+ * sumia do painel — e podia sumir de vez num "Salvar liberação". Aqui a
+ * leitura vai em páginas até acabar.
+ */
+async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>) {
+  const todas: T[] = [];
+  for (let de = 0; ; de += 1000) {
+    const r = await pedir(de, de + 999);
+    if (r.error) return { data: null, error: r.error };
+    todas.push(...(r.data ?? []));
+    if (!r.data || r.data.length < 1000) return { data: todas, error: null };
+  }
+}
+
 async function lerTudo(eu: Eu): Promise<Dados> {
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
     supabase.from("categorias").select("id, titulo, ordem").order("ordem"),
@@ -158,7 +174,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
     supabase.rpc("alunas_do_painel"),
-    supabase.from("acessos").select("aluna_id, escopo, produto_id, modulo_id, aula_id, abre_em"),
+    emPaginas((de, ate) => supabase.from("acessos").select("aluna_id, escopo, produto_id, modulo_id, aula_id, abre_em").order("id").range(de, ate)),
     supabase.from("cronograma_modulo").select("aluna_id, modulo_id, dias"),
     supabase.rpc("comentarios_para_moderacao", { p_aula: null }),
     supabase.rpc("contatos_das_alunas"),
@@ -166,7 +182,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
   const [eng, feitas, notas, contatosAl, sugs, hist, cadastro] = await Promise.all([
     supabase.rpc("engajamento_alunas"),
-    supabase.rpc("aulas_concluidas_alunas"),
+    emPaginas((de, ate) => supabase.rpc("aulas_concluidas_alunas").order("aluna_id").order("aula_id").range(de, ate)),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
     supabase.from("contatos_aluna").select("id, aluna_id, resultado, observacao, autor_nome, quando").order("quando"),
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
@@ -593,7 +609,6 @@ export function montar(app: HTMLElement) {
   const parada = (a: Aluna) => !a.bloqueada && !vencida(a) && !!a.ultimoAcesso && diasEntre(a.ultimoAcesso, hoje()) > 14;
   const naoEntrou = (a: Aluna) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso;
   const cadastrada = (a: Aluna) => "cadastrada " + (a.entrada ? haQuanto(a.entrada) + " (" + br(a.entrada) + ")" : "sem data");
-  const ultimoTxt = (a: Aluna) => a.ultimoAcesso ? "último acesso " + haQuanto(a.ultimoAcesso) : "ainda não entrou · " + cadastrada(a);
   const sitInfo = (s: Sit): [string, string] => ({ ativa: ["Ativa", "var(--verde)"], vencendo: ["Vence em breve", "var(--ouro-txt)"], vencida: ["Vencida", VERMELHO], bloqueada: ["Bloqueada", VERMELHO] } as Record<Sit, [string, string]>)[s];
   const avatar = (a: Aluna, grande = false) => `<span class="avatar${grande ? " grande" : ""}" style="--cor:${sitInfo(situacao(a))[1]}" aria-hidden="true">${h(iniciais(a.nome))}</span>`;
   const numero = (n: number, rotulo: string, atencao = false) => `<div class="numero${atencao && n ? " atencao" : ""}"><b>${n}</b><span>${h(rotulo)}</span></div>`;
@@ -823,15 +838,15 @@ export function montar(app: HTMLElement) {
           <div class="aa-cartao">
             <div class="aa-cartao-cab"><h3>Informações da aluna</h3><button type="button" class="aa-editar" data-a="editar-aluna" data-id="${a.id}">${IC.lapis}Editar</button></div>
             ${linha("Nome completo", h(a.nome))}
+            ${linha("Login", h(a.login))}
             ${linha("E-mail", a.email ? h(a.email) : naoInf)}
-            ${linha("Telefone", a.celular ? h(fone(a.celular)) : naoInf)}
-            ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
-            ${linha("Data de cadastro", br(a.entrada))}
+            ${linha("Celular", a.celular ? h(fone(a.celular)) : naoInf)}
+            ${linha("Data de cadastro", br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada))}
             ${linha("Status", status)}
           </div>
           <div class="aa-cartao">
             <div class="aa-cartao-cab"><h3>Resumo de acesso</h3></div>
-            ${resumo(IC.cal, "Acesso liberado em", br(a.entrada))}
+            ${resumo(IC.cal, "Acesso liberado até", a.validade ? br(a.validade) : "sem prazo")}
             ${resumo(IC.cadeado, "Aulas liberadas", p(a.liberadas, "aula", "aulas"))}
             ${resumo(IC.relogio, "Último acesso", a.ultimoAcesso ? br(a.ultimoAcesso) : "Nunca acessou")}
           </div>
@@ -860,14 +875,20 @@ export function montar(app: HTMLElement) {
             ? `<button class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear</button>`
             : `<button class="botao-neutro grande botao-remover" data-a="bloquear-aluna" data-id="${a.id}">Bloquear</button>`}
         </div>`;
-    else if (aba === "progresso") corpo = `
-        <div class="aa-duas">
-          <div class="aa-cartao">${resumo(IC.cadeado, "Aulas liberadas", String(a.liberadas))}</div>
-          <div class="aa-cartao">${resumo(IC.play, "Aulas concluídas", String(a.concluidas))}</div>
-        </div>
+    else if (aba === "progresso") {
+      const feitasLib = [...libs].filter((id) => a.feitas.has(id)).length;
+      const pctG = libs.size ? Math.round(feitasLib / libs.size * 100) : 0;
+      const mods = S.cursos.flatMap((c) => c.modulos.map((m, i) => ({ c, m, i, lib: m.aulas.filter((k) => libs.has(k.id)) }))).filter((x) => x.lib.length);
+      corpo = `
+        <h3 class="aa-secao" style="margin-top:4px">Progresso geral</h3>
+        <div class="al-prog-geral"><span class="al-pct">${pctG}%</span><span class="al-barra-p"><i style="width:${pctG}%"></i></span><span class="al-prog-txt">${feitasLib} de ${libs.size} ${libs.size === 1 ? "aula concluída" : "aulas concluídas"}</span></div>
         <h3 class="aa-secao">Progresso por módulo</h3>
-        <div class="aa-cartao">${progressoModulos(a)}</div>
+        ${mods.length ? `<div class="al-mods">${mods.map(({ c, m, i, lib }) => {
+          const n = lib.filter((k) => a.feitas.has(k.id)).length; const pct = Math.round(n / lib.length * 100);
+          return `<div class="al-mod"><span class="al-mod-nome">Módulo ${numModulo(c, i)} - ${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pct}%"></i></span><span class="al-mod-pct">${pct}%</span><span class="al-mod-qt">${n} de ${p(lib.length, "aula", "aulas")}</span>${seta}</div>`;
+        }).join("")}</div>` : `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`}
         ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
+    }
     else if (aba === "pagamentos") corpo = `
         <div class="aa-obs">Nenhuma informação de pagamento registrada.</div>`;
     else corpo = `
@@ -887,7 +908,7 @@ export function montar(app: HTMLElement) {
       <aside class="aa-painel largo${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Cadastro de ${h(a.nome)}">
         <button type="button" class="aa-fechar canto" data-a="aa-fechar-aluna" aria-label="Fechar o cadastro e voltar à lista">${xis}</button>
         <header class="aa-cab aluna">
-          <div class="aa-quem">${aaAvatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.entrada)}</p></div></div>
+          <div class="aa-quem">${aaAvatar(a, true)}<div><h2>${h(a.nome)}</h2><p>Cadastrada em ${br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada)} • ${p(a.liberadas, "aula liberada", "aulas liberadas")}</p></div></div>
           ${status}
         </header>
         <nav class="aa-abas" role="tablist">${ABAS_AL.map(([k, n]) => `<button type="button" role="tab" class="aa-aba" data-a="aa-aba" data-v="${k}" aria-selected="${k === aba}">${n}</button>`).join("")}</nav>
@@ -1250,52 +1271,85 @@ export function montar(app: HTMLElement) {
     const pelosDigitos = (a: Aluna) => soDigitos.length >= 4 && /^[\d\s()+.\-]+$/.test(q) && a.celular.replace(/\D/g, "").includes(soDigitos);
     return { f, lista: S.alunas.filter((a) => (casa(q, a.nome + " " + a.login + " " + a.email, a.celular) || pelosDigitos(a)) && f[2](a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
   }
+  /*
+   * Alunas, no desenho da referência: indicadores com ícone, barra de
+   * busca e ações, filtros em pílula e a lista em tabela. "Abrir ficha"
+   * (ou um clique na linha) abre o cadastro completo num painel por cima
+   * da lista — o mesmo de "Alunas e acessos".
+   */
+  const ICONE_AL = {
+    todas: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M6.2 19c.6-3.2 3-5 5.8-5s5.2 1.8 5.8 5"/><circle cx="5.6" cy="9.6" r="2.3"/><path d="M2.5 17.5c.4-2.2 1.8-3.4 3.6-3.6"/><circle cx="18.4" cy="9.6" r="2.3"/><path d="M21.5 17.5c-.4-2.2-1.8-3.4-3.6-3.6"/></svg>`,
+    ativas: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c.8-4 3.8-6 7.5-6s6.7 2 7.5 6"/></svg>`,
+    vencem: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M8.5 3v4M15.5 3v4M9 14h6M9 17h3"/></svg>`,
+    parada: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.2v.3"/></svg>`,
+    entrar: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14"/><path d="M4.5 12h10M11 8.5l3.5 3.5-3.5 3.5"/></svg>`,
+    lupa: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5 5"/></svg>`,
+    mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8v8M8 12h8"/></svg>`,
+    planilha: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15.5h6"/></svg>`,
+  };
+  const cadastroDe = (a: Aluna) => (a.criadaEm ? diaDe(a.criadaEm) : a.entrada);
+  const ultimoAcessoTxt = (a: Aluna) => (!a.ultimoAcesso ? "Nunca acessou" : a.ultimoAcesso === hoje() ? "Hoje" : br(a.ultimoAcesso));
   function telaAlunas() {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
     const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
+    const anima = ui.aaAnima; ui.aaAnima = "";
+    const ind = (ic: string, cor: string, n: number, rotulo: string) => `<div class="al-ind"><span class="al-ind-ic ${cor}">${ic}</span><span><b>${n}</b><span>${h(rotulo)}</span></span></div>`;
     return `
-    <section class="tela ativa">
-      <div class="numeros">
-        ${numero(S.alunas.length, "Alunas")}
-        ${numero(ativas, "Ativas")}
-        ${numero(S.alunas.filter((a) => situacao(a) === "vencendo").length, "Vencem em 15 dias", true)}
-        ${numero(S.alunas.filter(parada).length, "Sem acesso há 14 dias", true)}
-        ${numero(S.alunas.filter(naoEntrou).length, "Ainda não entraram")}
+    <section class="tela ativa al">
+      <h2 class="al-titulo">Alunas</h2>
+      <p class="al-sub">Gerencie todas as alunas da mentoria.</p>
+      <div class="al-inds">
+        ${ind(ICONE_AL.todas, "ouro", S.alunas.length, "Alunas")}
+        ${ind(ICONE_AL.ativas, "verde", ativas, "Ativas")}
+        ${ind(ICONE_AL.vencem, "ouro", S.alunas.filter((a) => situacao(a) === "vencendo").length, "Vencem em 15 dias")}
+        ${ind(ICONE_AL.parada, "ouro", S.alunas.filter(parada).length, "Sem acesso há 14 dias")}
+        ${ind(ICONE_AL.entrar, "ouro", S.alunas.filter(naoEntrou).length, "Ainda não entraram")}
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px">
-        <input id="busca" class="campo" style="flex:1 1 280px;max-width:520px" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" />
-        <button class="botao" data-a="aluna-nova">Cadastrar aluna</button>
-        <button class="botao-neutro grande" data-a="exportar">Exportar planilha</button>
-        <label class="ordenar"><span>Ordenar por</span>
+      <div class="al-barra">
+        <label class="al-busca">${ICONE_AL.lupa}<input id="busca" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" aria-label="Procurar aluna" /></label>
+        <button class="al-botao-ouro" data-a="aluna-nova">${ICONE_AL.mais}Cadastrar aluna</button>
+        <button class="al-botao" data-a="exportar">${ICONE_AL.planilha}Exportar planilha</button>
+        <label class="al-ordenar"><span>Ordenar por</span>
           <select class="campo" data-ordem aria-label="Ordenar alunas">
             ${[["recentes", "Mais recentes primeiro"], ["antigas", "Mais antigas primeiro"], ["nome", "Nome (A–Z)"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
           </select>
         </label>
       </div>
-      <div class="chips" style="margin-bottom:16px">
-        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="chip" style="cursor:pointer" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter(fn).length})</button>`).join("")}
+      <div class="al-filtros">
+        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="al-filtro" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter(fn).length})</button>`).join("")}
       </div>
       ${ui.sel.length ? barraLote() : ""}
-      ${lista.length
-        ? `<label class="marcar selecionar-todas"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} /> Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}</label>` + lista.map(linhaAluna).join("")
-        : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
+      ${lista.length ? `
+      <div class="al-tabela" role="table" aria-label="Alunas">
+        <div class="al-linha al-cab" role="row">
+          <span role="columnheader"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></span>
+          <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Situação</span><span role="columnheader">Acesso até</span><span role="columnheader">Aulas liberadas</span><span role="columnheader">Último acesso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
+        </div>
+        ${lista.map(linhaAluna).join("")}
+      </div>` : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
+      ${ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
     </section>`;
   }
   function linhaAluna(a: Aluna) {
-    const [rot, cor] = sitInfo(situacao(a));
+    const sit = situacao(a); const [rot] = sitInfo(sit);
+    const cor = sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho";
+    const sub = naoEntrou(a) ? "Ainda não entrou" : parada(a) ? "Sem acesso há " + diasEntre(a.ultimoAcesso, hoje()) + " dias" : "";
     const marc = ui.sel.includes(a.id);
     return `
-    <div class="linha${marc ? " marcada" : ""}">
-      <input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" />
-      ${avatar(a)}
-      <span class="nome"><b>${h(a.nome)}</b><span>${h(a.login)} · ${vencida(a) ? "acesso vencido" : "acesso até " + br(a.validade)} · ${p(a.liberadas, "aula liberada", "aulas liberadas")} · ${ultimoTxt(a)}</span></span>
-      ${etiqueta(rot, cor)}
-      <span class="acoes">
-        <button class="botao-neutro" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
+    <div class="al-linha${marc ? " marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}" role="row">
+      <span role="cell"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></span>
+      <button type="button" class="al-quem" role="cell" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button>
+      <span role="cell" class="al-cel" data-rot="Login">${h(a.login)}</span>
+      <span role="cell" class="al-cel al-sit" data-rot="Situação"><span class="al-sit-${cor}"><i></i>${h(rot)}</span>${sub ? `<small>${sub}</small>` : ""}</span>
+      <span role="cell" class="al-cel" data-rot="Acesso até">${a.validade ? br(a.validade) : "—"}</span>
+      <span role="cell" class="al-cel" data-rot="Aulas liberadas">${p(a.liberadas, "aula", "aulas")}</span>
+      <span role="cell" class="al-cel" data-rot="Último acesso">${ultimoAcessoTxt(a)}</span>
+      <span role="cell" class="al-acoes">
+        <button class="al-botao pequeno" data-a="aa-aluna" data-id="${a.id}">Abrir ficha</button>
         <span class="menu-acoes">
-          <button class="botao-neutro" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋯</button>
+          <button class="al-botao pequeno quadrado" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋯</button>
           ${ui.menu === a.id ? menuAluna(a) : ""}
         </span>
       </span>
