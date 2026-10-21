@@ -44,6 +44,8 @@ type Aluna = {
   cronograma: Record<string, number>;
   /** Do banco (0043): último acesso (AAAA-MM-DD), última aula, concluídas e nota. */
   ultimoAcesso: string; ultimaAula: string; concluidas: number; nota: number; nComentarios: number;
+  /** Quando foi cadastrada (data e hora), para a lista sair na ordem em que entraram. */
+  criadaEm: string;
   feitas: Set<string>;
   notas: Nota[]; contatos: Contato[];
 };
@@ -162,14 +164,16 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("contatos_das_alunas"),
   ]);
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist] = await Promise.all([
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro] = await Promise.all([
     supabase.rpc("engajamento_alunas"),
     supabase.rpc("aulas_concluidas_alunas"),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
     supabase.from("contatos_aluna").select("id, aluna_id, resultado, observacao, autor_nome, quando").order("quando"),
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
+    supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
   ]);
+  const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
   const video = new Map<string, string>();
@@ -222,6 +226,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     bloqueada: a.status === "bloqueada", liberadas: Number(a.aulas_liberadas ?? 0),
     acesso: { cursos: [], modulos: [], aulas: [] }, datas: {}, cronograma: {},
     ultimoAcesso: "", ultimaAula: "", concluidas: 0, nota: 0, nComentarios: 0,
+    criadaEm: criadaEm.get(String(a.id)) ?? "",
     feitas: new Set<string>(), notas: [], contatos: [],
   }));
   const porId = new Map(listaAlunas.map((a) => [a.id, a]));
@@ -1229,8 +1234,10 @@ export function montar(app: HTMLElement) {
     ["paradas", "Sem acesso recente", parada],
   ];
   const ORDENS: Record<string, (x: Aluna, y: Aluna) => number> = {
-    recentes: (x, y) => (y.entrada || "").localeCompare(x.entrada || "") || x.nome.localeCompare(y.nome, "pt"),
-    antigas: (x, y) => (x.entrada || "").localeCompare(y.entrada || "") || x.nome.localeCompare(y.nome, "pt"),
+    // Pela hora do cadastro: a última aluna adicionada vem primeiro. Sem a
+    // hora (acabou de entrar, antes de recarregar), conta como a mais nova.
+    recentes: (x, y) => (y.criadaEm || "9999").localeCompare(x.criadaEm || "9999") || x.nome.localeCompare(y.nome, "pt"),
+    antigas: (x, y) => (x.criadaEm || "9999").localeCompare(y.criadaEm || "9999") || x.nome.localeCompare(y.nome, "pt"),
     nome: (x, y) => x.nome.localeCompare(y.nome, "pt"),
     vence: (x, y) => (x.validade || "9999").localeCompare(y.validade || "9999"),
     acesso: (x, y) => (y.ultimoAcesso || "").localeCompare(x.ultimoAcesso || ""),
