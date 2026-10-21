@@ -711,15 +711,16 @@ export type Destaque = {
  * O que o Início mostra e o painel edita (0052): o nome no cabeçalho, os
  * versículos (um por dia, em sequência) e os destaques visíveis, na ordem.
  */
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; versiculos: [string, string][]; destaques: Destaque[] }> {
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[] }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
   for (const r of [cfg, vs, ds]) if (r.error) throw new Error(`início: ${r.error.message}`);
   return {
     marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
+    fraseRetorno: cfg.data?.frase_retorno ?? "",
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
     destaques: ((ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",

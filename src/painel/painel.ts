@@ -82,7 +82,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string };
   versiculos: Versiculo[];
   destaques: Destaque[];
 };
@@ -206,7 +206,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     supabase.from("fotos_aluna").select("aluna_id, foto"),
-    supabase.from("configuracoes").select("marca_titulo, marca_sub").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
   ]);
@@ -327,7 +327,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "" },
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "" },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -381,7 +381,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -1706,6 +1706,12 @@ export function montar(app: HTMLElement) {
         </div>
         <div style="margin-top:14px"><button class="al-botao-ouro">Salvar</button></div>
       </form>
+      <form data-f="cfg-retorno" class="cfg-cartao">
+        <h3>Frase de retorno do Início</h3>
+        <p class="cfg-sub">Aparece no Início para a aluna que já começou as aulas, acima de "Continue de onde parou".</p>
+        <label class="grupo"><span class="rotulo">Frase</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200" required>${h(S.config.fraseRetorno)}</textarea></label>
+        <div style="margin-top:14px"><button class="al-botao-ouro">Salvar</button></div>
+      </form>
       <div class="cfg-cartao">
         <h3>Versículos</h3>
         <p class="cfg-sub">Aparece um por dia no Início, em sequência, e volta ao primeiro depois do último. ${vh >= 0 ? "Hoje aparece o nº " + (vh + 1) + "." : ""}</p>
@@ -2809,6 +2815,13 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           return { msg: "Categoria adicionada.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
+      case "cfg-retorno": {
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update({ frase_retorno: v("fraseRetorno") }).not("id", "is", null).select("id"));
+          await registrar(null, "Mudou a frase de retorno do Início"); return "Frase de retorno salva.";
+        });
+        return;
+      }
       case "cfg-marca": {
         void executar(async () => {
           falhou(await supabase.from("configuracoes").update({ marca_titulo: v("marcaTitulo"), marca_sub: v("marcaSub") }).not("id", "is", null).select("id"));
