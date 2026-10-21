@@ -64,6 +64,45 @@ function origemDaChamada(req: Request): string {
   return req.headers.get("cf-connecting-ip") ?? req.headers.get("x-real-ip") ?? "";
 }
 
+/**
+ * O caminho de antes da 0048, quatro idas ao banco. Fica para a função
+ * continuar funcionando se for publicada antes da migração.
+ */
+async function caminhoAntigo(
+  admin: ReturnType<typeof createClient>,
+  ip: string,
+  login: string,
+  codigo: string,
+): Promise<{ alunaId: string | null; email: string | null; falha: string | null }> {
+  const { data: podeTentar, error: erroLimite } = await admin.rpc("registrar_tentativa_ip", { p_ip: ip });
+  if (erroLimite) {
+    console.error("falha no limite por IP", erroLimite.message);
+    return { alunaId: null, email: null, falha: "indisponivel" };
+  }
+  if (podeTentar === false) return { alunaId: null, email: null, falha: "muitas_tentativas" };
+
+  const { data: alunaId, error: erroCodigo } = await admin.rpc("verificar_codigo", {
+    p_login: login,
+    p_codigo: codigo,
+  });
+  if (erroCodigo) {
+    const detalhe = erroCodigo.message ?? "";
+    if (detalhe.includes("conta_travada")) return { alunaId: null, email: null, falha: "conta_travada" };
+    if (detalhe.includes("conta_bloqueada")) return { alunaId: null, email: null, falha: "conta_bloqueada" };
+    console.error("falha em verificar_codigo", detalhe);
+    return { alunaId: null, email: null, falha: "indisponivel" };
+  }
+  if (!alunaId) return { alunaId: null, email: null, falha: "acesso_invalido" };
+
+  const { data: conta, error: erroConta } = await admin.auth.admin.getUserById(alunaId as string);
+  if (erroConta || !conta?.user?.email) {
+    console.error("conta sem e-mail no Auth", erroConta?.message);
+    return { alunaId: null, email: null, falha: "indisponivel" };
+  }
+  await admin.rpc("limpar_tentativas_ip", { p_ip: ip });
+  return { alunaId: alunaId as string, email: conta.user.email, falha: null };
+}
+
 Deno.serve(async (req) => {
   const origem = req.headers.get("origin");
 
@@ -117,17 +156,29 @@ Deno.serve(async (req) => {
 
   const ip = origemDaChamada(req);
 
-  // 1. Limite por origem.
-  const { data: podeTentar, error: erroLimite } = await admin.rpc("registrar_tentativa_ip", {
+  // 1 e 2. Limite por origem e conferência do código numa ida só ao banco
+  //    (`conferir_entrada()`, 0048). Sem ela no banco, o caminho antigo.
+  let alunaId: string | null = null;
+  let email: string | null = null;
+  let falha: string | null = null;
+  const { data: conferido, error: erroConferir } = await admin.rpc("conferir_entrada", {
     p_ip: ip,
+    p_login: login,
+    p_codigo: codigo,
   });
-
-  if (erroLimite) {
-    console.error("falha no limite por IP", erroLimite.message);
-    return resposta({ erro: "indisponivel" }, 503, origem);
+  if (!erroConferir) {
+    const linha = Array.isArray(conferido) ? conferido[0] : conferido;
+    alunaId = linha?.aluna_id ?? null;
+    email = linha?.email ?? null;
+    falha = linha?.erro ?? (alunaId ? null : "indisponivel");
+  } else if (/conferir_entrada/.test(erroConferir.message ?? "") && /(find|exist)/i.test(erroConferir.message ?? "")) {
+    ({ alunaId, email, falha } = await caminhoAntigo(admin, ip, login, codigo));
+  } else {
+    console.error("falha em conferir_entrada", erroConferir.message);
+    falha = "indisponivel";
   }
 
-  if (podeTentar === false) {
+  if (falha === "muitas_tentativas") {
     return resposta(
       {
         erro: "muitas_tentativas",
@@ -137,45 +188,29 @@ Deno.serve(async (req) => {
       origem,
     );
   }
-
-  // 2. Conferência do código, no banco.
-  const { data: alunaId, error: erroCodigo } = await admin.rpc("verificar_codigo", {
-    p_login: login,
-    p_codigo: codigo,
-  });
-
-  if (erroCodigo) {
-    const detalhe = erroCodigo.message ?? "";
-
-    if (detalhe.includes("conta_travada")) {
-      return resposta(
-        {
-          erro: "conta_travada",
-          mensagem:
-            "Seu acesso ficou travado por 15 minutos depois de várias tentativas. Tente de novo mais tarde.",
-        },
-        423,
-        origem,
-      );
-    }
-
-    if (detalhe.includes("conta_bloqueada")) {
-      return resposta(
-        {
-          erro: "conta_bloqueada",
-          mensagem:
-            "Seu acesso está temporariamente suspenso. Fale com a equipe da mentoria.",
-        },
-        403,
-        origem,
-      );
-    }
-
-    console.error("falha em verificar_codigo", detalhe);
-    return resposta({ erro: "indisponivel" }, 503, origem);
+  if (falha === "conta_travada") {
+    return resposta(
+      {
+        erro: "conta_travada",
+        mensagem:
+          "Seu acesso ficou travado por 15 minutos depois de várias tentativas. Tente de novo mais tarde.",
+      },
+      423,
+      origem,
+    );
   }
-
-  if (!alunaId) {
+  if (falha === "conta_bloqueada") {
+    return resposta(
+      {
+        erro: "conta_bloqueada",
+        mensagem:
+          "Seu acesso está temporariamente suspenso. Fale com a equipe da mentoria.",
+      },
+      403,
+      origem,
+    );
+  }
+  if (falha === "acesso_invalido") {
     // Nome inexistente e código errado devolvem a mesma coisa, de
     // propósito: não se diz a ninguém quais nomes existem.
     return resposta(
@@ -187,20 +222,16 @@ Deno.serve(async (req) => {
       origem,
     );
   }
+  if (falha || !alunaId || !email) {
+    return resposta({ erro: "indisponivel" }, 503, origem);
+  }
 
   // 3. Sessão. O Auth não tem login por código, então a sessão é emitida
   //    por um token de uso único, gerado e consumido aqui mesmo — nunca
   //    enviado por e-mail, nunca exposto ao navegador.
-  const { data: conta, error: erroConta } = await admin.auth.admin.getUserById(alunaId);
-
-  if (erroConta || !conta?.user?.email) {
-    console.error("conta sem e-mail no Auth", erroConta?.message);
-    return resposta({ erro: "indisponivel" }, 503, origem);
-  }
-
   const { data: link, error: erroLink } = await admin.auth.admin.generateLink({
     type: "magiclink",
-    email: conta.user.email,
+    email,
   });
 
   if (erroLink || !link?.properties?.hashed_token) {
@@ -236,9 +267,6 @@ Deno.serve(async (req) => {
     return resposta({ erro: "indisponivel" }, 503, origem);
   }
 
-  // 4. Deu certo: a origem deixa de estar sob suspeita.
-  await admin.rpc("limpar_tentativas_ip", { p_ip: ip });
-
   return resposta(
     {
       access_token: sessao.access_token,
@@ -246,7 +274,7 @@ Deno.serve(async (req) => {
       expires_at: sessao.expires_at,
       aluna: {
         id: alunaId,
-        nome: conta.user.user_metadata?.nome ?? null,
+        nome: sessao.user?.user_metadata?.nome ?? null,
       },
     },
     200,
