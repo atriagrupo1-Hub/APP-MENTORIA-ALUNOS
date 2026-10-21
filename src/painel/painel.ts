@@ -402,7 +402,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    curMenu: "" as string, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade",
+    curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -1888,16 +1888,20 @@ export function montar(app: HTMLElement) {
   }
   function telaCursos() {
     const q = norm(ui.cursoBusca || "").trim();
-    const ordem = ui.cursoOrdem || "recentes";
-    const lista = S.cursos.filter((c) => !q || casa(q, c.nome + " " + (cat(c.cat)?.nome || "")))
-      .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : (y.criado || "").localeCompare(x.criado || ""));
+    const ordem = ui.cursoOrdem || "categorias";
+    const filtroCat = ui.cursoCat || "";
+    // Padrão: a mesma ordem que a aluna vê (categoria, depois o curso dentro dela).
+    const posCat = (c: Curso) => { const i = S.cats.findIndex((k) => k.id === c.cat); return i < 0 ? 999 : i; };
+    const lista = S.cursos.filter((c) => (!filtroCat || c.cat === filtroCat) && (!q || casa(q, c.nome + " " + (cat(c.cat)?.nome || ""))))
+      .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "recentes" ? (y.criado || "").localeCompare(x.criado || "")
+        : posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y));
     const vista = ui.cursoVista || "grade";
     const cartao = (c: Curso) => {
       const n = numerosCurso(c), k = cat(c.cat);
       const capa = capaSite(c.capa);
       return `
         <article class="cur-card">
-          <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button>
+          <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</button>
           <span class="cur-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Opções de ${h(c.nome)}" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
             <button role="menuitem" data-a="abrir-curso" data-id="${c.id}">Abrir e editar</button>
             <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
@@ -1923,8 +1927,11 @@ export function montar(app: HTMLElement) {
       <div class="cur-barra-topo">
         <p class="cur-sub">Todos os cursos cadastrados. Clique em um curso para gerenciar seus módulos e conteúdos.</p>
         <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
-        <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["categorias", "Ordem da área de membros"], ["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
         <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+      </div>
+      <div class="cur-cats" role="group" aria-label="Filtrar por categoria">
+        ${[["", "Todos os cursos", S.cursos.length], ...S.cats.map((k) => [k.id, k.nome, S.cursos.filter((c) => c.cat === k.id).length])].map(([id, nome, n]) => `<button type="button" class="cur-cat" data-a="cur-cat" data-v="${id}" aria-pressed="${filtroCat === id}">${h(String(nome))}<span>${n}</span></button>`).join("")}
       </div>
       ${lista.length ? `<div class="cur-grade${vista === "lista" ? " em-lista" : ""}">${lista.map(cartao).join("")}</div>` : `<div class="vazio">${q ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`}
     </section>`;
@@ -2701,6 +2708,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "eng-menu": ui.engMenu = ui.engMenu === d.id ? "" : d.id; break;
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
+      case "cur-cat": ui.cursoCat = d.v || ""; break;
       case "ini-periodo-rapido": {
         const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
         ui.iniAte = hj; ui.iniDe = d.v === "hoje" ? hj : d.v === "7" ? menos(6) : d.v === "30" ? menos(29) : hj.slice(0, 8) + "01";
