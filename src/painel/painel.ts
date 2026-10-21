@@ -1380,29 +1380,28 @@ export function montar(app: HTMLElement) {
   }
 
   /*
-   * "?" ao lado de cada campo: o que é, onde a aluna vê e como usar.
-   * É um <details> nativo — abre e fecha sem redesenhar a tela, então
-   * nada que já foi digitado no formulário se perde.
+   * Uma frase direta embaixo de cada campo, sempre à vista: o que vai
+   * ali e onde a aluna vê. Sem precisar clicar em nada.
    */
-  const ajudaCampo = (titulo: string, oque: string, onde: string, como: string) => `<details class="ajuda-campo" onclick="event.stopPropagation()"><summary class="ajuda-btn" aria-label="Ajuda: ${h(titulo)}">?</summary><span class="ajuda-pop"><b>${h(titulo)}</b><span><i>O que é:</i> ${oque}</span><span><i>Onde aparece:</i> ${onde}</span><span><i>Como usar:</i> ${como}</span></span></details>`;
   const AJ = {
-    nome: ajudaCampo("Nome", "o nome do curso.", "na área da aluna, no cartão do curso e no topo da página dele. No painel, na lista de Cursos e conteúdos.", "escreva como a aluna deve ler e clique em Salvar."),
-    cat: ajudaCampo("Categoria onde aparece", "a seção da aba Presentes em que o curso fica (Ebooks, Frequências, Documentários…).", "na aba Presentes da área da aluna. O curso principal da mentoria aparece sempre na aba Módulos, qualquer que seja a categoria.", "escolha na lista e clique em Salvar. Para criar uma categoria nova, use a aba Categorias / Layout."),
-    vis: ajudaCampo("Visibilidade", "liga e desliga o curso para as alunas. <b>Visível</b>: aparece (para quem tem ele liberado). <b>Oculto</b>: some da área da aluna.", "na aba Presentes. No curso principal da mentoria, quem manda são os bloqueios de cada módulo e aula, logo abaixo.", "deixe Oculto enquanto monta o conteúdo; quando estiver pronto, mude para Visível e clique em Salvar."),
-    desc: ajudaCampo("Descrição", "um texto curto que apresenta o curso.", "na página do curso dentro de Presentes, logo abaixo do título (e na página do ebook). Vazia, entra o texto padrão da categoria.", "uma ou duas frases dizendo o que a aluna vai encontrar. Clique em Salvar."),
-    fund: ajudaCampo("Fundação", "uma anotação interna da equipe: para quem é o curso, o que ele promete e com que tom se fala.", "em lugar nenhum da área da aluna — só aqui no painel.", "escreva como guia para quem for montar ou gravar as aulas deste curso."),
-    aviso: ajudaCampo("Aviso de material", "um recado curto sobre o material do curso (ex.: \"Tenha caderno e caneta por perto\").", "em todas as aulas deste curso, no fim do cartão \"Sobre a aula\".", "escreva o recado e clique em Salvar. Deixe vazio para não mostrar nada."),
-    botoes: ajudaCampo("Salvar, Cancelar e Remover", "<b>Salvar</b> grava o que mudou acima. <b>Cancelar</b> desfaz o que foi digitado e não salvo. <b>Remover</b> apaga o curso inteiro, com todos os módulos e aulas.", "as mudanças salvas valem na hora para as alunas.", "Remover pede para digitar REMOVER e não dá para desfazer — use Visibilidade: Oculto se só quiser esconder."),
-    conteudo: ajudaCampo("Conteúdo do produto", "os módulos do curso e, dentro de cada um, as aulas.", "na área da aluna: na aba Módulos (curso principal) ou na página do curso em Presentes.", "<b>⌄</b> mostra as aulas do módulo. <b>Editar</b> muda o nome. <b>Bloquear para todas</b> fecha o módulo para todas as alunas. <b>↑ ↓</b> mudam a ordem. <b>Remover módulo</b> apaga o módulo e as aulas dele."),
-    aulas: ajudaCampo("As aulas do módulo", "cada linha é uma aula, na ordem em que a aluna vê.", "na página do módulo, na área da aluna.", "<b>Abrir</b> para colocar vídeo, capa, texto, resumo e exercício. <b>Liberar para todas</b> abre a aula para todas as alunas, mesmo sem liberação individual. <b>Bloquear</b> fecha para todas. <b>Editar</b> muda o nome. <b>↑ ↓</b> mudam a ordem. <b>Remover</b> apaga a aula."),
-    video: ajudaCampo("Vídeo", "o vídeo da aula, guardado no Cloudflare Stream.", "no player da aula, na área da aluna. Sem vídeo, ela vê \"Aula será adicionada em breve\".", "cole o link do vídeo no Cloudflare Stream (ou só o identificador dele) e clique em Salvar aula."),
-    capa: ajudaCampo("Capa da aula", "a imagem da aula, no formato deitado (16:9).", "na lista de aulas do módulo, no player antes de tocar e em \"Continue de onde parou\".", "clique em Escolher imagem e selecione do computador; o caminho se preenche sozinho. Depois, Salvar aula."),
-    texto: ajudaCampo("Texto da aula", "o texto que acompanha o vídeo.", "na aba \"Sobre a aula\", embaixo do vídeo.", "escreva livre. Uma linha em branco separa parágrafo; *asteriscos* deixam em negrito. Clique em Salvar aula."),
-    resumo: ajudaCampo("Resumo", "os pontos principais da aula, em lista.", "na aba \"Resumo\" da aula. Vazio, aparece \"Resumo será adicionado em breve\".", "um ponto por linha. Clique em Salvar aula."),
-    exercicio: ajudaCampo("Exercício", "a tarefa que a aluna faz depois da aula.", "na aba \"Exercícios\": o título e o começo do texto, com o botão \"Ver exercício completo\".", "primeira linha é o título; depois, o texto. Linha em branco separa parágrafo. Clique em Salvar aula."),
-    extras: ajudaCampo("Conteúdo extra", "materiais a mais da aula: link, PDF, áudio, texto ou vídeo.", "como botões no fim do cartão \"Sobre a aula\".", "escolha o tipo, dê um nome (é o texto do botão), cole o link ou envie o arquivo e clique em Adicionar. Remover tira o extra."),
-    addMod: ajudaCampo("Adicionar módulo", "cria um módulo novo no fim do curso.", "na área da aluna, depois de ter aulas e estar liberado para ela.", "escreva o nome e clique em + Adicionar módulo. Depois abra o módulo (⌄) e use + Adicionar aula."),
+    nome: "Aqui você coloca o nome do curso. É assim que a aluna vê o curso chamado na área de membros.",
+    cat: "Escolha em qual seção de Presentes o curso aparece para a aluna (Ebooks, Frequências…). O curso principal da mentoria fica sempre na aba Módulos.",
+    vis: "Visível: a aluna vê o curso. Oculto: fica escondido enquanto você monta.",
+    desc: "Aqui você escreve uma ou duas frases apresentando o curso. A aluna lê isso na página do curso, embaixo do nome.",
+    fund: "Anotação só da equipe: para quem é o curso e o que ele promete. A aluna não vê.",
+    aviso: "Recado que aparece no fim de todas as aulas deste curso (ex.: \"Tenha caderno e caneta\"). Vazio, não aparece nada.",
+    botoes: "Salvar grava as mudanças. Cancelar desfaz o que você digitou. Remover apaga o curso inteiro, com módulos e aulas, sem volta.",
+    conteudo: "Aqui ficam os módulos e as aulas do curso, na ordem em que a aluna vê. ⌄ mostra as aulas · Editar muda o nome · Bloquear para todas fecha o módulo para todas as alunas · ↑ ↓ mudam a ordem.",
+    aulas: "Abrir: coloca vídeo, capa e texto da aula · Liberar para todas: abre a aula para todo mundo · Bloquear: fecha para todo mundo · ↑ ↓ mudam a ordem.",
+    addMod: "Escreva o nome do novo módulo. Ele entra no fim da lista.",
+    video: "Cole aqui o link do vídeo da aula (Cloudflare Stream). É o vídeo que a aluna assiste. Vazio, ela vê \"Aula será adicionada em breve\".",
+    capa: "A imagem da aula que a aluna vê na lista de aulas e antes de dar o play. Clique em Escolher imagem e o caminho se preenche sozinho.",
+    texto: "O texto que a aluna lê embaixo do vídeo, em \"Sobre a aula\". Linha em branco separa parágrafo; *asteriscos* deixam em negrito.",
+    resumo: "Os pontos principais da aula, um por linha. A aluna vê na aba Resumo.",
+    exercicio: "A tarefa da aula. Primeira linha é o título, depois o texto. A aluna vê na aba Exercícios.",
+    extras: "Materiais a mais da aula (PDF, link, áudio…). Viram botões no fim de \"Sobre a aula\".",
   };
+  const dicaCampo = (txt: string) => `<span class="dica-campo">${txt}</span>`;
 
   /* ---------- CURSO ABERTO ---------- */
   function telaCurso() {
@@ -1418,29 +1417,29 @@ export function montar(app: HTMLElement) {
       <p class="rotulo" style="margin:0 0 10px">Configurações</p>
       <form data-f="curso-config" class="cartao" style="padding:16px;margin-bottom:26px">
         <div class="campos">
-          <div class="grupo nome"><span class="rotulo rotulo-ajuda">Nome ${AJ.nome}</span><input class="campo" name="nome" value="${h(c.nome)}" required aria-label="Nome" /></div>
-          <div class="grupo" style="flex:1 1 240px"><span class="rotulo rotulo-ajuda">Categoria onde aparece ${AJ.cat}</span>
+          <div class="grupo nome"><span class="rotulo">Nome</span>${dicaCampo(AJ.nome)}<input class="campo" name="nome" value="${h(c.nome)}" required aria-label="Nome" /></div>
+          <div class="grupo" style="flex:1 1 240px"><span class="rotulo">Categoria onde aparece</span>${dicaCampo(AJ.cat)}
             <select class="campo" name="cat" required aria-label="Categoria onde aparece">
               ${S.cats.map((k) => `<option value="${k.id}" ${k.id === c.cat ? "selected" : ""}>${h(k.nome)}</option>`).join("")}
             </select>
           </div>
-          <div class="grupo" style="flex:0 0 150px"><span class="rotulo rotulo-ajuda">Visibilidade ${AJ.vis}</span>
+          <div class="grupo" style="flex:0 0 150px"><span class="rotulo">Visibilidade</span>${dicaCampo(AJ.vis)}
             <select class="campo" name="visivel" aria-label="Visibilidade"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select>
           </div>
         </div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Descrição ${AJ.desc}</span><textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Fundação — o que é este curso ${AJ.fund}</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Aviso de material — aparece em toda aula ${AJ.aviso}</span><textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Descrição</span>${dicaCampo(AJ.desc)}<textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Fundação — o que é este curso</span>${dicaCampo(AJ.fund)}<textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Aviso de material — aparece em toda aula</span>${dicaCampo(AJ.aviso)}<textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px">
           <button class="botao">Salvar</button>
           <button type="button" class="botao-neutro grande" data-a="curso-cancelar">Cancelar</button>
           <button type="button" class="botao-neutro grande botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
-          <span style="align-self:center">${AJ.botoes}</span>
+          <span class="dica-campo" style="flex:1 1 100%">${AJ.botoes}</span>
         </div>
       </form>
 
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px">
-        <span class="rotulo rotulo-ajuda">Conteúdo do produto ${AJ.conteudo}</span>
+        <span class="rotulo">Conteúdo do produto</span>${dicaCampo(AJ.conteudo)}
         <span style="font-size:13px;color:var(--texto-2)">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</span>
       </div>
 
@@ -1449,7 +1448,7 @@ export function montar(app: HTMLElement) {
       <form data-f="mod-add" data-id="${c.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding:16px;border:1px dashed rgba(255,255,255,.16);border-radius:14px">
         <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome do novo módulo" required />
         <button class="botao-neutro grande">+ Adicionar módulo</button>
-        <span style="align-self:center">${AJ.addMod}</span>
+        <span class="dica-campo" style="flex:1 1 100%">${AJ.addMod}</span>
       </form>
     </section>`;
   }
@@ -1478,7 +1477,7 @@ export function montar(app: HTMLElement) {
     <div class="bloco-modulo">
       ${cab}
       <div style="margin-top:12px">
-        ${m.aulas.length ? `<p class="rotulo rotulo-ajuda" style="margin:0 0 6px">Aulas ${AJ.aulas}</p>` : ""}
+        ${m.aulas.length ? `<p class="rotulo" style="margin:0 0 6px">Aulas</p><p class="dica-campo" style="margin:-4px 0 10px">${AJ.aulas}</p>` : ""}
         ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p style="margin:0;padding:10px 0;font-size:13px;color:var(--texto-3)">Nenhuma aula neste módulo.</p>`}
       </div>
       ${ui.addAula === m.id ? `
@@ -1535,41 +1534,37 @@ export function montar(app: HTMLElement) {
 
       <form data-f="aula" data-id="${a.id}">
         <label class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo rotulo-ajuda">Vídeo — link ou identificador (Cloudflare Stream) ${AJ.video}</span>
+          <span class="rotulo">Vídeo — link ou identificador (Cloudflare Stream)</span>${dicaCampo(AJ.video)}
           <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt;  ou só o uid" />
         </label>
 
         <div class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo rotulo-ajuda">Capa da aula ${AJ.capa}</span>
+          <span class="rotulo">Capa da aula</span>${dicaCampo(AJ.capa)}
           <span style="display:flex;flex-wrap:wrap;gap:8px">
             <input id="campoCapa" class="campo" name="capa" style="flex:1 1 240px" value="${h(a.capa)}" placeholder="modulo-1-aula-1.webp" />
             <button type="button" class="botao-neutro grande" data-a="escolher-capa">Escolher imagem</button>
           </span>
-          <span class="dica">Escolha a imagem do computador e o caminho se preenche sozinho.</span>
           <div id="previaCapa" style="width:220px;max-width:100%;aspect-ratio:16/9;margin-top:6px;border-radius:8px;border:1px solid var(--linha-suave);background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#131c33,#060911 60%,#101830)"></div>
         </div>
 
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">O texto desta aula — é o que a aluna lê ${AJ.texto}</span>
+          <span class="rotulo">O texto desta aula — é o que a aluna lê</span>${dicaCampo(AJ.texto)}
           <textarea class="campo" name="texto" rows="16" style="min-height:420px" placeholder="Escreva a aula como você quiser.
 
 Uma linha em branco separa parágrafo.
 
 Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
-          <span class="dica">Deixe vazio e a aula fica só com o vídeo.</span>
         </label>
         ${a.resumo === null ? "" : `
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">Resumo — aba "Resumo" da aula ${AJ.resumo}</span>
+          <span class="rotulo">Resumo — aba "Resumo" da aula</span>${dicaCampo(AJ.resumo)}
           <textarea class="campo" name="resumo" rows="5" placeholder="Um ponto por linha.">${h(a.resumo)}</textarea>
-          <span class="dica">Cada linha vira um item da lista. Vazio: a aluna vê "Resumo será adicionado em breve".</span>
         </label>
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">Exercício — aba "Exercícios" da aula ${AJ.exercicio}</span>
+          <span class="rotulo">Exercício — aba "Exercícios" da aula</span>${dicaCampo(AJ.exercicio)}
           <textarea class="campo" name="exercicio" rows="7" placeholder="Título do exercício na primeira linha.
 
 Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}</textarea>
-          <span class="dica">A primeira linha é o título. Vazio: a aluna vê "Exercício será adicionado em breve".</span>
         </label>`}
 
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px">
@@ -1578,7 +1573,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         </div>
       </form>
 
-      <p class="rotulo rotulo-ajuda" style="margin:0 0 10px">Conteúdo extra desta aula ${AJ.extras}</p>
+      <p class="rotulo" style="margin:0 0 10px">Conteúdo extra desta aula</p><p class="dica-campo" style="margin:-4px 0 10px">${AJ.extras}</p>
       <div class="cartao" style="padding:16px">
         ${a.extras.length ? `<div style="margin:-4px 0 16px">${a.extras.map((e) => `
           <div class="linha">
