@@ -1142,19 +1142,12 @@ export function montar(app: HTMLElement) {
   }
   function telaEngajamento() {
     const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
-    const cont = (k: string) => base.filter((x) => nivel(x)[2] === k).length;
     const media = base.length ? Math.round(base.reduce((s, x) => s + x.nota, 0) / base.length) : 0;
     const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
     const grupo = (g: string) => (x: Aluna) => nivel(x)[2] === g;
     const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegadas", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
     return `
     <section class="tela ativa aa">
-      <div class="numeros">
-        ${numero(media, "Engajamento médio")}
-        ${numero(cont("avancando"), "Avançando")}
-        ${numero(cont("ritmo"), "No ritmo")}
-        ${numero(cont("empurrao"), "Precisam de um empurrão", true)}
-      </div>
       ${quadrosComLista(quadrosEng(base, FIL, media), ["empurrao", "ritmo", "avancando", "recem", "semcontato", "todas"])}
     </section>`;
   }
