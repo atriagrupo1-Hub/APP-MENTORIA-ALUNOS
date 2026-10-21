@@ -28,7 +28,7 @@ type Aula = {
   id: string; nome: string; video: string; capa: string; texto: string;
   // Nulos enquanto a 0047 não estiver no banco: aí os campos não aparecem.
   resumo: string | null; exercicio: string | null;
-  acesso: AcessoAula; extras: Extra[]; criado: string;
+  acesso: AcessoAula; extras: Extra[]; criado: string; duracao: number;
 };
 type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
@@ -237,7 +237,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
       texto: a.texto ?? "",
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
-      extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "",
+      extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
     });
     aulasDo.set(a.modulo_id, lista);
   }
@@ -405,7 +405,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -1983,6 +1983,9 @@ export function montar(app: HTMLElement) {
    * abas Visão geral · Módulos e aulas · Alunas · Configurações ·
    * Relatórios. Tudo sai do que o painel já lê do banco.
    */
+  const IC_EXTERNO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`;
+  const IC_IMG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 17l5-4.5 3.5 3 3-2.5 4.5 4"/></svg>`;
+  const mmssPainel = (s: number) => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   type AlunaCurso = { a: Aluna; incluida: string; pct: number };
   function alunasDoCurso(c: Curso): AlunaCurso[] {
     const aulas = c.modulos.flatMap((m) => m.aulas.map((x) => x.id));
@@ -2003,34 +2006,7 @@ export function montar(app: HTMLElement) {
     voltar: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>`,
     mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
   };
-  const ESTADO_COM: Record<Estado, [string, "ouro" | "verde" | "neutro"]> = { moderar: ["Para moderar", "ouro"], publicado: ["Publicado", "verde"], oculto: ["Oculto", "neutro"] };
   const comentariosDoCurso = (c: Curso) => { const ids = new Set(c.modulos.flatMap((m) => m.aulas.map((x) => x.id))); return S.comentarios.filter((k) => ids.has(k.aula)).sort((x, y) => y.criado.localeCompare(x.criado)); };
-  function comentariosCursoResumo(c: Curso) {
-    const todos = comentariosDoCurso(c), esperando = todos.filter((k) => k.estado === "moderar").length;
-    return `
-      <section class="cs-cartao cs-coms">
-        <header><h3>Últimos comentários</h3>${esperando ? `<span class="aa-pilula ouro"><i></i>${p(esperando, "para moderar", "para moderar")}</span>` : ""}<button type="button" class="link" data-a="curso-aba" data-v="comentarios">Ver todos</button></header>
-        ${todos.slice(0, 4).map((k) => `
-        <div class="cs-com">
-          ${avatarDe(k.autoraId, k.autora)}
-          <div class="cs-com-txt">
-            <div class="cs-com-cab"><b>${h(k.autora)}</b><span>${h(localAula(k.aula))} · ${haTempo(k.criado)}</span>${pilula(ESTADO_COM[k.estado][0], ESTADO_COM[k.estado][1])}</div>
-            <p>${h(k.texto)}</p>
-            ${k.resposta ? `<p class="cs-com-resp"><b>Equipe AION:</b> ${h(k.resposta)}</p>` : ""}
-            ${ui.respondendo === k.id ? `
-              <form data-f="com-resposta" data-id="${k.id}" class="cs-com-form">
-                <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta" required>${h(k.resposta)}</textarea>
-                <div class="acoes"><button class="al-botao-ouro">Enviar resposta</button><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button></div>
-              </form>` : `
-              <div class="cs-com-acoes">
-                ${k.estado !== "publicado" ? `<button type="button" class="al-botao-ouro pequeno" data-a="com-publicar" data-id="${k.id}">Aprovar</button>` : ""}
-                <button type="button" class="al-botao pequeno" data-a="com-responder" data-id="${k.id}">${k.resposta ? "Editar resposta" : "Responder"}</button>
-                ${k.estado !== "oculto" ? `<button type="button" class="al-botao pequeno" data-a="com-ocultar" data-id="${k.id}">Ocultar</button>` : ""}
-              </div>`}
-          </div>
-        </div>`).join("") || `<p class="ini-vazio">Nenhum comentário neste curso ainda.</p>`}
-      </section>`;
-  }
   function comentariosCursoAba(c: Curso) {
     const todos = comentariosDoCurso(c);
     const f = (ui.csComFiltro || "moderar") as Estado;
@@ -2048,46 +2024,84 @@ export function montar(app: HTMLElement) {
     const antAlunas = ativas.filter((x) => diaDe(x.incluida) < ini).length;
     const aulas = c.modulos.flatMap((m, mi) => m.aulas.map((x) => ({ x, m, mi })));
     const antAulas = aulas.filter((o) => o.x.criado && diaDe(o.x.criado) < ini).length;
-    const varMes = (cur: number, ant: number) => (ant && cur !== ant ? `<span class="eng-var ${cur > ant ? "bom" : "ruim"}">${cur > ant ? "↑" : "↓"} ${Math.abs(Math.round(((cur - ant) / ant) * 100))}%</span><em>em relação ao mês anterior</em>` : "");
+    const varMes = (cur: number, ant: number) => (ant && cur !== ant ? `<span class="eng-var ${cur > ant ? "bom" : "ruim"}">${cur > ant ? "▲" : "▼"} ${cur > ant ? "+" : "-"}${Math.abs(Math.round(((cur - ant) / ant) * 100))}%</span><em>em relação ao mês anterior</em>` : `<span class="eng-var neutro">–</span>`);
     const diasCriado = c.criado ? diasEntre(diaDe(c.criado), hoje()) : 0;
     const ind = (ic: string, n: string, rot: string, extra: string) => `<div class="cs-ind"><span class="eng-ind-ic">${ic}</span><span class="cs-ind-txt"><b>${n}</b><span>${rot}</span>${extra}</span></div>`;
     const ultimas = todas.slice().sort((x, y) => y.incluida.localeCompare(x.incluida)).slice(0, 5);
-    const novasAulas = aulas.filter((o) => o.x.criado).sort((x, y) => y.x.criado.localeCompare(x.x.criado)).slice(0, 3);
-    // Quando cada aula abriu para alguma aluna (a data de abertura, ou a da liberação).
+    const novasAulas = aulas.filter((o) => o.x.criado).sort((x, y) => y.x.criado.localeCompare(x.x.criado)).slice(0, 5);
     const agora = new Date().toISOString();
     const abriu = new Map<string, string>();
     for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula") { const q = k.abre || k.em; if (q && q <= agora && (!abriu.has(k.alvo) || q > abriu.get(k.alvo)!)) abriu.set(k.alvo, q); }
-    const liberadas = aulas.filter((o) => abriu.has(o.x.id)).sort((x, y) => abriu.get(y.x.id)!.localeCompare(abriu.get(x.x.id)!)).slice(0, 3);
+    const liberadas = aulas.filter((o) => abriu.has(o.x.id)).sort((x, y) => abriu.get(y.x.id)!.localeCompare(abriu.get(x.x.id)!)).slice(0, 5);
     const linhaAula = (o: { x: Aula; m: Modulo; mi: number }, quando: string) => `
-      <button type="button" class="cs-aula" data-a="abrir-aula" data-id="${o.x.id}"><span class="cs-mini">${capaSite(o.x.capa) ? `<img src="${h(capaSite(o.x.capa))}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_CURSO.play}</i></span><span class="cs-aula-txt"><b>${h(o.x.nome)}</b><span>Módulo ${numModulo(c, o.mi)}</span></span><span class="cs-quando">${dataHoraCurta(quando)}</span></button>`;
+      <button type="button" class="cs-aula" data-a="abrir-aula" data-id="${o.x.id}"><span class="cs-mini">${capaSite(o.x.capa) ? `<img src="${h(capaSite(o.x.capa))}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_CURSO.play}</i></span><span class="cs-aula-txt"><b>${h(o.x.nome)}</b><span>Módulo ${numModulo(c, o.mi)}${o.x.duracao ? " · " + mmssPainel(o.x.duracao) : ""}</span></span><span class="cs-quando">${dataHoraCurta(quando)}</span></button>`;
+    const verTodas = (aba: string, t = "Ver todas") => `<button type="button" class="link cs-ver" data-a="curso-aba" data-v="${aba}">${t} ${IC_CUR.seta}</button>`;
+    // Últimos comentários: período e módulo.
+    const per = ui.csComPer || "hoje", modF = ui.csComMod || "";
+    const hj = hoje(), menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
+    const aulaMod = new Map<string, string>(); c.modulos.forEach((m) => m.aulas.forEach((x) => aulaMod.set(x.id, m.id)));
+    const coms = comentariosDoCurso(c).filter((k) => {
+      const d = diaDe(k.criado);
+      if (per === "hoje" && d !== hj) return false;
+      if (per === "ontem" && d !== menos(1)) return false;
+      if (per === "7" && d < menos(6)) return false;
+      if (per === "30" && d < menos(29)) return false;
+      return !modF || aulaMod.get(k.aula) === modF;
+    });
+    const IC_OK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`, IC_BAL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`, IC_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+    const estado = (k: Comentario) => k.estado === "moderar" ? pilula("Pendente", "ouro") : k.estado === "publicado" ? pilula("Aprovado", "verde") : pilula("Oculto", "neutro");
     return `
       <div class="cs-inds">
         ${ind(IC_CUR.pessoas, String(ativas.length), "Alunas ativas", varMes(ativas.length, antAlunas))}
-        ${ind(IC_CUR.camadas, String(c.modulos.length), "Módulos", "")}
+        ${ind(IC_CUR.camadas, String(c.modulos.length), "Módulos", `<span class="eng-var neutro">–</span>`)}
         ${ind(IC_CURSO.play, String(aulas.length), "Aulas", varMes(aulas.length, antAulas))}
         ${ind(IC_CUR.cal, c.criado ? br(diaDe(c.criado)) : "—", "Data de criação", c.criado ? `<em>Criado há ${diasCriado} ${diasCriado === 1 ? "dia" : "dias"}</em>` : "")}
       </div>
-      ${comentariosCursoResumo(c)}
-      <div class="cs-meio">
+      <div class="cs-tres">
         <section class="cs-cartao">
-          <header><h3>Últimas alunas adicionadas</h3><button type="button" class="link" data-a="curso-aba" data-v="alunas">Ver todas</button></header>
-          <table class="cs-tabela cs-tabela-pq">
+          <header><h3>Últimas alunas adicionadas</h3>${verTodas("alunas")}</header>
+          <div class="cs-tabela-rola"><table class="cs-tabela cs-tabela-pq">
             <thead><tr><th>Aluna</th><th>Data de inclusão</th><th>Status</th><th></th></tr></thead>
             <tbody>${ultimas.map(({ a, incluida }) => `<tr><td><button type="button" class="cs-aluna" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td><td>${dataHoraCurta(incluida)}</td><td>${statusAluna(a)}</td><td class="dir"><button type="button" class="eng-mais" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">⋯</button></td></tr>`).join("") || `<tr><td colspan="4" class="cs-vazio">Nenhuma aluna neste curso ainda.</td></tr>`}</tbody>
-          </table>
+          </table></div>
         </section>
-        <div class="cs-col">
-          <section class="cs-cartao">
-            <header><h3>Últimas aulas adicionadas</h3><button type="button" class="link" data-a="curso-aba" data-v="modulos">Ver todas</button></header>
-            ${novasAulas.map((o) => linhaAula(o, o.x.criado)).join("") || `<p class="ini-vazio">Nenhuma aula ainda.</p>`}
-          </section>
-          <section class="cs-cartao">
-            <header><h3>Últimas aulas liberadas</h3><button type="button" class="link" data-a="curso-aba" data-v="relatorios">Ver todas</button></header>
-            ${liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)).join("") || `<p class="ini-vazio">Nenhuma aula liberada ainda.</p>`}
-          </section>
-        </div>
-      </div>`;
+        <section class="cs-cartao">
+          <header><h3>Últimas aulas adicionadas</h3>${verTodas("modulos")}</header>
+          ${novasAulas.map((o) => linhaAula(o, o.x.criado)).join("") || `<p class="ini-vazio">Nenhuma aula ainda.</p>`}
+        </section>
+        <section class="cs-cartao">
+          <header><h3>Últimas aulas liberadas</h3>${verTodas("relatorios")}</header>
+          ${liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)).join("") || `<p class="ini-vazio">Nenhuma aula liberada ainda.</p>`}
+        </section>
+      </div>
+      <section class="cs-cartao cs-coms">
+        <header class="cs-coms-cab"><h3>Últimos comentários</h3>${verTodas("comentarios", "Ver todos")}<span style="flex:1"></span>
+          <span class="cs-coms-fil">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-per" data-v="${v}" aria-pressed="${per === v}">${t}</button>`).join("")}</span>
+          <select class="campo cs-coms-mod" data-cs-com-mod aria-label="Módulo"><option value="">Todos os módulos</option>${c.modulos.map((m, mi) => `<option value="${m.id}" ${modF === m.id ? "selected" : ""}>Módulo ${numModulo(c, mi)}</option>`).join("")}</select>
+        </header>
+        <div class="cs-tabela-rola"><table class="cs-tabela">
+          <thead><tr><th>Aluna</th><th>Aula</th><th>Comentário</th><th>Data</th><th>Status</th><th class="dir">Ações</th></tr></thead>
+          <tbody>${coms.slice(0, 10).map((k) => `
+            <tr${ui.comAlvo === k.id ? ' class="cs-alvo"' : ""}>
+              <td><span class="cs-aluna">${avatarDe(k.autoraId, k.autora)}<b>${h(k.autora)}</b></span></td>
+              <td class="cs-cinza">${h(localAula(k.aula))}</td>
+              <td class="cs-com-prev" title="${h(k.texto)}">${h(k.texto)}</td>
+              <td>${dataHoraCurta(k.criado)}</td>
+              <td>${estado(k)}</td>
+              <td class="dir cs-com-ic">
+                <button type="button" data-a="com-publicar" data-id="${k.id}" ${k.estado === "publicado" ? "disabled" : ""} aria-label="Aprovar" title="Aprovar">${IC_OK}</button>
+                <button type="button" data-a="com-responder" data-id="${k.id}" aria-label="Responder" title="Responder">${IC_BAL}</button>
+                <button type="button" data-a="cs-com-ver" data-id="${k.id}" aria-label="Ver o comentário completo" title="Ver">${IC_OLHO}</button>
+              </td>
+            </tr>
+            ${ui.respondendo === k.id ? `<tr><td colspan="6"><form data-f="com-resposta" data-id="${k.id}" class="cs-com-form">
+              <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta. Ela aparece para as alunas como Equipe AION." required>${h(k.resposta)}</textarea>
+              <div class="acoes"><button class="al-botao-ouro">Enviar resposta</button><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button></div>
+            </form></td></tr>` : ""}`).join("") || `<tr><td colspan="6" class="cs-vazio">Nenhum comentário neste período.</td></tr>`}</tbody>
+        </table></div>
+      </section>`;
   }
+
   /* --- Módulos e aulas: uma linha por módulo; a seta abre as aulas --- */
   const IC_MOD = {
     alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6.5" r="1.3"/><circle cx="15" cy="6.5" r="1.3"/><circle cx="9" cy="12" r="1.3"/><circle cx="15" cy="12" r="1.3"/><circle cx="9" cy="17.5" r="1.3"/><circle cx="15" cy="17.5" r="1.3"/></svg>`,
@@ -2326,13 +2340,14 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa cs">
       <div class="cs-trilha">
         <button type="button" class="cs-volta-ic" data-a="aba" data-v="cursos" aria-label="Voltar para Cursos e conteúdos">${IC_CURSO.voltar}</button>
-        <span><button type="button" class="link" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true"> › </span><b>${h(c.nome)}</b></span>
+        <span><button type="button" class="link cs-link-trilha" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true" class="cs-sep">›</span><b>${h(c.nome)}</b></span>
         <span style="flex:1"></span>
-        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna</button>
+        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna ${IC_EXTERNO}</button>
+        <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
         <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
       </div>
       <div class="cs-heroi">
-        <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+        <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}<button type="button" class="cs-alterar-capa" data-a="cs-capa-direto" data-id="${c.id}">${IC_IMG}Alterar capa</button></span>
         <div class="cs-heroi-txt">
           <span class="cs-etq">Curso</span>
           <h1>${h(c.nome)}</h1>
@@ -2341,13 +2356,12 @@ export function montar(app: HTMLElement) {
             <span>${IC_CUR.pessoas}<b>${ativas}</b><em>alunas ativas</em></span>
             <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>módulos</em></span>
             <span>${IC_CURSO.play}<b>${totalAulas(c)}</b><em>aulas</em></span>
-            <span>${IC_CUR.cal}<em>Adicionado em</em><b>${c.criado ? br(diaDe(c.criado)) : "—"}</b></span>
+            <span>${IC_CUR.cal}<b>${c.criado ? br(diaDe(c.criado)) : "—"}</b><em>Data de criação</em></span>
           </div>
         </div>
         <div class="cs-heroi-acoes">
           <span class="eng-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Mais opções" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
             <button role="menuitem" data-a="curso-aba" data-v="modulos">Módulos e aulas</button>
-            <button role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
             <button role="menuitem" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button>
             <button role="menuitem" class="botao-remover" data-a="curso-remover" data-id="${c.id}">Remover curso</button>
           </span>` : ""}</span>
@@ -3042,6 +3056,14 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
       case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
       case "cs-com-filtro": ui.csComFiltro = d.v; break;
+      case "cs-com-per": ui.csComPer = d.v; break;
+      case "cs-com-ver": { const k = S.comentarios.find((x) => x.id === d.id); if (!k) return; ui.cursoAba = "comentarios"; ui.csComFiltro = k.estado; ui.comAlvo = k.id; render(); document.getElementById("com-" + k.id)?.scrollIntoView({ block: "center" }); return; }
+      case "cs-capa-direto": {
+        const cid = d.id; const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
+        inp.onchange = () => { const f = inp.files?.[0]; if (!f) return; toast("Enviando a capa…");
+          void executar(async () => { const caminho = await enviarArquivo("capas", "cursos", f); const c = curso(cid)!; const velha = c.capa || null; falhou(await supabase.from("produtos").update({ capa_path: caminho }).eq("id", cid).select("id").single()); return { msg: "Capa do curso trocada.", texto: "capa de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update({ capa_path: velha }).eq("id", cid).select("id").single()); } }; }); };
+        inp.click(); return;
+      }
       case "cs-pag": ui.csPag = Math.max(1, Number(d.v) || 1); break;
       case "cs-add-aluna": ui.csAddAluna = !ui.csAddAluna; break;
       case "cs-add-aluna-fundo": if (alvo !== el) return; ui.csAddAluna = false; break;
@@ -3748,6 +3770,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
+    if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
     if (t.hasAttribute("data-rel-de")) { ui.relDe = t.value; render(); return; }
     if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
