@@ -2240,6 +2240,7 @@ export function montar(app: HTMLElement) {
             <button type="button" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
             <button type="button" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
             <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
+            <button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Apagar curso</button>
           </section>
         </div>
       </div>`;
@@ -3197,8 +3198,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "curso-cancelar": toast("Alterações descartadas."); break;
       case "curso-remover": {
         const c = curso(d.id)!;
-        confirmar({ titulo: "Remover " + c.nome + "?", texto: "O produto, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover produto" }, async () => {
-          await rpc("remover_produto", { p_produto: c.id }); ui.curso = null; ui.aula = null; ui.tab = "cursos"; toast("Produto removido.");
+        confirmar({ titulo: "Apagar o curso " + c.nome + "?", texto: "O curso, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado de vez, junto com as liberações, o progresso e os comentários das alunas nele. Não dá para desfazer. Para confirmar, escreva APAGAR.", palavra: "APAGAR", rotulo: "Apagar curso" }, async () => {
+          await rpc("remover_produto", { p_produto: c.id }); ui.curso = null; ui.aula = null; ui.tab = "cursos"; toast("Curso apagado.");
         });
         break;
       }
