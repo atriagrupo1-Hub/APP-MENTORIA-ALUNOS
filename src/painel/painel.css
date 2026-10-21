@@ -950,3 +950,77 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .dest-linha .cat-nome b { font-size: 19px; }
 .cat-capa[data-previa] img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cat-form .cat-capa { flex: 0 0 auto; }
+
+/* ---------- Engajamento (referência aprovada) ---------- */
+:root { --eng-verde: #2e9e5b; --eng-ouro: #d9c39a; --eng-rosa: #f08a8a; --eng-azul: #6f8fd8; }
+.eng-topo { display: grid; grid-template-columns: minmax(260px, 1.15fr) 3fr; gap: 14px; }
+.eng-geral { display: flex; align-items: center; gap: 18px; padding: 18px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
+.eng-anel { --p: 0; flex: none; display: grid; place-items: center; width: 124px; height: 124px; border-radius: 50%; background: conic-gradient(var(--aa-ouro) calc(var(--p) * 1%), var(--aa-ouro-fundo) 0); }
+.eng-anel b { display: grid; place-items: center; width: 100px; height: 100px; border-radius: 50%; background: var(--aa-cartao); font-family: "Cormorant Garamond", Georgia, serif; font-size: 34px; font-weight: 600; color: var(--texto); }
+.eng-geral-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.eng-geral-txt > b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; }
+.eng-geral-txt > span:not(.eng-var) { font-size: 13px; color: var(--texto-3); }
+.eng-geral-txt em { font-style: normal; font-size: 12px; color: var(--texto-3); }
+.eng-inds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.eng-ind { display: flex; align-items: flex-start; gap: 14px; min-width: 0; padding: 16px; font: inherit; color: var(--texto); text-align: left; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; box-shadow: var(--aa-sombra); cursor: pointer; }
+.eng-ind:hover { border-color: color-mix(in srgb, var(--aa-ouro) 55%, transparent); }
+.eng-ind-ic, .eng-cab-ic, .eng-lista-ic { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; color: var(--aa-ouro); background: var(--aa-ouro-fundo); }
+.eng-ind-ic svg, .eng-cab-ic svg, .eng-lista-ic svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.eng-cab-ic { width: 30px; height: 30px; background: none; }
+.eng-ind-txt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.eng-ind-tit { font-size: 14px; font-weight: 600; }
+.eng-ind-num { display: flex; align-items: center; gap: 10px; }
+.eng-ind-num b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; line-height: 1; }
+.eng-ind-sub { font-size: 12px; color: var(--texto-3); }
+.eng-var { display: inline-flex; align-items: center; padding: 3px 8px; font-size: 12px; font-weight: 700; border-radius: 6px; }
+.eng-var.bom { color: var(--aa-verde); background: var(--aa-verde-fundo); }
+.eng-var.ruim { color: var(--aa-verm); background: var(--aa-verm-fundo); }
+.eng-var.neutro { color: var(--texto-3); background: var(--aa-cinza); }
+.eng-meio { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-top: 14px; }
+.eng-cartao, .eng-lista { min-width: 0; padding: 18px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
+.eng-cartao header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.eng-cartao h3 { flex: 1 1 auto; margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
+.eng-sel { width: auto; min-height: 38px; padding: 0 10px; font-size: 13px; }
+.eng-graf { display: flex; gap: 10px; height: 190px; }
+.eng-eixo { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 22px; }
+.eng-eixo em { font-style: normal; font-size: 11px; color: var(--texto-3); }
+.eng-barras { flex: 1 1 auto; display: flex; align-items: stretch; gap: 6px; min-width: 0; border-bottom: 1px solid var(--linha-suave); background: repeating-linear-gradient(to top, transparent 0 calc(25% - 1px), var(--linha-suave) calc(25% - 1px) 25%); background-size: 100% calc(100% - 22px); background-repeat: no-repeat; }
+.eng-barra { position: relative; flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; padding-bottom: 22px; }
+.eng-barra i { display: block; width: min(38px, 70%); min-height: 2px; background: var(--eng-ouro); border-radius: 3px 3px 0 0; }
+.eng-barra em { position: absolute; bottom: 0; font-style: normal; font-size: 11px; color: var(--texto-3); white-space: nowrap; }
+.eng-dist-corpo { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.eng-rosca { flex: none; display: grid; place-items: center; width: 160px; height: 160px; border-radius: 50%; }
+.eng-rosca > span { display: grid; place-items: center; align-content: center; width: 100px; height: 100px; border-radius: 50%; background: var(--aa-cartao); font-size: 13px; color: var(--texto-2); }
+.eng-rosca b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; color: var(--texto); line-height: 1; }
+.eng-dist ul { flex: 1 1 180px; display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.eng-dist li { display: flex; align-items: center; gap: 10px; }
+.eng-dist li span:nth-child(2) { flex: 1 1 auto; color: var(--texto-2); }
+.eng-ponto { width: 10px; height: 10px; border-radius: 50%; }
+.eng-ponto.verde { background: var(--eng-verde); } .eng-ponto.ouro { background: var(--eng-ouro); } .eng-ponto.rosa { background: var(--eng-rosa); }
+.eng-listas { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.eng-lista header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+.eng-lista-tit { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.eng-lista-tit b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 18px; font-weight: 600; }
+.eng-lista-tit span { font-size: 12px; color: var(--texto-3); }
+.eng-lista header .al-botao svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.eng-linha { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--linha-suave); }
+.eng-linha-abre { flex: 1 1 auto; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; font: inherit; color: inherit; text-align: left; background: none; border: 0; cursor: pointer; }
+.eng-linha-txt { display: flex; flex-direction: column; min-width: 0; }
+.eng-linha-txt b { overflow: hidden; font-size: 14px; font-weight: 600; white-space: nowrap; text-overflow: ellipsis; }
+.eng-linha-txt span { font-size: 12px; color: var(--texto-3); }
+.eng-tag { flex: none; padding: 4px 10px; font-size: 12px; font-weight: 600; border-radius: 99px; }
+.eng-tag.rosa { color: var(--aa-verm); background: var(--aa-verm-fundo); }
+.eng-tag.verde { color: var(--aa-verde); background: var(--aa-verde-fundo); }
+.eng-tag.azul { color: var(--eng-azul); background: color-mix(in srgb, var(--eng-azul) 14%, transparent); }
+.eng-menu { position: relative; flex: none; }
+.eng-mais { width: 32px; height: 32px; font-size: 18px; font-weight: 700; color: var(--texto-2); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.eng-mais:hover { background: var(--aa-cinza); }
+.eng-menu-pop { position: absolute; right: 0; top: 34px; z-index: 30; display: flex; flex-direction: column; min-width: 220px; padding: 6px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 10px; box-shadow: var(--aa-sombra); }
+.eng-menu-pop button { padding: 10px 12px; font: inherit; font-size: 14px; color: var(--texto); text-align: left; background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.eng-menu-pop button:hover { background: var(--aa-cinza); }
+@media (max-width: 1100px) { .eng-topo, .eng-meio, .eng-listas { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) { .eng-inds { grid-template-columns: repeat(2, minmax(0, 1fr)); } .eng-geral { flex-direction: column; align-items: flex-start; } }
+@media (max-width: 420px) { .eng-inds { grid-template-columns: minmax(0, 1fr); } }
+.eng-geral-txt > b { white-space: nowrap; }
+.eng-anel { width: 112px; height: 112px; }
+.eng-anel b { width: 88px; height: 88px; font-size: 30px; }

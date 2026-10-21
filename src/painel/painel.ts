@@ -52,7 +52,7 @@ type Aluna = {
   datas: Record<string, string>;
   cronograma: Record<string, number>;
   /** Do banco (0043): último acesso (AAAA-MM-DD), última aula, concluídas e nota. */
-  ultimoAcesso: string; ultimaAula: string; concluidas: number; nota: number; nComentarios: number;
+  ultimoAcesso: string; ultimoAcessoEm?: string; ultimaAula: string; concluidas: number; nota: number; nComentarios: number;
   /** Quando foi cadastrada (data e hora), para a lista sair na ordem em que entraram. */
   criadaEm: string;
   feitas: Set<string>;
@@ -275,6 +275,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     const al = porId.get(String(e.aluna_id));
     if (!al) continue;
     al.ultimoAcesso = e.ultimo_acesso ? diaDe(String(e.ultimo_acesso)) : "";
+    al.ultimoAcessoEm = e.ultimo_acesso ? String(e.ultimo_acesso) : "";
     al.ultimaAula = e.ultima_aula ? String(e.ultima_aula) : "";
     al.liberadas = Number(e.liberadas ?? al.liberadas);
     al.concluidas = Number(e.concluidas ?? 0);
@@ -400,6 +401,7 @@ export function montar(app: HTMLElement) {
     buscaGeral: "", buscaAberta: false, inicioVista: "",
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
+    engDias: 7, engMenu: "" as string,
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -517,7 +519,7 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
@@ -636,7 +638,7 @@ export function montar(app: HTMLElement) {
           <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
         </div>
         <div class="conteudo">
-          <div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>
+          <div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -938,7 +940,7 @@ export function montar(app: HTMLElement) {
     const key = "quadro-" + id;
     return ` <span class="ajuda aa-ajuda"><span role="button" tabindex="0" class="ajuda-btn" data-a="ajuda" data-v="${key}" aria-label="O que é ${h(titulo)}" aria-expanded="${ui.ajuda === key}">?</span>${ui.ajuda === key ? `<span class="ajuda-pop" role="tooltip" data-a="ajuda" data-v="${key}"><b>${h(titulo)}</b><span>${texto}</span>${oque ? `<em>O que fazer: ${oque}</em>` : ""}</span>` : ""}</span>`;
   };
-  function quadrosComLista(defs: Record<string, Quadro>, ordem: string[]) {
+  function quadrosComLista(defs: Record<string, Quadro>, ordem: string[], soLista = false) {
     const aberta = defs[ui.acessoLista] ? ui.acessoLista : "";
     const anima = ui.aaAnima; ui.aaAnima = "";
     const cartao = (id: string) => {
@@ -973,7 +975,7 @@ export function montar(app: HTMLElement) {
       </aside>`;
     }
     return `
-      <div class="aa-grade">${ordem.map(cartao).join("")}</div>
+      ${soLista ? "" : `<div class="aa-grade">${ordem.map(cartao).join("")}</div>`}
       ${lista}
       ${aberta && ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}`;
   }
@@ -1327,15 +1329,131 @@ export function montar(app: HTMLElement) {
     quadros.todas.ajuda = ["A nota", "Vai de 0 a 100 e soma três coisas: aulas concluídas entre as liberadas, há quanto tempo foi o último acesso e os comentários. Só a equipe vê. Alunas bloqueadas ou com acesso vencido ficam fora.", ""];
     return quadros;
   }
+  /*
+   * Engajamento (referência aprovada): engajamento geral do período,
+   * os grupos com a variação em relação ao período anterior, a evolução
+   * dia a dia, a distribuição e as três listas. Os números do período
+   * vêm de `resumo_engajamento()` (0058); as listas, do mesmo cálculo
+   * de sempre (`engajamento_alunas()`).
+   */
+  type ResumoEng = { dias: { dia: string; ativas: number; total: number }[]; ativas: number; total: number; ativas_ant: number; total_ant: number; grupos: Record<string, number>; grupos_ant: Record<string, number>; sem_contato: number; sem_contato_ant: number; media_nota: number | null };
+  let resEng: { chave: string; r: ResumoEng | null } | null = null;
+  let resEngCarregando = "";
+  function carregarResumoEng() {
+    const { de, ate, chave } = periodoIni();
+    if ((resEng && resEng.chave === chave) || resEngCarregando === chave) return;
+    resEngCarregando = chave;
+    void (async () => {
+      const r = await supabase.rpc("resumo_engajamento", { p_de: de, p_ate: ate });
+      resEngCarregando = "";
+      resEng = { chave, r: r.error ? null : (r.data as ResumoEng) };
+      if (ui.tab === "engajamento") render();
+    })();
+  }
+  // Variação em relação ao período anterior. Sem dado anterior, não mostra nada.
+  const variacao = (cur: number, ant: number | undefined, subirEhBom: boolean) => {
+    if (!ant) return "";
+    const v = Math.round(((cur - ant) / ant) * 100);
+    if (!v) return `<span class="eng-var neutro">0%</span>`;
+    const bom = (v > 0) === subirEhBom;
+    return `<span class="eng-var ${bom ? "bom" : "ruim"}">${v > 0 ? "↑" : "↓"} ${Math.abs(v)}%</span>`;
+  };
   function telaEngajamento() {
+    carregarResumoEng();
+    const { ate, chave } = periodoIni();
+    const r = resEng && resEng.chave === chave ? resEng.r : null;
     const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).sort((x, y) => y.nota - x.nota);
     const media = base.length ? Math.round(base.reduce((s, x) => s + x.nota, 0) / base.length) : 0;
     const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
     const grupo = (g: string) => (x: Aluna) => nivel(x)[2] === g;
     const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegadas", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
+    const Q = quadrosEng(base, FIL, media);
+    // Período terminando hoje: os números são as próprias listas. Antes disso, como estavam no fim do período.
+    const atual = ate >= hoje();
+    const conta = (g: string) => (atual || !r ? Q[g].lista.length : r.grupos[g] || 0);
+    const nSemContato = atual || !r ? Q.semcontato.lista.length : r.sem_contato;
+    const nTodas = atual || !r ? base.length : r.total;
+    const notaMedia = atual || !r || r.media_nota == null ? media : r.media_nota;
+    const geral = r && r.total ? Math.round((r.ativas / r.total) * 100) : null;
+    const geralAnt = r && r.total_ant ? Math.round((r.ativas_ant / r.total_ant) * 100) : null;
+    const dGeral = geral != null && geralAnt != null ? geral - geralAnt : null;
+    const cartao = (id: string, ic: string, titulo: string, n: number, varHtml: string, sub: string) => `
+        <button type="button" class="eng-ind" data-a="aa-lista" data-v="${id}">
+          <span class="eng-ind-ic">${ic}</span>
+          <span class="eng-ind-txt">
+            <span class="eng-ind-tit">${titulo}${Q[id].ajuda ? ajudaQuadro(id, Q[id].ajuda!) : ""}</span>
+            <span class="eng-ind-num"><b>${n}</b>${varHtml}</span>
+            <span class="eng-ind-sub">${sub}</span>
+          </span>
+        </button>`;
+    // Evolução: % das alunas que tiveram atividade (abriram o app, assistiram ou comentaram) em cada dia.
+    const nDias = ui.engDias || 7;
+    const dias = r ? r.dias.slice(-nDias) : [];
+    const barras = dias.map((d) => { const v = d.total ? Math.round((d.ativas / d.total) * 100) : 0; return `<span class="eng-barra" title="${br(d.dia)}: ${d.ativas} de ${d.total} alunas (${v}%)"><i style="height:${v}%"></i><em>${br(d.dia).slice(0, 5)}</em></span>`; }).join("");
+    // Distribuição: os três grupos.
+    const nAv = conta("avancando"), nRi = conta("ritmo"), nEm = conta("empurrao"), soma = nAv + nRi + nEm;
+    const fat = (n: number) => (soma ? (n / soma) * 100 : 0);
+    const dist = soma ? `conic-gradient(var(--eng-verde) 0 ${fat(nAv)}%, var(--eng-ouro) ${fat(nAv)}% ${fat(nAv) + fat(nRi)}%, var(--eng-rosa) ${fat(nAv) + fat(nRi)}% 100%)` : "var(--aa-cinza)";
+    const linhaDist = (cls: string, nome: string, n: number) => `<li><span class="eng-ponto ${cls}"></span><span>${nome}</span><b>${n} (${soma ? Math.round(fat(n)) : 0}%)</b></li>`;
+    // As três listas, 5 de cada.
+    const lista = (id: string, ic: string, titulo: string, sub: string, etiqueta: string, cls: string) => {
+      const l = Q[id].lista.slice(0, 5);
+      return `
+        <section class="eng-lista">
+          <header><span class="eng-lista-ic">${ic}</span><span class="eng-lista-tit"><b>${titulo}</b><span>${sub}</span></span><button class="al-botao pequeno" data-a="aa-lista" data-v="${id}">Ver todas ${IC_INI.seta}</button></header>
+          ${l.map((a) => `
+          <div class="eng-linha">
+            <button type="button" class="eng-linha-abre" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<span class="eng-linha-txt"><b>${h(a.nome)}</b><span>${a.ultimoAcessoEm ? (id === "empurrao" ? "Último acesso " : "Acessou ") + haTempo(a.ultimoAcessoEm) : "Ainda não acessou"}</span></span></button>
+            <span class="eng-tag ${cls}">${etiqueta}</span>
+            <span class="eng-menu"><button type="button" class="eng-mais" data-a="eng-menu" data-id="${a.id}" aria-label="Opções de ${h(a.nome)}" aria-expanded="${ui.engMenu === a.id}">⋮</button>${ui.engMenu === a.id ? `<span class="eng-menu-pop" role="menu">
+              <button role="menuitem" data-a="contato" data-id="${a.id}">Registrar contato</button>
+              ${a.celular ? `<button role="menuitem" data-a="whatsapp-volta" data-id="${a.id}">Mandar recado no WhatsApp</button>` : ""}
+              <button role="menuitem" data-a="ficha" data-id="${a.id}">Abrir ficha</button>
+            </span>` : ""}</span>
+          </div>`).join("") || `<p class="ini-vazio">${Q[id].vazio}</p>`}
+        </section>`;
+    };
     return `
-    <section class="tela ativa aa">
-      ${quadrosComLista(quadrosEng(base, FIL, media), ["empurrao", "ritmo", "avancando", "recem", "semcontato", "todas"])}
+    <section class="tela ativa aa eng">
+      <div class="eng-topo">
+        <div class="eng-geral">
+          <span class="eng-anel" style="--p:${geral ?? 0}"><b>${geral == null ? "–" : geral + "%"}</b></span>
+          <span class="eng-geral-txt">
+            <b>Engajamento geral${ajudaQuadro("geral", ["Engajamento geral", "Quantas alunas ativas tiveram alguma atividade no período: abriram o app, assistiram ou comentaram.", "compare com o período anterior. Caiu? Comece por “Precisam de um empurrão”."])}</b>
+            <span>Média de alunas ativas</span>
+            ${dGeral != null && dGeral !== 0 ? `<span class="eng-var ${dGeral > 0 ? "bom" : "ruim"}">${dGeral > 0 ? "↑" : "↓"} ${Math.abs(dGeral)}%</span><em>em relação ao período anterior</em>` : ""}
+          </span>
+        </div>
+        <div class="eng-inds">
+          ${cartao("empurrao", ICONE_ENG.empurrao, "Precisam de um empurrão", conta("empurrao"), r ? variacao(conta("empurrao"), r.grupos_ant.empurrao, false) : "", "sem atividade recente")}
+          ${cartao("ritmo", ICONE_ENG.ritmo, "No ritmo", conta("ritmo"), r ? variacao(conta("ritmo"), r.grupos_ant.ritmo, true) : "", "acessando regularmente")}
+          ${cartao("avancando", ICONE_ENG.avancando, "Avançando", conta("avancando"), r ? variacao(conta("avancando"), r.grupos_ant.avancando, true) : "", "alta participação")}
+          ${cartao("recem", ICONE_ENG.recem, "Recém-chegadas", conta("recem"), "", "cadastradas há até 7 dias")}
+          ${cartao("semcontato", ICONE_ENG.semcontato, "Sem contato há 7 dias", nSemContato, r ? variacao(nSemContato, r.sem_contato_ant, false) : "", "sem contato da equipe há 7+ dias")}
+          ${cartao("todas", ICONE_ENG.todas, "Todas as alunas", nTodas, "", "média de nota " + String(Math.round(notaMedia) / 10).replace(".", ","))}
+        </div>
+      </div>
+      <div class="eng-meio">
+        <section class="eng-cartao eng-evolucao">
+          <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Evolução do engajamento</h3>
+            <select class="campo eng-sel" data-eng-dias aria-label="Quantos dias mostrar">${[[7, "Últimos 7 dias"], [14, "Últimos 14 dias"], [30, "Últimos 30 dias"]].map(([v, n]) => `<option value="${v}" ${nDias === v ? "selected" : ""}>${n}</option>`).join("")}</select>
+          </header>
+          ${r ? `<div class="eng-graf"><span class="eng-eixo"><em>100%</em><em>75%</em><em>50%</em><em>25%</em><em>0%</em></span><div class="eng-barras">${barras}</div></div>` : `<p class="ini-vazio">Carregando…</p>`}
+        </section>
+        <section class="eng-cartao eng-dist">
+          <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Distribuição das alunas</h3></header>
+          <div class="eng-dist-corpo">
+            <span class="eng-rosca" style="background:${dist}"><span><b>${soma}</b>alunas</span></span>
+            <ul>${linhaDist("verde", "Avançando", nAv)}${linhaDist("ouro", "No ritmo", nRi)}${linhaDist("rosa", "Precisam de um empurrão", nEm)}</ul>
+          </div>
+        </section>
+      </div>
+      <div class="eng-listas">
+        ${lista("empurrao", ICONE_ENG.empurrao, "Alunas que precisam de um empurrão", "Sem atividade nos últimos 7 dias.", "Sem atividade", "rosa")}
+        ${lista("ritmo", ICONE_ENG.recem, "Alunas no ritmo", "Acessando regularmente.", "No ritmo", "verde")}
+        ${lista("avancando", ICONE_ENG.avancando, "Alunas avançando", "Alta participação e progresso.", "Avançando", "azul")}
+      </div>
+      ${quadrosComLista(Q, [], true)}
     </section>`;
   }
 
@@ -2259,6 +2377,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     const al = d.id ? S.alunas.find((x) => x.id === d.id) : undefined;
     if (a !== "menu") ui.menu = null;
     if (a !== "ajuda") ui.ajuda = null;
+    if (a !== "eng-menu") ui.engMenu = "";
     switch (a) {
       case "inicio-acessos": ui.inicioVista = "acessos"; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
       case "inicio-voltar": ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
@@ -2515,6 +2634,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       }
       case "ini-periodo": ui.periodoAberto = !ui.periodoAberto; break;
+      case "eng-menu": ui.engMenu = ui.engMenu === d.id ? "" : d.id; break;
       case "ini-periodo-rapido": {
         const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
         ui.iniAte = hj; ui.iniDe = d.v === "hoje" ? hj : d.v === "7" ? menos(6) : d.v === "30" ? menos(29) : hj.slice(0, 8) + "01";
@@ -3171,6 +3291,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     marcarSujo(t);
+    if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
     if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }
