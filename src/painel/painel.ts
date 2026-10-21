@@ -1780,10 +1780,10 @@ export function montar(app: HTMLElement) {
     modCapaH: "A capa deitada (16:9) do módulo, usada no \"Comece por aqui\" do Início quando ele é o primeiro módulo do curso. A capa em pé continua a mesma.",
     video: "Cole aqui o link do vídeo da aula (Cloudflare Stream). É o vídeo que a aluna assiste. Vazio, ela vê \"Aula será adicionada em breve\".",
     capa: "A imagem da aula que a aluna vê na lista de aulas e antes de dar o play. Clique em Escolher imagem e o caminho se preenche sozinho.",
-    texto: "O texto que a aluna lê embaixo do vídeo, em \"Sobre a aula\". Linha em branco separa parágrafo; *asteriscos* deixam em negrito.",
+    texto: "O texto que a aluna lê no botão \"Sobre a aula\", embaixo do vídeo. Linha em branco separa parágrafo; *asteriscos* deixam em negrito.",
     resumo: "Os pontos principais da aula, um por linha. A aluna vê na aba Resumo.",
-    exercicio: "A tarefa da aula. Primeira linha é o título, depois o texto. A aluna vê na aba Exercícios.",
-    extras: "Materiais a mais da aula (PDF, link, áudio…). Viram botões no fim de \"Sobre a aula\".",
+    exercicio: "As instruções da aula. Primeira linha é o título, depois o texto. A aluna vê no botão Instruções, embaixo do vídeo.",
+    extras: "Materiais a mais da aula. O primeiro do tipo \"PDF / e-book\" vira o botão PDF embaixo do vídeo e abre dentro do app; sem PDF, o botão não aparece. Os outros viram botões no fim de \"Sobre a aula\".",
   };
   // Bolinha amarela com "?" preto; a frase abre ao tocar. <details> nativo:
   // abre e fecha sem redesenhar a tela, então nada digitado se perde.
@@ -1963,12 +1963,8 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         </label>
         ${a.resumo === null ? "" : `
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">Resumo — aba "Resumo" da aula ${dicaCampo(AJ.resumo)}</span>
-          <textarea class="campo" name="resumo" rows="5" placeholder="Um ponto por linha.">${h(a.resumo)}</textarea>
-        </label>
-        <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">Exercício — aba "Exercícios" da aula ${dicaCampo(AJ.exercicio)}</span>
-          <textarea class="campo" name="exercicio" rows="7" placeholder="Título do exercício na primeira linha.
+          <span class="rotulo rotulo-ajuda">Instruções — botão "Instruções" da aula ${dicaCampo(AJ.exercicio)}</span>
+          <textarea class="campo" name="exercicio" rows="7" placeholder="Título das instruções na primeira linha.
 
 Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}</textarea>
         </label>`}
@@ -2032,7 +2028,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
             <div class="acoes"><button class="botao">Enviar resposta</button><button type="button" class="botao-neutro grande" data-a="com-responder-cancelar">Cancelar</button></div>
           </form>` : `
           <div class="acoes">
-            ${k.estado !== "publicado" ? `<button class="botao-neutro" data-a="com-publicar" data-id="${k.id}">Publicar</button>` : ""}
+            ${k.estado !== "publicado" ? `<button class="botao-neutro" data-a="com-publicar" data-id="${k.id}">Aprovar</button>` : ""}
             ${k.estado !== "oculto" ? `<button class="botao-neutro" data-a="com-ocultar" data-id="${k.id}">Ocultar</button>` : ""}
             <button class="botao-neutro" data-a="com-responder" data-id="${k.id}">${k.resposta ? "Editar resposta" : "Responder"}</button>
             <button class="botao-neutro botao-remover" data-a="com-remover" data-id="${k.id}">Remover</button>
@@ -2949,8 +2945,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
         const extrasAula: Record<string, string | null> = {};
         if (x0.resumo !== null) {
-          const r = (form.elements.namedItem("resumo") as HTMLTextAreaElement).value, e = (form.elements.namedItem("exercicio") as HTMLTextAreaElement).value;
-          extrasAula.resumo = r.trim() ? r : null; extrasAula.exercicio = e.trim() ? e : null;
+          const e = (form.elements.namedItem("exercicio") as HTMLTextAreaElement).value;
+          extrasAula.exercicio = e.trim() ? e : null;
         }
         void executar(async () => {
           falhou(await supabase.from("aulas").update({ capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
