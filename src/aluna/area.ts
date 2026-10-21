@@ -51,9 +51,9 @@ export function montar(raiz: HTMLElement) {
   /* ---------- estado ---------- */
   const ini = () => ({
     entrou: false, carregando: true, nome: "", tela: "inicio", mod: 0, aula: 0, presente: null,
-    origemMod: "inicio", rolagemOrigem: 0, comsFechado: false, comTodos: {}, respTodas: {}, corNome: ler("aion-cor-nome", "#f2b01e"),
+    origemMod: "inicio", rolagemOrigem: 0, comsFechado: ler("aion-coms-fechado", "0") === "1", comTodos: {}, respTodas: {}, corNome: ler("aion-cor-nome", "#f2b01e"),
     velocidade: "Normal", letra: Math.min(3, Math.max(0, parseInt(ler("aion-letra", "0"), 10) || 0)), tema: ler("aion-tema", "escuro") === "claro" ? "claro" : "escuro",
-    meus: {}, rascunho: "", tocando: false, abaAula: "sobre", fim: {}, modFim: {}, mudo: false,
+    meus: {}, rascunho: "", tocando: false, abaAula: null, fim: {}, modFim: {}, mudo: false,
     foto: "", fotoOrig: null, coms: {}, videos: {},
   });
   let S = ini();
@@ -95,7 +95,7 @@ export function montar(raiz: HTMLElement) {
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
           id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: capaUrl(x.capaPath), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
-          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.slice().sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, titulo: a.titulo, texto: a.texto || "", capa: capaUrl(a.capaPath) })),
+          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: capaUrl(a.capaPath), conteudos: a.conteudos || [] })),
         })),
       }));
     const pj = cat.produtos.find((x) => x.id === jornada);
@@ -114,6 +114,11 @@ export function montar(raiz: HTMLElement) {
       const o = S.fotoOrig;
       void api.salvarMinhaFoto(S.foto, o ? o.src : null, o ? { w: o.w, h: o.h, z: o.z, x: o.x, y: o.y } : null).then(() => { gravar(kF, null); gravar(kO, null); }).catch(() => {});
     } else { S.foto = ""; S.fotoOrig = null; }
+    // A cor do Perfil vem do banco (aparece nos comentários para todas).
+    // Uma cor escolhida antes, só neste aparelho, sobe uma vez.
+    const corBanco = await api.minhaCor().catch(() => undefined);
+    if (corBanco) { S.corNome = corBanco; gravar("aion-cor-nome", corBanco); }
+    else if (corBanco === null && ler("aion-cor-nome", "")) void api.salvarMinhaCor(S.corNome).catch(() => {});
   }
 
   const MODS = () => (D ? D.mods : []);
@@ -602,7 +607,7 @@ export function montar(raiz: HTMLElement) {
     VID = document.createElement("video"); VID_ID = aulaId;
     VID.setAttribute("playsinline", ""); VID.className = "aula-video";
     VID.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:1";
-    VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
+    VID.playbackRate = VELS[S.velocidade] || 1;
     VID.muted = !!S.mudo;
     // Preparado e ainda parado, fica escondido: a capa da aula aparece por baixo.
     if (!comecar) VID.style.visibility = "hidden";
@@ -611,7 +616,7 @@ export function montar(raiz: HTMLElement) {
       if (l && !l.duracaoSegundos && Number.isFinite(VID.duration)) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
       const ini = inicioDe(aulaId);
       if (ini > 0 && ini < VID.duration - 15 && VID.currentTime < 1) VID.currentTime = ini;
-      VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[S.velocidade] || 1;
+      VID.playbackRate = VELS[S.velocidade] || 1;
     }, { once: true });
     VID.addEventListener("play", () => { VID.style.visibility = ""; S.tocando = true; atualizarControles(); });
     VID.addEventListener("pause", () => { S.tocando = false; gravarPosicao(true); atualizarControles(); });
@@ -619,12 +624,15 @@ export function montar(raiz: HTMLElement) {
     VID.addEventListener("ended", () => {
       S.tocando = false; gravarPosicao(true);
       const lx = D.prog.get(aulaId); if (lx) lx.concluida = true;
-      void api.marcarConcluida(aulaId, true).catch(() => {});
+      ultimaConclusao = api.marcarConcluida(aulaId, true).catch(() => {});
       const k = chaveAtual(); S.fim[k] = 1; render();
     });
     VID.addEventListener("error", () => void renovarVideo());
     ligarFonte(ref, comecar);
   }
+  const VELS = { "0,5x": 0.5, "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5, "1,75x": 1.75, "2x": 2 };
+  // A conclusão gravada no banco antes de pedir o vídeo seguinte (o banco libera em sequência).
+  let ultimaConclusao = Promise.resolve();
   const chaveAtual = () => (S.tela === "presente" ? "p-" + S.presente : S.mod + "-" + S.aula);
   function encaixarVideo() {
     if (!VID) return;
@@ -643,50 +651,185 @@ export function montar(raiz: HTMLElement) {
     const pc = pl.querySelector(".play-centro"); if (pc) pc.style.display = VID.paused && !S.fim[chaveAtual()] ? "" : "none";
     const ctr = pl.querySelector(".controles"); if (ctr) ctr.style.zIndex = "3";
   }
-  function playerHtml(aulaId, capa, livre, rotulo) {
+  function playerHtml(aulaId, capa, livre, o) {
+    o = o || {};
     const ref = S.videos[aulaId];
     const k = chaveAtual(), fimAqui = !!S.fim[k];
     const l = D.prog.get(aulaId), dur = l && l.duracaoSegundos ? l.duracaoSegundos : 0, ps = l && dur ? (l.posicaoSegundos || 0) / dur : 0;
     if (!livre) return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span></div>`;
-    if (ref === "") return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.play}</span><p class="fim-rot">Aula será adicionada em breve</p></div></div>`;
+    if (ref === "") return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.play}</span><p class="fim-rot">${h(o.emBreve || "Aula será adicionada em breve")}</p></div></div>`;
     return `
           <div class="player" data-aula="${aulaId}">
             ${img(capa, "")}<span class="veu"></span>
-            ${fimAqui ? "" : `<button class="play-centro" data-a="tocar" aria-label="${ps > 0 && !(l && l.concluida) ? "Continuar de " + mmss(ps * dur) : "Assistir " + h(rotulo)}" style="z-index:2"></button>`}
+            ${fimAqui ? "" : `<button class="play-centro" data-a="tocar" aria-label="${ps > 0 && !(l && l.concluida) ? "Continuar de " + mmss(ps * dur) : h((o.tocar || "Assistir") + " " + (o.titulo || ""))}" style="z-index:2"></button>`}
             ${S.mudo ? `<button class="selo-mudo" data-a="volume" style="z-index:3" aria-label="Vídeo sem som. Tocar para ligar o som">${ICONES.mudo}Sem som</button>` : ""}
             <div class="controles" style="z-index:3">
               <div class="trilha" data-a="buscar"><i style="width:${ps * 100}%"></i><b style="left:${ps * 100}%"></b></div>
               <div class="ctrl-linha">
-                <button data-a="tocar" aria-label="${S.tocando ? "Pausar" : "Assistir"}">${S.tocando ? ICONES.pausa : ICONES.play}</button>
+                <button data-a="tocar" aria-label="${S.tocando ? "Pausar" : h(o.tocar || "Assistir")}">${S.tocando ? ICONES.pausa : ICONES.play}</button>
                 <span class="tempo-txt">${mmss(ps * dur)} / ${mmss(dur)}</span>
                 <span style="flex:1"></span>
                 <button data-a="volume" aria-pressed="${!!S.mudo}" aria-label="${S.mudo ? "Ligar o som" : "Tirar o som"}">${S.mudo ? ICONES.mudo : ICONES.volume}</button>
-                <button data-a="velocidade" aria-label="Velocidade do vídeo${S.velocidade === "Normal" ? "" : ": " + S.velocidade}">${ICONES.engrenagem}</button>
+                <button data-a="velocidade" aria-label="Velocidade${S.velocidade === "Normal" ? "" : ": " + S.velocidade}">${ICONES.engrenagem}</button>
                 <button data-a="tela-cheia" aria-label="Tela cheia">${ICONES.telaCheia}</button>
               </div>
             </div>
             ${fimAqui ? `<div class="fim-sobre" role="status" style="z-index:4">
               <span class="fim-ic">${ICONES.check}</span>
-              <p class="fim-rot">${S.tela === "aula" && S.aula + 1 >= MODS()[S.mod].aulas.length ? "Módulo concluído" : "Aula concluída"}</p>
-              ${S.tela === "aula" && S.aula + 1 >= MODS()[S.mod].aulas.length ? "" : `<button class="fim-botao" data-a="seguinte">${S.tela === "aula" ? "Assistir próxima aula" : "Próximo"}</button>`}
-              <button class="fim-de-novo" data-a="de-novo">${ICONES.refazer}Assistir novamente</button>
+              <p class="fim-rot">${h(o.ultima ? o.fimUltimo : o.fim)}</p>
+              ${o.ultima ? "" : `<button class="fim-botao" data-a="seguinte">${h(o.proxBotao)}</button>`}
+              <button class="fim-de-novo" data-a="de-novo">${ICONES.refazer}${h(o.deNovo || "Assistir novamente")}</button>
             </div>` : ""}
           </div>`;
   }
 
+  /*
+   * Os textos de cada tipo de conteúdo. A tela é uma só (aula da mentoria,
+   * frequência, Mestres espirituais, documentário e lançamento); só
+   * mudam as palavras.
+   */
+  const ROT = {
+    aula: { ant: "Aula anterior", prox: "Próxima aula", sobre: "Sobre a aula", comentar: "Comentar na aula", lista: "Próximas aulas deste módulo", navAnt: "Módulo anterior", navProx: "Próximo módulo", tocar: "Assistir", item: "a Aula", instr: "Instruções da aula", pdf: "PDF da aula", fim: "Aula concluída", fimUltimo: "Módulo concluído", proxBotao: "Assistir próxima aula", deNovo: "Assistir novamente", emBreve: "Aula será adicionada em breve" },
+    freq: { ant: "Frequência anterior", prox: "Próxima frequência", sobre: "Sobre a frequência", comentar: "Comentar na frequência", lista: "Próximas frequências deste curso", navAnt: "Curso anterior", navProx: "Próximo curso", tocar: "Ouvir", item: "a Frequência", instr: "Como ouvir", pdf: "PDF da frequência", fim: "Frequência concluída", fimUltimo: "Curso concluído", proxBotao: "Ouvir próxima frequência", deNovo: "Ouvir novamente", emBreve: "Frequência será adicionada em breve" },
+    mestres: { ant: "Vídeo anterior", prox: "Próximo vídeo", sobre: "Sobre o vídeo", comentar: "Comentar no vídeo", lista: "Próximos vídeos deste volume", navAnt: "Volume anterior", navProx: "Próximo volume", tocar: "Assistir", item: "o Vídeo", instr: "Instruções", pdf: "PDF do vídeo", fim: "Vídeo concluído", fimUltimo: "Volume concluído", proxBotao: "Assistir próximo vídeo", deNovo: "Assistir novamente", emBreve: "Vídeo será adicionado em breve" },
+    video: { ant: "Vídeo anterior", prox: "Próximo vídeo", sobre: "Sobre o vídeo", comentar: "Comentar no vídeo", lista: "Próximos vídeos", navAnt: "Curso anterior", navProx: "Próximo curso", tocar: "Assistir", item: "o Vídeo", instr: "Instruções", pdf: "PDF do vídeo", fim: "Vídeo concluído", fimUltimo: "Curso concluído", proxBotao: "Assistir próximo vídeo", deNovo: "Assistir novamente", emBreve: "Vídeo será adicionado em breve" },
+  };
+  const tipoDaCat = (nome) => (/frequ/i.test(nome || "") ? "freq" : /mestre/i.test(nome || "") ? "mestres" : "video");
+  // O tipo sai do nome da categoria ou do curso (ex.: curso "Frequências" dentro de Presentes).
+  const tipoDoCurso = (c, curso) => tipoDaCat((c ? c.nome : "") + " " + (curso ? curso.nome : ""));
+  const pdfDe = (conteudos) => (conteudos || []).find((x) => x.publicado !== false && (x.arquivoPath || x.url) && (x.tipo === "pdf" || /\.pdf($|\?)/i.test(x.arquivoPath || x.url || "")));
+  const ICO_FECHAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
+  const paragrafos = (t) => String(t || "").split(/\n\s*\n/).filter((x) => x.trim()).map((par) => `<p>${h(par).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("");
+
+  // Sobre · Instruções · PDF: começam fechados; um aberto por vez.
+  function abasConteudo(o) {
+    const pdf = o.pdf, extras = o.extras || [];
+    const [instrTit, ...instrResto] = String(o.instr || "").trim().split(/\n/);
+    return `
+            <div class="abas-aula${pdf ? "" : " dois"}" role="group" aria-label="Mais sobre este conteúdo">
+              <button data-a="aba-aula" data-v="sobre" aria-expanded="${S.abaAula === "sobre"}">${ICONES.livro}${h(o.rot.sobre)}</button>
+              <button data-a="aba-aula" data-v="instr" aria-expanded="${S.abaAula === "instr"}">${ICONES.exercicio}Instruções</button>
+              ${pdf ? `<button data-a="aba-aula" data-v="pdf" aria-expanded="${S.abaAula === "pdf"}">${ICONES.resumo}PDF</button>` : ""}
+            </div>
+            ${S.abaAula === "sobre" ? `
+            <div class="sobre-cartao">
+              <span class="sobre-ic">${ICONES.livro}</span>
+              <div style="flex:1;min-width:0">
+                <p class="aula-id sobre-id">${h(o.idTxt)}</p>
+                <h1 class="sobre-titulo">${h(o.titulo)}</h1>
+                ${o.sobre ? paragrafos(o.sobre) : `<p>${h(o.sobrePadrao || "O texto será adicionado em breve.")}</p>`}
+                ${o.aviso ? `<p class="aviso-material">${ICONES.material}<span>${h(o.aviso)}</span></p>` : ""}
+                ${extras.length ? `<div class="opcoes" style="margin-top:12px">${extras.map((x) => `<button data-a="extra" data-id="${x.id}">${ICONES.material}${h(x.titulo || "Material")}</button>`).join("")}</div>` : ""}
+                <button class="aba-fechar" data-a="aba-fechar" aria-label="Fechar">Fechar${ICO_FECHAR}</button>
+              </div>
+            </div>` : ""}
+            ${S.abaAula === "pdf" && pdf ? `
+            <div class="sobre-cartao">
+              <div style="flex:1;min-width:0">
+                <h3>${h(o.rot.pdf)}</h3>
+                <p>O material em PDF, para ler e acompanhar no seu tempo.</p>
+                <button class="botao largo" data-a="pdf-ver" data-id="${pdf.id}" style="margin-top:12px">${ICONES.resumo}<span>Abrir ${h(o.rot.pdf)}</span></button>
+                <button class="aba-fechar" data-a="aba-fechar" aria-label="Fechar">Fechar${ICO_FECHAR}</button>
+              </div>
+            </div>` : ""}
+            ${S.abaAula === "instr" ? `
+            <div class="ex-cartao">
+              <div class="ex-topo"><div style="flex:1;min-width:0">
+                <p class="rotulo">${h(o.rot.instr)}</p>
+                <h3 class="serif">${h(instrTit || "Instruções serão adicionadas em breve.")}</h3>
+              </div></div>
+              ${instrResto.join("\n").trim() ? `<div class="ex-texto">${paragrafos(instrResto.join("\n"))}</div>` : ""}
+              <button class="aba-fechar" data-a="aba-fechar" aria-label="Fechar">Fechar${ICO_FECHAR}</button>
+            </div>` : ""}`;
+  }
+
+  // Comentários de um conteúdo (aula ou item de presente): cada um no seu.
+  function secaoComs(id, rotComentar) {
+    const todos = S.coms[id] || [];
+    const pend = todos.filter((x) => x.minha && x.pendente && !x.respostaA);
+    const raizes = todos.filter((x) => !x.respostaA && !x.pendente);
+    const respsDe = (rid) => todos.filter((x) => x.respostaA === rid && !x.pendente);
+    const nomeDe = (x) => (x.ehInstrutor ? "Equipe AION" : x.minha ? (S.nome || "").split(" ")[0] || "Você" : x.autoraNome || "Aluna");
+    const corC = (x) => (x.minha ? S.corNome : x.autoraCor || corDe(nomeDe(x)));
+    const fotoC = (x) => (x.minha ? S.foto : x.autoraFoto || "");
+    return `
+            <section class="coms" aria-labelledby="h-com">
+              <div class="coms-cab">
+                <h2 id="h-com">Comentários (${raizes.length + pend.length})</h2>
+                <button class="coms-toggle" data-a="coms-toggle" aria-expanded="${!S.comsFechado}" aria-controls="coms-corpo">${S.comsFechado ? "Abrir" : "Fechar"}<span aria-hidden="true">${S.comsFechado ? "⌄" : "⌃"}</span></button>
+              </div>
+              ${S.comsFechado ? "" : `<div id="coms-corpo">
+              <button class="com-abrir" data-a="abrir-comentar">
+                ${avCom(S.nome, S.corNome, S.foto)}
+                <span class="com-abrir-txt">${ICONES.balao}${h(rotComentar)}</span>
+              </button>
+              <p class="com-aviso">A equipe lê cada comentário antes de publicar.</p>
+              ${pend.map((x) => `<div class="com">${avCom(S.nome, S.corNome, S.foto)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(nomeDe(x))}</b><span class="pendente">Aguardando aprovação</span></div><p>${h(x.texto)}</p><span class="com-nota">Só você vê este comentário até a equipe aprovar.</span></div></div>`).join("")}
+              ${(S.comTodos[id] ? raizes : raizes.slice(0, 2)).map((x) => {
+                const rs = respsDe(x.id), todas = !!S.respTodas[x.id], vis = todas ? rs : rs.slice(0, 2);
+                const nm = nomeDe(x);
+                return `<div class="com">
+                ${avCom(nm, corC(x), fotoC(x))}
+                <div class="com-corpo">
+                  <div class="com-topo"><b class="com-nome">${h(nm)}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span>${x.minha ? "" : `<button class="com-mais" data-a="com-mais" data-id="${x.id}" aria-label="Opções do comentário">${ICONES.mais}</button>`}</div>
+                  <p>${h(x.texto)}</p>
+                  <div class="com-acoes">
+                    <button data-a="com-curtir" data-id="${x.id}" aria-pressed="${!!x.curti}">${ICONES.curtido}<span>${x.curtidas || 0}</span></button>
+                    <button data-a="com-responder" data-v="${h(nm)}" data-id="${x.id}">${ICONES.balao}Responder</button>
+                  </div>
+                  ${vis.length ? `<div class="resps">${vis.map((r) => { const rn = nomeDe(r); return `<div class="resp">${avCom(rn, corC(r), fotoC(r), true)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(rn)}</b><span class="quando">${h(quandoTxt(r.criadoEm))}</span></div><p>${h(r.texto)}</p></div></div>`; }).join("")}
+                    ${rs.length > 2 ? `<button class="ver-mais pq" data-a="resp-ver-mais" data-v="${x.id}">${todas ? "Ver menos respostas" : "Ver mais " + (rs.length - 2) + (rs.length - 2 === 1 ? " resposta" : " respostas")}</button>` : ""}</div>` : ""}
+                </div>
+              </div>`; }).join("")}
+              ${raizes.length > 2 ? `<button class="ver-mais" data-a="com-ver-mais" data-v="${id}">${S.comTodos[id] ? "Ver menos comentários" : "Ver mais comentários (" + (raizes.length - 2) + ")"}</button>` : ""}
+              </div>`}
+            </section>`;
+  }
+
+  /*
+   * O conteúdo atual (aula da mentoria ou item de presente), num formato só,
+   * para a tela, os comentários e os botões de seguir.
+   */
+  function conteudoAtual() {
+    if (S.tela === "presente") {
+      const [ci, i, j] = String(S.presente || "").split("-").map(Number);
+      const c = CATS()[ci], curso = c && c.cursos[i], t = curso && curso.itens[j];
+      if (!t) return null;
+      return { tipo: tipoDoCurso(c, curso), id: t.id, titulo: t.titulo, ci, i, j, curso, cat: c, itens: curso.itens };
+    }
+    const md = MODS()[S.mod], au = md && md.aulas[S.aula];
+    if (!au) return null;
+    return { tipo: "aula", id: au.id, titulo: au.titulo, m: S.mod, a: S.aula, md };
+  }
+
+  function cabConteudo(rotuloVoltar) {
+    return `
+      <div class="cab-aula">
+        <button class="voltar" data-a="voltar-conteudo" aria-label="Voltar para ${h(rotuloVoltar)}">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar para ${h(rotuloVoltar)}</span></button>
+        <button class="mp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
+        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
+      </div>`;
+  }
+  const NOME_VOLTA = { inicio: "o Início", modulos: "Módulos", modulo: "o módulo", perfil: "o Perfil", jornada: "a sua jornada", presentes: "Presentes", categoria: "a categoria", cursoPres: "o curso" };
+
   function telaAula() {
     const m = S.mod, a = S.aula, md = MODS()[m];
     if (!md || !md.aulas[a]) { S.tela = "modulos"; return telaModulos(); }
-    const au = md.aulas[a], k = m + "-" + a;
+    const au = md.aulas[a], R = ROT.aula;
     const ultimaDoMod = a + 1 >= md.aulas.length;
     const modFimAqui = !!S.modFim[m] && ultimaDoMod && feita(m, a);
     const pm = m + 1 < MODS().length ? m + 1 : null;
-    const botaoProx = ultimaDoMod
-        ? (!modFimAqui && feita(m, a) ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
+    const semVideo = S.videos[au.id] === "";
+    // A próxima aula só abre quando esta foi concluída (o banco confere o mesmo).
+    const botaoProx = !feita(m, a)
+      ? `<button class="nav-prox trancado" disabled aria-label="Próxima aula, bloqueada até você concluir esta">${ICONES.cadeado}Próxima aula</button>`
+      : ultimaDoMod
+        ? (!modFimAqui ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
           : pm === null ? `<button class="nav-prox trancado" disabled>Última aula</button>`
           : liberado(pm) ? `<button class="nav-prox livre" data-a="modulo" data-m="${pm}">Próximo módulo${ICONES.chev_dir}</button>`
           : `<button class="nav-prox trancado" disabled>${ICONES.cadeado}${h(msgModFechado(pm))}</button>`)
         : `<button class="nav-prox livre" data-a="seguinte">Próxima aula${ICONES.chev_dir}</button>`;
+    const PM = pm === null ? null : MODS()[pm];
     const cardModFim = pm === null ? `
       <section class="mod-fim" aria-labelledby="h-modfim">
         <span class="mod-fim-ic">${ICONES.coroa}</span>
@@ -702,129 +845,47 @@ export function montar(raiz: HTMLElement) {
         <div class="mod-fim-prox">
           <p class="mod-fim-rot">Seu próximo módulo</p>
           <section class="mp-heroi${liberado(pm) ? "" : " trancado"}">
-            <span class="capa">${img(MODS()[pm].capa, "Módulo " + MODS()[pm].num + " — " + titulo(MODS()[pm].titulo))}</span>
+            <span class="capa">${img(PM.capa, "Módulo " + PM.num + " — " + titulo(PM.titulo))}</span>
             ${liberado(pm) ? "" : `<span class="mod-fim-cad">${ICONES.cadeado}</span>`}
           </section>
           <div class="mp-heroi-txt">
-            <p class="mp-rot">Módulo ${MODS()[pm].num}</p>
-            <h3 class="serif mod-fim-nome">${h(MODS()[pm].titulo)}</h3>
-            <p class="mp-desc">${h(MODS()[pm].intro)}</p>
+            <p class="mp-rot">Módulo ${PM.num}</p>
+            <h3 class="serif mod-fim-nome">${h(PM.titulo)}</h3>
+            <p class="mp-desc">${h(PM.intro)}</p>
           </div>
           <div class="mp-ind">
-            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${p(MODS()[pm].aulas.length, "aula", "aulas")}</b><span>neste módulo</span></div>
-            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><b>1 aula ao vivo</b><span>data a confirmar</span></div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${p(PM.aulas.length, "aula", "aulas")}</b><span>neste módulo</span></div>
+            ${PM.vivo ? `<div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><b>1 aula ao vivo</b><span>${h(dataVivo(PM.vivo))}</span></div>` : ""}
           </div>
           ${liberado(pm)
             ? `<button class="fim-botao largo" data-a="modulo" data-m="${pm}">Ver próximo módulo${ICONES.chev_dir}</button>`
-            : `<p class="mod-fim-bloq"><b>Indisponível no momento.</b> ${h(msgModFechado(pm))}.</p>`}
+            : `<p class="mod-fim-bloq"><b>Indisponível no momento.</b> ${h(avisoModFechado(pm))}</p>`}
           <button class="mod-fim-sec" data-a="voltar-aula-fim">${ICONES.chev_esq}Voltar à aula anterior</button>
         </div>
       </section>`;
-    const todos = S.coms[au.id] || [];
-    const raizes = todos.filter((x) => !x.respostaA);
-    const respsDe = (id) => todos.filter((x) => x.respostaA === id);
-    const meus = S.meus[k] || [];
-    const nomeDe = (x) => (x.ehInstrutor ? x.autoraNome || "Equipe AION" : x.autoraNome || "Aluna");
-    const extras = (au.conteudos || []).filter((x) => x.publicado !== false);
+    const pdf = pdfDe(au.conteudos);
+    const extras = (au.conteudos || []).filter((x) => x.publicado !== false && x !== pdf);
+    const prox = md.aulas.slice(a + 1, a + 4);
+    const volta = (S.voltaConteudo && S.voltaConteudo.tela) || "modulo";
     return `
     <div class="pagina" style="padding:0">
-      <div class="cab-aula">
-        <button class="voltar" data-a="modulo" data-m="${m}" aria-label="Voltar ao módulo">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar ao módulo</span></button>
-        <span class="cab-aula-mod" aria-hidden="true"></span>
-        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
-      </div>
+      ${cabConteudo(NOME_VOLTA[volta] || "o módulo")}
       <div class="aula-col${modFimAqui ? " mod-fim-on" : ""}">
         <div>
-          ${playerHtml(au.id, au.capa, true, au.titulo)}
+          ${playerHtml(au.id, au.capa, true, Object.assign({ titulo: au.titulo, ultima: ultimaDoMod }, R))}
           <div class="pagina">
             ${modFimAqui ? cardModFim : ""}
             <div class="dois-botoes">
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}
             </div>
-            ${feita(m, a) ? `<button class="botao-2 marcar-concluida" data-a="desfazer-concluir" aria-pressed="true">${ICONES.check}Aula concluída · desmarcar</button>` : `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>`}
-            <div class="abas-aula" role="tablist">
-              <button role="tab" data-a="aba-aula" data-v="sobre" aria-selected="${S.abaAula === "sobre"}">${ICONES.livro}Sobre a aula</button>
-              <button role="tab" data-a="aba-aula" data-v="resumo" aria-selected="${S.abaAula === "resumo"}">${ICONES.resumo}Resumo</button>
-              <button role="tab" data-a="aba-aula" data-v="exercicios" aria-selected="${S.abaAula === "exercicios"}">${ICONES.exercicio}Exercícios</button>
-            </div>
-            ${S.abaAula === "resumo" ? `
-            <div class="sobre-cartao">
-              <span class="sobre-ic">${ICONES.resumo}</span>
-              <div style="flex:1;min-width:0">
-                <h3>Resumo da aula</h3>
-                ${au.resumo.trim() ? `<ul class="resumo-lista">${au.resumo.split(/\n+/).map((x) => x.replace(/^\s*[-•*]\s*/, "").trim()).filter(Boolean).map((x) => `<li>${h(x)}</li>`).join("")}</ul>` : `<p>Resumo será adicionado em breve.</p>`}
-              </div>
-            </div>` : ""}
-            ${S.abaAula === "exercicios" ? (() => { const [tit, ...resto] = au.exercicio.trim().split(/\n/); const txt = resto.join("\n").trim(); return au.exercicio.trim() ? `
-            <div class="ex-cartao">
-              <div class="ex-topo">
-                <span class="ex-ic">${ICONES.exercicio}</span>
-                <div style="flex:1;min-width:0">
-                  <p class="rotulo">Exercício da aula</p>
-                  <h3 class="serif">${h(tit)}</h3>
-                </div>
-              </div>
-              ${txt ? `<p class="ex-texto">${h(txt.split(/\n\s*\n/)[0])}</p>` : ""}
-              <button class="ex-botao" data-a="ver-exercicio">${ICONES.resumo}<span>Ver exercício completo</span>${ICONES.chev_dir}</button>
-            </div>` : `
-            <div class="ex-cartao">
-              <div class="ex-topo">
-                <span class="ex-ic">${ICONES.exercicio}</span>
-                <div style="flex:1;min-width:0">
-                  <p class="rotulo">Exercício da aula</p>
-                  <h3 class="serif">Exercício será adicionado em breve.</h3>
-                </div>
-              </div>
-            </div>`; })() : ""}
-            ${S.abaAula === "sobre" ? `
-            <div class="sobre-cartao">
-              <span class="sobre-ic">${ICONES.livro}</span>
-              <div style="flex:1;min-width:0">
-                <p class="aula-id sobre-id">Módulo ${md.num} · Aula ${a + 1}</p>
-                <h1 class="sobre-titulo">${h(au.titulo)}</h1>
-                ${au.texto ? au.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("") : ""}
-                ${md.aviso ? `<p class="aviso-material">${ICONES.material}<span>${h(md.aviso)}</span></p>` : ""}
-                ${extras.length ? `<div class="opcoes" style="margin-top:12px">${extras.map((x) => `<button data-a="extra" data-id="${x.id}">${ICONES.material}${h(x.titulo || "Material da aula")}</button>`).join("")}</div>` : ""}
-              </div>
-            </div>` : ""}
-
-            <section class="coms" aria-labelledby="h-com">
-              <div class="coms-cab">
-                <h2 id="h-com">Comentários (${raizes.length + meus.length})</h2>
-                <button class="coms-toggle" data-a="coms-toggle" aria-expanded="${!S.comsFechado}" aria-controls="coms-corpo">${S.comsFechado ? "Abrir" : "Fechar"}<span aria-hidden="true">${S.comsFechado ? "⌄" : "⌃"}</span></button>
-              </div>
-              ${S.comsFechado ? "" : `<div id="coms-corpo">
-              <button class="com-abrir" data-a="abrir-comentar">
-                ${avCom(S.nome, S.corNome, S.foto)}
-                <span class="com-abrir-txt">${ICONES.balao}Comentar na aula</span>
-              </button>
-              <p class="com-aviso">A equipe lê cada comentário antes de publicar.</p>
-              ${meus.map((x) => `<div class="com">${avCom(S.nome, S.corNome, S.foto)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h((S.nome || "").split(" ")[0])}</b><span class="pendente">Aguardando aprovação</span></div><p>${h(x.txt)}</p><span class="com-nota">Só você vê este comentário até a equipe aprovar.</span></div></div>`).join("")}
-              ${(S.comTodos[k] ? raizes : raizes.slice(0, 2)).map((x) => {
-                const rs = respsDe(x.id), todas = !!S.respTodas[x.id], vis = todas ? rs : rs.slice(0, 2);
-                const nm = nomeDe(x);
-                return `<div class="com">
-                ${avCom(nm, x.minha ? S.corNome : corDe(nm), x.minha ? S.foto : "")}
-                <div class="com-corpo">
-                  <div class="com-topo"><b class="com-nome">${h(nm)}</b><span class="quando">${h(quandoTxt(x.criadoEm))}</span>${x.minha ? "" : `<button class="com-mais" data-a="com-mais" data-id="${x.id}" aria-label="Opções do comentário">${ICONES.mais}</button>`}</div>
-                  <p>${h(x.texto)}</p>
-                  <div class="com-acoes">
-                    <button data-a="com-curtir" data-id="${x.id}" aria-pressed="${!!x.curti}">${ICONES.curtido}<span>${x.curtidas || 0}</span></button>
-                    <button data-a="com-responder" data-v="${h(nm)}" data-id="${x.id}">${ICONES.balao}Responder</button>
-                  </div>
-                  ${vis.length ? `<div class="resps">${vis.map((r) => { const rn = nomeDe(r); return `<div class="resp">${avCom(rn, r.minha ? S.corNome : corDe(rn), r.minha ? S.foto : "", true)}<div class="com-corpo"><div class="com-topo"><b class="com-nome">${h(rn)}</b><span class="quando">${h(quandoTxt(r.criadoEm))}</span></div><p>${h(r.texto)}</p></div></div>`; }).join("")}
-                    ${rs.length > 2 ? `<button class="ver-mais pq" data-a="resp-ver-mais" data-v="${x.id}">${todas ? "Ver menos respostas" : "Ver mais " + (rs.length - 2) + (rs.length - 2 === 1 ? " resposta" : " respostas")}</button>` : ""}</div>` : ""}
-                </div>
-              </div>`; }).join("")}
-              ${raizes.length > 2 ? `<button class="ver-mais" data-a="com-ver-mais">${S.comTodos[k] ? "Ver menos comentários" : "Ver mais comentários (" + (raizes.length - 2) + ")"}</button>` : ""}
-              </div>`}
-            </section>
-
-            ${md.aulas.length > a + 1 ? `
+            ${semVideo && !feita(m, a) ? `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluída</button>` : ""}
+            ${abasConteudo({ rot: R, idTxt: "Módulo " + md.num + " · Aula " + (a + 1), titulo: au.titulo, sobre: au.texto, aviso: md.aviso, instr: au.exercicio, pdf, extras })}
+            ${secaoComs(au.id, R.comentar)}
+            ${prox.length ? `
             <section class="prox-aulas" aria-labelledby="h-prox">
-              <h2 id="h-prox">Próximas aulas deste módulo</h2>
-              ${md.aulas.slice(a + 1).map((x, j) => { const i = a + 1 + j; const ei = estadoAula(m, i), fech = !!ei.fech; return `
+              <h2 id="h-prox">${R.lista}</h2>
+              ${prox.map((x, j) => { const i = a + 1 + j; const ei = estadoAula(m, i), fech = !!ei.fech; return `
               <button class="prox-card${fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
                 <span class="capa">${img(x.capa, "")}<span class="prox-play">${fech ? '<span class="cadeado"></span>' : ""}</span></span>
                 <span class="prox-info"><b>Módulo ${md.num} · Aula ${i + 1}</b><span>${h(x.titulo)}</span>${fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ei.txt)}</span>` : `<em>Disponível</em>`}</span>
@@ -833,7 +894,7 @@ export function montar(raiz: HTMLElement) {
             </section>` : ""}
             <div class="mv-entre aula-entre">
               <button data-a="modulo" data-m="${m - 1}" ${m === 0 ? "disabled" : ""}>${ICONES.chev_esq}Módulo anterior</button>
-              <button data-a="modulo" data-m="${m + 1}" ${m === MODS().length - 1 ? "disabled" : ""}${pm !== null && !liberado(pm) ? ' class="tranc"' : ""}>${pm !== null && !liberado(pm) ? ICONES.cadeado : ""}Próximo módulo${ICONES.chev_dir}</button>
+              <button data-a="modulo" data-m="${m + 1}" ${pm === null ? "disabled" : ""}${pm !== null && !liberado(pm) ? ' class="tranc"' : ""}>${pm !== null && !liberado(pm) ? ICONES.cadeado : ""}Próximo módulo${ICONES.chev_dir}</button>
             </div>
           </div>
         </div>
@@ -1037,6 +1098,13 @@ export function montar(raiz: HTMLElement) {
       </div>
     </div>`;
   }
+  // Estado de um item de presente: liberado pelo banco e, dentro do curso, em sequência.
+  function estadoItem(curso, j, R) {
+    const t = curso.itens[j];
+    if (!aulaAdmin(t.id)) return { fech: true, txt: aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve" };
+    if (j > 0 && curso.itens[j - 1].mod === t.mod && !feitaId(curso.itens[j - 1].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + j + " para liberar" };
+    return { fech: false, txt: feitaId(t.id) ? "Concluído" : "Disponível" };
+  }
   function telaPresente() {
     const pts = String(S.presente || "").split("-").map(Number);
     const [ci, i, j] = pts;
@@ -1045,31 +1113,48 @@ export function montar(raiz: HTMLElement) {
     if (pts.length < 3) return telaEbook(ci, i, curso);
     const t = curso.itens[j];
     if (!t) { S.tela = "presentes"; return telaPresentes(); }
-    const livre = aulaAdmin(t.id);
-    const tipo = TIPO_CAT[c.nome] || "Conteúdo";
-    const temAnt = j > 0, temProx = j + 1 < curso.itens.length;
+    const R = ROT[tipoDoCurso(c, curso)];
+    const est = estadoItem(curso, j, R), livre = !est.fech;
+    const ultimo = j + 1 >= curso.itens.length;
+    const feito = feitaId(t.id);
+    const semVideo = S.videos[t.id] === "";
+    const botaoProx = ultimo
+      ? `<button class="nav-prox trancado" disabled>Último deste curso</button>`
+      : !feito
+        ? `<button class="nav-prox trancado" disabled aria-label="${h(R.prox)}, bloqueado até você concluir este">${ICONES.cadeado}${h(R.prox)}</button>`
+        : `<button class="nav-prox livre" data-a="seguinte">${h(R.prox)}${ICONES.chev_dir}</button>`;
+    const pdf = pdfDe(t.conteudos);
+    const extras = (t.conteudos || []).filter((x) => x.publicado !== false && x !== pdf);
+    const prox = curso.itens.slice(j + 1, j + 4);
+    const cAnt = c.cursos[i - 1], cProx = c.cursos[i + 1];
+    const volta = (S.voltaConteudo && S.voltaConteudo.tela) || "cursoPres";
     return `
     <div class="pagina" style="padding:0">
-      <div class="cab-aula">
-        <button class="voltar" data-a="curso-pres" data-v="${ci}-${i}" aria-label="Voltar para ${h(curso.nome)}">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar para ${h(curso.nome)}</span></button>
-        <span class="cab-aula-mod" aria-hidden="true"></span>
-        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
-      </div>
+      ${cabConteudo(volta === "cursoPres" ? curso.nome : NOME_VOLTA[volta] || curso.nome)}
       <div class="aula-col">
         <div>
-          ${livre ? playerHtml(t.id, t.capa || curso.capa, true, t.titulo) : `<div class="player">${img(t.capa || curso.capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.cadeado}</span><p class="fim-rot">${aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve"}</p></div></div>`}
+          ${livre ? playerHtml(t.id, t.capa || curso.capa, true, Object.assign({ titulo: t.titulo, ultima: ultimo }, R)) : `<div class="player">${img(t.capa || curso.capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.cadeado}</span><p class="fim-rot">${h(est.txt)}</p></div></div>`}
           <div class="pagina">
             <div class="dois-botoes">
-              <button class="nav-ant" ${temAnt ? `data-a="presente" data-v="${ci}-${i}-${j - 1}"` : "disabled"}>${ICONES.chev_esq}Anterior</button>
-              ${temProx ? `<button class="nav-prox livre" data-a="presente" data-v="${ci}-${i}-${j + 1}">Próximo${ICONES.chev_dir}</button>` : `<button class="nav-prox trancado" disabled>Último deste curso</button>`}
+              <button class="nav-ant" ${j > 0 ? `data-a="presente" data-v="${ci}-${i}-${j - 1}"` : "disabled"}>${ICONES.chev_esq}${h(R.ant)}</button>
+              ${botaoProx}
             </div>
-            <div class="sobre-cartao">
-              <span class="sobre-ic">${ICONES.livro}</span>
-              <div style="flex:1;min-width:0">
-                <p class="aula-id sobre-id">${h(curso.nome)} · ${j + 1} de ${curso.itens.length}</p>
-                <h1 class="sobre-titulo">${h(t.titulo)}</h1>
-                ${t.texto ? t.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\n/g, "<br>")}</p>`).join("") : `<p>${h(tipo)}. Um presente da mentoria para acompanhar a sua jornada. Assista com calma, no seu tempo.</p>`}
-              </div>
+            ${livre && semVideo && !feito ? `<button class="botao-2 marcar-concluida" data-a="concluir">${ICONES.check}Marcar como concluído</button>` : ""}
+            ${abasConteudo({ rot: R, idTxt: curso.nome + " · " + (j + 1) + " de " + curso.itens.length, titulo: t.titulo, sobre: t.texto, instr: t.exercicio, pdf: livre ? pdf : null, extras: livre ? extras : [], sobrePadrao: "Um presente da mentoria para acompanhar a sua jornada, no seu tempo." })}
+            ${livre ? secaoComs(t.id, R.comentar) : ""}
+            ${prox.length ? `
+            <section class="prox-aulas" aria-labelledby="h-prox">
+              <h2 id="h-prox">${h(R.lista)}</h2>
+              ${prox.map((x, n) => { const jj = j + 1 + n; const e = estadoItem(curso, jj, R); return `
+              <button class="prox-card${e.fech ? " fechada" : ""}" data-a="presente" data-v="${ci}-${i}-${jj}">
+                <span class="capa">${img(x.capa || curso.capa, "")}<span class="prox-play">${e.fech ? '<span class="cadeado"></span>' : ""}</span></span>
+                <span class="prox-info"><b>${h(curso.nome)} · ${jj + 1}</b><span>${h(x.titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${h(e.txt)}</em>`}</span>
+                ${e.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}${h(R.tocar)}</span>`}
+              </button>`; }).join("")}
+            </section>` : ""}
+            <div class="mv-entre aula-entre">
+              <button ${cAnt ? `data-a="curso-pres" data-v="${ci}-${i - 1}"` : "disabled"}>${ICONES.chev_esq}${h(R.navAnt)}</button>
+              <button ${cProx ? `data-a="curso-pres" data-v="${ci}-${i + 1}"` : "disabled"}${cProx && !cursoLiberado(cProx) ? ' class="tranc"' : ""}>${cProx && !cursoLiberado(cProx) ? ICONES.cadeado : ""}${h(R.navProx)}${ICONES.chev_dir}</button>
             </div>
           </div>
         </div>
@@ -1273,6 +1358,66 @@ export function montar(raiz: HTMLElement) {
       .catch(() => aviso("Não conseguimos salvar a foto agora. Tente de novo."));
     render();
   }
+  /* ---------- PDF dentro do app (PDF.js: o leitor do iPhone só mostra a 1ª página) ---------- */
+  const PDF_ZOOMS = [0.75, 1, 1.25, 1.5, 2, 2.5];
+  let pdfDoc = null, pdfZ = 1, pdfUrl = "", pdfNome = "";
+  function carregarPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    return new Promise((ok, erro) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+      s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; ok(window.pdfjsLib); };
+      s.onerror = erro; document.head.appendChild(s);
+    });
+  }
+  async function desenharPdf() {
+    const box = document.getElementById("pdfPaginas"), pct = document.getElementById("pdfPct");
+    if (!box || !pdfDoc) return;
+    const doc = pdfDoc, k = PDF_ZOOMS[pdfZ];
+    if (pct) pct.textContent = Math.round(k * 100) + "%";
+    document.querySelectorAll('[data-a="pdf-zoom"]').forEach((b) => { b.disabled = (+b.dataset.v < 0 && pdfZ <= 0) || (+b.dataset.v > 0 && pdfZ >= PDF_ZOOMS.length - 1); });
+    const larg = Math.max(260, box.clientWidth - 24) * k, dpr = Math.min(2, window.devicePixelRatio || 1);
+    box.innerHTML = "";
+    for (let n = 1; n <= doc.numPages; n++) {
+      if (pdfDoc !== doc) return;
+      const pg = await doc.getPage(n), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: (larg / v0.width) * dpr });
+      const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height; c.style.width = vp.width / dpr + "px"; c.style.height = vp.height / dpr + "px";
+      c.setAttribute("aria-label", "Página " + n + " de " + doc.numPages);
+      box.appendChild(c);
+      await pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+  }
+  function abrirPdf(url, tituloPdf, nome) {
+    pdfZ = 1; pdfDoc = null; pdfUrl = url; pdfNome = nome; S.pdfY = window.scrollY;
+    document.documentElement.classList.add("trava-rolagem");
+    camada.innerHTML = `
+    <div class="leitor leitor-pdf" role="dialog" aria-modal="true" aria-label="${h(tituloPdf)}">
+      <div class="leitor-cab">
+        <button class="voltar" data-a="fechar-pdf" aria-label="Fechar o PDF e voltar">${ICONES.seta_esq}Fechar</button>
+        <b class="leitor-tit">${h(tituloPdf)}</b>
+        <div class="leitor-zoom" role="group" aria-label="Zoom do PDF">
+          <button data-a="pdf-zoom" data-v="-1" aria-label="Diminuir">−</button>
+          <span class="leitor-pct" id="pdfPct" aria-live="polite">100%</span>
+          <button data-a="pdf-zoom" data-v="1" aria-label="Aumentar">+</button>
+        </div>
+      </div>
+      <div class="pdf-paginas" id="pdfPaginas"><p class="apoio" style="padding:24px;text-align:center">Carregando o PDF…</p></div>
+      <div class="pdf-rodape"><button class="botao largo" data-a="pdf-salvar">Salvar no celular</button></div>
+    </div>`;
+    carregarPdfJs()
+      .then((lib) => lib.getDocument(url).promise)
+      .then((doc) => { pdfDoc = doc; return desenharPdf(); })
+      .catch(() => { const b = document.getElementById("pdfPaginas"); if (b) b.innerHTML = '<p class="apoio" style="padding:24px;text-align:center">Não foi possível abrir o PDF agora. Tente de novo ou use “Salvar no celular”.</p>'; });
+  }
+  // O link é assinado e de outro endereço: baixa o arquivo e entrega com o nome certo.
+  async function salvarPdf() {
+    try {
+      const r = await fetch(pdfUrl); if (!r.ok) throw new Error();
+      const u = URL.createObjectURL(await r.blob());
+      const a = document.createElement("a"); a.href = u; a.download = pdfNome || "material.pdf"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(u), 30000);
+    } catch { window.open(pdfUrl, "_blank", "noopener"); }
+  }
   function folha(conteudo) { camada.innerHTML = `<div class="fundo-folha" data-a="fechar-folha"><div class="folha" role="dialog" aria-modal="true">${conteudo}</div></div>`; const b = camada.querySelector("button"); if (b) b.focus(); }
   let tAviso;
   function aviso(t) { let el = document.querySelector(".aviso"); if (!el) { el = document.createElement("div"); el.className = "aviso"; el.setAttribute("role", "status"); document.body.appendChild(el); } el.textContent = t; clearTimeout(tAviso); tAviso = setTimeout(() => el.remove(), 3600); }
@@ -1300,6 +1445,7 @@ export function montar(raiz: HTMLElement) {
     const au = MODS()[S.mod]?.aulas[S.aula]; if (!au) return;
     const id = au.id;
     void import("hls.js").catch(() => {});
+    await ultimaConclusao;
     void pedirVideo(id).then((ref) => {
       if (S.tela !== "aula" || MODS()[S.mod]?.aulas[S.aula]?.id !== id) return;
       render(); prepararVideo(id, ref);
@@ -1312,7 +1458,9 @@ export function montar(raiz: HTMLElement) {
     const [ci, i, j] = String(S.presente || "").split("-").map(Number);
     const t = CATS()[ci]?.cursos[i]?.itens[j]; if (!t || !aulaAdmin(t.id)) return;
     void import("hls.js").catch(() => {});
-    void pedirVideo(t.id).then((ref) => { if (S.tela === "presente") { render(); prepararVideo(t.id, ref); } });
+    await ultimaConclusao;
+    void pedirVideo(t.id).then((ref) => { if (S.tela === "presente" && conteudoAtual()?.id === t.id) { render(); prepararVideo(t.id, ref); } });
+    api.comentariosDaAula(t.id).then((l) => { S.coms[t.id] = l; if (S.tela === "presente" && conteudoAtual()?.id === t.id) render(); }).catch(() => {});
   }
 
   /* ---------- ações ---------- */
@@ -1334,18 +1482,25 @@ export function montar(raiz: HTMLElement) {
         if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
         S.mod = m; S.tela = "modulo"; topo(); break;
       }
+      case "voltar-conteudo": {
+        pararVideo(); const o = S.voltaConteudo; S.voltaConteudo = null;
+        if (!o) { if (S.tela === "presente") { const [ci, i] = String(S.presente).split("-"); acao("curso-pres", { v: ci + "-" + i }); } else acao("modulo", { m: S.mod }); return; }
+        S.tela = o.tela; if (o.tela === "modulo") S.mod = o.mod; if (o.cat != null) S.cat = o.cat; if (o.cursoPres != null) S.cursoPres = o.cursoPres;
+        render(); window.scrollTo({ top: o.y || 0 }); return;
+      }
       case "voltar-mod": { pararVideo(); const y = S.rolagemOrigem || 0; S.tela = S.origemMod || "inicio"; render(); window.scrollTo({ top: y }); return; }
       case "aula": {
         const m = +d.m, i = +d.i; if (!MODS()[m] || !MODS()[m].aulas[i]) return;
         const ea = estadoAula(m, i);
         if (ea.fech) { aviso("Esta aula será liberada no momento certo da sua jornada."); return; }
         pararVideo();
+        if (S.tela !== "aula") S.voltaConteudo = { tela: S.tela, y: window.scrollY, mod: S.mod, cat: S.cat, cursoPres: S.cursoPres };
         if (S.tela !== "modulo" && S.tela !== "aula") { S.origemMod = S.tela; S.rolagemOrigem = window.scrollY; }
-        S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = "sobre"; S.autoTocar = d.tocar === "1"; void abrirAula(); topo(); break;
+        S.mod = m; S.aula = i; S.tela = "aula"; S.rascunho = ""; S.abaAula = null; S.autoTocar = d.tocar === "1"; void abrirAula(); topo(); break;
       }
       case "anterior": if (S.aula > 0) acao("aula", { m: S.mod, i: S.aula - 1 }); else if (S.mod > 0) acao("aula", { m: S.mod - 1, i: MODS()[S.mod - 1].aulas.length - 1 }); return;
       case "seguinte":
-        if (S.tela === "presente") { const [ci, i, j] = String(S.presente).split("-").map(Number); if (CATS()[ci]?.cursos[i]?.itens[j + 1]) acao("presente", { v: ci + "-" + i + "-" + (j + 1) }); return; }
+        if (S.tela === "presente") { const [ci, i, j] = String(S.presente).split("-").map(Number); if (CATS()[ci]?.cursos[i]?.itens[j + 1]) { delete S.fim[chaveAtual()]; acao("presente", { v: ci + "-" + i + "-" + (j + 1) }); } return; }
         if (S.aula + 1 < MODS()[S.mod].aulas.length) acao("aula", { m: S.mod, i: S.aula + 1 }); else acao("modulo", { m: S.mod + 1 }); return;
       case "tocar": {
         const id = S.tela === "presente" ? (() => { const [ci, i, j] = String(S.presente).split("-").map(Number); return CATS()[ci]?.cursos[i]?.itens[j]?.id; })() : MODS()[S.mod]?.aulas[S.aula]?.id;
@@ -1364,9 +1519,10 @@ export function montar(raiz: HTMLElement) {
       case "voltar-aula-fim": delete S.modFim[S.mod]; render(); window.scrollTo({ top: 0 }); return;
       case "finalizar-mod": { parar(); delete S.fim[chaveAtual()]; S.modFim[S.mod] = 1; render(); window.scrollTo({ top: 0 }); return; }
       case "concluir": {
-        const id = MODS()[S.mod]?.aulas[S.aula]?.id; if (!id) return;
+        const id = conteudoAtual()?.id; if (!id) return;
         const l = D.prog.get(id); if (l) l.concluida = true;
-        void api.marcarConcluida(id, true).then(() => aviso("Aula concluída. Parabéns pelo passo de hoje!")).catch(() => { if (l) l.concluida = false; aviso("Não conseguimos marcar agora. Tente de novo."); render(); });
+        ultimaConclusao = api.marcarConcluida(id, true);
+        void ultimaConclusao.then(() => aviso("Aula concluída. Parabéns pelo passo de hoje!")).catch(() => { if (l) l.concluida = false; aviso("Não conseguimos marcar agora. Tente de novo."); render(); });
         break;
       }
       case "desfazer-concluir": {
@@ -1375,22 +1531,46 @@ export function montar(raiz: HTMLElement) {
         void api.marcarConcluida(id, false).then(() => aviso("A aula voltou a ficar pendente.")).catch(() => { if (l) l.concluida = true; aviso("Não conseguimos desmarcar agora. Tente de novo."); render(); });
         break;
       }
-      case "aba-aula": S.abaAula = d.v; break;
+      case "aba-aula": {
+        S.abaAula = S.abaAula === d.v ? null : d.v;
+        render();
+        if (!S.abaAula) return;
+        requestAnimationFrame(() => {
+          const abas = document.querySelector(".abas-aula"), painel = abas && abas.nextElementSibling; if (!painel) return;
+          const r = painel.getBoundingClientRect(), nav = document.querySelector(".nav-base");
+          const limite = window.innerHeight - (nav ? nav.getBoundingClientRect().height : 0) - 16;
+          if (r.bottom > limite) window.scrollBy({ top: r.bottom - limite, behavior: "smooth" });
+        });
+        return;
+      }
+      case "aba-fechar": S.abaAula = null; break;
+      case "pdf-ver": {
+        const c = conteudoAtual(); const lista = c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
+        const x = (lista || []).find((y) => y.id === d.id); if (!x) return;
+        const tit = (c.tipo === "aula" ? "Módulo " + c.md.num + " · Aula " + (c.a + 1) : c.curso.nome) + " — PDF";
+        const nome = (x.titulo || c.titulo || "material").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf";
+        if (x.url) { abrirPdf(x.url, tit, nome); return; }
+        void api.enderecoDoArquivo("materiais", x.arquivoPath).then((u) => (u ? abrirPdf(u, tit, nome) : aviso("Não conseguimos abrir o PDF agora. Tente de novo.")));
+        return;
+      }
+      case "fechar-pdf": { camada.innerHTML = ""; pdfDoc = null; document.documentElement.classList.remove("trava-rolagem"); const y = S.pdfY || 0; window.scrollTo({ top: y }); return; }
+      case "pdf-zoom": { pdfZ = Math.max(0, Math.min(PDF_ZOOMS.length - 1, pdfZ + Number(d.v))); void desenharPdf(); return; }
+      case "pdf-salvar": { void salvarPdf(); return; }
       case "ver-exercicio": {
         const au = MODS()[S.mod]?.aulas[S.aula]; if (!au || !au.exercicio.trim()) return;
         const [tit, ...resto] = au.exercicio.trim().split(/\n/);
         folha(`<p class="rotulo">Exercício da aula</p><h2 class="serif" style="margin-top:6px">${h(tit)}</h2><div style="margin-top:14px;font-size:1.0625rem;line-height:1.7;color:var(--texto-2)">${resto.join("\n").trim().split(/\n\s*\n/).filter(Boolean).map((par, i) => `<p${i ? ' style="margin-top:12px"' : ""}>${h(par).replace(/\n/g, "<br>")}</p>`).join("")}</div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Fechar</button>`); return;
       }
       case "com-curtir": {
-        const au = MODS()[S.mod]?.aulas[S.aula]; const x = au && (S.coms[au.id] || []).find((c) => c.id === d.id); if (!x) return;
+        const cid = conteudoAtual()?.id; const x = cid && (S.coms[cid] || []).find((c) => c.id === d.id); if (!x) return;
         x.curti = !x.curti; x.curtidas = Math.max(0, (x.curtidas || 0) + (x.curti ? 1 : -1)); render();
         void api.alternarCurtidaComentario(x.id).then((v) => { if (v !== x.curti) { x.curti = v; x.curtidas = Math.max(0, x.curtidas + (v ? 1 : -1)); render(); } }).catch(() => { x.curti = !x.curti; x.curtidas = Math.max(0, x.curtidas + (x.curti ? 1 : -1)); aviso("Não conseguimos curtir agora. Tente de novo."); render(); });
         return;
       }
       case "com-mais": folha(`<h2 class="serif">Opções do comentário</h2><div class="opcoes" style="margin-top:14px"><button data-a="com-denunciar" data-id="${h(d.id)}">Denunciar comentário</button></div><button class="botao-2 largo" data-a="fechar-folha" style="margin-top:14px">Cancelar</button>`); return;
       case "com-denunciar": camada.innerHTML = ""; void api.denunciarComentario(d.id).then(() => aviso("Obrigada. A equipe vai olhar este comentário.")).catch(() => aviso("Não conseguimos enviar agora. Tente de novo.")); return;
-      case "velocidade": folha(`<h2 class="serif">Velocidade do vídeo</h2><div class="opcoes">${["0,75x", "Normal", "1,25x", "1,5x"].map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${S.velocidade === v}">${v === "Normal" ? "Normal (1x)" : v}</button>`).join("")}</div>`); return;
-      case "vel": S.velocidade = d.v; if (VID) VID.playbackRate = { "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5 }[d.v] || 1; camada.innerHTML = ""; aviso("Velocidade: " + (d.v === "Normal" ? "normal" : d.v) + "."); break;
+      case "velocidade": folha(`<h2 class="serif">Velocidade</h2><div class="opcoes">${Object.keys(VELS).map((v) => `<button data-a="vel" data-v="${v}" aria-pressed="${S.velocidade === v}">${v === "Normal" ? "Normal (1x)" : v}</button>`).join("")}</div>`); return;
+      case "vel": S.velocidade = d.v; if (VID) VID.playbackRate = VELS[d.v] || 1; camada.innerHTML = ""; aviso("Velocidade: " + (d.v === "Normal" ? "normal" : d.v) + "."); break;
       case "fechar-folha": if (d._alvo && d._alvo !== d._el && d._el.classList.contains("fundo-folha")) return; camada.innerHTML = ""; return;
       case "volume": S.mudo = !S.mudo; if (VID) VID.muted = S.mudo; aviso(S.mudo ? "Vídeo sem som. Toque de novo para ligar." : "Som ligado."); break;
       case "tela-cheia": {
@@ -1399,7 +1579,8 @@ export function montar(raiz: HTMLElement) {
         const pl = app.querySelector(".player[data-aula]"); if (pl && pl.requestFullscreen) void pl.requestFullscreen().catch(() => {}); return;
       }
       case "extra": {
-        const au = MODS()[S.mod]?.aulas[S.aula]; const x = au && au.conteudos.find((c) => c.id === d.id); if (!x) return;
+        const c = conteudoAtual(); const lista = c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
+        const x = (lista || []).find((y) => y.id === d.id); if (!x) return;
         if (x.url) { window.open(x.url, "_blank", "noopener"); return; }
         if (x.arquivoPath) { void api.enderecoDoArquivo(x.tipo === "audio" ? "audios" : "materiais", x.arquivoPath).then((u) => (u ? window.open(u, "_blank", "noopener") : aviso("Não conseguimos abrir este arquivo agora."))); return; }
         if (x.texto) folha(`<h2 class="serif">${h(x.titulo)}</h2><div style="margin-top:12px;line-height:1.7;color:var(--texto-2)">${h(x.texto).replace(/\n/g, "<br>")}</div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Fechar</button>`);
@@ -1431,19 +1612,24 @@ export function montar(raiz: HTMLElement) {
       }
       case "presente": {
         const [ci, i, j] = d.v.split("-").map(Number); const t = CATS()[ci]?.cursos[i]?.itens[j];
-        if (!t) return; if (!aulaAdmin(t.id)) { aviso("Este conteúdo ainda não foi liberado para você. Em breve!"); return; }
-        pararVideo(); S.presente = d.v; S.tela = "presente"; void abrirPresente(); topo(); break;
+        if (!t) return;
+        const e = estadoItem(CATS()[ci].cursos[i], j, ROT[tipoDoCurso(CATS()[ci], CATS()[ci].cursos[i])]);
+        if (e.fech) { aviso(e.seq ? "Este conteúdo será liberado no momento certo da sua jornada." : "Este conteúdo ainda não foi liberado para você. Em breve!"); return; }
+        pararVideo();
+        if (S.tela !== "presente") S.voltaConteudo = { tela: S.tela, y: window.scrollY, mod: S.mod, cat: S.cat, cursoPres: S.cursoPres };
+        S.presente = d.v; S.tela = "presente"; S.abaAula = null; void abrirPresente(); topo(); break;
       }
       case "com-responder": S.respondendo = d.id || null; S.rascunho = "@" + d.v + " "; acao("abrir-comentar", {}); return;
-      case "coms-toggle": S.comsFechado = !S.comsFechado; break;
-      case "com-ver-mais": { const k = S.mod + "-" + S.aula; S.comTodos[k] = !S.comTodos[k]; break; }
+      case "coms-toggle": S.comsFechado = !S.comsFechado; gravar("aion-coms-fechado", S.comsFechado ? "1" : "0"); break;
+      case "com-ver-mais": S.comTodos[d.v] = !S.comTodos[d.v]; break;
       case "resp-ver-mais": S.respTodas[d.v] = !S.respTodas[d.v]; break;
       case "abrir-comentar": {
+        const c = conteudoAtual(); if (!c) return;
         folha(`<form data-f="comentar">
-          <h2 class="serif">Comentar na aula</h2>
-          <p class="apoio" style="margin-top:4px">${h(MODS()[S.mod].aulas[S.aula].titulo)}</p>
+          <h2 class="serif">${h(ROT[c.tipo].comentar)}</h2>
+          <p class="apoio" style="margin-top:4px">${h(c.titulo)}</p>
           <label for="txtCom" class="sr">Seu comentário</label>
-          <textarea id="txtCom" name="txt" class="com-grande" placeholder="Escreva aqui o que achou desta aula...">${h(S.rascunho)}</textarea>
+          <textarea id="txtCom" name="txt" class="com-grande" placeholder="Escreva aqui o que achou...">${h(S.rascunho)}</textarea>
           <p class="apoio" style="margin-top:10px">A equipe lê cada comentário antes de publicar.</p>
           <div class="com-botoes">
             <button type="button" class="botao-2" data-a="fechar-folha">Cancelar</button>
@@ -1475,7 +1661,11 @@ export function montar(raiz: HTMLElement) {
       case "fechar-config": S.config = false; break;
       case "tirar-foto": folha(`<h2 class="serif" style="margin:0 0 6px">Remover sua foto?</h2><p class="apoio">No lugar dela volta a aparecer a letra do seu nome.</p><div class="folha-botoes"><button class="botao-2" data-a="fechar-folha">Cancelar</button><button class="botao" data-a="foto-remover-ok">Remover foto</button></div>`); return;
       case "foto-remover-ok": S.foto = ""; S.fotoOrig = null; void api.salvarMinhaFoto(null, null, null).catch(() => aviso("Não conseguimos remover a foto agora. Tente de novo.")); camada.innerHTML = ""; aviso("Foto removida."); break;
-      case "cor-nome": S.corNome = d.v; gravar("aion-cor-nome", d.v); aviso("Cor salva."); break;
+      case "cor-nome": {
+        const antes = S.corNome; S.corNome = d.v; gravar("aion-cor-nome", d.v);
+        void api.salvarMinhaCor(d.v).then(() => aviso("Cor salva.")).catch(() => { S.corNome = antes; gravar("aion-cor-nome", antes); aviso("Não conseguimos salvar a cor agora. Tente de novo."); render(); });
+        break;
+      }
       case "tema": S.tema = d.v === "claro" ? "claro" : "escuro"; gravar("aion-tema", S.tema); aviso(S.tema === "claro" ? "Tema claro ativado." : "Tema escuro ativado."); break;
       case "letra-mais": S.letra = Math.min(TAM.length - 1, S.letra + 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
       case "letra-menos": S.letra = Math.max(0, S.letra - 1); gravar("aion-letra", String(S.letra)); aviso("Letra: " + NOMES_TAM[S.letra].toLowerCase() + "."); break;
@@ -1524,13 +1714,13 @@ export function montar(raiz: HTMLElement) {
     if (f === "comentar") {
       const t = form.txt.value.trim();
       if (!t) { aviso("Escreva seu comentário antes de enviar."); form.txt.focus(); return; }
-      const au = MODS()[S.mod].aulas[S.aula], k = S.mod + "-" + S.aula;
-      const pos = VID && VID_ID === au.id ? VID.currentTime : 0;
+      const c = conteudoAtual(); if (!c) return;
+      const pos = VID && VID_ID === c.id ? VID.currentTime : 0;
       const btn = form.querySelector("button:not([type])"); if (btn) btn.disabled = true;
       try {
-        await api.comentar(au.id, t, pos, S.respondendo || undefined);
-        (S.meus[k] = S.meus[k] || []).unshift({ txt: t });
-        S.rascunho = ""; S.respondendo = null; camada.innerHTML = ""; render();
+        await api.comentar(c.id, t, pos, S.respondendo || undefined);
+        S.rascunho = ""; S.respondendo = null; camada.innerHTML = "";
+        S.coms[c.id] = await api.comentariosDaAula(c.id).catch(() => S.coms[c.id] || []); render();
         aviso("Recebemos seu comentário. Ele aparece aqui depois que a equipe aprovar.");
       } catch { if (btn) btn.disabled = false; aviso("Não conseguimos enviar agora. Tente de novo."); }
     }

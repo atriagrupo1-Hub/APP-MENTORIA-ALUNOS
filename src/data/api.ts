@@ -583,6 +583,11 @@ export type ComentarioPublico = {
    * navegador, então a tela não teria como descobrir sozinha.
    */
   ehInstrutor: boolean;
+  /** Foto e cor do Perfil de quem escreveu (0055); nulas se anônimo. */
+  autoraFoto?: string | null;
+  autoraCor?: string | null;
+  /** Comentário dela que ainda espera a aprovação da equipe. */
+  pendente?: boolean;
   curtidas: number;
   curti: boolean;
 };
@@ -603,7 +608,7 @@ export type ComentarioPublico = {
  */
 export async function comentariosDaAula(aulaId: string): Promise<ComentarioPublico[]> {
   const [{ data, error }, curt] = await Promise.all([
-    supabase.rpc("comentarios_da_aula", { p_aula: aulaId }),
+    supabase.rpc("comentarios_do_conteudo", { p_aula: aulaId }),
     supabase.rpc("curtidas_da_aula", { p_aula: aulaId }),
   ]);
   if (error) throw new Error(`comentarios: ${error.message}`);
@@ -622,6 +627,9 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: boolean;
       resposta_a: string | null;
       eh_instrutor: boolean;
+      autora_foto?: string | null;
+      autora_cor?: string | null;
+      pendente?: boolean;
     }) => ({
       id: c.id,
       aulaId: c.aula_id,
@@ -632,6 +640,9 @@ export async function comentariosDaAula(aulaId: string): Promise<ComentarioPubli
       minha: c.minha,
       respostaA: c.resposta_a,
       ehInstrutor: c.eh_instrutor,
+      autoraFoto: c.autora_foto ?? null,
+      autoraCor: c.autora_cor ?? null,
+      pendente: !!c.pendente,
       // `curtidas_da_aula()` (0047); sem ela, zero e não curtido.
       curtidas: curtidas.get(c.id)?.curtidas ?? 0,
       curti: !!curtidas.get(c.id)?.curti,
@@ -688,6 +699,18 @@ export async function marcarConcluida(aulaId: string, concluida: boolean): Promi
     p_concluida: concluida,
   });
   if (error) throw new Error(`marcar concluída: ${error.message}`);
+}
+
+/** A cor que a aluna escolheu no Perfil (0055). `undefined` = não deu para ler. */
+export async function minhaCor(): Promise<string | null | undefined> {
+  const { data, error } = await supabase.rpc("minha_cor");
+  if (error) return undefined;
+  return (data as string | null) ?? null;
+}
+
+export async function salvarMinhaCor(cor: string): Promise<void> {
+  const { error } = await supabase.rpc("salvar_minha_cor", { p_cor: cor });
+  if (error) throw new Error(`cor: ${error.message}`);
 }
 
 /** A foto da aluna logada (0050): o recorte, a imagem inteira e o enquadramento. */
