@@ -370,7 +370,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -721,7 +721,7 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa ini">
       <div class="ini-grade">
         ${cartao(IC_INI.balao, "Últimos comentários", "ir-comentarios", coms.slice(0, 3).map((k) => `
-          <div class="ini-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="ini-mais" data-a="ir-comentarios" aria-label="Abrir em Comentários">⋮</button></div>`).join("") || vazio("Nenhum comentário no período."))}
+          <div class="ini-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">${k.estado === "moderar" ? "Moderar" : "Ver"}</button></div>`).join("") || vazio("Nenhum comentário no período."))}
         ${cartao(IC_INI.onda, "Últimas atividades", "ini-ativ-todas", atv ? (atv.slice(0, 3).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")) : vazio("Carregando…"))}
         ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
           <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
@@ -1850,7 +1850,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
       </div>
       ${lista.map((k) => `
-      <div class="cartao" style="padding:16px;margin-bottom:12px">
+      <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
           <b style="flex:1 1 220px">${h(k.autora)}</b>
           <span style="font-size:13px;color:var(--texto-3)">${localAula(k.aula)} · ${h(k.quando)}</span>
@@ -2367,6 +2367,13 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
+      case "ini-moderar": {
+        const k = S.comentarios.find((x) => x.id === d.id); if (!k) return;
+        ui.tab = "comentarios"; ui.filtroCom = k.estado; ui.comAlvo = k.id; ui.respondendo = null;
+        render();
+        const el2 = document.getElementById("com-" + k.id); if (el2) el2.scrollIntoView({ block: "center", behavior: "smooth" });
+        return;
+      }
       case "ir-comentarios": ui.tab = "comentarios"; window.scrollTo(0, 0); break;
       case "ir-alunas-recentes": ui.tab = "alunas"; ui.filtroAl = "recentes"; ui.paginaAl = 1; window.scrollTo(0, 0); break;
       case "ini-abrir-aluna": ui.acessoAluna = d.id; ui.acessoAba = "geral"; break;

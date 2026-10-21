@@ -921,3 +921,5 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ct-curso-txt span { font-size: 12.5px; color: var(--texto-2); }
 .ct-curso .aa-seta { margin-top: 10px; }
 .ct-mais { margin: 8px 0 6px; }
+.ini-moderar { flex: 0 0 auto; min-height: 32px !important; padding: 0 12px !important; font-size: 12.5px !important; }
+.cartao.com-alvo { border: 2px solid var(--al-ouro, #b8955a); box-shadow: 0 0 0 4px color-mix(in srgb, var(--al-ouro, #b8955a) 18%, transparent); }
