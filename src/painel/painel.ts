@@ -1922,7 +1922,6 @@ export function montar(app: HTMLElement) {
             <div class="cur-rodape">
               <span class="cur-data">${IC_CUR.cal}${c.criado ? "Adicionado em " + br(diaDe(c.criado)) : ""}</span>
             </div>
-            <div class="cur-prog"><span class="cur-barra"><i style="width:${n.pct}%"></i></span><b>${n.pct}%</b></div>
             <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button></div>
           </div>
         </article>`;
