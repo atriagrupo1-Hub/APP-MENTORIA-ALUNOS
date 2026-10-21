@@ -912,8 +912,6 @@ export function montar(raiz: HTMLElement) {
   const cursoLiberado = (curso) => curso.liberadoDireto || curso.itens.some((x) => aulaAdmin(x.id));
   // Categoria ainda sem curso abre vazia ("Em breve…"): não há nada nela para liberar.
   const catAberta = (c) => !c.bloqueada && (!c.cursos.length || c.cursos.some(cursoLiberado));
-  // Curso bloqueado para ela: só o cartão com o cadeado; não entra no curso.
-  const msgCursoFechado = (curso) => (abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Libera em breve");
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   function telaPresentes() {
     return `
@@ -972,22 +970,26 @@ export function montar(raiz: HTMLElement) {
     const plural = ebook ? "Leitura" : freq ? p(curso.itens.length, "frequência", "frequências") : curso.itens.length ? p(curso.itens.length, tipo, tipo + "s") : "Será adicionado em breve";
     const meta = `<p class="mc-meta"><span>${ebook ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`}${h(plural)}</span></p>`;
     if (!cursoLiberado(curso)) {
-      const msg = msgCursoFechado(curso);
+      // Igual ao print: imagem embaçada com o cadeado nítido e "Em breve, só para você"; não abre.
+      const tp = tipoDoCurso({ nome: cat }, curso);
+      const cls = { mestres: "mestres", freq: "pres", video: "doc" }[tp];
+      const ic = { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: ICONE_DESTAQUE.video }[tp];
+      const chama = abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Em breve, só para você";
       return `
-    <div class="mod-bloco mc mc-tr-curso" style="--mc:${COR}">
-      <button class="mc-top" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado. ${h(msg)}.">
-        <span class="mc-capa" aria-hidden="true">${img(curso.capa, "")}</span>
-        <span class="mc-info" aria-hidden="true">
-          <span class="mc-cab"><span class="mc-rot">${h(cat)}</span><b class="mc-tit serif">${h(curso.nome)}</b></span>
-          ${meta}
-          <span class="ex-botao mc-ver-grande">${freq ? "Ver todas" : "Ver os vídeos"}<span style="margin-left:8px">⌄</span></span>
+    <section class="ex-card ex-banner pres-banner-card pres-fech ${cls}" aria-labelledby="h-cur-${key}">
+      <button class="pres-fech-alvo" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado, ainda não liberado.">
+        <span class="pres-fech-area" aria-hidden="true">
+          <span class="ex-img ex-img-banner cat-fech-fosco">${img(curso.capa, "")}</span>
+          <span class="cat-fech-veu"><span class="cat-fech-cad">${ICONES.cadeado}</span><span class="cat-fech-chama">${h(chama)}</span></span>
         </span>
-        <span class="tr-curso-veu" aria-hidden="true">
-          <span class="tranca-ic">${ICONES.cadeado}</span>
-          <span class="tr-curso-txt"><b>${h(curso.nome)}</b><span>${h(msg)}</span></span>
+        <span class="ex-info">
+          <span class="ex-rot">${ic}${h(cat)}</span>
+          <span class="pres-fech-tit serif" id="h-cur-${key}">${h(curso.nome)}</span>
+          <span class="ex-desc cat-fech-fosco">${h(curso.descricao || "")}</span>
+          <span class="ex-botao cat-fech-fosco">${freq ? "Ver frequências" : "Ver os vídeos"}</span>
         </span>
       </button>
-    </div>`;
+    </section>`;
     }
     if (ebook) return `
     <div class="mod-bloco mc" style="--mc:${COR}">
@@ -1568,7 +1570,7 @@ export function montar(raiz: HTMLElement) {
       case "fechar-leitor": { const o = S.leitorDe || {}; S.leitorDe = null; S.presente = o.presente || S.presente; S.tela = "presente"; render(); window.scrollTo({ top: o.y || 0 }); return; }
       case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
-        if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": " + msgCursoFechado(CATS()[ci].cursos[i]).toLowerCase() + "."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
+        if (!cursoLiberado(CATS()[ci].cursos[i])) { const ab = abreCurso(CATS()[ci].cursos[i]); aviso(CATS()[ci].cursos[i].nome + (ab ? " libera em " + dataCurta(ab) + "." : " ainda não foi liberado para você. Em breve!")); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
