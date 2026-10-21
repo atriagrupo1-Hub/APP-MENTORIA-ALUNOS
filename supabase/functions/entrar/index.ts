@@ -210,6 +210,21 @@ Deno.serve(async (req) => {
       origem,
     );
   }
+  // A equipe pediu que a tela aponte o campo errado (0057).
+  if (falha === "nome_invalido") {
+    return resposta(
+      { erro: "nome_invalido", mensagem: "Não encontramos este nome. Confira e digite de novo." },
+      401,
+      origem,
+    );
+  }
+  if (falha === "codigo_invalido") {
+    return resposta(
+      { erro: "codigo_invalido", mensagem: "Código incorreto. Confira e digite de novo." },
+      401,
+      origem,
+    );
+  }
   if (falha === "acesso_invalido") {
     // Nome inexistente e código errado devolvem a mesma coisa, de
     // propósito: não se diz a ninguém quais nomes existem.
