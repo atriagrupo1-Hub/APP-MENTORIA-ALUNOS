@@ -1387,8 +1387,8 @@ export function montar(app: HTMLElement) {
   }
 
   /*
-   * Uma frase direta embaixo de cada campo, sempre à vista: o que vai
-   * ali e onde a aluna vê. Sem precisar clicar em nada.
+   * Uma frase direta para cada campo: o que vai ali e onde a aluna vê.
+   * Fica dentro do "?" amarelo ao lado do nome do campo.
    */
   const AJ = {
     nome: "Aqui você coloca o nome do curso. É assim que a aluna vê o curso chamado na área de membros.",
@@ -1408,7 +1408,9 @@ export function montar(app: HTMLElement) {
     exercicio: "A tarefa da aula. Primeira linha é o título, depois o texto. A aluna vê na aba Exercícios.",
     extras: "Materiais a mais da aula (PDF, link, áudio…). Viram botões no fim de \"Sobre a aula\".",
   };
-  const dicaCampo = (txt: string) => `<span class="dica-campo">${txt}</span>`;
+  // Bolinha amarela com "?" preto; a frase abre ao tocar. <details> nativo:
+  // abre e fecha sem redesenhar a tela, então nada digitado se perde.
+  const dicaCampo = (txt: string) => `<details class="ajuda-amarela" onclick="event.stopPropagation()"><summary aria-label="Ajuda">?</summary><span class="ajuda-amarela-txt">${txt}</span></details>`;
 
   /* ---------- CURSO ABERTO ---------- */
   function telaCurso() {
@@ -1424,29 +1426,29 @@ export function montar(app: HTMLElement) {
       <p class="rotulo" style="margin:0 0 10px">Configurações</p>
       <form data-f="curso-config" class="cartao" style="padding:16px;margin-bottom:26px">
         <div class="campos">
-          <div class="grupo nome"><span class="rotulo">Nome</span>${dicaCampo(AJ.nome)}<input class="campo" name="nome" value="${h(c.nome)}" required aria-label="Nome" /></div>
-          <div class="grupo" style="flex:1 1 240px"><span class="rotulo">Categoria onde aparece</span>${dicaCampo(AJ.cat)}
+          <div class="grupo nome"><span class="rotulo rotulo-ajuda">Nome ${dicaCampo(AJ.nome)}</span><input class="campo" name="nome" value="${h(c.nome)}" required aria-label="Nome" /></div>
+          <div class="grupo" style="flex:1 1 240px"><span class="rotulo rotulo-ajuda">Categoria onde aparece ${dicaCampo(AJ.cat)}</span>
             <select class="campo" name="cat" required aria-label="Categoria onde aparece">
               ${S.cats.map((k) => `<option value="${k.id}" ${k.id === c.cat ? "selected" : ""}>${h(k.nome)}</option>`).join("")}
             </select>
           </div>
-          <div class="grupo" style="flex:0 0 150px"><span class="rotulo">Visibilidade</span>${dicaCampo(AJ.vis)}
+          <div class="grupo" style="flex:0 0 150px"><span class="rotulo rotulo-ajuda">Visibilidade ${dicaCampo(AJ.vis)}</span>
             <select class="campo" name="visivel" aria-label="Visibilidade"><option value="1" ${c.visivel ? "selected" : ""}>Visível</option><option value="0" ${c.visivel ? "" : "selected"}>Oculto</option></select>
           </div>
         </div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Descrição</span>${dicaCampo(AJ.desc)}<textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Fundação — o que é este curso</span>${dicaCampo(AJ.fund)}<textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
-        <div class="grupo largo" style="margin-top:14px"><span class="rotulo">Aviso de material — aparece em toda aula</span>${dicaCampo(AJ.aviso)}<textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.desc)}</span><textarea class="campo" name="descricao" rows="2" aria-label="Descrição">${h(c.descricao)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Fundação — o que é este curso ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="5" placeholder="Para quem é, o que promete, com que voz se fala aqui." aria-label="Fundação">${h(c.fundacao)}</textarea></div>
+        <div class="grupo largo" style="margin-top:14px"><span class="rotulo rotulo-ajuda">Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="2" aria-label="Aviso de material">${h(c.aviso)}</textarea></div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:18px">
           <button class="botao">Salvar</button>
           <button type="button" class="botao-neutro grande" data-a="curso-cancelar">Cancelar</button>
           <button type="button" class="botao-neutro grande botao-remover" data-a="curso-remover" data-id="${c.id}">Remover</button>
-          <span class="dica-campo" style="flex:1 1 100%">${AJ.botoes}</span>
+          <span style="align-self:center">${dicaCampo(AJ.botoes)}</span>
         </div>
       </form>
 
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:10px;margin-bottom:12px">
-        <span class="rotulo">Conteúdo do produto</span>${dicaCampo(AJ.conteudo)}
+        <span class="rotulo rotulo-ajuda">Conteúdo do produto ${dicaCampo(AJ.conteudo)}</span>
         <span style="font-size:13px;color:var(--texto-2)">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</span>
       </div>
 
@@ -1455,7 +1457,7 @@ export function montar(app: HTMLElement) {
       <form data-f="mod-add" data-id="${c.id}" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;padding:16px;border:1px dashed rgba(255,255,255,.16);border-radius:14px">
         <input class="campo" name="nome" style="flex:1 1 260px;max-width:520px" placeholder="Nome do novo módulo" required />
         <button class="botao-neutro grande">+ Adicionar módulo</button>
-        <span class="dica-campo" style="flex:1 1 100%">${AJ.addMod}</span>
+        <span style="align-self:center">${dicaCampo(AJ.addMod)}</span>
       </form>
     </section>`;
   }
@@ -1484,7 +1486,7 @@ export function montar(app: HTMLElement) {
     <div class="bloco-modulo">
       ${cab}
       <div style="margin-top:12px">
-        ${m.aulas.length ? `<p class="rotulo" style="margin:0 0 6px">Aulas</p><p class="dica-campo" style="margin:-4px 0 10px">${AJ.aulas}</p>` : ""}
+        ${m.aulas.length ? `<p class="rotulo rotulo-ajuda" style="margin:0 0 6px">Aulas ${dicaCampo(AJ.aulas)}</p>` : ""}
         ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p style="margin:0;padding:10px 0;font-size:13px;color:var(--texto-3)">Nenhuma aula neste módulo.</p>`}
       </div>
       ${ui.addAula === m.id ? `
@@ -1541,12 +1543,12 @@ export function montar(app: HTMLElement) {
 
       <form data-f="aula" data-id="${a.id}">
         <label class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo">Vídeo — link ou identificador (Cloudflare Stream)</span>${dicaCampo(AJ.video)}
+          <span class="rotulo rotulo-ajuda">Vídeo — link ou identificador (Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
           <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt;  ou só o uid" />
         </label>
 
         <div class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo">Capa da aula</span>${dicaCampo(AJ.capa)}
+          <span class="rotulo rotulo-ajuda">Capa da aula ${dicaCampo(AJ.capa)}</span>
           <span style="display:flex;flex-wrap:wrap;gap:8px">
             <input id="campoCapa" class="campo" name="capa" style="flex:1 1 240px" value="${h(a.capa)}" placeholder="modulo-1-aula-1.webp" />
             <button type="button" class="botao-neutro grande" data-a="escolher-capa">Escolher imagem</button>
@@ -1555,7 +1557,7 @@ export function montar(app: HTMLElement) {
         </div>
 
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo">O texto desta aula — é o que a aluna lê</span>${dicaCampo(AJ.texto)}
+          <span class="rotulo rotulo-ajuda">O texto desta aula — é o que a aluna lê ${dicaCampo(AJ.texto)}</span>
           <textarea class="campo" name="texto" rows="16" style="min-height:420px" placeholder="Escreva a aula como você quiser.
 
 Uma linha em branco separa parágrafo.
@@ -1564,11 +1566,11 @@ Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
         </label>
         ${a.resumo === null ? "" : `
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo">Resumo — aba "Resumo" da aula</span>${dicaCampo(AJ.resumo)}
+          <span class="rotulo rotulo-ajuda">Resumo — aba "Resumo" da aula ${dicaCampo(AJ.resumo)}</span>
           <textarea class="campo" name="resumo" rows="5" placeholder="Um ponto por linha.">${h(a.resumo)}</textarea>
         </label>
         <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo">Exercício — aba "Exercícios" da aula</span>${dicaCampo(AJ.exercicio)}
+          <span class="rotulo rotulo-ajuda">Exercício — aba "Exercícios" da aula ${dicaCampo(AJ.exercicio)}</span>
           <textarea class="campo" name="exercicio" rows="7" placeholder="Título do exercício na primeira linha.
 
 Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}</textarea>
@@ -1580,7 +1582,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         </div>
       </form>
 
-      <p class="rotulo" style="margin:0 0 10px">Conteúdo extra desta aula</p><p class="dica-campo" style="margin:-4px 0 10px">${AJ.extras}</p>
+      <p class="rotulo rotulo-ajuda" style="margin:0 0 10px">Conteúdo extra desta aula ${dicaCampo(AJ.extras)}</p>
       <div class="cartao" style="padding:16px">
         ${a.extras.length ? `<div style="margin:-4px 0 16px">${a.extras.map((e) => `
           <div class="linha">

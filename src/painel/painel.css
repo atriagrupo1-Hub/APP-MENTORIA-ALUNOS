@@ -569,3 +569,12 @@ body.aa-trava { overflow: hidden; }
 .campos > .grupo:last-child .ajuda-campo .ajuda-pop { left: auto; right: 0; }
 /* Frase de orientação embaixo de cada campo: sempre à vista. */
 .dica-campo { display: block; flex: 1 1 100%; margin: 2px 0 6px; font-size: 13px; line-height: 1.45; color: var(--texto-2); text-transform: none; letter-spacing: 0; }
+
+/* "?" amarelo com o ponto de interrogação preto (curso e aula) */
+.rotulo-ajuda { display: inline-flex; align-items: center; gap: 8px; }
+.ajuda-amarela { position: relative; display: inline-block; text-transform: none; letter-spacing: 0; vertical-align: middle; }
+.ajuda-amarela > summary { list-style: none; display: grid; place-items: center; width: 20px; height: 20px; font-size: 13px; font-weight: 800; line-height: 1; color: #000; background: #f5c542; border-radius: 50%; cursor: pointer; user-select: none; }
+.ajuda-amarela > summary::-webkit-details-marker { display: none; }
+.ajuda-amarela[open] > summary { box-shadow: 0 0 0 3px rgba(245, 197, 66, 0.35); }
+.ajuda-amarela-txt { position: absolute; left: 0; top: calc(100% + 8px); z-index: 25; width: 300px; max-width: calc(100vw - 40px); padding: 12px 14px; font-size: 13.5px; font-weight: 400; line-height: 1.5; color: var(--texto); background: var(--superficie-alta); border: 1px solid var(--linha-suave); border-radius: 10px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35); }
+.campos > .grupo:last-child .ajuda-amarela-txt { left: auto; right: 0; }
