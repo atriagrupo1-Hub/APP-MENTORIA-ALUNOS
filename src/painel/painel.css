@@ -813,3 +813,47 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ef-zoom input { flex: 1 1 auto; accent-color: var(--al-ouro, #b8955a); }
 .ef-trocar { margin-top: 8px; padding: 6px 10px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--al-ouro, #b8955a); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .ef-botoes { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+
+/* ===== Início (referência) ===== */
+.ini-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1100px) { .ini-grade { grid-template-columns: 1fr; } }
+.ini-cartao { padding: 18px 18px 10px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
+.ini-cartao header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.ini-cartao h3 { flex: 1 1 auto; margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
+.ini-cab-ic svg { width: 26px; height: 26px; fill: none; stroke: var(--al-ouro); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.ini-cartao header .al-botao { gap: 6px; }
+.ini-cartao header .al-botao svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ini-lista { display: flex; flex-direction: column; }
+.ini-item { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 0; border-top: 1px solid var(--linha-suave); font: inherit; color: inherit; text-align: left; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; }
+.ini-item:first-child { border-top: 0; }
+.ini-aluna { cursor: pointer; }
+.ini-aluna:hover b { text-decoration: underline; text-underline-offset: 3px; }
+[data-painel] .ini-aluna:not(:disabled):hover { box-shadow: none; background: none; }
+.ini-item .avatar { width: 44px; height: 44px; }
+.ini-txt { flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 13.5px; line-height: 1.4; }
+.ini-txt b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 16px; font-weight: 600; }
+.ini-txt > span { color: var(--texto-2); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ini-txt > span b { font-family: inherit; font-size: inherit; }
+.ini-txt > span > b:first-child { font-family: "Cormorant Garamond", Georgia, serif; font-size: 16px; color: var(--texto); }
+.ini-quando { flex: 0 0 auto; font-size: 12.5px; color: var(--texto-2); white-space: nowrap; }
+.ini-mais { flex: 0 0 auto; width: 28px; height: 32px; padding: 0; font-size: 18px; font-weight: 700; color: var(--texto); background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.ini-ic { flex: 0 0 auto; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; }
+.ini-ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ini-ic.verde { color: #2f8a3a; background: #e3f2e1; }
+.ini-ic.roxo { color: #8a3fb8; background: #f1e4f8; }
+.ini-ic.azul { color: #3f6fc8; background: #e4ecfb; }
+:root:not([data-tema="claro"]) .ini-ic.verde { color: #8fc27e; background: rgba(143,194,126,.14); }
+:root:not([data-tema="claro"]) .ini-ic.roxo { color: #c69be6; background: rgba(198,155,230,.14); }
+:root:not([data-tema="claro"]) .ini-ic.azul { color: #8fb2e8; background: rgba(143,178,232,.14); }
+.ini-vazio { margin: 0; padding: 18px 0; font-size: 13.5px; color: var(--texto-2); }
+.ini-periodo { position: relative; }
+.ini-periodo > .al-botao { gap: 10px; }
+.ini-periodo > .al-botao svg { width: 18px; height: 18px; }
+.ini-periodo-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: 300px; display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,.25); }
+.ini-rapidos { display: flex; flex-wrap: wrap; gap: 6px; }
+.ini-rapidos .al-filtro { min-height: 34px; padding: 0 12px; font-size: 13px; box-shadow: none; }
+.ini-periodo-pop label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 600; }
+.ini-periodo-pop .campo { width: 170px; }
+.ini .aa-corpo .ini-item { padding: 10px 0; }
+.ini-cartao h3 { font-size: 18.5px; line-height: 1.2; }
+@media (min-width: 1101px) and (max-width: 1500px) { .ini-cartao h3 { font-size: 17px; } }
