@@ -161,16 +161,10 @@ export function montar(raiz: HTMLElement) {
     const depois = ordem.slice(ultima + 1).find((o) => !feitaId(o.id)) || ordem.find((o) => !feitaId(o.id));
     return depois ? { m: depois.m, a: depois.a } : null;
   }
-  /** A data da próxima liberação para ela (a mais próxima no futuro), ou null. */
-  function proximaLiberacao() {
-    let menor = null;
-    for (const md of MODS()) for (const x of md.aulas) { const ab = aberturaDe(x.id); if (ab && (!menor || ab < menor)) menor = ab; }
-    return menor;
-  }
   function estadoAula(m, a) {
     const id = MODS()[m].aulas[a].id;
-    if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
-    if (!aulaAdmin(id)) return { cls: "fechado", txt: aberturaDe(id) ? "Libera em " + dataCurta(aberturaDe(id)) : "Em breve", fech: true };
+    if (!liberado(m)) return { cls: "fechado", txt: "Libera em breve", fech: true };
+    if (!aulaAdmin(id)) return { cls: "fechado", txt: "Libera em breve", fech: true };
     if (!seqOk(m, a)) return { cls: "fechado", txt: "Conclua a Aula " + a + " para liberar", fech: true, seq: true };
     if (feita(m, a)) return { cls: "ok", txt: "✓ Concluída" };
     if (posicao(m, a) > 0) return { cls: "andando", txt: "Em andamento" };
@@ -178,15 +172,16 @@ export function montar(raiz: HTMLElement) {
   }
   function estadoMod(m) {
     const t = MODS()[m].aulas.length;
-    if (!liberado(m)) return { cls: "fechado", txt: abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve", fech: true };
+    if (!liberado(m)) return { cls: "fechado", txt: "Libera em breve", fech: true };
     const n = feitasMod(m);
     if (t && n === t) return { cls: "ok", txt: "✓ Módulo concluído" };
     if (n > 0) return { cls: "andando", txt: n + " de " + t + " aulas feitas" };
     return { cls: "livre", txt: "Disponível · " + p(t, "aula", "aulas") };
   }
-  const msgModFechado = (m) => (abre(m) ? "Libera em " + dataCurta(abre(m)) : "Em breve");
+  // A aluna não vê datas de liberação: o que está trancado diz só "Libera em breve".
+  const msgModFechado = () => "Libera em breve";
   // O aviso dentro da página do módulo bloqueado.
-  const avisoModFechado = (m) => (abre(m) ? "Este módulo abre em " + dataCurta(abre(m)) + "." : m > 0 && !modConcluido(m - 1) ? "Libera depois da conclusão do módulo anterior." : "Este módulo ainda não foi liberado para você.");
+  const avisoModFechado = () => "Libera em breve.";
   const dataVivo = (v) => { if (v.data) { const d = new Date(v.data); return dataCurta(d) + " às " + String(d.getHours()).padStart(2, "0") + "h" + (d.getMinutes() ? String(d.getMinutes()).padStart(2, "0") : ""); } return v.texto || "data a confirmar"; };
 
   /* ---------- ícones (da maquete) ---------- */
@@ -421,7 +416,7 @@ export function montar(raiz: HTMLElement) {
           <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}" data-tocar="1"><span class="ic-play"></span>Continuar assistindo</button>
         </div>
       </section>`;
-    } else { const pl = proximaLiberacao(); heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. ${pl ? "A próxima abre em " + dataCurta(pl) + "." : "A próxima será liberada em breve."}</div>`; }
+    } else { heroi = `<div class="vazio" style="margin-top:22px">Você terminou todas as aulas liberadas. A próxima será liberada em breve.</div>`; }
     const cardsExtra = cartoesDestaque();
     const jr = (D && D.jornada) || {};
     const cabMentoria = `
@@ -878,6 +873,7 @@ export function montar(raiz: HTMLElement) {
           ${playerHtml(au.id, au.capa, true, Object.assign({ titulo: au.titulo, ultima: ultimaDoMod }, R))}
           <div class="pagina">
             ${modFimAqui ? cardModFim : ""}
+            <p class="aula-local"><b>${h(titulo(md.titulo))}</b> · Aula ${a + 1}</p>
             <div class="dois-botoes">
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}
@@ -974,7 +970,7 @@ export function montar(raiz: HTMLElement) {
       const tp = tipoDoCurso({ nome: cat }, curso);
       const cls = { mestres: "mestres", freq: "pres", video: "doc" }[tp];
       const ic = { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: ICONE_DESTAQUE.video }[tp];
-      const chama = abreCurso(curso) ? "Libera em " + dataCurta(abreCurso(curso)) : "Em breve, só para você";
+      const chama = "Em breve, só para você";
       return `
     <section class="ex-card ex-banner pres-banner-card pres-fech ${cls}" aria-labelledby="h-cur-${key}">
       <button class="pres-fech-alvo" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado, ainda não liberado.">
@@ -1021,7 +1017,7 @@ export function montar(raiz: HTMLElement) {
     return `
         <button class="la-item${livre ? "" : " fechada"}" data-a="presente" data-v="${ci}-${i}-${j}">
           <span class="la-capa">${img(t.capa || curso.capa, "")}<span class="la-ic">${livre ? (feitaId(t.id) ? "✓" : "") : '<span class="cadeado"></span>'}</span></span>
-          <span class="la-info"><b>${h(curso.nome)} · ${j + 1}</b><span>${h(t.titulo)}</span>${livre ? `<em>${feitaId(t.id) ? "Concluído" : "Disponível"}</em>` : `<span class="aviso-lib">${ICONES.cadeado}${aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve"}</span>`}</span>
+          <span class="la-info"><b>${h(curso.nome)} · ${j + 1}</b><span>${h(t.titulo)}</span>${livre ? `<em>${feitaId(t.id) ? "Concluído" : "Disponível"}</em>` : `<span class="aviso-lib">${ICONES.cadeado}Libera em breve</span>`}</span>
           ${livre ? `<span class="la-assistir" aria-hidden="true">${ICONES.play}${freq ? "Ouvir" : "Assistir"}</span>` : ""}
         </button>`;
   }
@@ -1083,7 +1079,7 @@ export function montar(raiz: HTMLElement) {
   // Estado de um item de presente: liberado pelo banco e, dentro do curso, em sequência.
   function estadoItem(curso, j, R) {
     const t = curso.itens[j];
-    if (!aulaAdmin(t.id)) return { fech: true, txt: aberturaDe(t.id) ? "Libera em " + dataCurta(aberturaDe(t.id)) : "Em breve" };
+    if (!aulaAdmin(t.id)) return { fech: true, txt: "Libera em breve" };
     if (j > 0 && curso.itens[j - 1].mod === t.mod && !feitaId(curso.itens[j - 1].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + j + " para liberar" };
     return { fech: false, txt: feitaId(t.id) ? "Concluído" : "Disponível" };
   }
@@ -1570,7 +1566,7 @@ export function montar(raiz: HTMLElement) {
       case "fechar-leitor": { const o = S.leitorDe || {}; S.leitorDe = null; S.presente = o.presente || S.presente; S.tela = "presente"; render(); window.scrollTo({ top: o.y || 0 }); return; }
       case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
-        if (!cursoLiberado(CATS()[ci].cursos[i])) { const ab = abreCurso(CATS()[ci].cursos[i]); aviso(CATS()[ci].cursos[i].nome + (ab ? " libera em " + dataCurta(ab) + "." : " ainda não foi liberado para você. Em breve!")); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
+        if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": libera em breve."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
