@@ -163,6 +163,7 @@ type LinhaAula = {
   resumo?: string | null;
   exercicio?: string | null;
   capa_path: string | null;
+  publicado?: boolean;
   bloqueado_geral: boolean;
 };
 
@@ -365,6 +366,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     produtoId: m.produto_id,
     capaPath: m.capa_path,
     capaHorizontalPath: m.capa_horizontal_path ?? null,
+    cor: m.cor_destaque ?? null,
     bloqueadoGeral: m.bloqueado_geral,
     tituloNaArte: m.titulo_na_arte,
     avisoMaterial: avisoDoProduto.get(m.produto_id ?? "") ?? null,
@@ -385,6 +387,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         resumo: a.resumo ?? null,
         exercicio: a.exercicio ?? null,
         capaPath: a.capa_path,
+        publicado: a.publicado !== false,
         bloqueadoGeral: a.bloqueado_geral,
         conteudos: emOrdem(conteudoDaAula.get(a.id)),
       })),
@@ -463,12 +466,14 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     id: string;
     modulo_id: string;
     quando_texto: string | null;
+    data_hora: string | null;
     liberada: boolean;
   }>) {
     mapaAoVivo[v.modulo_id] = {
       id: v.id,
       moduloId: v.modulo_id,
       quandoTexto: v.quando_texto,
+      dataHora: v.data_hora,
       liberada: v.liberada,
     };
   }

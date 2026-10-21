@@ -30,7 +30,7 @@ type Aula = {
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string };
+type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
@@ -186,7 +186,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
@@ -197,7 +197,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("contatos_das_alunas"),
   ]);
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests] = await Promise.all([
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests, vivos] = await Promise.all([
     supabase.rpc("engajamento_alunas"),
     emPaginas((de, ate) => supabase.rpc("aulas_concluidas_alunas").order("aluna_id").order("aula_id").range(de, ate)),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
@@ -209,6 +209,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
+    supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
   ]);
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
@@ -240,9 +241,10 @@ async function lerTudo(eu: Eu): Promise<Dados> {
   }
 
   const modsDo = new Map<string, Modulo[]>();
+  const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "" });
+    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -1560,6 +1562,7 @@ export function montar(app: HTMLElement) {
     alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="6" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg>`,
     caixa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/></svg>`,
   };
+  const dataLocal = (iso: string) => { if (!iso) return ""; const d = new Date(iso); if (isNaN(+d)) return ""; const z = (n: number) => String(n).padStart(2, "0"); return d.getFullYear() + "-" + z(d.getMonth() + 1) + "-" + z(d.getDate()) + "T" + z(d.getHours()) + ":" + z(d.getMinutes()); };
   const capaSite = (c: string) => (c ? (c.startsWith("/") ? c : urlDaCapa(c)) : "");
   const capaCat = (k: Cat) => capaSite(k.capa);
   const chave = (on: boolean, acao: string, id: string, rotulo: string) => `<button type="button" class="cat-chave" role="switch" aria-checked="${on}" data-a="${acao}" data-id="${id}" aria-label="${h(rotulo)}"><i></i></button>`;
@@ -1771,6 +1774,9 @@ export function montar(app: HTMLElement) {
     rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
+    modCapa: "A capa em pé do módulo, que aparece no topo da página do módulo e na aba Módulos.",
+    modCor: "A cor do contorno, do brilho e da linha na página do módulo. Os botões continuam dourados.",
+    modVivo: "Marque se o módulo tem aula ao vivo. A data aparece na página do módulo; sem data, aparece \"data a confirmar\". Desmarcado, essa parte some.",
     modCapaH: "A capa deitada (16:9) do módulo, usada no \"Comece por aqui\" do Início quando ele é o primeiro módulo do curso. A capa em pé continua a mesma.",
     video: "Cole aqui o link do vídeo da aula (Cloudflare Stream). É o vídeo que a aluna assiste. Vazio, ela vê \"Aula será adicionada em breve\".",
     capa: "A imagem da aula que a aluna vê na lista de aulas e antes de dar o play. Clique em Escolher imagem e o caminho se preenche sozinho.",
@@ -1847,6 +1853,16 @@ export function montar(app: HTMLElement) {
           <span class="mod-capa" data-previa="modh-${m.id}">${(previas["modh-" + m.id] || capaSite(m.capaH)) ? `<img src="${h(previas["modh-" + m.id] || capaSite(m.capaH))}" alt="" />` : ""}</span>
           <input type="hidden" name="capaH" value="${h(m.capaH)}" />
           <span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="botao-neutro grande" data-a="mod-capa-h" data-id="${m.id}">Escolher imagem</button>${m.capaH ? `<button type="button" class="botao-neutro grande botao-remover" data-a="mod-capa-h-tirar" data-id="${m.id}">Tirar capa</button>` : ""}</span>
+        </div>
+        <div class="grupo largo"><span class="rotulo rotulo-ajuda">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
+          <span class="mod-capa mod-capa-pe" data-previa="modv-${m.id}">${(previas["modv-" + m.id] || capaSite(m.capa)) ? `<img src="${h(previas["modv-" + m.id] || capaSite(m.capa))}" alt="" />` : ""}</span>
+          <input type="hidden" name="capa" value="${h(m.capa)}" />
+          <span style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="botao-neutro grande" data-a="mod-capa-v" data-id="${m.id}">Escolher imagem</button></span>
+        </div>
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Cor do módulo ${dicaCampo(AJ.modCor)}</span><input type="color" class="campo-cor" name="cor" value="${h(/^#[0-9a-f]{6}$/i.test(m.cor) ? m.cor : "#e6b85a")}" /></label>
+        <div class="grupo largo"><span class="rotulo rotulo-ajuda">Aula ao vivo ${dicaCampo(AJ.modVivo)}</span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px"><input type="checkbox" name="temVivo" value="1" ${m.vivo ? "checked" : ""} /> Este módulo tem aula ao vivo</label>
+          <label style="display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13px;color:var(--texto-3)">Data e hora (vazio = "data a confirmar")<input type="datetime-local" class="campo" name="vivoData" value="${h(dataLocal(m.vivo?.data || ""))}" style="max-width:260px" /></label>
         </div>
         <div style="display:flex;gap:8px">${botoesEdicao("Salvar módulo")}</div>
       </form>` : `
@@ -2565,6 +2581,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         });
         break;
       }
+      case "mod-capa-v": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capa", previa: "modv-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
       case "mod-capa-h": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capaH", previa: "modh-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
       case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
@@ -2902,7 +2919,14 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       }
       case "mod-renomear":
         { const mm = acharModulo(id)!.m; const velho = mm.nome; const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
-          void executar(async () => { falhou(await supabase.from("modulos").update({ titulo: v("nome"), intro, capa_horizontal_path: capaH }).eq("id", id).select("id").single()); ui.editando = null; delete previas["modh-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
+          const capa = v("capa") || null, cor = v("cor") || null, temVivo = (form.elements.namedItem("temVivo") as HTMLInputElement).checked, vivoData = v("vivoData");
+          void executar(async () => {
+            falhou(await supabase.from("modulos").update({ titulo: v("nome"), intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
+            const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
+            if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
+            else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do Módulo " + numModulo(acharModulo(id)!.c, acharModulo(id)!.i), data_hora: dataHora }).select("id"));
+            else if (mm.vivo) falhou(await supabase.from("aulas_ao_vivo").delete().eq("modulo_id", id).select("id"));
+            ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula-add": {
         const x = acharModulo(id)!;
