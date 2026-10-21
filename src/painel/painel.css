@@ -557,3 +557,13 @@ body.aa-trava { overflow: hidden; }
 .aa-ajuda .ajuda-btn { width: 20px; height: 20px; font-size: 12px; }
 .aa-ajuda .ajuda-pop { left: -8px; right: auto; top: calc(100% + 8px); z-index: 30; width: 290px; max-width: calc(100vw - 48px); text-align: left; white-space: normal; cursor: default; }
 .aa-grade.estreita .aa-ajuda { display: none; }
+
+/* "?" de cada campo (tela do curso e da aula) */
+.rotulo-ajuda { display: inline-flex; align-items: center; gap: 8px; }
+.ajuda-campo { position: relative; display: inline-block; text-transform: none; letter-spacing: 0; }
+.ajuda-campo > summary { list-style: none; width: 20px; height: 20px; font-size: 12px; }
+.ajuda-campo > summary::-webkit-details-marker { display: none; }
+.ajuda-campo[open] > summary { color: var(--texto); border-color: var(--texto); }
+.ajuda-campo .ajuda-pop { left: 0; right: auto; width: 300px; max-width: calc(100vw - 40px); font-weight: 400; line-height: 1.45; }
+.ajuda-campo .ajuda-pop i { font-style: normal; font-weight: 700; color: var(--texto); }
+.campos > .grupo:last-child .ajuda-campo .ajuda-pop { left: auto; right: 0; }

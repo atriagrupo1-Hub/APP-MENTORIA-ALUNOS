@@ -72,7 +72,7 @@ export function montar(raiz: HTMLElement) {
       .filter((m) => (jornada ? m.produtoId === jornada : true))
       .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
       .map((m) => ({
-        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", capa: capaUrl(`modulo-${m.numero}.webp`),
+        id: m.id, num: m.numero, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capa: capaUrl(`modulo-${m.numero}.webp`),
         aulas: m.aulas.slice().sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
           id: a.id, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: capaUrl(`modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
         })),
@@ -759,6 +759,7 @@ export function montar(raiz: HTMLElement) {
                 <p class="aula-id sobre-id">Módulo ${md.num} · Aula ${a + 1}</p>
                 <h1 class="sobre-titulo">${h(au.titulo)}</h1>
                 ${au.texto ? au.texto.split(/\n\s*\n/).map((par) => `<p>${h(par).replace(/\*([^*\n]+)\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}</p>`).join("") : ""}
+                ${md.aviso ? `<p class="aviso-material">${ICONES.material}<span>${h(md.aviso)}</span></p>` : ""}
                 ${extras.length ? `<div class="opcoes" style="margin-top:12px">${extras.map((x) => `<button data-a="extra" data-id="${x.id}">${ICONES.material}${h(x.titulo || "Material da aula")}</button>`).join("")}</div>` : ""}
               </div>
             </div>` : ""}
