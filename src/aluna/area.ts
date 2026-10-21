@@ -93,7 +93,7 @@ export function montar(raiz: HTMLElement) {
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
-          id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: capaUrl(x.capaPath), conteudos: x.conteudos || [],
+          id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: capaUrl(a.capaPath), conteudos: a.conteudos || [] })),
         })),
@@ -909,40 +909,47 @@ export function montar(raiz: HTMLElement) {
   // Categoria ainda sem curso abre vazia ("Em breve…"): não há nada nela para liberar.
   const catAberta = (c) => !c.bloqueada && (!c.cursos.length || c.cursos.some(cursoLiberado));
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
-  function telaPresentes() {
-    return `
-    <div class="pagina">
-      <h1 class="todos-mod serif">Presentes</h1>
-      <p class="apoio" style="margin-top:-6px">Conteúdos extras para assistir, ouvir e ler no seu tempo.</p>
-      <div class="cat-grade">${CATS().map((c, ci) => {
-        const COR = CORES_CAT[ci % CORES_CAT.length];
-        const capa = (c.cursos.find((x) => x.capa) || {}).capa || "";
-        if (!catAberta(c)) return `
-        <section class="cat-card cat-fech" style="--mc:${COR}" aria-labelledby="h-cat-${ci}">
-          <button class="cat-fech-alvo" data-a="cat-fechada" data-v="${ci}" aria-label="${h(c.nome)}. Bloqueado, ainda não liberado.">
-            <span class="cat-tit serif" id="h-cat-${ci}"><span aria-hidden="true"></span>${h(c.nome)}<span aria-hidden="true"></span></span>
-            <span class="cat-fech-area" aria-hidden="true">
-              <span class="cat-fech-fosco">
-                <span class="cat-corpo"><span class="cat-capa">${img(capa, "")}</span><span class="cat-desc">${h(DESC_CAT[c.nome] || "")}</span></span>
-                <span class="ex-botao cat-ver">Ver todos</span>
-              </span>
-              <span class="cat-fech-veu">
-                <span class="cat-fech-cad">${ICONES.cadeado}</span>
-                <span class="cat-fech-chama">Em breve, só para você</span>
-              </span>
+  // Os presentes (Mestres espirituais, Documentários, Frequências, E-books…), cada um num cartão.
+  const PRESENTES = () => CATS().flatMap((c, ci) => c.cursos.map((curso, i) => ({ c, ci, i, curso })));
+  const icPresente = (c, curso) => (/e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
+  const corPresente = (c, curso) => (/e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
+  const botaoPresente = (curso) => (/e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
+  function cartaoPresente({ c, ci, i, curso }) {
+    const key = ci + "-" + i;
+    if (!cursoLiberado(curso)) return `
+        <section class="ex-card ex-banner pres-banner-card pres-fech ${corPresente(c, curso)}" aria-labelledby="h-pr-${key}">
+          <button class="pres-fech-alvo" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado, ainda não liberado.">
+            <span class="pres-fech-area" aria-hidden="true">
+              <span class="ex-img ex-img-banner cat-fech-fosco">${img(curso.capa, "")}</span>
+              <span class="cat-fech-veu"><span class="cat-fech-cad">${ICONES.cadeado}</span><span class="cat-fech-chama">Em breve, só para você</span></span>
+            </span>
+            <span class="ex-info">
+              <span class="ex-rot">${icPresente(c, curso)}${h(curso.nome)}</span>
+              <span class="pres-fech-tit serif" id="h-pr-${key}">${h(curso.nome)}</span>
+              <span class="ex-desc cat-fech-fosco">${h(curso.descricao)}</span>
+              <span class="ex-botao cat-fech-fosco">${h(botaoPresente(curso))}</span>
             </span>
           </button>
         </section>`;
-        return `
-        <section class="cat-card" style="--mc:${COR}" aria-labelledby="h-cat-${ci}">
-          <h2 class="cat-tit serif" id="h-cat-${ci}"><span aria-hidden="true"></span>${h(c.nome)}<span aria-hidden="true"></span></h2>
-          <button class="cat-corpo" data-a="categoria" data-v="${ci}" aria-label="Abrir ${h(c.nome)}">
-            <span class="cat-capa">${img(capa, "")}</span>
-            <span class="cat-desc">${h(DESC_CAT[c.nome] || "")}</span>
-          </button>
-          <button class="ex-botao cat-ver" data-a="categoria" data-v="${ci}">Ver todos</button>
+    const acaoP = ehEbook(curso) ? `data-a="ebook" data-v="${key}"` : `data-a="curso-pres" data-v="${key}"`;
+    return `
+        <section class="ex-card ex-banner pres-banner-card ${corPresente(c, curso)}" aria-labelledby="h-pr-${key}">
+          <button class="ex-img ex-img-banner" ${acaoP} aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
+          <div class="ex-info">
+            <p class="ex-rot">${icPresente(c, curso)}${h(curso.nome)}</p>
+            <h2 class="serif" id="h-pr-${key}">${h(curso.nome)}</h2>
+            <p class="ex-desc">${h(curso.descricao)}</p>
+            <button class="ex-botao" ${acaoP}>${h(botaoPresente(curso))}</button>
+          </div>
         </section>`;
-      }).join("") || `<div class="vazio">Em breve, presentes para você.</div>`}</div>
+  }
+  function telaPresentes() {
+    const lista = PRESENTES();
+    return `
+    <div class="pagina">
+      <h1 class="todos-mod serif">Presentes</h1>
+      ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
+      <div class="cat-grade">${lista.map(cartaoPresente).join("") || `<div class="vazio">Em breve, presentes para você.</div>`}</div>
     </div>`;
   }
   function telaCategoria() {
@@ -1570,6 +1577,8 @@ export function montar(raiz: HTMLElement) {
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
+        const pr = PRESENTES().find((x) => x.curso.nome.toLowerCase() === String(d.v).toLowerCase());
+        if (pr) { acao(ehEbook(pr.curso) && cursoLiberado(pr.curso) ? "ebook" : "curso-pres", { v: pr.ci + "-" + pr.i }); return; }
         const ci = CATS().findIndex((c) => c.nome.toLowerCase() === String(d.v).toLowerCase());
         if (ci >= 0 && !catAberta(CATS()[ci])) { aviso(d.v + " ainda não foi liberado para você. Em breve!"); return; }
         pararVideo(); S.perfilDe = null; S.cat = ci; S.catVazia = ci < 0 ? String(d.v) : null; S.tela = "categoria"; topo(); break;
