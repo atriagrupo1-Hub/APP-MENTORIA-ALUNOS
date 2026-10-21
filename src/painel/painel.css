@@ -1066,3 +1066,11 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .cur-grade.em-lista .cur-capa { flex: 0 0 220px; aspect-ratio: auto; min-height: 150px; border-radius: 12px 0 0 12px; }
 .cur-grade.em-lista .cur-corpo { flex: 1 1 auto; }
 @media (max-width: 640px) { .cur-grade.em-lista .cur-card { flex-direction: column; } .cur-grade.em-lista .cur-capa { flex: none; aspect-ratio: 2 / 1; min-height: 0; border-radius: 12px 12px 0 0; } .cur-busca, .cur-ordem { flex: 1 1 160px; } }
+.cur-cats { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; }
+.cur-cat { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; font: inherit; font-size: 15px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 99px; box-shadow: var(--aa-sombra); cursor: pointer; transition: border-color .15s ease, background .15s ease; }
+.cur-cat span { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 7px; font-size: 13px; color: var(--texto-2); background: var(--aa-cinza); border-radius: 99px; }
+.cur-cat:hover { border-color: color-mix(in srgb, var(--aa-ouro) 55%, transparent); }
+.cur-cat[aria-pressed="true"] { color: var(--al-ouro-txt); background: linear-gradient(180deg, #d6b06a, #a5732a); border-color: transparent; }
+.cur-cat[aria-pressed="true"] span { color: #1a1206; background: rgba(255,255,255,.55); }
+.cur-capa { position: relative; }
+.cur-sem-capa { position: absolute; inset: 0; display: grid; place-items: center; font-size: 14px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.55); }
