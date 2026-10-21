@@ -684,6 +684,23 @@ export async function marcarConcluida(aulaId: string, concluida: boolean): Promi
   if (error) throw new Error(`marcar concluída: ${error.message}`);
 }
 
+/** A foto da aluna logada (0050): o recorte, a imagem inteira e o enquadramento. */
+export async function minhaFoto(): Promise<{ foto: string; original: string | null; ajuste: Record<string, number> | null } | null> {
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) return null;
+  const { data, error } = await supabase.from("fotos_aluna").select("foto, original, ajuste").eq("aluna_id", sessao.user.id).maybeSingle();
+  if (error) throw new Error(`foto: ${error.message}`);
+  return data ?? null;
+}
+
+/** Grava (ou, com `foto` nulo, apaga) a foto da aluna logada. */
+export async function salvarMinhaFoto(foto: string | null, original: string | null, ajuste: Record<string, number> | null): Promise<void> {
+  const { data: sessao } = await supabase.auth.getUser();
+  if (!sessao.user) throw new Error("sem sessão");
+  const { error } = await supabase.rpc("salvar_foto_aluna", { p_aluna: sessao.user.id, p_foto: foto, p_original: original, p_ajuste: ajuste });
+  if (error) throw new Error(`salvar foto: ${error.message}`);
+}
+
 export async function alternarCurtidaComentario(id: string): Promise<boolean> {
   const { data, error } = await supabase.rpc("alternar_curtida_comentario", { p_comentario: id });
   if (error) throw new Error(`curtir comentário: ${error.message}`);
