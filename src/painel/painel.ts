@@ -29,8 +29,10 @@ type Aula = {
   // Nulos enquanto a 0047 não estiver no banco: aí os campos não aparecem.
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[]; criado: string; duracao: number;
+  /** Número escolhido no painel (0063). */
+  num: number;
 };
-type Modulo = { id: string; nome: string; rot: string; rotAula: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; rot: string; rotAula: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
@@ -199,7 +201,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo, rotulo_aula").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo, rotulo_aula").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
@@ -251,6 +253,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
+      num: Number(a.numero) || 0,
     });
     aulasDo.set(a.modulo_id, lista);
   }
@@ -259,7 +262,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, rot: (m.rotulo ?? "").trim() || "Módulo", rotAula: (m.rotulo_aula ?? "").trim() || "Aula", ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", rotAula: (m.rotulo_aula ?? "").trim() || "Aula", ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -460,14 +463,15 @@ export function montar(app: HTMLElement) {
     }
     return null;
   }
-  const numModulo = (c: Curso, i: number) => i + (c.inicio == null ? 1 : c.inicio);
-  /** Número do módulo = posição na lista: escolher um número põe o módulo naquela posição, sem repetir. */
-  const opcoesNumero = (c: Curso, qtd: number, atual: number) =>
-    Array.from({ length: qtd }, (_, k) => `<option value="${k}"${k === atual ? " selected" : ""}>${numModulo(c, k)}</option>`).join("");
-  /** O mesmo para as aulas: número = posição no módulo, começando em 1. */
-  const opcoesAula = (qtd: number, atual: number) =>
-    Array.from({ length: qtd }, (_, k) => `<option value="${k}"${k === atual ? " selected" : ""}>${k + 1}</option>`).join("");
-  const localAula = (aid: string) => { const x = acharAula(aid); return x ? "Módulo " + numModulo(x.c, x.mi) + " · Aula " + (x.ai + 1) : "Aula removida"; };
+  const numModulo = (c: Curso, i: number) => c.modulos[i]?.num ?? i + (c.inicio == null ? 1 : c.inicio);
+  /** Sugestão de número: o próximo depois do maior que já existe. */
+  const proxNumModulo = (c: Curso) => c.modulos.length ? Math.max(...c.modulos.map((m) => m.num)) + 1 : (c.inicio == null ? 1 : c.inicio);
+  const proxNumAula = (m: Modulo) => m.aulas.length ? Math.max(...m.aulas.map((a) => a.num)) + 1 : 1;
+  const erroNumero = (n: number, usados: number[], oQue: "módulo" | "aula") =>
+    !Number.isInteger(n) || n < 0 || n > 999 ? "O número precisa ser de 0 a 999."
+      : usados.includes(n) ? (oQue === "módulo" ? "Já existe um módulo com o número " + n + "." : "Já existe uma aula com o número " + n + " neste módulo.") : "";
+  const campoNumero = (valor: number, rotulo: string) => `<input type="number" class="campo campo-num" name="numero" min="0" max="999" step="1" inputmode="numeric" required value="${valor}" aria-label="${rotulo}" />`;
+  const localAula = (aid: string) => { const x = acharAula(aid); return x ? x.m.rot + " " + numModulo(x.c, x.mi) + " · " + x.m.rotAula + " " + x.a.num : "Aula removida"; };
   function trocado<T>(arr: T[], i: number, d: number): T[] | null {
     const j = i + d; if (j < 0 || j >= arr.length) return null;
     const novo = arr.slice(); const t = novo[i]; novo[i] = novo[j]; novo[j] = t; return novo;
@@ -882,7 +886,7 @@ export function montar(app: HTMLElement) {
     const f = ui.iniLib || "hoje";
     const [de, ate] = f === "hoje" ? [hj, hj] : f === "ontem" ? [menos(1), menos(1)] : [menos(6), hj];
     const libs = aulasLiberadas(de, ate);
-    const nomeAula = (x: Liberacao) => `Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} - Aula ${x.m.aulas.indexOf(x.aula) + 1}`;
+    const nomeAula = (x: Liberacao) => `Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} - Aula ${x.aula.num}`;
     const capaAula = (a: Aula) => (a.capa ? urlDaCapa(a.capa) : "");
     const ultimoCurso = S.cursos.slice().sort((x, y) => y.criado.localeCompare(x.criado))[0];
     const mods = S.cursos.flatMap((c) => c.modulos.map((m, i) => ({ c, m, i }))).sort((x, y) => y.m.criado.localeCompare(x.m.criado)).slice(0, 4);
@@ -1979,8 +1983,8 @@ export function montar(app: HTMLElement) {
     addMod: "Escreva o nome do novo módulo. Ele entra no fim da lista.",
     rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
-    numMod: "A aluna vê o nome antes do número (Módulo, Documentário, Frequência…), o número e o nome do módulo. Para mudar, clique em Editar no módulo.",
-    numAula: "A aluna vê o nome antes do número (Aula, Episódio…), o número e o nome da aula. Para mudar, clique em Editar no módulo.",
+    numMod: "A aluna vê o nome antes do número (Módulo, Documentário, Frequência…), o número e o nome do módulo. O número vai de 0 a 999, não repete no mesmo curso, e a ordem segue o número. Para mudar, clique em Editar no módulo.",
+    numAula: "A aluna vê o nome antes do número (Aula, Episódio…), o número e o nome da aula. O número vai de 0 a 999, não repete no mesmo módulo, e a ordem segue o número. Para mudar o número, clique em Editar na aula; o nome antes do número muda em Editar no módulo.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número de cada aula deste módulo. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2137,7 +2141,7 @@ export function montar(app: HTMLElement) {
       <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
       ${ui.csAddMod ? `
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
-        <label class="cs-add-num"><span>Número</span><select class="campo" name="numero" aria-label="Número do módulo">${opcoesNumero(c, c.modulos.length + 1, c.modulos.length)}</select></label>
+        <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>
         <input id="novoModulo" class="campo" name="nome" placeholder="Nome do novo módulo" required />
         <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
       </form>` : ""}
@@ -2165,7 +2169,7 @@ export function montar(app: HTMLElement) {
               ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}
               ${ui.addAula === m.id ? `
                 <form data-f="aula-add" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-                  <label class="cs-add-num"><span>Número</span><select class="campo" name="numero" aria-label="Número da aula">${opcoesAula(m.aulas.length + 1, m.aulas.length)}</select></label>
+                  <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumAula(m), "Número da aula")}</label>
                   <input id="novaAula" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" placeholder="Nome da nova aula" required />
                   <button class="botao-neutro grande">Adicionar</button>
                   <button type="button" class="botao-neutro grande" data-a="aula-add-cancelar">Cancelar</button>
@@ -2395,7 +2399,7 @@ export function montar(app: HTMLElement) {
     const cab = editando("mod", m.id) ? `
       <form data-f="mod-renomear" data-id="${m.id}" class="mod-form">
         <label class="grupo"><span class="rotulo rotulo-ajuda">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required style="max-width:220px" /></label>
-        <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span><select class="campo" name="numero" style="max-width:140px">${opcoesNumero(c, c.modulos.length, i)}</select></label>
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.num, "Número do módulo")}</label>
         <label class="grupo"><span class="rotulo rotulo-ajuda">Nome antes do número das aulas ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotuloAula" value="${h(m.rotAula)}" maxlength="40" required style="max-width:220px" /></label>
         <label class="grupo largo"><span class="rotulo">Nome do módulo</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="3" aria-label="Descrição do módulo">${h(m.intro)}</textarea></div>
@@ -2438,7 +2442,7 @@ export function montar(app: HTMLElement) {
       </div>
       ${ui.addAula === m.id ? `
         <form data-f="aula-add" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
-                  <label class="cs-add-num"><span>Número</span><select class="campo" name="numero" aria-label="Número da aula">${opcoesAula(m.aulas.length + 1, m.aulas.length)}</select></label>
+                  <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumAula(m), "Número da aula")}</label>
           <input id="novaAula" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" placeholder="Nome da nova aula" required />
           <button class="botao-neutro grande">Adicionar</button>
           <button type="button" class="botao-neutro grande" data-a="aula-add-cancelar">Cancelar</button>
@@ -2450,7 +2454,7 @@ export function montar(app: HTMLElement) {
     if (editando("aula", a.id)) return `
       <div class="linha">
         <form data-f="aula-renomear" data-id="${a.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1 1 100%">
-          <label class="cs-add-num"><span>Número</span><select class="campo" name="numero" aria-label="Número da aula">${opcoesAula(m.aulas.length, j)}</select></label>
+          <label class="cs-add-num"><span>Número</span>${campoNumero(a.num, "Número da aula")}</label>
           <input id="editarCampo" class="campo" style="flex:1 1 280px;max-width:560px" name="nome" value="${h(a.nome)}" required />
           ${botoesEdicao("Salvar")}
         </form>
@@ -2459,7 +2463,7 @@ export function montar(app: HTMLElement) {
     const est = a.acesso === "liberada" ? etiqueta("Liberada para todas", OURO) : a.acesso === "bloqueada" ? etiqueta("Bloqueada", VERMELHO) : "";
     return `
       <div class="linha">
-        <span class="nome"><b>${h(m.rotAula)} ${j + 1} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
+        <span class="nome"><b>${h(m.rotAula)} ${a.num} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
         ${est}
         ${a.criado ? `<span class="aula-criada" title="Data de criação da aula">${IC_CUR.cal}${br(diaDe(a.criado))}</span>` : ""}
         <span class="acoes">
@@ -3524,47 +3528,47 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         return;
       }
       case "mod-add": {
-        const c = curso(id)!;
+        const c = curso(id)!; const num = Number(v("numero"));
+        const erro = erroNumero(num, c.modulos.map((m) => m.num), "módulo"); if (erro) { toast(erro); return; }
+        const ult = c.modulos[c.modulos.length - 1];
         void executar(async () => {
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length, rotulo: c.modulos[c.modulos.length - 1]?.rot || "Módulo", rotulo_aula: c.modulos[c.modulos.length - 1]?.rotAula || "Aula" }).select("id").single());
-          // A posição é a última da lista, qualquer que seja a `ordem` dos outros.
-          const ids = c.modulos.map((m) => m.id); ids.splice(Math.min(Number(v("numero")) || 0, ids.length), 0, r.data!.id);
-          await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: ids });
+          // A ordem segue o número (gatilho da 0063).
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, numero: num, titulo: v("nome").toUpperCase(), rotulo: ult?.rot || "Módulo", rotulo_aula: ult?.rotAula || "Aula" }).select("id").single());
           ui.abertos.add(r.data!.id);
           return { msg: "Módulo adicionado.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "mod-renomear":
-        { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome; const pos = Number(v("numero")), ordemVelha = xm.c.modulos.map((k) => k.id); const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
+        { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, num = Number(v("numero"));
+          const erro = erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
+          const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
           const capa = v("capa") || null, cor = v("cor") || null, temVivo = (form.elements.namedItem("temVivo") as HTMLInputElement).checked, vivoData = v("vivoData");
           void executar(async () => {
-            falhou(await supabase.from("modulos").update({ titulo: v("nome"), rotulo: v("rotulo") || "Módulo", rotulo_aula: v("rotuloAula") || "Aula", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", rotulo_aula: v("rotuloAula") || "Aula", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
-            else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do Módulo " + numModulo(acharModulo(id)!.c, acharModulo(id)!.i), data_hora: dataHora }).select("id"));
+            else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do " + (v("rotulo") || "Módulo") + " " + num, data_hora: dataHora }).select("id"));
             else if (mm.vivo) falhou(await supabase.from("aulas_ao_vivo").delete().eq("modulo_id", id).select("id"));
-            if (Number.isInteger(pos) && pos !== xm.i) { const ids = ordemVelha.filter((k) => k !== id); ids.splice(Math.min(pos, ids.length), 0, id); await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: ids }); }
-            ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho }).eq("id", id).select("id").single()); if (pos !== xm.i) await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: ordemVelha }); } }; }); }
+            ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho, numero: numVelho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula-add": {
-        const x = acharModulo(id)!;
+        const x = acharModulo(id)!; const num = Number(v("numero"));
+        const erro = erroNumero(num, x.m.aulas.map((a) => a.num), "aula"); if (erro) { toast(erro); return; }
         void executar(async () => {
-          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, titulo: v("nome"), ordem: x.m.aulas.length }).select("id").single());
-          const ids = x.m.aulas.map((a) => a.id); ids.splice(Math.min(Number(v("numero")) || 0, ids.length), 0, r.data!.id);
-          await rpc("ordenar_aulas", { p_modulo: id, p_ids: ids });
+          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, numero: num, titulo: v("nome") }).select("id").single());
           ui.addAula = null;
           return { msg: "Aula adicionada.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "aula-renomear":
-        { const xa = acharAula(id)!; const velho = xa.a.nome; const pos = Number(v("numero")), ordemVelha = xa.m.aulas.map((k) => k.id), posVelha = ordemVelha.indexOf(id);
+        { const xa = acharAula(id)!; const velho = xa.a.nome, numVelho = xa.a.num, num = Number(v("numero"));
+          const erro = erroNumero(num, xa.m.aulas.filter((k) => k.id !== id).map((k) => k.num), "aula"); if (erro) { toast(erro); return; }
           void executar(async () => {
-            falhou(await supabase.from("aulas").update({ titulo: v("nome") }).eq("id", id).select("id").single());
-            if (Number.isInteger(pos) && pos !== posVelha) { const ids = ordemVelha.filter((k) => k !== id); ids.splice(Math.min(pos, ids.length), 0, id); await rpc("ordenar_aulas", { p_modulo: xa.m.id, p_ids: ids }); }
+            falhou(await supabase.from("aulas").update({ titulo: v("nome"), numero: num }).eq("id", id).select("id").single());
             ui.editando = null;
-            return { msg: "Aula salva.", texto: "nome da aula " + velho, desfazer: async () => { falhou(await supabase.from("aulas").update({ titulo: velho }).eq("id", id).select("id").single()); if (pos !== posVelha) await rpc("ordenar_aulas", { p_modulo: xa.m.id, p_ids: ordemVelha }); } }; }); }
+            return { msg: "Aula salva.", texto: "nome da aula " + velho, desfazer: async () => { falhou(await supabase.from("aulas").update({ titulo: velho, numero: numVelho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula": {
         const video = v("video"); const ref = idDoVideo(video);
