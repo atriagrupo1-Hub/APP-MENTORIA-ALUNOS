@@ -141,6 +141,8 @@ export async function meuPerfil(): Promise<PerfilSessao | null> {
 type LinhaModulo = {
   id: string;
   capa_horizontal_path?: string | null;
+  rotulo?: string | null;
+  rotulo_aula?: string | null;
   numero: number;
   titulo: string;
   intro: string | null;
@@ -367,6 +369,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     capaPath: m.capa_path,
     capaHorizontalPath: m.capa_horizontal_path ?? null,
     cor: m.cor_destaque ?? null,
+    rotulo: m.rotulo ?? null,
+    rotuloAula: m.rotulo_aula ?? null,
     bloqueadoGeral: m.bloqueado_geral,
     tituloNaArte: m.titulo_na_arte,
     avisoMaterial: avisoDoProduto.get(m.produto_id ?? "") ?? null,

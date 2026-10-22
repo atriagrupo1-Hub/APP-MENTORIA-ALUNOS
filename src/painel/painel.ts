@@ -30,7 +30,7 @@ type Aula = {
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[]; criado: string; duracao: number;
 };
-type Modulo = { id: string; nome: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; rot: string; rotAula: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
@@ -199,7 +199,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo, rotulo_aula").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
@@ -259,7 +259,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, rot: (m.rotulo ?? "").trim() || "Módulo", rotAula: (m.rotulo_aula ?? "").trim() || "Aula", ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -1979,8 +1979,10 @@ export function montar(app: HTMLElement) {
     addMod: "Escreva o nome do novo módulo. Ele entra no fim da lista.",
     rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
-    numMod: "Número do módulo, só para você identificar. O nome que a aluna vê é o que você escreve à frente.",
-    numAula: "Número da aula, só para você identificar. O nome que a aluna vê é o que você escreve à frente.",
+    numMod: "A aluna vê o nome antes do número (Módulo, Documentário, Frequência…), o número e o nome do módulo. Para mudar, clique em Editar no módulo.",
+    numAula: "A aluna vê o nome antes do número (Aula, Episódio…), o número e o nome da aula. Para mudar, clique em Editar no módulo.",
+    rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
+    rotAula: "A palavra antes do número de cada aula deste módulo. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
     capaCurso: "A capa do curso: aparece no cartão dele em Cursos e conteúdos e, nos presentes, no cartão da aba Presentes da aluna. Imagem deitada (16:9).",
     modCapa: "A capa em pé do módulo, que aparece no topo da página do módulo e na aba Módulos.",
@@ -2149,7 +2151,7 @@ export function montar(app: HTMLElement) {
             <div class="cs-mod-linha">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>Módulo ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>${dicaCampo(AJ.numMod)}</span>
+              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>${dicaCampo(AJ.numMod)}</span>
               ${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
@@ -2392,7 +2394,9 @@ export function montar(app: HTMLElement) {
     const aberto = ui.abertos.has(m.id);
     const cab = editando("mod", m.id) ? `
       <form data-f="mod-renomear" data-id="${m.id}" class="mod-form">
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required style="max-width:220px" /></label>
         <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span><select class="campo" name="numero" style="max-width:140px">${opcoesNumero(c, c.modulos.length, i)}</select></label>
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Nome antes do número das aulas ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotuloAula" value="${h(m.rotAula)}" maxlength="40" required style="max-width:220px" /></label>
         <label class="grupo largo"><span class="rotulo">Nome do módulo</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="3" aria-label="Descrição do módulo">${h(m.intro)}</textarea></div>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
@@ -2413,7 +2417,7 @@ export function montar(app: HTMLElement) {
         <div style="display:flex;gap:8px">${botoesEdicao("Salvar módulo")}</div>
       </form>` : `
       <div class="cabecalho-modulo">
-        <span class="nome"><b>Módulo ${numModulo(c, i)} — ${h(m.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(m.aulas.length, "aula", "aulas")}</span></span>
+        <span class="nome"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome)}</b><br /><span style="font-size:13px;color:var(--texto-3)">${p(m.aulas.length, "aula", "aulas")}</span></span>
         <span class="acoes">
           ${m.ativo ? etiqueta("Ativo", VERDE) : etiqueta("Bloqueado", VERMELHO)}
           <button class="botao-neutro" data-a="mod-editar" data-id="${m.id}">Editar</button>
@@ -2455,7 +2459,7 @@ export function montar(app: HTMLElement) {
     const est = a.acesso === "liberada" ? etiqueta("Liberada para todas", OURO) : a.acesso === "bloqueada" ? etiqueta("Bloqueada", VERMELHO) : "";
     return `
       <div class="linha">
-        <span class="nome"><b>Aula ${j + 1} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
+        <span class="nome"><b>${h(m.rotAula)} ${j + 1} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
         ${est}
         ${a.criado ? `<span class="aula-criada" title="Data de criação da aula">${IC_CUR.cal}${br(diaDe(a.criado))}</span>` : ""}
         <span class="acoes">
@@ -3522,7 +3526,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "mod-add": {
         const c = curso(id)!;
         void executar(async () => {
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length }).select("id").single());
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length, rotulo: c.modulos.at(-1)?.rot || "Módulo", rotulo_aula: c.modulos.at(-1)?.rotAula || "Aula" }).select("id").single());
           // A posição é a última da lista, qualquer que seja a `ordem` dos outros.
           const ids = c.modulos.map((m) => m.id); ids.splice(Math.min(Number(v("numero")) || 0, ids.length), 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: ids });
@@ -3535,7 +3539,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome; const pos = Number(v("numero")), ordemVelha = xm.c.modulos.map((k) => k.id); const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
           const capa = v("capa") || null, cor = v("cor") || null, temVivo = (form.elements.namedItem("temVivo") as HTMLInputElement).checked, vivoData = v("vivoData");
           void executar(async () => {
-            falhou(await supabase.from("modulos").update({ titulo: v("nome"), intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ titulo: v("nome"), rotulo: v("rotulo") || "Módulo", rotulo_aula: v("rotuloAula") || "Aula", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
             else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do Módulo " + numModulo(acharModulo(id)!.c, acharModulo(id)!.i), data_hora: dataHora }).select("id"));

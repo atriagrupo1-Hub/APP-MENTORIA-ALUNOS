@@ -8,6 +8,10 @@
 
 export type Modulo = {
   id: string;
+  /** Nome antes do número, escolhido no painel: "Módulo", "Documentário"… (0062). */
+  rotulo?: string | null;
+  /** O mesmo para as aulas deste módulo: "Aula", "Episódio"… (0062). */
+  rotuloAula?: string | null;
   /** Capa deitada (16:9) do "Comece por aqui" (0052). */
   capaHorizontalPath?: string | null;
   /** Cor do módulo (#rrggbb), do painel: contorno, brilho e linha (0054). */
