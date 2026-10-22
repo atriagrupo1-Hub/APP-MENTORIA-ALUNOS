@@ -1979,6 +1979,8 @@ export function montar(app: HTMLElement) {
     addMod: "Escreva o nome do novo módulo. Ele entra no fim da lista.",
     rotIni: "Só no curso da mentoria: o texto pequeno em cima do bloco da mentoria, no Início da aluna (ex.: SUA MENTORIA). Vazio, não aparece.",
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
+    numMod: "Número do módulo, só para você identificar. O nome que a aluna vê é o que você escreve à frente.",
+    numAula: "Número da aula, só para você identificar. O nome que a aluna vê é o que você escreve à frente.",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
     capaCurso: "A capa do curso: aparece no cartão dele em Cursos e conteúdos e, nos presentes, no cartão da aba Presentes da aluna. Imagem deitada (16:9).",
     modCapa: "A capa em pé do módulo, que aparece no topo da página do módulo e na aba Módulos.",
@@ -2147,7 +2149,7 @@ export function montar(app: HTMLElement) {
             <div class="cs-mod-linha">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-              <button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>
+              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>Módulo ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>${dicaCampo(AJ.numMod)}</span>
               ${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
@@ -2390,7 +2392,7 @@ export function montar(app: HTMLElement) {
     const aberto = ui.abertos.has(m.id);
     const cab = editando("mod", m.id) ? `
       <form data-f="mod-renomear" data-id="${m.id}" class="mod-form">
-        <label class="grupo"><span class="rotulo">Número do módulo</span><select class="campo" name="numero" style="max-width:140px">${opcoesNumero(c, c.modulos.length, i)}</select></label>
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span><select class="campo" name="numero" style="max-width:140px">${opcoesNumero(c, c.modulos.length, i)}</select></label>
         <label class="grupo largo"><span class="rotulo">Nome do módulo</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="3" aria-label="Descrição do módulo">${h(m.intro)}</textarea></div>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
@@ -2453,7 +2455,7 @@ export function montar(app: HTMLElement) {
     const est = a.acesso === "liberada" ? etiqueta("Liberada para todas", OURO) : a.acesso === "bloqueada" ? etiqueta("Bloqueada", VERMELHO) : "";
     return `
       <div class="linha">
-        <span class="nome"><b>${j + 1}. ${h(a.nome)}</b><span>${info}</span></span>
+        <span class="nome"><b>Aula ${j + 1} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
         ${est}
         ${a.criado ? `<span class="aula-criada" title="Data de criação da aula">${IC_CUR.cal}${br(diaDe(a.criado))}</span>` : ""}
         <span class="acoes">
