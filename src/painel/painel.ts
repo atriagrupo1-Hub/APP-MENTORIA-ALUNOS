@@ -2025,14 +2025,21 @@ export function montar(app: HTMLElement) {
     if (sel !== "inicio" && cat(sel)) {
       const k = cat(sel)!, cs = S.cursos.filter((c) => c.cat === k.id), pub = k.pub;
       det = `
-        <div class="ab-cab">
-          <span class="ab-cab-ic">${icDaAba(k)}</span>
-          <div class="ab-cab-txt"><small>Aba</small>
-            ${ui.abaRen === k.id ? `<form data-f="aba-renomear" data-id="${k.id}" class="ac-ren"><input id="abaRenNome" class="campo" name="nome" value="${h(k.nome)}" maxlength="30" required aria-label="Nome da aba" /><button class="al-botao-ouro">Salvar</button><button type="button" class="al-botao" data-a="aba-ren" data-id="">Cancelar</button></form>`
-              : `<h2>${h(k.nome)}<button type="button" class="ab-lapis" data-a="aba-ren" data-id="${k.id}" aria-label="Renomear a aba">${IC_ABAC.lapis}</button></h2>`}
-            <p>${k.id === jor ? "No app, esta aba aparece como Início e Módulos." : "No app, aparece no menu com o nome " + h(k.nome) + "."} Dentro dela ficam as categorias abaixo.</p></div>
-          ${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}
-          <button type="button" class="al-botao-ouro" data-a="cat-criar" data-id="${k.id}">${IC_ABAC.mais}Nova categoria</button>
+        <div class="ab-abacard-linha">
+          ${(() => { const img = previas["cat-" + k.id] || capaCat(k); const mods = cs.reduce((t, c) => t + c.modulos.length, 0); const dias = k.criado ? diasEntre(diaDe(k.criado), hoje()) : -1; return `
+          <article class="cur-card ab-abacard">
+            <button type="button" class="cur-capa" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem da aba · clique para adicionar</span>`}</button>
+            <div class="cur-corpo">
+              <span class="cur-tit ab-abacard-tit">${h(k.nome)}</span>
+              <div class="cur-linha cur-linha-est">${icDaAba(k)}<em>Aba</em><b>${k.id === jor ? "Início e Módulos" : "no menu do app"}</b>${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</div>
+              <div class="cur-stats ac-catcard-stats">
+                <span>${IC_CUR.pasta}<b>${cs.length}</b><em>${cs.length === 1 ? "curso" : "cursos"}</em></span>
+                <span>${IC_CUR.camadas}<b>${mods}</b><em>${mods === 1 ? "módulo" : "módulos"}</em></span>
+                <span>${IC_CUR.cal}<b>${k.criado ? br(diaDe(k.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span>
+              </div>
+              <div class="cur-botoes"><button type="button" class="al-botao ac-catcard-ed" data-a="cat-abrir-editar" data-id="${k.id}">${IC_ABAC.lapis}Editar aba</button><button type="button" class="al-botao-ouro" data-a="cat-criar" data-id="${k.id}">${IC_ABAC.mais}Nova categoria</button></div>
+            </div>
+          </article>`; })()}
         </div>
         <h3 class="ab-sub">Categorias desta aba (${cs.length})</h3>
         <div class="ab-linhas">${cs.map((c) => { const img = capaSite(c.capa); return `
@@ -2060,7 +2067,29 @@ export function montar(app: HTMLElement) {
         <div class="ab-det">${sel === "inicio" ? inicio : det || `<div class="cl-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
       </div>
       ${ui.destEditar ? editarDestaque() : ""}
+      ${ui.catEditar ? editarAba() : ""}
     </section>`;
+  }
+  const ICONE_ABA: Record<string, string> = { presentes: "Presente", livro: "Livro", material: "Documento", modulos: "Grade", trofeu: "Troféu", coroa: "Coroa" };
+  function editarAba() {
+    const k = cat(ui.catEditar!); if (!k) { ui.catEditar = null; return ""; }
+    const img = previas["cat-" + k.id] || capaCat(k), jor = curso(S.config.jornada)?.cat || "";
+    return `
+      <div class="aa-fundo dois" data-a="cat-fechar-editar"></div>
+      <aside class="aa-painel largo cat-painel" role="dialog" aria-modal="true" aria-label="Editar aba">
+        <header class="cat-painel-cab"><h2>Editar aba</h2><button type="button" class="aa-fechar" data-a="cat-fechar-editar" aria-label="Fechar">${xis}</button></header>
+        <form data-f="cat-salvar" data-id="${k.id}" class="aa-corpo cat-form" data-rolagem="cat-${k.id}">
+          <div class="cat-capa ab-capa-q">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}<button type="button" class="cat-capa-btn" data-a="cat-imagem">${img ? "Alterar imagem" : "Adicionar imagem"}</button></div>
+          <label class="cat-campo"><span>Nome da aba</span><input id="catNome" class="campo" name="nome" value="${h(k.nome)}" required maxlength="60" /></label>
+          <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="2" maxlength="200">${h(k.descricao)}</textarea></label>
+          <div class="cat-vis-linha"><span>Status</span>${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), true, true)}</div>
+          ${k.id === jor ? `<p class="cat-aviso-aba">Aba da mentoria: no app, aparece como Início e Módulos.</p>` : `<label class="cat-campo"><span>Ícone no menu do app</span><select class="campo" name="icone">${Object.entries(ICONE_ABA).map(([v2, nm]) => `<option value="${v2}" ${v2 === k.icone ? "selected" : ""}>${nm}</option>`).join("")}</select></label>`}
+          <div class="cat-rodape">
+            <button type="button" class="al-botao cat-remover" data-a="cat-remover" data-id="${k.id}">${IC_CAT.lixo}Remover aba</button>
+            <button class="al-botao-ouro">Salvar alterações</button>
+          </div>
+        </form>
+      </aside>`;
   }
   function telaAbasCat(todas: boolean, filtroCat: string, daAba: Curso[], filtroProd: string, _lista: Curso[], _cartao: (c: Curso) => string, vista: string, ordem: string) {
     const aba = cat(filtroCat), prod = curso(filtroProd);
