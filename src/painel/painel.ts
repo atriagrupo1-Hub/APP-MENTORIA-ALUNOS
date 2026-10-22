@@ -450,7 +450,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as Estado, modal: null as null | Record<string, string>,
+    filtroCom: "responder" as Estado | "responder", modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -704,7 +704,7 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span></button>`; }).join("")}
+          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
         <div class="lado-pe">
           <div class="lado-quem"><span class="lado-av">${h(iniciais(eu!.nome))}</span><span><b>${h(eu!.nome)}</b><span>${h(papel[eu!.papel] || eu!.papel)}</span></span></div>
@@ -820,6 +820,10 @@ export function montar(app: HTMLElement) {
       : ["azul", IC_INI.pessoa, "acessou a plataforma"];
     return `<div class="ini-item"><span class="ini-ic ${cls}">${ic}</span><span class="ini-txt"><span><b>${h(x.nome)}</b> ${txt}</span></span><span class="ini-quando">${haTempo(x.quando)}</span></div>`;
   };
+  /** Tarefas da equipe: comentários sem resposta da equipe (e não ocultos). Diminui conforme responde. */
+  const paraResponder = () => S.comentarios.filter((k) => k.estado !== "oculto" && !k.resposta);
+  const badge = (n: number) => (n ? `<span class="badge-alerta" aria-label="${n} para fazer">${n > 99 ? "99+" : n}</span>` : "");
+  function tarefasInicio() { return paraResponder().length + listasAcessos().reduce((t, l) => t + l.lista.length, 0); }
   function telaInicio() {
     const { de, ate, chave } = periodoIni();
     carregarAtividades();
@@ -833,11 +837,22 @@ export function montar(app: HTMLElement) {
         <div class="ini-lista">${corpo}</div>
       </section>`;
     const vazio = (t: string) => `<p class="ini-vazio">${t}</p>`;
+    const ls = listasAcessos(), nResp = paraResponder().length;
+    const tarefa = (ic: string, titulo: string, n: number, acao: string, v = "") => `<button type="button" class="ini-tarefa${n ? " tem" : ""}" data-a="${acao}"${v ? ` data-v="${v}"` : ""}><span class="ini-cab-ic">${ic}</span><span class="ini-tarefa-txt">${titulo}</span>${n ? badge(n) : `<span class="ini-tarefa-ok">em dia</span>`}</button>`;
     return `
     <section class="tela ativa ini">
+      <div class="ini-tarefas" aria-label="Para fazer agora">
+        <h3>Para fazer agora</h3>
+        <div class="ini-tarefas-lista">
+          ${tarefa(IC_INI.balao, "Comentários para responder", nResp, "ir-comentarios")}
+          ${tarefa(IC_INI.cal, "Acessos que vencem em 15 dias", ls[0].lista.length, "ini-lista", "vencem")}
+          ${tarefa(IC_INI.pessoas, "Sem acesso há mais de 14 dias", ls[1].lista.length, "ini-lista", "parada")}
+          ${tarefa(IC_INI.pessoa, "Ainda sem o primeiro acesso", ls[2].lista.length, "ini-lista", "comecar")}
+        </div>
+      </div>
       <div class="ini-grade">
-        ${cartao(IC_INI.balao, "Últimos comentários", "ir-comentarios", coms.slice(0, 3).map((k) => `
-          <div class="ini-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">${k.estado === "moderar" ? "Moderar" : "Ver"}</button></div>`).join("") || vazio("Nenhum comentário no período."))}
+        ${cartao(IC_INI.balao, "Últimos comentários" + (nResp ? " " + badge(nResp) : ""), "ir-comentarios", coms.slice(0, 3).map((k) => `
+          <div class="ini-item${k.estado !== "oculto" && !k.resposta ? " a-responder" : ""}">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">${k.estado === "moderar" ? "Moderar" : k.estado !== "oculto" && !k.resposta ? "Responder" : "Ver"}</button></div>`).join("") || vazio("Nenhum comentário no período."))}
         ${cartao(IC_INI.onda, "Últimas atividades", "ini-ativ-todas", atv ? (atv.slice(0, 3).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")) : vazio("Carregando…"))}
         ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
           <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
@@ -2908,9 +2923,9 @@ export function montar(app: HTMLElement) {
   /* ---------- COMENTÁRIOS ---------- */
   // Um comentário com as ações de moderação (aba Comentários e página do curso).
   const cartaoComentario = (k: Comentario) => `
-      <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
+      <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}${k.estado !== "oculto" && !k.resposta ? " a-responder" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
-          <b style="flex:1 1 220px">${h(k.autora)}</b>
+          <b style="flex:1 1 220px">${h(k.autora)}${k.estado !== "oculto" && !k.resposta ? ` <span class="tag-responder">Aguardando resposta</span>` : ""}</b>
           <span style="font-size:13px;color:var(--texto-3)">${localAula(k.aula)} · ${h(k.quando)}</span>
         </div>
         <p style="margin:10px 0 14px;color:var(--comentario)">${h(k.texto)}</p>
@@ -2929,11 +2944,12 @@ export function montar(app: HTMLElement) {
       </div>`;
   function telaComentarios() {
     const n = (e: Estado) => S.comentarios.filter((k) => k.estado === e).length;
-    const lista = S.comentarios.filter((k) => k.estado === ui.filtroCom);
-    const vazio = { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
+    const lista = ui.filtroCom === "responder" ? paraResponder() : S.comentarios.filter((k) => k.estado === ui.filtroCom);
+    const vazio = { responder: "Tudo respondido. Nenhum comentário esperando resposta.", moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
     return `
     <section class="tela ativa">
       <div class="chips" style="margin-bottom:20px">
+        <button class="chip chip-alerta" style="cursor:pointer" data-a="com-filtro" data-v="responder" aria-pressed="${ui.filtroCom === "responder"}">Para responder ${paraResponder().length ? `<span class="badge-alerta">${paraResponder().length}</span>` : "(0)"}</button>
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="moderar" aria-pressed="${ui.filtroCom === "moderar"}">Para moderar (${n("moderar")})</button>
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="publicado" aria-pressed="${ui.filtroCom === "publicado"}">Publicados (${n("publicado")})</button>
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
@@ -3526,7 +3542,7 @@ export function montar(app: HTMLElement) {
         const el2 = document.getElementById("com-" + k.id); if (el2) el2.scrollIntoView({ block: "center", behavior: "smooth" });
         return;
       }
-      case "ir-comentarios": ui.tab = "comentarios"; window.scrollTo(0, 0); break;
+      case "ir-comentarios": ui.tab = "comentarios"; if (paraResponder().length) ui.filtroCom = "responder"; window.scrollTo(0, 0); break;
       case "ir-alunas-recentes": ui.tab = "alunas"; ui.filtroAl = "recentes"; ui.paginaAl = 1; window.scrollTo(0, 0); break;
       case "ini-abrir-aluna": ui.acessoAluna = d.id; ui.acessoAba = "geral"; break;
       case "vers-editar": ui.editando = { tipo: "vers", id: d.id }; ui.focar = "editarCampo"; break;
@@ -3786,7 +3802,7 @@ export function montar(app: HTMLElement) {
         break;
       }
 
-      case "com-filtro": ui.filtroCom = d.v as Estado; ui.respondendo = null; break;
+      case "com-filtro": ui.filtroCom = d.v as Estado | "responder"; ui.respondendo = null; break;
       case "com-publicar": case "com-ocultar": {
         const k = S.comentarios.find((x) => x.id === d.id)!;
         const novo = a === "com-publicar" ? "publicado" : "oculto";

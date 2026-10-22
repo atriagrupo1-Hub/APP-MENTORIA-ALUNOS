@@ -1618,3 +1618,24 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .mp-dupla .mp-pe { flex-direction: column; align-items: flex-start; }
 .cs-config-est h3 { margin: 0 0 14px; }
 .cs-config-est .mp-rot svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Tarefas e alertas: marcador com o total, que diminui conforme a equipe resolve */
+.badge-alerta { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; font-size: 11.5px; font-weight: 700; line-height: 1; color: #fff; background: #d92d20; border-radius: 999px; vertical-align: middle; box-shadow: 0 0 0 2px rgba(217,45,32,.15); }
+.lado-item .badge-alerta { margin-left: auto; }
+.ini-tarefas { margin-bottom: 20px; padding: 18px 20px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; }
+.ini-tarefas h3 { margin: 0 0 12px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; }
+.ini-tarefas-lista { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.ini-tarefa { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 14px; font: inherit; font-size: 14px; text-align: left; color: var(--texto); background: none; border: 1px solid var(--linha-suave); border-radius: 10px; cursor: pointer; }
+.ini-tarefa.tem { border-color: rgba(217,45,32,.45); background: rgba(217,45,32,.05); }
+.ini-tarefa:hover { border-color: var(--aa-ouro); }
+.ini-tarefa-txt { flex: 1 1 auto; min-width: 0; font-weight: 600; }
+.ini-tarefa .badge-alerta { min-width: 26px; height: 26px; font-size: 13px; }
+.ini-tarefa-ok { font-size: 12px; color: #1f7a45; }
+.ini-item.a-responder { position: relative; }
+.ini-item.a-responder::before { content: ""; position: absolute; left: -10px; top: 50%; width: 8px; height: 8px; margin-top: -4px; background: #d92d20; border-radius: 50%; }
+.cartao.a-responder { border-left: 3px solid #d92d20 !important; }
+.tag-responder { display: inline-block; margin-left: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 700; color: #b42318; background: #fde7e5; border-radius: 999px; }
+.chip-alerta .badge-alerta { margin-left: 4px; }
+@media (max-width: 1100px) { .ini-tarefas-lista { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .ini-tarefas-lista { grid-template-columns: minmax(0, 1fr); } }
+.ini-tarefa-ok { white-space: nowrap; }
