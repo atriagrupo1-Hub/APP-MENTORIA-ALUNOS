@@ -1905,6 +1905,7 @@ export function montar(app: HTMLElement) {
     const pct = comAcesso.length && aulas.length ? Math.round((comAcesso.reduce((s, a) => s + aulas.filter((x) => a.feitas.has(x)).length / aulas.length, 0) / comAcesso.length) * 100) : 0;
     return { alunas: comAcesso.length, pct };
   }
+  const IC_OLHO_C = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
   function telaCursos() {
     const q = norm(ui.cursoBusca || "").trim();
     const ordem = ui.cursoOrdem || "categorias";
@@ -1916,7 +1917,7 @@ export function montar(app: HTMLElement) {
         : posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y));
     const vista = ui.cursoVista || "grade";
     const cartao = (c: Curso) => {
-      const n = numerosCurso(c), k = cat(c.cat);
+      const n = numerosCurso(c);
       const capa = capaSite(c.capa);
       return `
         <article class="cur-card">
@@ -1927,12 +1928,14 @@ export function montar(app: HTMLElement) {
             <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button>
           </span>` : ""}</span>
           <div class="cur-corpo">
-            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
-            <div class="cur-linha">${IC_CUR.pasta}<em>Categoria:</em><b>${h(k?.nome || "Sem categoria")}${c.visivel ? "" : " · oculto"}</b></div>
-            <div class="cur-linha">${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></div>
-            <div class="cur-linha">${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></div>
-            <div class="cur-linha">${IC_CUR.cal}<em>Adicionado em</em><b>${c.criado ? br(diaDe(c.criado)) : "—"}</b></div>
-            <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button></div>
+            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}${c.visivel ? "" : ` <span class="cur-oculto">oculto</span>`}</button>
+            <div class="cur-stats">
+              <span>${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span>
+              <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
+              <span>${IC_CURSO.play}<b>${totalAulas(c)}</b><em>${totalAulas(c) === 1 ? "aula" : "aulas"}</em></span>
+              <span>${IC_CUR.cal}<b>${c.criado ? br(diaDe(c.criado)) : "—"}</b><em>${c.criado ? (diasEntre(diaDe(c.criado), hoje()) === 0 ? "Criado hoje" : "Criado há " + diasEntre(diaDe(c.criado), hoje()) + (diasEntre(diaDe(c.criado), hoje()) === 1 ? " dia" : " dias")) : ""}</em></span>
+            </div>
+            <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button></div>
           </div>
         </article>`;
     };
