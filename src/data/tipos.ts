@@ -46,6 +46,9 @@ export type Aula = {
   numero: number;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rotulo?: string | null;
+  /** Vídeo, áudio ou PDF; áudio e PDF guardam o caminho do arquivo (0067). */
+  tipo?: string | null;
+  arquivoPath?: string | null;
   titulo: string;
   ordem: number;
   duracaoSegundos: number | null;

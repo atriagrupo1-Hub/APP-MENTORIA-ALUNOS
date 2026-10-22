@@ -99,6 +99,8 @@ export function montar(raiz: HTMLElement) {
         })),
       }));
     const pj = cat.produtos.find((x) => x.id === jornada);
+    MIDIA.clear();
+    for (const m of cat.modulos.concat(cat.produtos.flatMap((x) => x.modulos || []))) for (const a of m.aulas) MIDIA.set(a.id, { tipo: a.tipo || "video", arquivo: a.arquivoPath || "" });
     D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
     S.nome = perfil?.nome || "";
     // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
@@ -122,6 +124,18 @@ export function montar(raiz: HTMLElement) {
   }
 
   const MODS = () => (D ? D.mods : []);
+  /** Tipo e arquivo de cada aula (vídeo, áudio ou PDF), vindos do banco (0067). */
+  const MIDIA = new Map();
+  // Aula em PDF (e-book): abre no leitor; abrir conclui a aula no banco.
+  async function lerPdfAula(aulaId) {
+    const md = MIDIA.get(aulaId); if (!md || !md.arquivo) { aviso("Este e-book será adicionado em breve."); return; }
+    const u = await api.enderecoDoArquivo("materiais", md.arquivo).catch(() => null);
+    if (!u) { aviso("Não conseguimos abrir este e-book agora. Tente de novo."); return; }
+    const tit = (S.tela === "presente" ? conteudoAtual()?.titulo : MODS()[S.mod]?.aulas[S.aula]?.titulo) || "E-book";
+    abrirPdf(u, tit, (md.arquivo.split("/").pop() || "ebook.pdf").replace(/^\d+-/, ""));
+    const l = D && D.prog.get(aulaId); if (l) l.concluida = true;
+    ultimaConclusao = api.marcarConcluida(aulaId, true).catch(() => {});
+  }
   /** Número da aula escolhido no painel (0063); sem ele, a posição. */
   const nA = (md, i) => (md && md.aulas[i] && md.aulas[i].num != null ? md.aulas[i].num : i + 1);
   /** "Aula 1", "Episódio 2"…: nome e número que a equipe escolheu para a aula (0064). */
@@ -570,6 +584,14 @@ export function montar(raiz: HTMLElement) {
   }
   async function pedirVideo(aulaId) {
     if (S.videos[aulaId] !== undefined) return S.videos[aulaId];
+    // Aula em áudio ou PDF (0067): o arquivo sai do depósito fechado, com link assinado.
+    const md = MIDIA.get(aulaId);
+    if (md && md.tipo !== "video") {
+      if (!md.arquivo) S.videos[aulaId] = "";
+      else if (md.tipo === "audio") { const u = await api.enderecoDoArquivo("audios", md.arquivo, 14400).catch(() => null); S.videos[aulaId] = u ? "audio:" + u : null; }
+      else S.videos[aulaId] = "pdf:" + md.arquivo;
+      return S.videos[aulaId];
+    }
     try { const v = await api.videoDaAula(aulaId); S.videos[aulaId] = v && v.ref ? v.ref : ""; }
     catch { S.videos[aulaId] = null; }
     return S.videos[aulaId];
@@ -609,6 +631,7 @@ export function montar(raiz: HTMLElement) {
     if (VID && VID_ID === aulaId) { comecarCarga(); S.tocando = true; atualizarControles(); await VID.play().catch(() => { S.tocando = false; atualizarControles(); }); return; }
     const ref = await pedirVideo(aulaId);
     if (!ref) { render(); if (ref === null) aviso("Não conseguimos carregar este vídeo agora. Tente de novo."); return; }
+    if (String(ref).startsWith("pdf:")) { void lerPdfAula(aulaId); return; }
     criarVideo(aulaId, ref, true);
     S.tocando = true;
     render();
@@ -616,16 +639,18 @@ export function montar(raiz: HTMLElement) {
   }
   // Ao abrir a aula: o vídeo nasce parado, com o índice carregado.
   function prepararVideo(aulaId, ref) {
-    if (!ref || (VID && VID_ID === aulaId)) return;
+    if (!ref || String(ref).startsWith("pdf:") || (VID && VID_ID === aulaId)) return;
     criarVideo(aulaId, ref, false);
     encaixarVideo();
   }
   function criarVideo(aulaId, ref, comecar) {
     pararVideo();
     renovou = false;
-    VID = document.createElement("video"); VID_ID = aulaId;
+    const ehAudio = String(ref).startsWith("audio:");
+    VID = document.createElement(ehAudio ? "audio" : "video"); VID_ID = aulaId;
     VID.setAttribute("playsinline", ""); VID.className = "aula-video";
-    VID.style.cssText = "position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:1";
+    // Áudio: a capa fica parada na tela; o tocador não aparece.
+    VID.style.cssText = ehAudio ? "display:none" : "position:absolute;inset:0;width:100%;height:100%;background:#000;z-index:1";
     VID.playbackRate = VELS[S.velocidade] || 1;
     VID.muted = !!S.mudo;
     // Preparado e ainda parado, fica escondido: a capa da aula aparece por baixo.
@@ -651,7 +676,8 @@ export function montar(raiz: HTMLElement) {
       const k = chaveAtual(); S.fim[k] = 1; render();
     });
     VID.addEventListener("error", () => void renovarVideo());
-    ligarFonte(ref, comecar);
+    if (ehAudio) { VID.preload = comecar ? "auto" : "metadata"; VID.src = String(ref).slice(6); hlsEsperando = false; }
+    else ligarFonte(ref, comecar);
   }
   const VELS = { "0,5x": 0.5, "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5, "1,75x": 1.75, "2x": 2 };
   // A conclusão gravada no banco antes de pedir o vídeo seguinte (o banco libera em sequência).
@@ -680,6 +706,8 @@ export function montar(raiz: HTMLElement) {
     const k = chaveAtual(), fimAqui = !!S.fim[k];
     const l = D.prog.get(aulaId), dur = l && l.duracaoSegundos ? l.duracaoSegundos : 0, ps = l && dur ? (l.posicaoSegundos || 0) / dur : 0;
     if (!livre) return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span></div>`;
+    if (ref && String(ref).startsWith("pdf:")) return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.livro || ICONES.play}</span><p class="fim-rot">${h(o.titulo || "E-book")}</p><button class="fim-botao" data-a="ler-pdf-aula">Ler o e-book</button></div></div>`;
+    const ehAudio = ref && String(ref).startsWith("audio:");
     if (ref === "") return `<div class="player" data-aula="${aulaId}">${img(capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.play}</span><p class="fim-rot">${h(o.emBreve || "Aula será adicionada em breve")}</p></div></div>`;
     return `
           <div class="player" data-aula="${aulaId}">
@@ -694,7 +722,7 @@ export function montar(raiz: HTMLElement) {
                 <span style="flex:1"></span>
                 <button data-a="volume" aria-pressed="${!!S.mudo}" aria-label="${S.mudo ? "Ligar o som" : "Tirar o som"}">${S.mudo ? ICONES.mudo : ICONES.volume}</button>
                 <button data-a="velocidade" aria-label="Velocidade${S.velocidade === "Normal" ? "" : ": " + S.velocidade}">${ICONES.engrenagem}</button>
-                <button data-a="tela-cheia" aria-label="Tela cheia">${ICONES.telaCheia}</button>
+                ${ehAudio ? "" : `<button data-a="tela-cheia" aria-label="Tela cheia">${ICONES.telaCheia}</button>`}
               </div>
             </div>
             ${fimAqui ? `<div class="fim-sobre" role="status" style="z-index:4">
@@ -1515,6 +1543,7 @@ export function montar(raiz: HTMLElement) {
         if (VID && VID_ID === id && !VID.paused) { VID.pause(); return; }
         void tocar(id); return;
       }
+      case "ler-pdf-aula": { const id = S.tela === "presente" ? conteudoAtual()?.id : MODS()[S.mod]?.aulas[S.aula]?.id; if (id) void lerPdfAula(id); return; }
       case "buscar": return; // arrastar e tocar na trilha: ver "trilha do vídeo" abaixo
       case "de-novo": { const k = chaveAtual(); delete S.fim[k]; if (VID) { VID.currentTime = 0; void VID.play().catch(() => {}); render(); } else acao("tocar", {}); return; }
       case "ver-aulas": {

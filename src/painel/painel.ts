@@ -35,6 +35,8 @@ type Aula = {
   rot: string;
   /** Data de liberação da aula para todas; vazio = sem data própria (0066). */
   libera: string;
+  /** Vídeo, áudio ou PDF (e-book); áudio e PDF guardam o caminho do arquivo (0067). */
+  tipo: "video" | "audio" | "pdf"; arquivo: string;
 };
 type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
@@ -258,6 +260,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
       num: Number(a.numero) || 0, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
+      tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
     });
     aulasDo.set(a.modulo_id, lista);
   }
@@ -443,7 +446,8 @@ export function montar(app: HTMLElement) {
   const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
   let imgPara: { form: string; campo: string; previa: string; pasta: string } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
-  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoCat, arquivoFoto, arquivoImg);
+  const arquivoAula = Object.assign(document.createElement("input"), { type: "file", id: "arquivoAula", hidden: true });
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -1992,7 +1996,8 @@ export function montar(app: HTMLElement) {
     nomeMod: "O nome do módulo que a aluna vê depois do número. Ex.: Boas-vindas e diagnóstico.",
     modCriado: "A data que aparece como criação do módulo. Deixe como está se não quiser mudar.",
     nomeAula: "O nome da aula que a aluna vê depois do número.",
-    tipoAula: "Vídeo: a aula tem vídeo, e o link vai no campo abaixo. Só texto: a aula não tem vídeo; ao salvar, o vídeo é tirado.",
+    tipoAula: "Vídeo: o link do Cloudflare Stream. Áudio: a aluna ouve com a capa da aula parada na tela. PDF (e-book): a aluna lê o PDF dentro da área; abrir o PDF conclui a aula.",
+    arquivoAula: "Escolha o arquivo do seu computador. Ele vai para o depósito fechado e só abre para quem tem acesso à aula.",
     extraNome: "O nome do botão que a aluna vê para abrir este conteúdo.",
     extraArquivo: "Escolha o arquivo do seu computador; ele vai para o depósito e o caminho aparece aqui.",
     liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
@@ -2165,7 +2170,7 @@ export function montar(app: HTMLElement) {
           <div class="mp-aula-linha">
             <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
             <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_PLAY_C}</i></button>
-            <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
+            <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.tipo === "audio" ? (a.arquivo ? "Áudio" : "Sem áudio") : a.tipo === "pdf" ? (a.arquivo ? "PDF (e-book)" : "Sem PDF") : a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
             <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
             ${a.acesso === "bloqueada" ? pilula("Bloqueada", "vermelho") : pilula("Ativa", "verde")}
             <span class="mp-aula-acoes">
@@ -2603,7 +2608,7 @@ export function montar(app: HTMLElement) {
     const ident = h(m.rot) + " " + numModulo(c, x.mi);
     const IC_DOC = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15.5h6"/></svg>`;
     const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>`;
-    const comVideo = !!a.video || (ui.aulaTipo !== "texto");
+    const tipoA = (ui.aulaTipo || a.tipo) as Aula["tipo"];
     return `
     <section class="tela ativa cs mp ea">
       <div class="mp-topo">
@@ -2629,9 +2634,11 @@ export function montar(app: HTMLElement) {
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input class="campo" name="nome" value="${h(a.nome)}" required /></label>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
-            <select class="campo" name="tipo" data-aula-tipo><option value="video"${comVideo ? " selected" : ""}>Vídeo</option><option value="texto"${comVideo ? "" : " selected"}>Só texto (sem vídeo)</option></select></label>
-          <label class="grupo" data-campo-video${comVideo ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
+            <select class="campo" name="tipo" data-aula-tipo>${([["video", "Vídeo"], ["audio", "Áudio"], ["pdf", "PDF (e-book)"]] as const).map(([v, t]) => `<option value="${v}"${tipoA === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+          <label class="grupo" data-campo-video${tipoA === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
             <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+          <label class="grupo" data-campo-arquivo${tipoA === "video" ? " hidden" : ""}><span class="rotulo-ajuda mp-rot"><span data-rot-arquivo>${tipoA === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio"}</span> ${dicaCampo(AJ.arquivoAula)}</span>
+            <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição da aula (o que a aluna verá) ${dicaCampo(AJ.texto)}</span>
             <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
           ${a.resumo === null ? "" : `
@@ -3416,6 +3423,7 @@ export function montar(app: HTMLElement) {
       case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
+      case "aula-arquivo": arquivoAula.accept = (document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf") ? "application/pdf,.pdf" : "audio/*"; arquivoAula.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
       case "extra-remover": {
         const x = acharAula(ui.aula!)!; const e = x.a.extras.find((k) => k.id === d.id)!;
@@ -3696,13 +3704,15 @@ export function montar(app: HTMLElement) {
       case "aula": {
         const xa = acharAula(id)!; const num = Number(v("numero"));
         const erro = erroNumero(num, xa.m.aulas.filter((k) => k.id !== id).map((k) => k.num), "aula"); if (erro) { toast(erro); return; }
-        const soTexto = v("tipo") === "texto";
-        const video = soTexto ? "" : v("video"); const ref = idDoVideo(video);
+        const tipo = (["video", "audio", "pdf"].includes(v("tipo")) ? v("tipo") : "video") as Aula["tipo"];
+        const video = tipo === "video" ? v("video") : ""; const ref = idDoVideo(video);
+        const arquivo = tipo === "video" ? null : v("arquivoAula") || null;
         const libera = v("libera"), liberaIso = libera && !isNaN(+new Date(libera)) ? new Date(libera).toISOString() : null;
         const ativa = (form.elements.namedItem("ativa") as HTMLInputElement | null)?.checked ?? true;
         const mudouStatus = ativa !== (xa.a.acesso !== "bloqueada");
-        const base = { titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso };
-        const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null };
+        const mudouMidia = tipo !== xa.a.tipo || (arquivo || "") !== (xa.a.tipo === "video" ? "" : xa.a.arquivo);
+        const base = { titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
+        const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null, tipo: xa.a.tipo, arquivo_path: xa.a.arquivo || null, ...(mudouMidia ? { duracao_segundos: xa.a.duracao || null } : {}) };
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
         const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
@@ -3945,7 +3955,14 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
-    if (t.hasAttribute("data-aula-tipo")) { ui.aulaTipo = t.value; const g = document.querySelector<HTMLElement>("[data-campo-video]"); if (g) g.hidden = t.value === "texto"; return; }
+    if (t.hasAttribute("data-aula-tipo")) {
+      ui.aulaTipo = t.value;
+      const gv = document.querySelector<HTMLElement>("[data-campo-video]"), ga = document.querySelector<HTMLElement>("[data-campo-arquivo]"), ra = document.querySelector<HTMLElement>("[data-rot-arquivo]");
+      if (gv) gv.hidden = t.value !== "video"; if (ga) ga.hidden = t.value === "video";
+      if (ra) ra.textContent = t.value === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio";
+      const ca = document.querySelector<HTMLInputElement>('input[name="arquivoAula"]'); if (ca) ca.value = "";
+      return;
+    }
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
@@ -4024,6 +4041,20 @@ export function montar(app: HTMLElement) {
         const pv = document.getElementById("previaCapa");
         if (pv) pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
         toast("Imagem enviada. Clique em Salvar aula para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
+  });
+  arquivoAula.addEventListener("change", () => {
+    const file = arquivoAula.files?.[0]; arquivoAula.value = ""; if (!file || !ui.aula) return;
+    const x = acharAula(ui.aula); if (!x) return; const aulaId = ui.aula;
+    const pdf = document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf";
+    toast("Enviando o arquivo…");
+    void (async () => {
+      try {
+        const caminho = await enviarArquivo(pdf ? "materiais" : "audios", x.c.id, file);
+        const campo = document.querySelector<HTMLInputElement>('input[name="arquivoAula"]'); if (campo) campo.value = caminho;
+        ui.sujo = { f: "aula", id: aulaId };
+        toast("Arquivo enviado. Clique em Salvar aula para guardar.");
       } catch (e) { toast(motivo(e)); }
     })();
   });
