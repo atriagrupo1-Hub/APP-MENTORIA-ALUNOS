@@ -1920,3 +1920,16 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .cl2-card.cat .cl2-card-capa { border-radius: 0; }
 .cl2-card.cat .cl2-cat-nome { display: none; }
 .cl2-card.cat .cl2-num { display: none; }
+.cl2-tela { display: flex; flex-direction: column; height: 520px; min-height: 0; padding-bottom: 0; }
+.cl2-aparelho.desk .cl2-tela { height: 360px; }
+.cl2-app-corpo { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; margin: 10px 0; overflow: hidden; }
+.cl2-aparelho.desk .cl2-app-corpo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; }
+.cl2-app-menu { display: flex; justify-content: space-around; margin: 0 -12px; padding: 7px 4px 10px; background: #0b0a08; border-top: 1px solid rgba(255, 255, 255, .12); }
+.cl2-app-menu span { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; color: rgba(255, 255, 255, .6); }
+.cl2-app-menu span.on { color: #e3bd6e; }
+.cl2-app-menu svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.cl2-app-menu em { max-width: 52px; overflow: hidden; font-size: 8.5px; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.cl2-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.cl2-chip-cat { padding: 3px 9px; font: inherit; font-size: 12px; color: var(--texto); background: var(--al-ouro-fundo); border: 0; border-radius: 99px; cursor: pointer; }
+.cl2-chip-cat:hover { outline: 1px solid var(--al-ouro); }
+.cl2-onde svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }

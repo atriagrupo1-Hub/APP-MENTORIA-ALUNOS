@@ -103,8 +103,8 @@ export type Categoria = {
   destacada: boolean;
   bloqueadaGeral: boolean;
   publicado: boolean;
-  /** Aba do app onde a categoria aparece (0074); null = nenhuma. */
-  abaId: string | null;
+  /** Ícone da aba no menu da aluna (0075). */
+  icone: string;
   presentes: Presente[];
   /** Os produtos desta categoria, na ordem definida no painel. */
   produtos: Produto[];
@@ -188,8 +188,6 @@ export type Presente = {
 export type Catalogo = {
   modulos: Modulo[];
   categorias: Categoria[];
-  /** Abas do app depois de Início e Módulos (0074), na ordem; null = leitura falhou. */
-  abas: Array<{ id: string; titulo: string; icone: string }> | null;
   aoVivo: Record<string, AulaAoVivo>;
   /** Todos os produtos, na ordem de categoria e depois de posição. */
   produtos: Produto[];
