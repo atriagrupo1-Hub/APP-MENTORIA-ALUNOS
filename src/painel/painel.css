@@ -1913,3 +1913,10 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .cl2-drow .est3-pil::after { content: ""; width: 6px; height: 6px; margin: -3px 0 0 2px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg); }
 @media (max-width: 1180px) { .cl2-dupla { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .cl2-dcapa { width: 100%; } }
+/* Nome da categoria em destaque, numa faixa acima da capa */
+.cl2-cat-faixa { display: flex; flex-direction: column; gap: 2px; padding: 12px 16px 11px; color: #f1d391; background: linear-gradient(180deg, #17130d, #0b0a08); border-bottom: 2px solid #c9a25c; border-radius: 9px 9px 0 0; }
+.cl2-cat-faixa small { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: rgba(241, 211, 145, .7); }
+.cl2-cat-faixa b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 27px; font-weight: 700; line-height: 1.1; color: #fff; overflow-wrap: anywhere; }
+.cl2-card.cat .cl2-card-capa { border-radius: 0; }
+.cl2-card.cat .cl2-cat-nome { display: none; }
+.cl2-card.cat .cl2-num { display: none; }

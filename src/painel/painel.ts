@@ -1904,6 +1904,7 @@ export function montar(app: HTMLElement) {
       const onde = k.id === jor ? "Início e Módulos" : aba ? "Aba " + aba.nome : "Sem aba";
       return `
         <article class="cl2-card cat${ui.catEditar === k.id ? " sel" : ""}" draggable="true" data-arrasta="${k.id}">
+          <div class="cl2-cat-faixa"><small>Categoria ${i + 1}</small><b>${h(k.nome)}</b></div>
           <div class="cl2-card-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<span class="cl2-alca-img" title="Arraste para mudar a ordem">${IC_LAY.alca}</span><span class="cl2-num">${i + 1}</span></div>
           <div class="cl2-card-corpo">
             <b class="cl2-cat-nome">${h(k.nome)}</b>
