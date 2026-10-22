@@ -2600,6 +2600,22 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- AULA ABERTA ---------- */
+  /*
+   * Editor de botão: nome, cor e a prévia de como o botão aparece para a
+   * aluna (mesmo desenho dourado da área). A prévia acompanha o que se
+   * digita e a cor escolhida, sem salvar.
+   */
+  const COR_BOTAO = "#c9a15c";
+  const IC_LIVRO_BT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg>`;
+  const IC_ORAR_BT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M10 5h4M7 21v-7l5-4 5 4v7M10 21v-4h4v4"/></svg>`;
+  const textoSobre = (hex: string) => { const n = parseInt(hex.slice(1), 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? "#1a1206" : "#fff"; };
+  const estiloBotao = (cor: string) => `--bt:${cor};color:${textoSobre(cor)}`;
+  const editorBotao = (campo: string, rotulo: string, nome: string, cor: string, icone = "") => `
+    <div class="eb" data-eb="${campo}">
+      <label class="grupo"><span class="rotulo-ajuda mp-rot">${rotulo}</span><input class="campo" name="${campo}" value="${h(nome)}" maxlength="40" data-eb-nome /></label>
+      <label class="grupo eb-cor"><span class="rotulo-ajuda mp-rot">Cor</span><span class="eb-cor-linha"><input type="color" class="campo-cor" name="${campo}Cor" value="${h(cor)}" data-eb-cor /><button type="button" class="eb-padrao" data-a="eb-padrao" data-v="${campo}">Cor padrão</button></span></label>
+      <div class="grupo eb-previa"><span class="rotulo-ajuda mp-rot">Como a aluna vê</span><span class="eb-fundo"><span class="eb-botao" style="${estiloBotao(cor)}">${icone}<b>${h(nome)}</b></span></span></div>
+    </div>`;
   function telaAula() {
     const x = ui.aula ? acharAula(ui.aula) : null;
     if (!x) return `<section class="tela ativa"><div class="vazio">Nenhuma aula aberta. Abra uma pela lista do curso.</div></section>`;
@@ -2642,11 +2658,11 @@ export function montar(app: HTMLElement) {
           <label class="grupo" data-campo-arquivo${tipoA === "video" ? " hidden" : ""}><span class="rotulo-ajuda mp-rot"><span data-rot-arquivo>${tipoA === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio"}</span> ${dicaCampo(AJ.arquivoAula)}</span>
             <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
           <div class="ea-ebook" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
-            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão do e-book ${dicaCampo(AJ.botaoEbook)}</span><input class="campo" name="botaoEbook" value="Ler ebook completo" maxlength="40" /></label>
+            ${editorBotao("botaoEbook", "Nome do botão do e-book " + dicaCampo(AJ.botaoEbook), "Ler ebook completo", COR_BOTAO, IC_LIVRO_BT)}
             <div class="ea-op2">
               <div class="ea-op2-tit">Segunda opção ${dicaCampo(AJ.op2)}</div>
+              ${editorBotao("op2Rotulo", "Nome do botão", "Ler apenas as orações", COR_BOTAO, IC_ORAR_BT)}
               <div class="ea-op2-linha">
-                <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão</span><input class="campo" name="op2Rotulo" value="Ler apenas as orações" maxlength="40" /></label>
                 <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
                   <select class="campo" name="op2Tipo" data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, t]) => `<option value="${v}"${(ui.op2Tipo || "texto") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
               </div>
@@ -3439,6 +3455,7 @@ export function montar(app: HTMLElement) {
       case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
+      case "eb-padrao": { const c = document.querySelector<HTMLInputElement>('[data-eb="' + d.v + '"] [data-eb-cor]'); if (c) { c.value = COR_BOTAO; c.dispatchEvent(new Event("input", { bubbles: true })); } return; }
       case "aula-arquivo": arquivoAula.accept = (document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf") ? "application/pdf,.pdf" : "audio/*"; arquivoAula.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
       case "extra-remover": {
@@ -3952,6 +3969,13 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.hasAttribute("data-eb-nome") || t.hasAttribute("data-eb-cor")) {
+      const eb = t.closest<HTMLElement>("[data-eb]"); const bt = eb?.querySelector<HTMLElement>(".eb-botao");
+      if (eb && bt) {
+        const nome = eb.querySelector<HTMLInputElement>("[data-eb-nome]")!.value, cor = eb.querySelector<HTMLInputElement>("[data-eb-cor]")!.value;
+        bt.querySelector("b")!.textContent = nome || " "; bt.setAttribute("style", estiloBotao(cor));
+      }
+    }
     if (t.dataset.i === "buscaGeral") { ui.buscaGeral = t.value; ui.buscaAberta = true; atualizarBusca(); return; }
     marcarSujo(t);
     if (t.dataset.conta) { const c = document.getElementById(t.dataset.conta); if (c) c.textContent = t.value.length + "/200"; }
