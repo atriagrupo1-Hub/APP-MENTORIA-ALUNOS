@@ -1360,3 +1360,7 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
   .cur-grade.em-lista .cur-capa img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .cur-grade.em-lista .cur-mais { color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); }
 }
+
+/* Data de criação de cada aula (Módulos e aulas) */
+.aula-criada { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--texto); white-space: nowrap; }
+.aula-criada svg { width: 18px; height: 18px; fill: none; stroke: var(--aa-ouro); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
