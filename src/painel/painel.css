@@ -1939,3 +1939,9 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .cur-aba-criar svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .cur-aba-nova { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .cur-aba-nova .campo { width: 200px; min-height: 38px; }
+.cur-cats-rot { display: inline-flex; align-items: center; gap: 6px; }
+.cur-cats-rot .ajuda { position: relative; }
+.aba-pop { width: min(360px, 86vw); font-weight: 400; }
+.aba-niveis { display: block; margin-top: 8px; line-height: 1.9; }
+.aba-niveis i { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; font-size: 11px; font-style: normal; font-weight: 700; color: #1a140a; background: #e3bd6e; border-radius: 50%; }
+.aba-niveis b { margin-right: 4px; }
