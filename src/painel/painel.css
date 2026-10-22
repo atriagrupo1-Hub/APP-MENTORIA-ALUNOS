@@ -1364,3 +1364,7 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 /* Data de criação de cada aula (Módulos e aulas) */
 .aula-criada { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--texto); white-space: nowrap; }
 .aula-criada svg { width: 18px; height: 18px; fill: none; stroke: var(--aa-ouro); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Número do novo módulo, já com o próximo da sequência */
+.cs-add-num { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-3); }
+.cs-add-num select { width: 84px; }
