@@ -1535,3 +1535,18 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ea-op2-tit { flex-wrap: wrap; }
 .ea-op-tirar { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 0; font: inherit; font-family: Lato, system-ui, sans-serif; font-size: 13px; color: var(--aa-verm); background: none; border: 0; cursor: pointer; }
 .ea-op-tirar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.ea-opcoes { margin-top: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px; }
+.ea-opcoes[hidden] { display: none; }
+.ea-opcoes .mp-cab { margin-bottom: 0; }
+.ea-op-topo { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: start; }
+.ea-op-midia { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; }
+.ea-op-midia[hidden] { display: none; }
+.ea-op-esq, .ea-op-dir { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.ea-op-esq .grupo, .ea-op-midia .grupo { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.ea-op-esq .grupo[hidden] { display: none; }
+.ea-op-caixa { display: flex; flex-direction: column; gap: 10px; padding: 14px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 10px; }
+.ea-op-caixa-tit { font-family: "Cormorant Garamond", Georgia, serif; font-size: 18px; color: var(--texto); }
+.ea-op-caixa-tit svg { width: 20px; height: 20px; }
+.ea-op-caixa .mp-dica { margin: 0; }
+.ea-op-capa { display: block; width: 100%; aspect-ratio: 16 / 9; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 8px; }
+@media (max-width: 900px) { .ea-op-topo, .ea-op-midia { grid-template-columns: minmax(0, 1fr); } }

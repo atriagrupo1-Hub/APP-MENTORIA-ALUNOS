@@ -2004,7 +2004,7 @@ export function montar(app: HTMLElement) {
     statusAula: "Ativa: a aula aparece para quem tem acesso. Desligada: bloqueada para todas.",
     listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
     botaoEbook: "O texto do botão que abre o PDF completo dentro da área. Ex.: Ler ebook completo.",
-    op2: "Um segundo botão na tela do e-book. Dê um nome (ex.: Ler apenas as orações) e escolha o que ele abre: um texto escrito aqui, um áudio, um vídeo ou outro PDF.",
+    op2: "Mais botões na tela do e-book. Cada um tem nome e cor e abre o que você escolher: um texto escrito aqui, outro PDF, ou um vídeo ou áudio com a tela completa (capa, descrição, instruções e conteúdo extra).",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2620,18 +2620,42 @@ export function montar(app: HTMLElement) {
   const ORDINAL = ["Segunda", "Terceira", "Quarta", "Quinta", "Sexta", "Sétima", "Oitava", "Nona", "Décima"];
   type OpcaoEbook = { rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf" };
   function blocoOpcao(k: number, op: OpcaoEbook) {
-    const t = op.tipo;
+    const t = op.tipo, f = ` form="formAula"`;
+    const grupo = t === "video" || t === "audio" ? "midia" : t;
     return `
               <div class="ea-op2" data-op-bloco>
-                <div class="ea-op2-tit"><span data-op-tit>${ORDINAL[k] || k + 2 + "ª"} opção</span> ${k === 0 ? dicaCampo(AJ.op2) : ""}${k > 0 ? `<button type="button" class="ea-op-tirar" data-a="op-tirar">${IC_MOD.lixo}Tirar esta opção</button>` : ""}</div>
-                ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor, IC_ORAR_BT)}
-                <div class="ea-op2-linha">
+                <div class="ea-op2-tit"><span data-op-tit>${ORDINAL[k] || k + 2 + "ª"} opção</span>${k > 0 ? `<button type="button" class="ea-op-tirar" data-a="op-tirar">${IC_MOD.lixo}Tirar esta opção</button>` : ""}</div>
+                <div class="ea-op-topo">
+                  ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor, IC_ORAR_BT)}
                   <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
-                    <select class="campo" name="op${k}Tipo" data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, n]) => `<option value="${v}"${t === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+                    <select class="campo" name="op${k}Tipo"${f} data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, n]) => `<option value="${v}"${t === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
                 </div>
-                <label class="grupo" data-op2="texto"${t === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op${k}Texto" rows="6" placeholder="Escreva aqui o texto deste botão. Uma linha em branco separa parágrafo."></textarea></label>
-                <label class="grupo" data-op2="video"${t === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op${k}Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
-                <label class="grupo" data-op2="arquivo"${t === "audio" || t === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot" data-op2-rot>${t === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op${k}Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
+                <label class="grupo" data-op2="texto"${grupo === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op${k}Texto"${f} rows="6" placeholder="Escreva aqui o texto deste botão. Uma linha em branco separa parágrafo."></textarea></label>
+                <label class="grupo" data-op2="pdf"${grupo === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo PDF</span><span class="ea-arq"><input class="campo" name="op${k}Pdf"${f} placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
+                <div class="ea-op-midia" data-op2="midia"${grupo === "midia" ? "" : " hidden"}>
+                  <div class="ea-op-esq">
+                    <label class="grupo" data-midia="video"${t === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span><input class="campo" name="op${k}Video"${f} placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+                    <label class="grupo" data-midia="audio"${t === "audio" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo de áudio ${dicaCampo(AJ.arquivoAula)}</span><span class="ea-arq"><input class="campo" name="op${k}Audio"${f} placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Título (aparece na tela) </span><input class="campo" name="op${k}Titulo"${f} placeholder="Ex.: Resumo do e-book em vídeo" /></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição (o que a aluna verá)</span><textarea class="campo" name="op${k}Desc"${f} rows="4" placeholder="Uma linha em branco separa parágrafo."></textarea></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções”)</span><textarea class="campo" name="op${k}Instr"${f} rows="3" placeholder="Título das instruções na primeira linha. Depois, o texto."></textarea></label>
+                  </div>
+                  <div class="ea-op-dir">
+                    <div class="ea-op-caixa">
+                      <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_IMG}Capa ${dicaCampo(AJ.capa)}</span>
+                      <span class="ea-op-capa"></span>
+                      <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="op-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="op-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
+                      <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+                    </div>
+                    <div class="ea-op-caixa">
+                      <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_LIVRO_BT}Conteúdo extra ${dicaCampo(AJ.extras)}</span>
+                      <div class="ea-chips">${TIPOS.map((x) => x.tela).map((x, n) => `<button type="button" data-a="op-extra-tipo" aria-pressed="${n === 3}">${x}</button>`).join("")}</div>
+                      <span class="ea-arq"><input class="campo" placeholder="Nome do conteúdo" /></span>
+                      <span class="ea-arq"><input class="campo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao">Escolher arquivo</button></span>
+                      <div><button type="button" class="al-botao-ouro">Adicionar</button></div>
+                    </div>
+                  </div>
+                </div>
               </div>`;
   }
   function telaAula() {
@@ -2677,8 +2701,6 @@ export function montar(app: HTMLElement) {
             <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
           <div class="ea-ebook" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
             ${editorBotao("botaoEbook", "Nome do botão do e-book " + dicaCampo(AJ.botaoEbook), "Ler ebook completo", COR_BOTAO, IC_LIVRO_BT)}
-            <div class="ea-ops" data-ops>${blocoOpcao(0, { rotulo: "Ler apenas as orações", cor: COR_BOTAO, tipo: "texto" })}</div>
-            <button type="button" class="al-botao ea-op-add" data-a="op-add">${IC_CURSO.mais}Adicionar outra opção</button>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>
             <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
@@ -2720,6 +2742,12 @@ export function montar(app: HTMLElement) {
           </section>
         </div>
       </div>
+
+      <section class="cs-cartao ea-opcoes" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
+        <div class="mp-cab"><span class="mp-cab-ic">${IC_LIVRO_BT}</span><div><h3 class="rotulo-ajuda">Outras opções do e-book ${dicaCampo(AJ.op2)}</h3><p>Cada opção vira um botão na tela do e-book, embaixo do “${"Ler ebook completo"}”.</p></div></div>
+        <div class="ea-ops" data-ops>${blocoOpcao(0, { rotulo: "Ler apenas as orações", cor: COR_BOTAO, tipo: "texto" })}</div>
+        <button type="button" class="al-botao ea-op-add" data-a="op-add">${IC_CURSO.mais}Adicionar outra opção</button>
+      </section>
     </section>`;
   }
 
@@ -4020,16 +4048,16 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-op2-tipo")) {
       const bl = t.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return;
-      bl.querySelectorAll<HTMLElement>("[data-op2]").forEach((g) => { g.hidden = g.dataset.op2 !== (t.value === "audio" || t.value === "pdf" ? "arquivo" : t.value); });
-      const r = bl.querySelector<HTMLElement>("[data-op2-rot]"); if (r) r.textContent = t.value === "pdf" ? "Arquivo PDF" : "Arquivo de áudio";
-      const ca = bl.querySelector<HTMLInputElement>('input[name$="Arquivo"]'); if (ca) ca.value = "";
+      const gr = t.value === "video" || t.value === "audio" ? "midia" : t.value;
+      bl.querySelectorAll<HTMLElement>("[data-op2]").forEach((g) => { g.hidden = g.dataset.op2 !== gr; });
+      bl.querySelectorAll<HTMLElement>("[data-midia]").forEach((g) => { g.hidden = g.dataset.midia !== t.value; });
       return;
     }
     if (t.hasAttribute("data-aula-tipo")) {
       ui.aulaTipo = t.value;
       const gv = document.querySelector<HTMLElement>("[data-campo-video]"), ga = document.querySelector<HTMLElement>("[data-campo-arquivo]"), ra = document.querySelector<HTMLElement>("[data-rot-arquivo]");
       if (gv) gv.hidden = t.value !== "video"; if (ga) ga.hidden = t.value === "video";
-      const gp = document.querySelector<HTMLElement>("[data-campo-pdf]"); if (gp) gp.hidden = t.value !== "pdf";
+      document.querySelectorAll<HTMLElement>("[data-campo-pdf]").forEach((gp) => { gp.hidden = t.value !== "pdf"; });
       const rd = document.querySelector<HTMLElement>("[data-rot-desc]"); if (rd) rd.textContent = t.value === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)";
       if (ra) ra.textContent = t.value === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio";
       const ca = document.querySelector<HTMLInputElement>('input[name="arquivoAula"]'); if (ca) ca.value = "";
