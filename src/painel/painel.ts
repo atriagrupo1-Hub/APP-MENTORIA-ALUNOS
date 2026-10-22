@@ -1029,7 +1029,7 @@ export function montar(app: HTMLElement) {
   const EST3: Record<Estado3, [string, string, string]> = {
     ativo: ["Ativo", "verde", "Visível e liberado para as alunas"],
     bloqueado: ["Bloqueado", "amarelo", "Visível, mas não acessível para as alunas"],
-    desativado: ["Desativado", "vermelho", "Não aparece na área da aluna"],
+    desativado: ["Oculto", "vermelho", "Não aparece na área da aluna"],
   };
   const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
   const IC_OLHO_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.8M6.6 7.6C4 9.4 2.5 12 2.5 12S6 18 12 18c1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
@@ -1074,7 +1074,7 @@ export function montar(app: HTMLElement) {
   /** Pílula clicável: abre as três opções; `sub` mostra a explicação embaixo. */
   function seletorEstado(tipo: "curso" | "mod" | "aula" | "cat", id: string, e: Estado3, sub = false, fem = false) {
     const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
-    const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : tipo === "cat" ? "Oculta" : fem ? "Desativada" : EST3[x][0]);
+    const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : fem ? "Oculta" : EST3[x][0]);
     return `<span class="est3${sub ? " com-sub" : ""}">
       <button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${chave}" aria-haspopup="menu" aria-expanded="${ui.estMenu === chave}" title="Mudar o estado">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : "<i></i>"}${h(fem ? rot(e) : nome)}</button>
       ${sub ? `<em>${txt}</em>` : ""}
@@ -2196,13 +2196,13 @@ export function montar(app: HTMLElement) {
     extraNome: "O nome do botão que a aluna vê para abrir este conteúdo.",
     extraArquivo: "Escolha o arquivo do seu computador; ele vai para o depósito e o caminho aparece aqui.",
     liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
-    statusAula: "Ativa: aparece e abre para quem tem acesso. Bloqueada: aparece, mas não abre. Desativada: não aparece para a aluna. Muda na hora, ao escolher.",
+    statusAula: "Ativa: aparece e abre para quem tem acesso. Bloqueada: aparece, mas não abre. Oculta: não aparece para a aluna. Muda na hora, ao escolher.",
     listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
     botaoEbook: "O texto do botão que abre o PDF completo dentro da área. Ex.: Ler ebook completo.",
     op2: "Mais botões na tela do e-book. Cada um tem nome e cor e abre o que você escolher: um texto escrito aqui, outro PDF, ou um vídeo ou áudio com a tela completa (capa, descrição, instruções e conteúdo extra).",
-    statusCurso: "Ativo: aparece e abre para quem tem acesso. Bloqueado: aparece, mas não abre. Desativado: não aparece para a aluna. Muda na hora, ao escolher.",
+    statusCurso: "Ativo: aparece e abre para quem tem acesso. Bloqueado: aparece, mas não abre. Oculto: não aparece para a aluna. Muda na hora, ao escolher.",
     liberaCurso: "Antes desta data nenhuma aula do curso abre para ninguém (aparece \"Libera em breve\"). Vazio: vale a liberação dos módulos, das aulas e de cada aluna.",
-    statusMod: "Ativo: aparece e abre para quem tem acesso. Bloqueado: aparece, mas não abre. Desativado: não aparece para a aluna. Muda na hora, ao escolher.",
+    statusMod: "Ativo: aparece e abre para quem tem acesso. Bloqueado: aparece, mas não abre. Oculto: não aparece para a aluna. Muda na hora, ao escolher.",
     liberaMod: "Antes desta data nenhuma aula do módulo abre para ninguém (aparece \"Libera em breve\"). Vazio: vale a liberação de cada aula e de cada aluna.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
@@ -3645,7 +3645,7 @@ export function montar(app: HTMLElement) {
           const ids = S.destaques.map((k) => k.id); ids.splice(pos + 1, 0, r.data!.id);
           for (let k = 0; k < ids.length; k++) falhou(await supabase.from("destaques_inicio").update({ ordem: k + 1 }).eq("id", ids[k]).select("id").single());
           await registrar(null, "Duplicou o destaque " + x.titulo);
-          return { msg: "Destaque duplicado. A cópia está desativada.", texto: "cópia do destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").delete().eq("id", r.data!.id).select("id").single()); } };
+          return { msg: "Destaque duplicado. A cópia está oculta.", texto: "cópia do destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -3859,7 +3859,7 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           if (bloq !== bloqAntes) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: bloq });
           if (pub !== pubAntes) falhou(await supabase.from("aulas").update({ publicado: pub }).eq("id", id).select("id").single());
-          return { msg: x.a.rot + " " + x.a.num + ": " + (novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "desativada") + ".", texto: "estado da aula " + x.a.nome, desfazer: async () => {
+          return { msg: x.a.rot + " " + x.a.num + ": " + (novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "oculta") + ".", texto: "estado da aula " + x.a.nome, desfazer: async () => {
             if (bloq !== bloqAntes) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: bloqAntes });
             if (pub !== pubAntes) falhou(await supabase.from("aulas").update({ publicado: pubAntes }).eq("id", id).select("id").single());
           } };
