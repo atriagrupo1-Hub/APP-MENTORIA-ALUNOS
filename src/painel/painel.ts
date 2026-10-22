@@ -429,7 +429,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, aulaTipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2003,6 +2003,8 @@ export function montar(app: HTMLElement) {
     liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
     statusAula: "Ativa: a aula aparece para quem tem acesso. Desligada: bloqueada para todas.",
     listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
+    botaoEbook: "O texto do botão que abre o PDF completo dentro da área. Ex.: Ler ebook completo.",
+    op2: "Um segundo botão na tela do e-book. Dê um nome (ex.: Ler apenas as orações) e escolha o que ele abre: um texto escrito aqui, um áudio, um vídeo ou outro PDF.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2639,7 +2641,19 @@ export function montar(app: HTMLElement) {
             <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
           <label class="grupo" data-campo-arquivo${tipoA === "video" ? " hidden" : ""}><span class="rotulo-ajuda mp-rot"><span data-rot-arquivo>${tipoA === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio"}</span> ${dicaCampo(AJ.arquivoAula)}</span>
             <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
-          <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição da aula (o que a aluna verá) ${dicaCampo(AJ.texto)}</span>
+          <div class="ea-ebook" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão do e-book ${dicaCampo(AJ.botaoEbook)}</span><input class="campo" name="botaoEbook" value="Ler ebook completo" maxlength="40" /></label>
+            <div class="ea-op2">
+              <div class="ea-op2-tit">Segunda opção ${dicaCampo(AJ.op2)}</div>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão</span><input class="campo" name="op2Rotulo" value="Ler apenas as orações" maxlength="40" /></label>
+              <div class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
+                <div class="ea-chips">${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, t]) => `<button type="button" data-a="op2-tipo" data-v="${v}" aria-pressed="${(ui.op2Tipo || "texto") === v}">${t}</button>`).join("")}</div></div>
+              ${(ui.op2Tipo || "texto") === "texto" ? `<label class="grupo"><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op2Texto" rows="6" placeholder="Escreva aqui somente as orações do e-book. Uma linha em branco separa parágrafo."></textarea></label>`
+                : (ui.op2Tipo === "video") ? `<label class="grupo"><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op2Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>`
+                : `<label class="grupo"><span class="rotulo-ajuda mp-rot">${ui.op2Tipo === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op2Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>`}
+            </div>
+          </div>
+          <label class="grupo"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>
             <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
           ${a.resumo === null ? "" : `
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções” da aula) ${dicaCampo(AJ.exercicio)}</span>
@@ -3423,6 +3437,7 @@ export function montar(app: HTMLElement) {
       case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
+      case "op2-tipo": ui.op2Tipo = d.v; break;
       case "aula-arquivo": arquivoAula.accept = (document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf") ? "application/pdf,.pdf" : "audio/*"; arquivoAula.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
       case "extra-remover": {
@@ -3959,6 +3974,8 @@ export function montar(app: HTMLElement) {
       ui.aulaTipo = t.value;
       const gv = document.querySelector<HTMLElement>("[data-campo-video]"), ga = document.querySelector<HTMLElement>("[data-campo-arquivo]"), ra = document.querySelector<HTMLElement>("[data-rot-arquivo]");
       if (gv) gv.hidden = t.value !== "video"; if (ga) ga.hidden = t.value === "video";
+      const gp = document.querySelector<HTMLElement>("[data-campo-pdf]"); if (gp) gp.hidden = t.value !== "pdf";
+      const rd = document.querySelector<HTMLElement>("[data-rot-desc]"); if (rd) rd.textContent = t.value === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)";
       if (ra) ra.textContent = t.value === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio";
       const ca = document.querySelector<HTMLInputElement>('input[name="arquivoAula"]'); if (ca) ca.value = "";
       return;

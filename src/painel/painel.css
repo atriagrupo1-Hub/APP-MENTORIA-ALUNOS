@@ -1511,3 +1511,8 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
   .ea-bts { flex-direction: column-reverse; }
 }
 .cs-nota .ajuda-amarela { margin-left: 4px; }
+.ea-ebook { display: flex; flex-direction: column; gap: 16px; }
+.ea-ebook[hidden] { display: none; }
+.ea-op2 { display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid var(--linha-suave); border-radius: 10px; background: color-mix(in srgb, var(--aa-ouro) 6%, transparent); }
+.ea-op2-tit { display: flex; align-items: center; gap: 8px; margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
+.ea-op2 .ea-chips { margin: 0; }
