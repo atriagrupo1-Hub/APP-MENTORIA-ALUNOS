@@ -137,7 +137,6 @@ type LinhaModulo = {
   id: string;
   capa_horizontal_path?: string | null;
   rotulo?: string | null;
-  rotulo_aula?: string | null;
   numero: number;
   titulo: string;
   intro: string | null;
@@ -151,6 +150,7 @@ type LinhaModulo = {
 
 type LinhaAula = {
   id: string;
+  rotulo?: string | null;
   modulo_id: string;
   numero: number;
   titulo: string;
@@ -365,7 +365,6 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     capaHorizontalPath: m.capa_horizontal_path ?? null,
     cor: m.cor_destaque ?? null,
     rotulo: m.rotulo ?? null,
-    rotuloAula: m.rotulo_aula ?? null,
     bloqueadoGeral: m.bloqueado_geral,
     tituloNaArte: m.titulo_na_arte,
     avisoMaterial: avisoDoProduto.get(m.produto_id ?? "") ?? null,
@@ -376,6 +375,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         id: a.id,
         moduloId: a.modulo_id,
         numero: a.numero,
+        rotulo: a.rotulo ?? null,
         titulo: a.titulo,
         ordem: a.ordem,
         duracaoSegundos: a.duracao_segundos,
