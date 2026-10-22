@@ -1516,3 +1516,6 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ea-op2 { display: flex; flex-direction: column; gap: 14px; padding: 16px; border: 1px solid var(--linha-suave); border-radius: 10px; background: color-mix(in srgb, var(--aa-ouro) 6%, transparent); }
 .ea-op2-tit { display: flex; align-items: center; gap: 8px; margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
 .ea-op2 .ea-chips { margin: 0; }
+.ea-op2-linha { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.ea-op2 .grupo[hidden] { display: none; }
+@media (max-width: 560px) { .ea-op2-linha { grid-template-columns: minmax(0, 1fr); } }

@@ -2645,12 +2645,14 @@ export function montar(app: HTMLElement) {
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão do e-book ${dicaCampo(AJ.botaoEbook)}</span><input class="campo" name="botaoEbook" value="Ler ebook completo" maxlength="40" /></label>
             <div class="ea-op2">
               <div class="ea-op2-tit">Segunda opção ${dicaCampo(AJ.op2)}</div>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão</span><input class="campo" name="op2Rotulo" value="Ler apenas as orações" maxlength="40" /></label>
-              <div class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
-                <div class="ea-chips">${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, t]) => `<button type="button" data-a="op2-tipo" data-v="${v}" aria-pressed="${(ui.op2Tipo || "texto") === v}">${t}</button>`).join("")}</div></div>
-              ${(ui.op2Tipo || "texto") === "texto" ? `<label class="grupo"><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op2Texto" rows="6" placeholder="Escreva aqui somente as orações do e-book. Uma linha em branco separa parágrafo."></textarea></label>`
-                : (ui.op2Tipo === "video") ? `<label class="grupo"><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op2Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>`
-                : `<label class="grupo"><span class="rotulo-ajuda mp-rot">${ui.op2Tipo === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op2Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>`}
+              <div class="ea-op2-linha">
+                <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do botão</span><input class="campo" name="op2Rotulo" value="Ler apenas as orações" maxlength="40" /></label>
+                <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
+                  <select class="campo" name="op2Tipo" data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, t]) => `<option value="${v}"${(ui.op2Tipo || "texto") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+              </div>
+              <label class="grupo" data-op2="texto"${(ui.op2Tipo || "texto") === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op2Texto" rows="6" placeholder="Escreva aqui somente as orações do e-book. Uma linha em branco separa parágrafo."></textarea></label>
+              <label class="grupo" data-op2="video"${ui.op2Tipo === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op2Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+              <label class="grupo" data-op2="arquivo"${ui.op2Tipo === "audio" || ui.op2Tipo === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot" data-op2-rot>${ui.op2Tipo === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op2Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
             </div>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>
@@ -3437,7 +3439,6 @@ export function montar(app: HTMLElement) {
       case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
-      case "op2-tipo": ui.op2Tipo = d.v; break;
       case "aula-arquivo": arquivoAula.accept = (document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf") ? "application/pdf,.pdf" : "audio/*"; arquivoAula.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
       case "extra-remover": {
@@ -3970,6 +3971,13 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
+    if (t.hasAttribute("data-op2-tipo")) {
+      ui.op2Tipo = t.value;
+      document.querySelectorAll<HTMLElement>("[data-op2]").forEach((g) => { g.hidden = g.dataset.op2 !== (t.value === "audio" || t.value === "pdf" ? "arquivo" : t.value); });
+      const r = document.querySelector<HTMLElement>("[data-op2-rot]"); if (r) r.textContent = t.value === "pdf" ? "Arquivo PDF" : "Arquivo de áudio";
+      const ca = document.querySelector<HTMLInputElement>('input[name="op2Arquivo"]'); if (ca) ca.value = "";
+      return;
+    }
     if (t.hasAttribute("data-aula-tipo")) {
       ui.aulaTipo = t.value;
       const gv = document.querySelector<HTMLElement>("[data-campo-video]"), ga = document.querySelector<HTMLElement>("[data-campo-arquivo]"), ra = document.querySelector<HTMLElement>("[data-rot-arquivo]");
