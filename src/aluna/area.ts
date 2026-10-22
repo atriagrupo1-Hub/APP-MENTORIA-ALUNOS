@@ -77,7 +77,7 @@ export function montar(raiz: HTMLElement) {
       .map((m, k) => {
         const vivo = cat.aoVivo[m.id];
         return {
-          id: m.id, num: k, titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
+          id: m.id, num: k, rot: (m.rotulo || "").trim() || "Módulo", rotAula: (m.rotuloAula || "").trim() || "Aula", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
           capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
@@ -165,7 +165,7 @@ export function montar(raiz: HTMLElement) {
     const id = MODS()[m].aulas[a].id;
     if (!liberado(m)) return { cls: "fechado", txt: "Libera em breve", fech: true };
     if (!aulaAdmin(id)) return { cls: "fechado", txt: "Libera em breve", fech: true };
-    if (!seqOk(m, a)) return { cls: "fechado", txt: "Conclua a Aula " + a + " para liberar", fech: true, seq: true };
+    if (!seqOk(m, a)) return { cls: "fechado", txt: "Conclua a " + MODS()[m].rotAula + " " + a + " para liberar", fech: true, seq: true };
     if (feita(m, a)) return { cls: "ok", txt: "✓ Concluída" };
     if (posicao(m, a) > 0) return { cls: "andando", txt: "Em andamento" };
     return { cls: "livre", txt: "Disponível" };
@@ -313,16 +313,16 @@ export function montar(raiz: HTMLElement) {
       const msg = msgModFechado(m);
       return `
     <div class="mod-bloco mc mc-tranc" style="--mc:${COR}">
-      <button class="mc-top" data-a="modulo" data-m="${m}" aria-label="Módulo ${md.num}, ${h(titulo(md.titulo))}. Bloqueado. ${h(msg)}.">
+      <button class="mc-top" data-a="modulo" data-m="${m}" aria-label="${h(md.rot)} ${md.num}, ${h(titulo(md.titulo))}. Bloqueado. ${h(msg)}.">
         <span class="mc-capa" aria-hidden="true">${img(md.capa, "")}</span>
         <span class="mc-info" aria-hidden="true">
-          <span class="mc-rot">Módulo ${md.num}</span>
+          <span class="mc-rot">${h(md.rot)} ${md.num}</span>
           <b class="mc-tit serif">${h(titulo(md.titulo))}</b>
           ${meta}
         </span>
         <span class="tranca-veu" aria-hidden="true">
           <span class="tranca-ic">${ICONES.cadeado}</span>
-          <span class="tranca-txt"><b>Módulo ${md.num} · ${h(titulo(md.titulo))}</b><span>${h(msg)}</span></span>
+          <span class="tranca-txt"><b>${h(md.rot)} ${md.num} · ${h(titulo(md.titulo))}</b><span>${h(msg)}</span></span>
         </span>
       </button>
     </div>`;
@@ -330,9 +330,9 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="mod-bloco mc" style="--mc:${COR}">
       <div class="mc-top">
-        <button class="mc-capa" data-a="modulo" data-m="${m}" aria-label="Abrir o Módulo ${md.num}">${img(md.capa, "")}</button>
+        <button class="mc-capa" data-a="modulo" data-m="${m}" aria-label="Abrir o ${h(md.rot)} ${md.num}">${img(md.capa, "")}</button>
         <div class="mc-info">
-          <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">Módulo ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
+          <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">${h(md.rot)} ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
           ${meta}
           ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
           ${irModulo
@@ -343,7 +343,7 @@ export function montar(raiz: HTMLElement) {
     ${irModulo || !t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
       <button class="la-item${ea.fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
         <span class="la-capa">${img(x.capa, "")}<span class="la-ic">${ea.fech ? '<span class="cadeado"></span>' : feita(m, i) ? "✓" : ""}</span></span>
-        <span class="la-info"><b>Módulo ${md.num} · Aula ${i + 1}</b><span>${h(x.titulo)}</span>${ea.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ea.txt)}</span>` : `<em>${feita(m, i) ? "Concluída" : "Disponível"}</em>`}</span>
+        <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${i + 1}</b><span>${h(x.titulo)}</span>${ea.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ea.txt)}</span>` : `<em>${feita(m, i) ? "Concluída" : "Disponível"}</em>`}</span>
         ${ea.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
       </button>`; }).join("")}</div></div>`}
     </div>`;
@@ -430,7 +430,7 @@ export function montar(raiz: HTMLElement) {
       <section class="heroi" aria-labelledby="h-cont">
         <button class="capa" data-a="aula" data-m="${c.m}" data-i="${c.a}" data-tocar="1" style="border:0;padding:0;width:100%" aria-label="Continuar assistindo a aula">${img(md.aulas[c.a].capa, "")}<span class="play-capa"></span></button>
         <div class="corpo">
-          <p class="onde-parou onde-parou-ini">Módulo ${md.num} · Aula ${c.a + 1}</p>
+          <p class="onde-parou onde-parou-ini">${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${c.a + 1}</p>
           <h2 class="serif" id="h-cont">${h(md.aulas[c.a].titulo)}</h2>
           ${comecou ? `<div class="barra"><i style="width:${ps * 100}%"></i></div><p class="apoio">Em andamento</p>` : ""}
           <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}" data-tocar="1"><span class="ic-play"></span>Continuar assistindo</button>
@@ -456,9 +456,9 @@ export function montar(raiz: HTMLElement) {
           ${cabMentoria}
           <p class="pa-rot mt-passo" id="h-comece">Comece por aqui</p>
           <section class="ex-card ex-banner mh-card" aria-labelledby="h-m0">
-            <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o Módulo ${m0.num}">${img(m0.capaH, "Módulo " + m0.num + " — " + titulo(m0.titulo))}</button>
+            <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o ${h(m0.rot)} ${m0.num}">${img(m0.capaH, m0.rot + " " + m0.num + " — " + titulo(m0.titulo))}</button>
             <div class="ex-info">
-              <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>Módulo ${m0.num}</p>
+              <p class="ex-rot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>${h(m0.rot)} ${m0.num}</p>
               <h2 class="serif" id="h-m0">${h(titulo(m0.titulo))}</h2>
               <p class="ex-desc">${h(m0.intro)}</p>
               <button class="ex-botao" data-a="modulo" data-m="0">Ver aulas</button>
@@ -506,7 +506,7 @@ export function montar(raiz: HTMLElement) {
       return `
         <button class="la-item${e.fech ? " fechada" : ""}${a === c ? " atual" : ""}" data-a="aula" data-m="${m}" data-i="${a}">
           <span class="la-capa">${img(md.aulas[a].capa, "")}<span class="la-ic">${e.fech ? '<span class="cadeado"></span>' : feitaA ? "✓" : ""}</span>${ps > 0 && !feitaA ? `<span class="mp-visto"><i style="width:${ps * 100}%"></i></span>` : ""}</span>
-          <span class="la-info"><b>Módulo ${md.num} · Aula ${a + 1}</b><span>${h(md.aulas[a].titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${feitaA ? "Concluída" : "Disponível"}</em>`}</span>
+          <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${a + 1}</b><span>${h(md.aulas[a].titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${feitaA ? "Concluída" : "Disponível"}</em>`}</span>
           ${e.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
         </button>`;
     };
@@ -515,9 +515,9 @@ export function montar(raiz: HTMLElement) {
     ${cabMp(`data-a="voltar-mod"`, NOME_ORIGEM[S.origemMod] || "Início")}
     <div class="mp mv" style="--mc:${COR}">
       <section class="mv-topo" aria-labelledby="h-mod">
-        <span class="mv-capa-mod">${img(md.capa, "Módulo " + md.num + " — " + titulo(md.titulo))}</span>
+        <span class="mv-capa-mod">${img(md.capa, md.rot + " " + md.num + " — " + titulo(md.titulo))}</span>
         <div class="mv-txt">
-          <p class="mv-rot">Módulo ${md.num}<span aria-hidden="true"></span></p>
+          <p class="mv-rot">${h(md.rot)} ${md.num}<span aria-hidden="true"></span></p>
           <h1 class="serif mv-tit" id="h-mod">${h(md.titulo)}</h1>
           <span class="mv-linha" aria-hidden="true"></span>
           <p class="mv-desc">${h(md.intro)}</p>
@@ -858,16 +858,16 @@ export function montar(raiz: HTMLElement) {
       <section class="mod-fim" aria-labelledby="h-modfim">
         <span class="mod-fim-ic">${ICONES.trofeu}</span>
         <p class="fim-rot">Módulo concluído</p>
-        <h2 id="h-modfim">Você concluiu o Módulo ${md.num}!</h2>
+        <h2 id="h-modfim">Você concluiu o ${h(md.rot)} ${md.num}!</h2>
         <p class="mod-fim-txt">Parabéns por mais um passo na sua jornada de transformação.</p>
         <div class="mod-fim-prox">
           <p class="mod-fim-rot">Seu próximo módulo</p>
           <section class="mp-heroi${liberado(pm) ? "" : " trancado"}">
-            <span class="capa">${img(PM.capa, "Módulo " + PM.num + " — " + titulo(PM.titulo))}</span>
+            <span class="capa">${img(PM.capa, PM.rot + " " + PM.num + " — " + titulo(PM.titulo))}</span>
             ${liberado(pm) ? "" : `<span class="mod-fim-cad">${ICONES.cadeado}</span>`}
           </section>
           <div class="mp-heroi-txt">
-            <p class="mp-rot">Módulo ${PM.num}</p>
+            <p class="mp-rot">${h(PM.rot)} ${PM.num}</p>
             <h3 class="serif mod-fim-nome">${h(PM.titulo)}</h3>
             <p class="mp-desc">${h(PM.intro)}</p>
           </div>
@@ -893,12 +893,12 @@ export function montar(raiz: HTMLElement) {
           ${playerHtml(au.id, au.capa, true, Object.assign({ titulo: au.titulo, ultima: ultimaDoMod }, R))}
           <div class="pagina">
             ${modFimAqui ? cardModFim : ""}
-            <p class="aula-local"><b>Módulo ${md.num} · Aula ${a + 1}</b></p>
+            <p class="aula-local"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${a + 1}</b></p>
             <div class="dois-botoes">
               <button class="nav-ant" data-a="anterior" ${m === 0 && a === 0 ? "disabled" : ""}>${ICONES.chev_esq}Aula anterior</button>
               ${botaoProx}
             </div>
-            ${abasConteudo({ rot: R, idTxt: "Módulo " + md.num + " · Aula " + (a + 1), titulo: au.titulo, sobre: au.texto, aviso: md.aviso, instr: au.exercicio, pdf, extras })}
+            ${abasConteudo({ rot: R, idTxt: md.rot + " " + md.num + " · " + md.rotAula + " " + (a + 1), titulo: au.titulo, sobre: au.texto, aviso: md.aviso, instr: au.exercicio, pdf, extras })}
             ${secaoComs(au.id, R.comentar)}
             ${prox.length ? `
             <section class="prox-aulas" aria-labelledby="h-prox">
@@ -906,7 +906,7 @@ export function montar(raiz: HTMLElement) {
               ${prox.map((x, j) => { const i = a + 1 + j; const ei = estadoAula(m, i), fech = !!ei.fech; return `
               <button class="prox-card${fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
                 <span class="capa">${img(x.capa, "")}<span class="prox-play">${fech ? '<span class="cadeado"></span>' : ""}</span></span>
-                <span class="prox-info"><b>Módulo ${md.num} · Aula ${i + 1}</b><span>${h(x.titulo)}</span>${fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ei.txt)}</span>` : `<em>Disponível</em>`}</span>
+                <span class="prox-info"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${i + 1}</b><span>${h(x.titulo)}</span>${fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ei.txt)}</span>` : `<em>Disponível</em>`}</span>
                 ${fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
               </button>`; }).join("")}
             </section>` : ""}
@@ -1212,7 +1212,7 @@ export function montar(raiz: HTMLElement) {
         <p class="pa-rot" id="h-onde-rot">Onde você está</p>
         <button class="jn-onde-card" data-a="aula" data-m="${c.m}" data-i="${c.a}">
           <span class="la-capa">${img(md.aulas[c.a].capa, "")}<span class="la-ic">${ICONES.play}</span></span>
-          <span class="la-info"><b>Módulo ${md.num} · Aula ${c.a + 1}</b><span id="h-onde">${h(md.aulas[c.a].titulo)}</span><em>${ps > 0 ? "Em andamento" : "Ainda não começou"}</em></span>
+          <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${c.a + 1}</b><span id="h-onde">${h(md.aulas[c.a].titulo)}</span><em>${ps > 0 ? "Em andamento" : "Ainda não começou"}</em></span>
         </button>
         <button class="botao largo" data-a="aula" data-m="${c.m}" data-i="${c.a}"><span class="ic-play"></span>Continuar assistindo</button>
       </section>`;
@@ -1222,11 +1222,11 @@ export function montar(raiz: HTMLElement) {
       if (!fs.length) return "";
       return `
         <div class="jn-grupo">
-          <div class="jn-grupo-topo"><b>Módulo ${md.num} — ${h(titulo(md.titulo))}</b><span>${fs.length} de ${md.aulas.length}</span></div>
+          <div class="jn-grupo-topo"><b>${h(md.rot)} ${md.num} — ${h(titulo(md.titulo))}</b><span>${fs.length} de ${md.aulas.length}</span></div>
           ${fs.map(([ai, t]) => `
           <button class="la-item" data-a="aula" data-m="${mi}" data-i="${ai}">
             <span class="la-capa">${img(t.capa, "")}<span class="la-ic">✓</span></span>
-            <span class="la-info"><b>Módulo ${md.num} · Aula ${ai + 1}</b><span>${h(t.titulo)}</span><em>Concluída</em></span>
+            <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(md.rotAula)} ${ai + 1}</b><span>${h(t.titulo)}</span><em>Concluída</em></span>
             <span class="la-assistir" aria-hidden="true">${ICONES.play}Rever</span>
           </button>`).join("")}
         </div>`;
@@ -1245,7 +1245,7 @@ export function montar(raiz: HTMLElement) {
       </section>
       ${onde}
       <section class="secao jn-prog"><div class="secao-topo"><h2 class="serif">Seu progresso por módulo</h2></div>
-        <div class="cartao">${MODS().map((md, m) => (liberado(m) ? `<div class="prog-mod"><div><span>Módulo ${md.num} · ${h(titulo(md.titulo))}</span><span class="apoio">${feitasMod(m)}/${md.aulas.length}</span></div><div class="barra"><i style="width:${md.aulas.length ? (feitasMod(m) / md.aulas.length) * 100 : 0}%"></i></div></div>` : "")).join("")}
+        <div class="cartao">${MODS().map((md, m) => (liberado(m) ? `<div class="prog-mod"><div><span>${h(md.rot)} ${md.num} · ${h(titulo(md.titulo))}</span><span class="apoio">${feitasMod(m)}/${md.aulas.length}</span></div><div class="barra"><i style="width:${md.aulas.length ? (feitasMod(m) / md.aulas.length) * 100 : 0}%"></i></div></div>` : "")).join("")}
           <p class="apoio" style="margin-top:10px">Os próximos módulos aparecem aqui quando forem liberados.</p></div></section>
       <section class="jn-feitas" aria-labelledby="h-feitas">
         <p class="pa-rot" id="h-feitas">Aulas que você já assistiu</p>
@@ -1537,7 +1537,7 @@ export function montar(raiz: HTMLElement) {
       case "pdf-ver": {
         const c = conteudoAtual(); const lista = c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
         const x = (lista || []).find((y) => y.id === d.id); if (!x) return;
-        const tit = (c.tipo === "aula" ? "Módulo " + c.md.num + " · Aula " + (c.a + 1) : c.curso.nome) + " — PDF";
+        const tit = (c.tipo === "aula" ? c.md.rot + " " + c.md.num + " · " + c.md.rotAula + " " + (c.a + 1) : c.curso.nome) + " — PDF";
         const nome = (x.titulo || c.titulo || "material").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf";
         if (x.url) { abrirPdf(x.url, tit, nome); return; }
         void api.enderecoDoArquivo("materiais", x.arquivoPath).then((u) => (u ? abrirPdf(u, tit, nome) : aviso("Não conseguimos abrir o PDF agora. Tente de novo.")));
