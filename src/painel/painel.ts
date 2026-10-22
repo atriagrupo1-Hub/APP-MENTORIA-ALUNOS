@@ -1982,7 +1982,7 @@ export function montar(app: HTMLElement) {
    */
   function telaAbas() {
     const jor = curso(S.config.jornada)?.cat || "";
-    const sel = cat(ui.layAba) ? ui.layAba : S.cats.find((k) => k.id !== jor)?.id || S.cats[0]?.id || "";
+    const sel = ui.layAba === "inicio" ? "inicio" : cat(ui.layAba) ? ui.layAba : S.cats.find((k) => k.id !== jor)?.id || S.cats[0]?.id || "";
     const ic = { inicio: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>`, seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`, estrela: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.5l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg>`, livro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg>` };
     const nCat = (k: Cat) => S.cursos.filter((c) => c.cat === k.id).length;
     const ponto = (e: Estado3) => `<i class="ab-ponto ${EST3[e][1]}" title="${e === "ativo" ? "Ativa" : e === "bloqueado" ? "Bloqueada" : "Oculta"}"></i>`;
@@ -2022,7 +2022,7 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao" data-a="dest-editar" data-id="${d.id}">${IC_ABAC.lapis}Editar</button>
           </div>`; }).join("") || `<div class="cl-vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}</div>`;
     }
-    if (cat(sel)) {
+    if (sel !== "inicio" && cat(sel)) {
       const k = cat(sel)!, cs = S.cursos.filter((c) => c.cat === k.id), pub = k.pub;
       det = `
         <div class="ab-cab">
@@ -2049,8 +2049,16 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa ab">
       ${guia}
-      <div class="ab-dupla">${lista}<div class="ab-det">${det || `<div class="cl-vazio">Nenhuma aba. Use Nova aba.</div>`}</div></div>
-      <div class="ab-det ab-inicio">${inicio}</div>
+      <div class="ab-dupla">
+        <div class="ab-col">
+          ${lista}
+          <aside class="ab-lista ab-escura" aria-label="Destaques do Início">
+            <h3>Destaques do Início</h3>
+            <button type="button" class="ab-item" data-a="lay-aba" data-v="inicio" aria-pressed="${sel === "inicio"}"><span class="ab-item-ic">${ic.inicio}</span><span class="ab-item-txt"><b>Início</b><em>${p(S.destaques.length, "destaque", "destaques")} · ${S.config.exibirDestaques ? "exibindo" : "escondidos"}</em></span><i class="ab-ponto ${S.config.exibirDestaques ? "verde" : "vermelho"}"></i></button>
+          </aside>
+        </div>
+        <div class="ab-det">${sel === "inicio" ? inicio : det || `<div class="cl-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
+      </div>
       ${ui.destEditar ? editarDestaque() : ""}
     </section>`;
   }
