@@ -1368,3 +1368,8 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 /* Número do novo módulo, já com o próximo da sequência */
 .cs-add-num { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--texto-3); }
 .cs-add-num select { width: 84px; }
+
+/* "Módulo N — nome" com a ajuda logo depois do nome */
+.cs-mod-nome { flex: 1 1 auto; display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+.cs-mod-nome .cs-mod-txt { flex: 0 1 auto; }
+.linha .nome b .ajuda-amarela { vertical-align: middle; margin-left: 2px; }
