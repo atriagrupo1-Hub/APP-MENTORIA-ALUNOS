@@ -1962,7 +1962,10 @@ export function montar(app: HTMLElement) {
               <b class="cl-nome">${h(d.titulo)}</b>
               <span class="cl-desc">${h(d.rotulo)} · ${h(destinoTxt(d))}</span>
               <span class="cl-estado">
-                <button type="button" class="est3-pil ${d.visivel ? "verde" : "vermelho"}" data-a="dest-visivel" data-id="${d.id}" title="${d.visivel ? "Esconder do Início" : "Mostrar no Início"}">${d.visivel ? IC_LAY.olho : IC_OLHO_X}${d.visivel ? "Ativa" : "Desativada"}</button>
+                <span class="est3">
+                  <button type="button" class="est3-pil ${d.visivel ? "verde" : "vermelho"}" data-a="estado-menu" data-v="dest:${d.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "dest:" + d.id}" title="Mudar o estado">${d.visivel ? IC_LAY.olho : IC_OLHO_X}${d.visivel ? "Ativa" : "Oculta"}</button>
+                  ${ui.estMenu === "dest:" + d.id ? `<span class="est3-menu" role="menu">${([[true, "Ativa", "verde", IC_LAY.olho, "Aparece no Início da aluna"], [false, "Oculta", "vermelho", IC_OLHO_X, "Não aparece no Início da aluna"]] as [boolean, string, string, string, string][]).map(([v2, n, cor, ic, txt]) => `<button type="button" role="menuitemradio" aria-checked="${v2 === d.visivel}" data-a="dest-estado" data-v="${d.id}:${v2 ? "ativa" : "oculta"}"><span class="est3-pil ${cor}">${ic}${n}</span><em>${txt}</em></button>`).join("")}</span>` : ""}
+                </span>
                 ${d.visivel ? `<button type="button" class="cl-olho" data-a="cs-ver-aluna" title="Ver na área da aluna" aria-label="Ver ${h(d.titulo)} na área da aluna">${IC_LAY.olho}</button>` : ""}
               </span>
             </div>
@@ -3648,7 +3651,8 @@ export function montar(app: HTMLElement) {
       }
       case "dest-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["dest-" + ui.destEditar]; ui.destEditar = null; ui.sujo = null; break;
       case "dest-imagem": imgPara = { form: 'form[data-f="dest-salvar"]', campo: "imagem", previa: "dest-" + d.id, pasta: "destaques" }; arquivoImg.click(); return;
-      case "dest-visivel": {
+      case "dest-estado": case "dest-visivel": {
+        if (a === "dest-estado") { ui.estMenu = ""; const [id2, est] = d.v.split(":"); d.id = id2; if (S.destaques.find((k) => k.id === id2)?.visivel === (est === "ativa")) break; }
         const x = S.destaques.find((k) => k.id === d.id)!; const on = !x.visivel;
         void executar(async () => { falhou(await supabase.from("destaques_inicio").update({ visivel: on }).eq("id", x.id).select("id").single()); return { msg: on ? x.titulo + " aparece no Início." : x.titulo + " foi escondido do Início.", texto: "destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").update({ visivel: !on }).eq("id", x.id).select("id").single()); } }; });
         return;
