@@ -2109,3 +2109,13 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ab-escura .ab-item-ic { color: #e3bd6e; background: rgba(227, 189, 110, .14); }
 .ab-escura .ab-item[aria-pressed="true"] { color: #1a140a; background: linear-gradient(180deg, #f3dca8, #e6c27a); border-color: #c9a04e; }
 .ab-escura .ab-item[aria-pressed="true"] .ab-item-ic { color: #1a140a; background: rgba(255, 255, 255, .55); }
+/* A aba escolhida em cartão (como o cartão de curso) */
+.ab-abacard-linha { padding: 22px 24px 4px; }
+.ab-abacard { width: min(380px, 100%); }
+.ab-abacard .cur-sem-capa { padding: 0 20px; text-align: center; }
+.ab-abacard-tit { cursor: default; }
+.ab-abacard .cur-linha-est svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.ab-abacard .cur-botoes { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px; }
+.ab-abacard .cur-botoes .al-botao-ouro { justify-content: center; gap: 6px; }
+.ab-abacard .cur-botoes svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ab-capa-q { aspect-ratio: 16 / 9; }
