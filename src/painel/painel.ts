@@ -2336,7 +2336,6 @@ export function montar(app: HTMLElement) {
     if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
     const aba = ui.cursoAba || "visao";
     const todas = alunasDoCurso(c);
-    const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a)).length;
     const capa = capaSite(c.capa);
     const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["config", "Configurações"], ["relatorios", "Relatórios"]];
     const conteudo = aba === "modulos" ? modulosCurso(c)
@@ -2361,12 +2360,6 @@ export function montar(app: HTMLElement) {
           <span class="cs-etq">Curso</span>
           <h1>${h(c.nome)}</h1>
           ${c.descricao ? `<p>${h(c.descricao)}</p>` : ""}
-          <div class="cs-heroi-nums">
-            <span>${IC_CUR.pessoas}<b>${ativas}</b><em>alunas ativas</em></span>
-            <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>módulos</em></span>
-            <span>${IC_CURSO.play}<b>${totalAulas(c)}</b><em>aulas</em></span>
-            <span>${IC_CUR.cal}<b>${c.criado ? br(diaDe(c.criado)) : "—"}</b><em>Data de criação</em></span>
-          </div>
         </div>
         <div class="cs-heroi-acoes">
           <span class="eng-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Mais opções" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
@@ -3206,7 +3199,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       }
       case "abrir-curso": {
         ui.curso = d.id; ui.tab = "curso"; ui.editando = null; ui.cursoAba = d.v || "visao"; ui.curAlBusca = ""; ui.curAlFiltro = ""; ui.curAlDe = ""; ui.curAlAte = "";
-        const c = curso(d.id); if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
+        ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
       }
       case "curso-novo": ui.modal = { tipo: "curso" }; break;
@@ -3951,7 +3944,6 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
-        const c = S.cursos[0]; if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
       }
     } catch (e) {
       eu = null;
