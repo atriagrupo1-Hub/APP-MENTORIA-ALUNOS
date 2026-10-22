@@ -1970,9 +1970,17 @@ export function montar(app: HTMLElement) {
           <button type="button" class="al-botao-ouro" data-a="cat-criar" data-id="${aba ? aba.id : S.cats[0]?.id || ""}">${IC_ABAC.mais}Nova categoria</button>
         </div>
         <div class="ac-cats">
-          <h3>${todas ? "Todas as categorias" : "Categorias desta aba"} (${daAba.length}) ${ajuda("o-que-e-categoria", "O que é uma categoria", `<span>A categoria fica dentro de uma aba. No aplicativo, aparece como um botão e um cartão dentro da aba.</span>${niveis}<em>O que fazer: clique numa categoria para ver os cursos e conteúdos dela; arraste para mudar a ordem.</em>`)}</h3>
-          ${daAba.length ? `<div class="cur-grade ac-cat-cards">${daAba.map((c) => { const img = capaSite(c.capa); const dias = c.criado ? diasEntre(diaDe(c.criado), hoje()) : -1; return `
-            <article class="cur-card ac-catcard${c.id === filtroProd ? " sel" : ""}" draggable="true" data-arrasta="${c.id}">
+          <div class="ac-abas ac-catbtns" role="group" aria-label="Categorias desta aba">
+            <span class="ac-rot">Categorias: ${ajuda("o-que-e-categoria", "O que é uma categoria", `<span>A categoria fica dentro de uma aba. No aplicativo, aparece como um botão e um cartão dentro da aba.</span>${niveis}<em>O que fazer: clique numa categoria para ver e editar; arraste o botão para mudar a ordem.</em>`)}</span>
+            ${daAba.map((c) => { const img = capaSite(c.capa); return `<button type="button" class="ac-aba ac-catbtn" data-a="lay-cat" data-v="${c.id}" aria-pressed="${c.id === filtroProd}" draggable="true" data-arrasta="${c.id}"><span class="ac-catbtn-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>${h(c.nome)}${todas ? `<small>${h(cat(c.cat)?.nome || "")}</small>` : ""}</button>`; }).join("") || `<span class="ac-nada">Nenhuma categoria nesta aba ainda.</span>`}
+          </div>
+        </div>
+      </div>
+      ${prod ? (() => { const c = prod; const img = capaSite(c.capa); const dias = c.criado ? diasEntre(diaDe(c.criado), hoje()) : -1; return `
+      <div class="ac-sel">
+        <div class="ac-sel-card">
+          <p class="ac-sel-rot">Categoria</p>
+          <article class="cur-card ac-catcard" draggable="true" data-arrasta="${c.id}">
               <button type="button" class="cur-capa" data-a="lay-cat" data-v="${c.id}" aria-label="Ver os cursos de ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}<span class="ac-catcard-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span></button>
               <div class="cur-corpo">
                 <button type="button" class="cur-tit" data-a="lay-cat" data-v="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
@@ -1984,17 +1992,18 @@ export function montar(app: HTMLElement) {
                 </div>
                 <div class="cur-botoes"><button type="button" class="al-botao ac-catcard-ed" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_ABAC.lapis}Editar</button></div>
               </div>
-            </article>`; }).join("")}</div>` : `<div class="cl-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`}
+            </article>
         </div>
-      </div>
-      ${prod ? `
+        <div class="ac-sel-cursos">
       <div class="ac-cursos-cab">
         <div><h2>Cursos e conteúdos da categoria: ${h(prod.nome)} ${ajuda("o-que-e-curso", "Cursos e conteúdos", `<span>O que a aluna abre dentro da categoria: os módulos e as aulas.</span>${niveis}`)}</h2><p>Gerencie os cursos e conteúdos que aparecem nesta categoria.</p></div>
         <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
         <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["categorias", "Ordem da área de membros"], ["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
         <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
-      <div class="vazio ac-sem-cursos">Nenhum curso nesta categoria ainda. Os cursos e conteúdos de ${h(prod.nome)} vão aparecer aqui.</div>` : ""}
+      <div class="vazio ac-sem-cursos">Nenhum curso nesta categoria ainda. Os cursos e conteúdos de ${h(prod.nome)} vão aparecer aqui.</div>
+        </div>
+      </div>`; })() : ""}
     </section>`;
   }
   /*
