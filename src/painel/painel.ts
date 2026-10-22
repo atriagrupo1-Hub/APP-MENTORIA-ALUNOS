@@ -184,8 +184,11 @@ async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ da
   }
 }
 
-async function lerTudo(eu: Eu): Promise<Dados> {
-  const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await Promise.all([
+async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
+  // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
+  const euP = Promise.resolve(quem);
+  const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
+  const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
     supabase.from("modulos").select("id, produto_id, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque").not("produto_id", "is", null).order("ordem"),
@@ -198,8 +201,7 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.rpc("comentarios_para_moderacao", { p_aula: null }),
     supabase.rpc("contatos_das_alunas"),
   ]);
-  // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests, vivos] = await Promise.all([
+  const ondaB = Promise.all([
     supabase.rpc("engajamento_alunas"),
     emPaginas((de, ate) => supabase.rpc("aulas_concluidas_alunas").order("aluna_id").order("aula_id").range(de, ate)),
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
@@ -213,6 +215,9 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
   ]);
+  const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await ondaA;
+  // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests, vivos] = await ondaB;
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -321,8 +326,9 @@ async function lerTudo(eu: Eu): Promise<Dados> {
     }));
 
   let equipe: Pessoa[] = [];
-  if (eu.papel !== "Suporte") {
-    const r = falhou(await supabase.rpc("equipe_do_painel"));
+  const eqR = await equipeP;
+  if (eqR) {
+    const r = falhou(eqR);
     equipe = ((r.data ?? []) as Record<string, unknown>[]).map((e) => ({
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
@@ -3921,13 +3927,17 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   /* ---------- sessão ---------- */
   async function abrirSessao(acabouDeEntrar: boolean) {
     try {
-      eu = await quemSouEu();
+      // Quem é e os dados saem juntos; se não for da equipe, os dados são descartados.
+      const euP = quemSouEu();
+      const dadosP = lerTudo(euP);
+      dadosP.catch(() => {});
+      eu = await euP;
       if (!eu) {
         if (acabouDeEntrar) ui.erroLogin = "Este acesso não é da equipe do painel.";
         await api.sair();
         return;
       }
-      S = await lerTudo(eu);
+      S = await dadosP;
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
         const c = S.cursos[0]; if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
