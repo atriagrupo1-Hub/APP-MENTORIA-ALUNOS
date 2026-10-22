@@ -2616,6 +2616,24 @@ export function montar(app: HTMLElement) {
       <label class="grupo eb-cor"><span class="rotulo-ajuda mp-rot">Cor</span><span class="eb-cor-linha"><input type="color" class="campo-cor" name="${campo}Cor" value="${h(cor)}" data-eb-cor /><button type="button" class="eb-padrao" data-a="eb-padrao" data-v="${campo}">Cor padrão</button></span></label>
       <div class="grupo eb-previa"><span class="rotulo-ajuda mp-rot">Como a aluna vê</span><span class="eb-fundo"><span class="eb-botao" style="${estiloBotao(cor)}">${icone}<b>${h(nome)}</b></span></span></div>
     </div>`;
+  // Ordinal do título de cada opção extra do e-book (a 1ª opção é o próprio PDF).
+  const ORDINAL = ["Segunda", "Terceira", "Quarta", "Quinta", "Sexta", "Sétima", "Oitava", "Nona", "Décima"];
+  type OpcaoEbook = { rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf" };
+  function blocoOpcao(k: number, op: OpcaoEbook) {
+    const t = op.tipo;
+    return `
+              <div class="ea-op2" data-op-bloco>
+                <div class="ea-op2-tit"><span data-op-tit>${ORDINAL[k] || k + 2 + "ª"} opção</span> ${k === 0 ? dicaCampo(AJ.op2) : ""}${k > 0 ? `<button type="button" class="ea-op-tirar" data-a="op-tirar">${IC_MOD.lixo}Tirar esta opção</button>` : ""}</div>
+                ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor, IC_ORAR_BT)}
+                <div class="ea-op2-linha">
+                  <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
+                    <select class="campo" name="op${k}Tipo" data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, n]) => `<option value="${v}"${t === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+                </div>
+                <label class="grupo" data-op2="texto"${t === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op${k}Texto" rows="6" placeholder="Escreva aqui o texto deste botão. Uma linha em branco separa parágrafo."></textarea></label>
+                <label class="grupo" data-op2="video"${t === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op${k}Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+                <label class="grupo" data-op2="arquivo"${t === "audio" || t === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot" data-op2-rot>${t === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op${k}Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
+              </div>`;
+  }
   function telaAula() {
     const x = ui.aula ? acharAula(ui.aula) : null;
     if (!x) return `<section class="tela ativa"><div class="vazio">Nenhuma aula aberta. Abra uma pela lista do curso.</div></section>`;
@@ -2659,17 +2677,8 @@ export function montar(app: HTMLElement) {
             <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
           <div class="ea-ebook" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
             ${editorBotao("botaoEbook", "Nome do botão do e-book " + dicaCampo(AJ.botaoEbook), "Ler ebook completo", COR_BOTAO, IC_LIVRO_BT)}
-            <div class="ea-op2">
-              <div class="ea-op2-tit">Segunda opção ${dicaCampo(AJ.op2)}</div>
-              ${editorBotao("op2Rotulo", "Nome do botão", "Ler apenas as orações", COR_BOTAO, IC_ORAR_BT)}
-              <div class="ea-op2-linha">
-                <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
-                  <select class="campo" name="op2Tipo" data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, t]) => `<option value="${v}"${(ui.op2Tipo || "texto") === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
-              </div>
-              <label class="grupo" data-op2="texto"${(ui.op2Tipo || "texto") === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op2Texto" rows="6" placeholder="Escreva aqui somente as orações do e-book. Uma linha em branco separa parágrafo."></textarea></label>
-              <label class="grupo" data-op2="video"${ui.op2Tipo === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (Cloudflare Stream)</span><input class="campo" name="op2Video" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
-              <label class="grupo" data-op2="arquivo"${ui.op2Tipo === "audio" || ui.op2Tipo === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot" data-op2-rot>${ui.op2Tipo === "pdf" ? "Arquivo PDF" : "Arquivo de áudio"}</span><span class="ea-arq"><input class="campo" name="op2Arquivo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
-            </div>
+            <div class="ea-ops" data-ops>${blocoOpcao(0, { rotulo: "Ler apenas as orações", cor: COR_BOTAO, tipo: "texto" })}</div>
+            <button type="button" class="al-botao ea-op-add" data-a="op-add">${IC_CURSO.mais}Adicionar outra opção</button>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>
             <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
@@ -3455,6 +3464,20 @@ export function montar(app: HTMLElement) {
       case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
+      case "op-add": {
+        const box = document.querySelector<HTMLElement>("[data-ops]"); if (!box) return;
+        const n = box.querySelectorAll("[data-op-bloco]").length;
+        box.insertAdjacentHTML("beforeend", blocoOpcao(n, { rotulo: "", cor: COR_BOTAO, tipo: "texto" }));
+        if (ui.aula) ui.sujo = { f: "aula", id: ui.aula };
+        box.querySelectorAll<HTMLInputElement>("[data-op-bloco]")[n]?.querySelector<HTMLInputElement>("[data-eb-nome]")?.focus();
+        return;
+      }
+      case "op-tirar": {
+        el.closest("[data-op-bloco]")?.remove();
+        document.querySelectorAll<HTMLElement>("[data-ops] [data-op-tit]").forEach((x, k) => { x.textContent = (ORDINAL[k] || k + 2 + "ª") + " opção"; });
+        if (ui.aula) ui.sujo = { f: "aula", id: ui.aula };
+        return;
+      }
       case "eb-padrao": { const c = document.querySelector<HTMLInputElement>('[data-eb="' + d.v + '"] [data-eb-cor]'); if (c) { c.value = COR_BOTAO; c.dispatchEvent(new Event("input", { bubbles: true })); } return; }
       case "aula-arquivo": arquivoAula.accept = (document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf") ? "application/pdf,.pdf" : "audio/*"; arquivoAula.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
@@ -3996,10 +4019,10 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-op2-tipo")) {
-      ui.op2Tipo = t.value;
-      document.querySelectorAll<HTMLElement>("[data-op2]").forEach((g) => { g.hidden = g.dataset.op2 !== (t.value === "audio" || t.value === "pdf" ? "arquivo" : t.value); });
-      const r = document.querySelector<HTMLElement>("[data-op2-rot]"); if (r) r.textContent = t.value === "pdf" ? "Arquivo PDF" : "Arquivo de áudio";
-      const ca = document.querySelector<HTMLInputElement>('input[name="op2Arquivo"]'); if (ca) ca.value = "";
+      const bl = t.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return;
+      bl.querySelectorAll<HTMLElement>("[data-op2]").forEach((g) => { g.hidden = g.dataset.op2 !== (t.value === "audio" || t.value === "pdf" ? "arquivo" : t.value); });
+      const r = bl.querySelector<HTMLElement>("[data-op2-rot]"); if (r) r.textContent = t.value === "pdf" ? "Arquivo PDF" : "Arquivo de áudio";
+      const ca = bl.querySelector<HTMLInputElement>('input[name$="Arquivo"]'); if (ca) ca.value = "";
       return;
     }
     if (t.hasAttribute("data-aula-tipo")) {

@@ -1530,3 +1530,8 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .eb-botao b { color: inherit !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
 .eb-botao svg { color: inherit; width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
+.ea-ops { display: flex; flex-direction: column; gap: 14px; }
+.ea-op-add { align-self: flex-start; }
+.ea-op2-tit { flex-wrap: wrap; }
+.ea-op-tirar { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 0; font: inherit; font-family: Lato, system-ui, sans-serif; font-size: 13px; color: var(--aa-verm); background: none; border: 0; cursor: pointer; }
+.ea-op-tirar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
