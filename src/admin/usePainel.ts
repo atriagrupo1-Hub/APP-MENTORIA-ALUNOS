@@ -79,6 +79,7 @@ export function usePainel() {
   const [catalogo, setCatalogo] = useState<Catalogo>({
     modulos: [],
     categorias: [],
+    abas: null,
     aoVivo: {},
     produtos: [],
     produtoJornada: null,

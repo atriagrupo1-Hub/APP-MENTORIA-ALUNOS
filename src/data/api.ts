@@ -175,6 +175,7 @@ type LinhaCategoria = {
   destacada: boolean;
   bloqueada_geral: boolean;
   publicado?: boolean;
+  aba_id?: string | null;
 };
 
 type LinhaPresente = {
@@ -290,7 +291,7 @@ export async function minhasAberturas(): Promise<Map<string, string>> {
 }
 
 export async function carregarCatalogo(): Promise<Catalogo> {
-  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes] =
+  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes, abas] =
     await Promise.all([
       supabase.from("modulos").select("*").order("ordem"),
       supabase.from("aulas").select("*").order("ordem"),
@@ -300,6 +301,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
+      supabase.from("abas").select("id, titulo, icone, ordem").eq("publicado", true).order("ordem"),
     ]);
 
   for (const r of [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos]) {
@@ -471,6 +473,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       destacada: c.destacada,
       bloqueadaGeral: c.bloqueada_geral,
       publicado: c.publicado !== false,
+      abaId: c.aba_id ?? null,
       presentes: (porCategoriaPresentes.get(c.id) ?? []).sort((x, y) => x.ordem - y.ordem),
       produtos: listaProdutos
         .filter((p) => p.categoriaId === c.id)
@@ -498,6 +501,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
   return {
     modulos: listaModulos,
     categorias: listaCategorias,
+    // Sem a tabela de abas (erro de leitura), a área volta à aba Presentes de antes.
+    abas: abas.error ? null : ((abas.data ?? []) as Array<{ id: string; titulo: string; icone: string }>).map((a) => ({ id: a.id, titulo: a.titulo, icone: a.icone })),
     aoVivo: mapaAoVivo,
     produtos: listaProdutos,
     produtoJornada:
