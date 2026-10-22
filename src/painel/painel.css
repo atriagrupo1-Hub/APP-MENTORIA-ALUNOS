@@ -1352,7 +1352,8 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
   .cur-grade.em-lista .cur-capa { grid-area: capa; align-self: center; width: 100%; height: auto; aspect-ratio: 2.9 / 1; min-height: 0; border-radius: 12px 0 0 12px; }
   .cur-grade.em-lista .cur-tit { grid-area: tit; padding-top: 12px; }
   .cur-grade.em-lista .cur-linha { grid-area: cat; margin-top: 4px; }
-  .cur-grade.em-lista .cur-stats { grid-area: stats; align-self: center; padding: 8px 0; }
+  .cur-grade.em-lista .cur-stats { grid-area: stats; align-self: center; grid-template-columns: repeat(2, 150px); justify-content: start; gap: 8px 8px; padding: 8px 0; }
+  .cur-grade.em-lista .cur-stats > span { grid-template-columns: auto 1fr; justify-self: stretch; }
   .cur-grade.em-lista .cur-botoes { grid-area: botoes; grid-template-columns: repeat(2, 150px); gap: 8px; margin: 0 0 12px; padding: 0; }
   .cur-grade.em-lista .cur-botoes button { min-height: 32px !important; height: 32px; padding: 0 12px; font-size: 13px; }
   .cur-grade.em-lista .cur-menu { grid-area: menu; position: relative; top: auto; right: auto; align-self: start; margin-top: 10px; }
