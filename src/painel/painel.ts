@@ -1903,25 +1903,27 @@ export function montar(app: HTMLElement) {
       const img = capaCat(k), aba = abaDe(k.aba);
       const onde = k.id === jor ? "Início e Módulos" : aba ? "Aba " + aba.nome : "Sem aba";
       return `
-        <div class="cl2-linha${ui.catEditar === k.id ? " sel" : ""}" draggable="true" data-arrasta="${k.id}">
-          <span class="cl2-alca" title="Arraste para mudar a ordem">${IC_LAY.alca}</span>
-          <span class="cl2-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-          <span class="cl2-txt"><b>${h(k.nome)}</b>${k.descricao ? `<span>${h(k.descricao)}</span>` : ""}<span class="cl2-onde${!aba && k.id !== jor ? " cl2-sem" : ""}">${IC_LAY.aba}${h(onde)}</span></span>
-          <span class="cl2-meta">${resumoCat(k)}</span>
-          <span class="cl2-est">${seletorEstado("cat", k.id, estadoCat(k), false, true)}</span>
-          <span class="cl2-acoes">
-            ${ord ? `<button type="button" class="cl2-ic" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button><button type="button" class="cl2-ic" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>` : ""}
+        <article class="cl2-card cat${ui.catEditar === k.id ? " sel" : ""}" draggable="true" data-arrasta="${k.id}">
+          <div class="cl2-card-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<span class="cl2-alca-img" title="Arraste para mudar a ordem">${IC_LAY.alca}</span><span class="cl2-num">${i + 1}</span></div>
+          <div class="cl2-card-corpo">
+            <b class="cl2-cat-nome">${h(k.nome)}</b>
+            ${k.descricao ? `<span>${h(k.descricao)}</span>` : ""}
+            <span class="cl2-meta">${resumoCat(k)}</span>
+            <span class="cl2-onde${!aba && k.id !== jor ? " cl2-sem" : ""}">${IC_LAY.aba}${h(onde)}</span>
+            ${seletorEstado("cat", k.id, estadoCat(k), false, true)}
+          </div>
+          <div class="cl2-card-acoes">
+            ${ord ? `<button type="button" class="cl2-ic" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Mover para a esquerda">←</button><button type="button" class="cl2-ic" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Mover para a direita">→</button>` : ""}
             <button type="button" class="cl2-ic" data-a="cat-abrir-editar" data-id="${k.id}" title="Editar" aria-label="Editar ${h(k.nome)}">${IC_LAY.lapis}</button>
             <button type="button" class="cl2-ic" data-a="cat-duplicar" data-id="${k.id}" title="Duplicar" aria-label="Duplicar ${h(k.nome)}">${IC_LAY.copia}</button>
             <button type="button" class="cl2-ic perigo" data-a="cat-remover" data-id="${k.id}" title="Excluir" aria-label="Excluir ${h(k.nome)}">${IC_CAT.lixo}</button>
             ${kebab("kb-cat:" + k.id, "Mais opções de " + k.nome, `<span class="kb-tit">Aparece na aba</span>${S.abas.map((a) => itemKb("cat-aba", k.id, a.id, a.nome, k.aba === a.id)).join("")}${itemKb("cat-aba", k.id, "", "Nenhuma aba", !k.aba)}<span class="kb-sep"></span>${itemKb("cs-ver-aluna", "", "", "Ver na área da aluna")}`)}
-          </span>
-        </div>`;
+          </div>
+        </article>`;
     };
     return `
     <section class="tela ativa cat">
-      <div class="cl2-dupla">
-        <div class="cl2-bloco">
+        <div class="cl2-bloco cl2-cats">
           <div class="cl2-cab">
             <span class="cl2-cab-ic">${IC_LAY.pasta}</span>
             <div class="cl2-cab-txt"><h2>Categorias da Área de Membros <span class="cl-num">${S.cats.length}</span></h2><p>Estas categorias aparecem como botões na área da aluna.</p></div>
@@ -1930,11 +1932,12 @@ export function montar(app: HTMLElement) {
               <button type="button" class="al-botao-ouro" data-a="cat-nova">${IC_LAY.mais}Nova categoria</button>
             </div>
           </div>
-          <div class="cl2-lista">${S.cats.map(linha).join("") || `<div class="cl-vazio">Nenhuma categoria.</div>`}</div>
+          ${S.cats.length ? `<div class="cl2-grade">${S.cats.map(linha).join("")}</div>` : `<div class="cl-vazio">Nenhuma categoria.</div>`}
         </div>
+      <div class="cl2-dupla">
+        ${blocoDestaques()}
         ${previaApp()}
       </div>
-      ${blocoDestaques()}
       ${blocoAbas()}
       ${ui.catEditar ? editarCategoria(anima) : ""}
       ${ui.destEditar ? editarDestaque() : ""}
@@ -1985,13 +1988,15 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao-ouro" data-a="dest-editar" data-id="novo">${IC_LAY.mais}Novo destaque</button>
           </div>
         </div>
-        ${n ? `<div class="cl2-grade">${S.destaques.map((d, i) => {
+        ${n ? `<div class="cl2-dlista">${S.destaques.map((d, i) => {
           const img = capaSite(d.imagem), chaveE = "dest:" + d.id;
           const alvo = d.destino === "presentes" ? ["Aba: Presentes", "Aba"] : ["Categoria: " + (cat(d.categoriaId)?.nome || d.categoriaNome || "—"), "Categoria"];
           return `
-          <article class="cl2-card${ui.destEditar === d.id ? " sel" : ""}" draggable="true" data-arrasta="${d.id}">
-            <div class="cl2-card-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<span class="cl2-alca-img" title="Arraste para mudar a ordem">${IC_LAY.alca}</span><span class="cl2-num">${i + 1}</span></div>
-            <div class="cl2-card-corpo">
+          <article class="cl2-drow${ui.destEditar === d.id ? " sel" : ""}" draggable="true" data-arrasta="${d.id}">
+            <span class="cl2-alca" title="Arraste para mudar a ordem">${IC_LAY.alca}</span>
+            <span class="cl2-dnum">${i + 1}</span>
+            <div class="cl2-dcapa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</div>
+            <div class="cl2-dtxt">
               <b>${h(d.titulo)}</b>
               <span>${h(alvo[0])}</span>
               <span>Direciona para: ${alvo[1]}</span>
@@ -2000,12 +2005,12 @@ export function montar(app: HTMLElement) {
                 ${ui.estMenu === chaveE ? `<span class="est3-menu" role="menu">${([[true, "Ativa", "verde", IC_LAY.olho, "Aparece no Início da aluna"], [false, "Oculta", "vermelho", IC_OLHO_X, "Não aparece no Início da aluna"]] as [boolean, string, string, string, string][]).map(([v2, nm, cor, ic, txt]) => `<button type="button" role="menuitemradio" aria-checked="${v2 === d.visivel}" data-a="dest-estado" data-v="${d.id}:${v2 ? "ativa" : "oculta"}"><span class="est3-pil ${cor}">${ic}${nm}</span><em>${txt}</em></button>`).join("")}</span>` : ""}
               </span>
             </div>
-            <div class="cl2-card-acoes">
+            <div class="cl2-acoes">
               ${ord ? `<button type="button" class="cl2-ic" data-a="dest-sobe" data-id="${d.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button><button type="button" class="cl2-ic" data-a="dest-desce" data-id="${d.id}" ${i === n - 1 ? "disabled" : ""} aria-label="Descer">↓</button>` : ""}
               <button type="button" class="cl2-ic" data-a="dest-editar" data-id="${d.id}" title="Editar" aria-label="Editar ${h(d.titulo)}">${IC_LAY.lapis}</button>
               <button type="button" class="cl2-ic" data-a="dest-duplicar" data-id="${d.id}" title="Duplicar" aria-label="Duplicar ${h(d.titulo)}">${IC_LAY.copia}</button>
               <button type="button" class="cl2-ic perigo" data-a="dest-remover" data-id="${d.id}" title="Excluir" aria-label="Excluir ${h(d.titulo)}">${IC_CAT.lixo}</button>
-              ${kebab("kb-dest:" + d.id, "Mais opções de " + d.titulo, `${itemKb("dest-sobe", d.id, "", "Mover para a esquerda", false, i === 0)}${itemKb("dest-desce", d.id, "", "Mover para a direita", false, i === n - 1)}<span class="kb-sep"></span>${itemKb("cs-ver-aluna", "", "", "Ver na área da aluna")}`)}
+              ${kebab("kb-dest:" + d.id, "Mais opções de " + d.titulo, `${itemKb("dest-sobe", d.id, "", "Subir", false, i === 0)}${itemKb("dest-desce", d.id, "", "Descer", false, i === n - 1)}<span class="kb-sep"></span>${itemKb("cs-ver-aluna", "", "", "Ver na área da aluna")}`)}
             </div>
           </article>`;
         }).join("")}</div>` : `<div class="cl-vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}
