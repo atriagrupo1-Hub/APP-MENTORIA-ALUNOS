@@ -3526,7 +3526,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "mod-add": {
         const c = curso(id)!;
         void executar(async () => {
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length, rotulo: c.modulos.at(-1)?.rot || "Módulo", rotulo_aula: c.modulos.at(-1)?.rotAula || "Aula" }).select("id").single());
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, titulo: v("nome").toUpperCase(), ordem: c.modulos.length, rotulo: c.modulos[c.modulos.length - 1]?.rot || "Módulo", rotulo_aula: c.modulos[c.modulos.length - 1]?.rotAula || "Aula" }).select("id").single());
           // A posição é a última da lista, qualquer que seja a `ordem` dos outros.
           const ids = c.modulos.map((m) => m.id); ids.splice(Math.min(Number(v("numero")) || 0, ids.length), 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: ids });
