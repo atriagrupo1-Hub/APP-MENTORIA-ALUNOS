@@ -2712,14 +2712,14 @@ export function montar(app: HTMLElement) {
         </form>
 
         <div class="ea-lado">
-          <section class="cs-cartao ea-capa">
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda">Capa da aula ${dicaCampo(AJ.capa)}</h3></div></div>
+          <section class="cs-cartao ea-capa${tipoA === "pdf" ? " em-pe" : ""}" data-capa-aula>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
             <div id="previaCapa" class="ea-capa-img" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)"></div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
-            <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+            <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
           </section>
 
-          <section class="cs-cartao ea-extra">
+          <section class="cs-cartao ea-extra" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
             <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
             <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
             <form data-f="extra-add" data-id="${a.id}" class="ea-extra-form">
@@ -4058,6 +4058,11 @@ export function montar(app: HTMLElement) {
       const gv = document.querySelector<HTMLElement>("[data-campo-video]"), ga = document.querySelector<HTMLElement>("[data-campo-arquivo]"), ra = document.querySelector<HTMLElement>("[data-rot-arquivo]");
       if (gv) gv.hidden = t.value !== "video"; if (ga) ga.hidden = t.value === "video";
       document.querySelectorAll<HTMLElement>("[data-campo-pdf]").forEach((gp) => { gp.hidden = t.value !== "pdf"; });
+      const pdf = t.value === "pdf";
+      document.querySelector("[data-capa-aula]")?.classList.toggle("em-pe", pdf);
+      const ct = document.querySelector("[data-capa-tit]"); if (ct) ct.textContent = pdf ? "Capa do e-book" : "Capa da aula";
+      const cd = document.querySelector("[data-capa-dica]"); if (cd) cd.textContent = pdf ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)";
+      const ex = document.querySelector<HTMLElement>("[data-extra-aula]"); if (ex) ex.hidden = pdf;
       const rd = document.querySelector<HTMLElement>("[data-rot-desc]"); if (rd) rd.textContent = t.value === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)";
       if (ra) ra.textContent = t.value === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio";
       const ca = document.querySelector<HTMLInputElement>('input[name="arquivoAula"]'); if (ca) ca.value = "";

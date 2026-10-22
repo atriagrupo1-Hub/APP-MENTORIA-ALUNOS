@@ -1550,3 +1550,5 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .ea-op-caixa .mp-dica { margin: 0; }
 .ea-op-capa { display: block; width: 100%; aspect-ratio: 16 / 9; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 8px; }
 @media (max-width: 900px) { .ea-op-topo, .ea-op-midia { grid-template-columns: minmax(0, 1fr); } }
+.ea-capa.em-pe .ea-capa-img { width: 220px; aspect-ratio: 2 / 3; align-self: center; }
+.ea-extra[hidden] { display: none; }
