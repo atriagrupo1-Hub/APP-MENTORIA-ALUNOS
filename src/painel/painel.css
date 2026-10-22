@@ -1347,13 +1347,14 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 /* Cursos em lista: capa à esquerda; nome, categoria, números e botões ao lado; menu ⋮ perto do conteúdo */
 @media (min-width: 641px) {
   .cur-grade.em-lista { gap: 14px; }
-  .cur-grade.em-lista .cur-card { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 600px) auto; grid-template-areas: "capa tit menu" "capa cat menu" "capa stats menu" "capa botoes menu"; grid-template-rows: auto auto 1fr auto; column-gap: 16px; width: fit-content; max-width: 100%; height: auto; padding: 0 12px 0 0; }
+  .cur-grade.em-lista .cur-card { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 520px) auto; grid-template-areas: "capa tit menu" "capa cat menu" "capa stats menu" "capa botoes menu"; grid-template-rows: auto auto 1fr auto; column-gap: 16px; width: fit-content; max-width: 100%; height: auto; padding: 0 12px 0 0; }
   .cur-grade.em-lista .cur-corpo { display: contents; }
-  .cur-grade.em-lista .cur-capa { grid-area: capa; width: 100%; height: 100%; aspect-ratio: auto; min-height: 152px; border-radius: 12px 0 0 12px; }
+  .cur-grade.em-lista .cur-capa { grid-area: capa; align-self: center; width: 100%; height: auto; aspect-ratio: 2.9 / 1; min-height: 0; border-radius: 12px 0 0 12px; }
   .cur-grade.em-lista .cur-tit { grid-area: tit; padding-top: 12px; }
   .cur-grade.em-lista .cur-linha { grid-area: cat; margin-top: 4px; }
   .cur-grade.em-lista .cur-stats { grid-area: stats; align-self: center; padding: 8px 0; }
-  .cur-grade.em-lista .cur-botoes { grid-area: botoes; margin: 0 0 12px; padding: 0; }
+  .cur-grade.em-lista .cur-botoes { grid-area: botoes; grid-template-columns: repeat(2, 150px); gap: 8px; margin: 0 0 12px; padding: 0; }
+  .cur-grade.em-lista .cur-botoes button { min-height: 32px !important; height: 32px; padding: 0 12px; font-size: 13px; }
   .cur-grade.em-lista .cur-menu { grid-area: menu; position: relative; top: auto; right: auto; align-self: start; margin-top: 10px; }
   .cur-grade.em-lista .cur-capa img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .cur-grade.em-lista .cur-mais { color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); }
