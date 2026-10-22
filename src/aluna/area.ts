@@ -81,7 +81,7 @@ export function montar(raiz: HTMLElement) {
           capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-            id: a.id, num: Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), conteudos: a.conteudos || [],
+            id: a.id, num: Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
           })),
         };
       });
@@ -95,7 +95,7 @@ export function montar(raiz: HTMLElement) {
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
           id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
-          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: capaUrl(a.capaPath), conteudos: a.conteudos || [] })),
+          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
       }));
     const pj = cat.produtos.find((x) => x.id === jornada);
@@ -124,6 +124,15 @@ export function montar(raiz: HTMLElement) {
   }
 
   const MODS = () => (D ? D.mods : []);
+  /**
+   * E-book (0068): os conteúdos da aula se dividem em extras comuns e em
+   * opções (botões a mais na tela do e-book), cada uma com os seus extras.
+   */
+  function ebookDe(a) {
+    const cs = a.conteudos || [];
+    const opcoes = cs.filter((c) => c.opcao).sort((x, y) => x.ordem - y.ordem).map((o) => Object.assign({}, o, { extras: cs.filter((x) => x.paiId === o.id) }));
+    return { conteudos: cs.filter((c) => !c.opcao && !c.paiId), opcoes, botao: (a.botaoEbook || "").trim(), botaoCor: a.botaoEbookCor || "", tipoMidia: a.tipo || "video" };
+  }
   /** Tipo e arquivo de cada aula (vídeo, áudio ou PDF), vindos do banco (0067). */
   const MIDIA = new Map();
   // Aula em PDF (e-book): abre no leitor; abrir conclui a aula no banco.
@@ -232,7 +241,7 @@ export function montar(raiz: HTMLElement) {
     coroa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>',
   };
   const NAV = [["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"]];
-  const navAtual = () => ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela;
+  const navAtual = () => ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", opcao: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela;
   const NOME_ORIGEM = { inicio: "Início", modulos: "Módulos", perfil: "Perfil", presentes: "Presentes" };
   const avTopo = () => (S.foto ? `<img src="${S.foto}" alt="" />` : h((S.nome || "?").trim().charAt(0).toUpperCase()));
   const avCom = (nome, cor, foto, pq) => foto
@@ -265,11 +274,11 @@ export function montar(raiz: HTMLElement) {
     if (!S.entrou && S.saiu) { document.body.classList.add("sem-nav"); app.innerHTML = telaSaiu(); return; }
     if (!S.entrou) { document.body.classList.add("sem-nav"); app.innerHTML = telaEntrada(); return; }
     document.body.classList.remove("sem-nav");
-    const telas = { inicio: telaInicio, modulos: telaModulos, modulo: telaModulo, aula: telaAula, presentes: telaPresentes, categoria: telaCategoria, cursoPres: telaCursoPres, presente: telaPresente, perfil: telaPerfil, jornada: telaJornada, leitor: telaLeitor };
+    const telas = { inicio: telaInicio, modulos: telaModulos, modulo: telaModulo, aula: telaAula, presentes: telaPresentes, categoria: telaCategoria, cursoPres: telaCursoPres, presente: telaPresente, opcao: telaOpcao, perfil: telaPerfil, jornada: telaJornada, leitor: telaLeitor };
     if (!telas[S.tela]) S.tela = "inicio";
     const n = navAtual();
     app.innerHTML = `
-      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
+      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
         <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
         <nav class="nav-topo" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
@@ -586,6 +595,11 @@ export function montar(raiz: HTMLElement) {
     if (S.videos[aulaId] !== undefined) return S.videos[aulaId];
     // Aula em áudio ou PDF (0067): o arquivo sai do depósito fechado, com link assinado.
     const md = MIDIA.get(aulaId);
+    // Opção do e-book em vídeo: o banco confere o acesso pelo conteúdo.
+    if (md && md.conteudo && md.tipo === "video") {
+      try { const v = await api.videoDoConteudo(aulaId); S.videos[aulaId] = v && v.ref ? v.ref : ""; } catch { S.videos[aulaId] = null; }
+      return S.videos[aulaId];
+    }
     if (md && md.tipo !== "video") {
       if (!md.arquivo) S.videos[aulaId] = "";
       else if (md.tipo === "audio") { const u = await api.enderecoDoArquivo("audios", md.arquivo, 14400).catch(() => null); S.videos[aulaId] = u ? "audio:" + u : null; }
@@ -682,7 +696,7 @@ export function montar(raiz: HTMLElement) {
   const VELS = { "0,5x": 0.5, "0,75x": 0.75, Normal: 1, "1,25x": 1.25, "1,5x": 1.5, "1,75x": 1.75, "2x": 2 };
   // A conclusão gravada no banco antes de pedir o vídeo seguinte (o banco libera em sequência).
   let ultimaConclusao = Promise.resolve();
-  const chaveAtual = () => (S.tela === "presente" ? "p-" + S.presente : S.mod + "-" + S.aula);
+  const chaveAtual = () => (S.tela === "opcao" ? "o-" + (S.opcaoAberta && S.opcaoAberta.id) : S.tela === "presente" ? "p-" + S.presente : S.mod + "-" + S.aula);
   function encaixarVideo() {
     if (!VID) return;
     const slot = app.querySelector(".player[data-aula]");
@@ -841,16 +855,18 @@ export function montar(raiz: HTMLElement) {
    * O conteúdo atual (aula da mentoria ou item de presente), num formato só,
    * para a tela, os comentários e os botões de seguir.
    */
-  function conteudoAtual() {
-    if (S.tela === "presente") {
-      const [ci, i, j] = String(S.presente || "").split("-").map(Number);
+  function conteudoAtual() { return conteudoAtualDe({ tela: S.tela, presente: S.presente, mod: S.mod, aula: S.aula }); }
+  function conteudoAtualDe(st) {
+    if (!st) return null;
+    if (st.tela === "presente") {
+      const [ci, i, j] = String(st.presente || "").split("-").map(Number);
       const c = CATS()[ci], curso = c && c.cursos[i], t = curso && curso.itens[j];
       if (!t) return null;
       return { tipo: tipoDoCurso(c, curso), id: t.id, titulo: t.titulo, ci, i, j, curso, cat: c, itens: curso.itens };
     }
-    const md = MODS()[S.mod], au = md && md.aulas[S.aula];
+    const md = MODS()[st.mod], au = md && md.aulas[st.aula];
     if (!au) return null;
-    return { tipo: "aula", id: au.id, titulo: au.titulo, m: S.mod, a: S.aula, md };
+    return { tipo: "aula", id: au.id, titulo: au.titulo, m: st.mod, a: st.aula, md };
   }
 
   function cabConteudo(rotuloVoltar) {
@@ -1073,6 +1089,18 @@ export function montar(raiz: HTMLElement) {
   }
   function itemPresente(ci, i, j, curso, t, freq) {
     const livre = aulaAdmin(t.id);
+    // E-book: cartão com a capa em pé, como no modelo ("Ver ebook").
+    if (t.tipoMidia === "pdf") return `
+        <div class="mod-bloco mc eb-card${livre ? "" : " fechada"}">
+          <div class="mc-top">
+            <button class="mc-capa" data-a="presente" data-v="${ci}-${i}-${j}" aria-label="Abrir ${h(t.titulo)}">${img(t.capa || curso.capa, "")}${livre ? "" : '<span class="cadeado"></span>'}</button>
+            <div class="mc-info">
+              <button class="mc-cab" data-a="presente" data-v="${ci}-${i}-${j}"><span class="mc-rot">${h(curso.nome)}</span><b class="mc-tit serif">${h(t.titulo)}</b></button>
+              <span class="mc-meta">${ICONES.livro}Leitura</span>
+              ${livre ? `<button class="mc-ver ver-aulas" data-a="presente" data-v="${ci}-${i}-${j}">Ver ebook<span aria-hidden="true">›</span></button>` : `<span class="aviso-lib">${ICONES.cadeado}Libera em breve</span>`}
+            </div>
+          </div>
+        </div>`;
     return `
         <button class="la-item${livre ? "" : " fechada"}" data-a="presente" data-v="${ci}-${i}-${j}">
           <span class="la-capa">${img(t.capa || curso.capa, "")}<span class="la-ic">${livre ? (feitaId(t.id) ? "✓" : "") : '<span class="cadeado"></span>'}</span></span>
@@ -1080,12 +1108,62 @@ export function montar(raiz: HTMLElement) {
           ${livre ? `<span class="la-assistir" aria-hidden="true">${ICONES.play}${freq ? "Ouvir" : "Assistir"}</span>` : ""}
         </button>`;
   }
+  /* ---------- e-book: capa, resumo e os botões (PDF + opções) ---------- */
+  const textoSobre = (hex) => { const n = parseInt(String(hex).slice(1), 16); if (!Number.isFinite(n)) return "#1a1206"; const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? "#1a1206" : "#fff"; };
+  const corBotao = (c) => (/^#[0-9a-f]{6}$/i.test(c || "") && c.toLowerCase() !== "#c9a15c" ? ` style="--bt:${c};--bt-txt:${textoSobre(c)}"` : "");
+  const clsBotao = (c, mais) => "botao largo eb-ler" + (corBotao(c) ? " eb-cor" : "") + (mais ? " " + mais : "");
+  const IC_ORAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6M9 6h6"/><path d="M6 21V11l6-2 6 2v10"/><path d="M10 21v-5h4v5"/></svg>';
+  const icOpcao = (t) => (t === "video" ? ICONES.play : t === "audio" ? ICONES.volume : t === "pdf" ? ICONES.livro : IC_ORAR);
+  function blocoEbook(t, capa, livre, txtFech) {
+    return `
+      <div class="eb-topo">
+        <span class="eb-capa">${img(capa, "")}</span>
+        <h1 class="eb-tit serif" style="margin-top:18px">${h(t.titulo)}</h1>
+        <p class="eb-desc">${h(t.texto || "Um livro da mentoria para ler no seu tempo. Abra quando quiser, no celular ou no computador.")}</p>
+        ${livre ? `
+        <button class="${clsBotao(t.botaoCor)}"${corBotao(t.botaoCor)} data-a="ler-pdf-aula">${ICONES.livro}${h(t.botao || "Ler ebook completo")}</button>
+        ${(t.opcoes || []).map((o) => `<button class="${clsBotao(o.cor, "eb-ler-2")}"${corBotao(o.cor)} data-a="ebook-opcao" data-id="${o.id}">${icOpcao(o.tipo)}${h(o.titulo || "Abrir")}</button>`).join("")}
+        <p class="eb-dica">O ebook abre aqui mesmo, dentro do aplicativo.</p>` : `<p class="eb-dica eb-fech">${ICONES.cadeado}${h(txtFech || "Libera em breve")}</p>`}
+      </div>`;
+  }
+  // A opção aberta (vídeo ou áudio do e-book): procura no item de presente ou na aula da mentoria.
+  function opcaoAberta() {
+    const o = S.opcaoAberta; if (!o) return null;
+    const c = conteudoAtualDe(o.de);
+    const item = c && (c.tipo === "aula" ? c.md.aulas[c.a] : c.curso.itens[c.j]);
+    const op = item && (item.opcoes || []).find((x) => x.id === o.id);
+    return op ? { op, item, c } : null;
+  }
+  function telaOpcao() {
+    const x = opcaoAberta(); if (!x) return `<div class="pagina"><div class="barra-aula"><button class="voltar voltar-btn" data-a="opcao-voltar">${ICONES.seta_esq}Voltar</button></div><div class="vazio">Este conteúdo não está disponível agora.</div></div>`;
+    const { op, item, c } = x;
+    const R = Object.assign({}, op.tipo === "audio" ? ROT.freq : ROT.mestres, { item: "", sobre: "Sobre", instr: "Instruções", pdf: "PDF", comentar: "" });
+    const capa = op.capaPath ? fotoOuSite(op.capaPath) : item.capa || (c.curso && c.curso.capa);
+    const pdf = pdfDe(op.extras); const extras = (op.extras || []).filter((y) => y.publicado !== false && y !== pdf);
+    return `
+    <div class="pagina" style="padding:0">
+      <div class="cab-aula">
+        <button class="voltar" data-a="opcao-voltar" aria-label="Voltar ao e-book">${ICONES.seta_esq}<span class="v-curto">Voltar</span><span class="v-longo">Voltar ao e-book</span></button>
+        <button class="mp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
+        <span class="cab-aula-dir"><button class="cab-aula-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Meu perfil" style="--c:${S.corNome}">${avTopo()}</button></span>
+      </div>
+      <div class="aula-col">
+        <div>
+          ${playerHtml(op.id, capa, true, Object.assign({ titulo: op.tituloTela || op.titulo, ultima: true }, R))}
+          <div class="pagina">
+            ${abasConteudo({ rot: R, idTxt: item.titulo, titulo: op.tituloTela || op.titulo, sobre: op.texto, instr: op.instrucoes, pdf, extras, sobrePadrao: "" })}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
   function telaCursoPres() {
     const [ci, i] = String(S.cursoPres || "").split("-").map(Number);
     const c = CATS()[ci], curso = c && c.cursos[i];
     if (!curso) { S.tela = "presentes"; return telaPresentes(); }
     const cat = c.nome, COR = CORES_CAT[ci % CORES_CAT.length], freq = cat === "Frequências";
-    const nomeTipo = freq ? ["frequência", "frequências"] : ["vídeo", "vídeos"];
+    const soLeitura = curso.itens.length > 0 && curso.itens.every((t) => t.tipoMidia === "pdf");
+    const nomeTipo = freq ? ["frequência", "frequências"] : soLeitura ? ["e-book", "e-books"] : ["vídeo", "vídeos"];
     if (!cursoLiberado(curso)) { S.tela = "categoria"; S.cat = ci; return telaCategoria(); }
     const feitos = curso.itens.filter((t) => feitaId(t.id)).length;
     const pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
@@ -1103,8 +1181,8 @@ export function montar(raiz: HTMLElement) {
         </div>
       </section>
       <div class="mv-ind">
-        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg><span><b>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</b><em>${cat === "Mestres espirituais" ? "neste volume" : "neste curso"}</em></span></div>
-        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span><b>Acesso liberado</b><em>assista quando quiser</em></span></div>
+        <div>${soLeitura ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3"/></svg>`}<span><b>${p(curso.itens.length, nomeTipo[0], nomeTipo[1])}</b><em>${cat === "Mestres espirituais" ? "neste volume" : "neste curso"}</em></span></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg><span><b>Acesso liberado</b><em>${soLeitura ? "leia quando quiser" : "assista quando quiser"}</em></span></div>
       </div>
       <section class="mv-prog" aria-label="Progresso">
         <div class="mv-prog-topo"><span>${cat === "Mestres espirituais" ? "Progresso do volume" : "Progresso do curso"}</span><b>${pct}%</b></div>
@@ -1152,6 +1230,14 @@ export function montar(raiz: HTMLElement) {
     if (!t) { S.tela = "presentes"; return telaPresentes(); }
     const R = ROT[tipoDoCurso(c, curso)];
     const est = estadoItem(curso, j, R), livre = !est.fech;
+    if (t.tipoMidia === "pdf") {
+      const voltaE = (S.voltaConteudo && S.voltaConteudo.tela) || "cursoPres";
+      return `
+    <div class="pagina" style="padding:0">
+      ${cabConteudo(voltaE === "cursoPres" ? curso.nome : NOME_VOLTA[voltaE] || curso.nome)}
+      <div class="pagina eb">${blocoEbook(t, t.capa || curso.capa, livre, est.txt)}</div>
+    </div>`;
+    }
     const ultimo = j + 1 >= curso.itens.length;
     const feito = feitaId(t.id);
     const botaoProx = ultimo
@@ -1428,12 +1514,12 @@ export function montar(raiz: HTMLElement) {
     camada.innerHTML = `
     <div class="leitor leitor-pdf" role="dialog" aria-modal="true" aria-label="${h(tituloPdf)}">
       <div class="leitor-cab">
-        <button class="voltar" data-a="fechar-pdf" aria-label="Fechar o PDF e voltar">${ICONES.seta_esq}Fechar</button>
+        <button class="voltar" data-a="fechar-pdf" aria-label="Fechar o PDF e voltar">${ICONES.seta_esq}Voltar</button>
         <b class="leitor-tit">${h(tituloPdf)}</b>
         <div class="leitor-zoom" role="group" aria-label="Zoom do PDF">
-          <button data-a="pdf-zoom" data-v="-1" aria-label="Diminuir">−</button>
+          <button data-a="pdf-zoom" data-v="-1" aria-label="Diminuir">A−</button>
           <span class="leitor-pct" id="pdfPct" aria-live="polite">100%</span>
-          <button data-a="pdf-zoom" data-v="1" aria-label="Aumentar">+</button>
+          <button data-a="pdf-zoom" data-v="1" aria-label="Aumentar">A+</button>
         </div>
       </div>
       <div class="pdf-paginas" id="pdfPaginas"><p class="apoio" style="padding:24px;text-align:center">Carregando o PDF…</p></div>
@@ -1470,7 +1556,7 @@ export function montar(raiz: HTMLElement) {
   window.addEventListener("popstate", (e) => {
     const f = e.state && e.state.aion; if (!f || !S.entrou) return;
     camada.innerHTML = "";
-    if (S.tela === "aula" || S.tela === "presente") pararVideo();
+    if (S.tela === "aula" || S.tela === "presente" || S.tela === "opcao") pararVideo();
     Object.assign(S, f); ultimaTela = JSON.stringify([S.tela, S.mod, S.aula, S.presente, S.cat, S.cursoPres, !!S.config]);
     if (S.tela === "aula") abrirAula(); else if (S.tela === "presente") abrirPresente();
     render();
@@ -1538,11 +1624,33 @@ export function montar(raiz: HTMLElement) {
         if (S.tela === "presente") { const [ci, i, j] = String(S.presente).split("-").map(Number); if (CATS()[ci]?.cursos[i]?.itens[j + 1]) { delete S.fim[chaveAtual()]; acao("presente", { v: ci + "-" + i + "-" + (j + 1) }); } return; }
         if (S.aula + 1 < MODS()[S.mod].aulas.length) acao("aula", { m: S.mod, i: S.aula + 1 }); else acao("modulo", { m: S.mod + 1 }); return;
       case "tocar": {
-        const id = S.tela === "presente" ? (() => { const [ci, i, j] = String(S.presente).split("-").map(Number); return CATS()[ci]?.cursos[i]?.itens[j]?.id; })() : MODS()[S.mod]?.aulas[S.aula]?.id;
+        const id = S.tela === "opcao" ? S.opcaoAberta && S.opcaoAberta.id : S.tela === "presente" ? (() => { const [ci, i, j] = String(S.presente).split("-").map(Number); return CATS()[ci]?.cursos[i]?.itens[j]?.id; })() : MODS()[S.mod]?.aulas[S.aula]?.id;
         if (!id) return;
         if (VID && VID_ID === id && !VID.paused) { VID.pause(); return; }
         void tocar(id); return;
       }
+      case "ebook-opcao": {
+        const c = conteudoAtual(); const item = c && (c.tipo === "aula" ? c.md.aulas[c.a] : c.curso.itens[c.j]);
+        const op = item && (item.opcoes || []).find((x) => x.id === d.id); if (!op) return;
+        if (op.tipo === "texto") {
+          if (!(op.texto || "").trim()) { aviso("Este conteúdo será adicionado em breve."); return; }
+          const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:28px 22px 60px;font-family:Georgia,'Cormorant Garamond',serif;font-size:18px;line-height:1.75;color:#3a2a14;background:linear-gradient(180deg,#f7ecd9,#f3e4c8)}h1{font-size:26px;line-height:1.25;text-align:center;color:#5a3d16;margin:6px 0 22px}p{margin:0 0 16px}b{color:#5a3d16}</style></head><body><h1>${h(op.titulo)}</h1>${paragrafos(op.texto)}</body></html>`;
+          const href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+          S.leitorDe = { presente: S.presente, y: window.scrollY }; S.leitor = { titulo: op.titulo, href }; S.tela = "leitor"; topo(); render(); return;
+        }
+        if (op.tipo === "pdf") {
+          if (!op.arquivoPath) { aviso("Este PDF será adicionado em breve."); return; }
+          void api.enderecoDoArquivo("materiais", op.arquivoPath).then((u) => (u ? abrirPdf(u, op.titulo, (op.arquivoPath.split("/").pop() || "arquivo.pdf").replace(/^\d+-/, "")) : aviso("Não conseguimos abrir este PDF agora.")));
+          return;
+        }
+        // Vídeo ou áudio: tela completa, como uma aula.
+        MIDIA.set(op.id, { tipo: op.tipo, arquivo: op.arquivoPath || "", conteudo: true });
+        pararVideo(); S.opcaoAberta = { id: op.id, de: { tela: S.tela, presente: S.presente, mod: S.mod, aula: S.aula }, y: window.scrollY };
+        S.tela = "opcao"; topo(); render();
+        void pedirVideo(op.id).then((ref) => { if (S.tela === "opcao" && S.opcaoAberta && S.opcaoAberta.id === op.id) { render(); prepararVideo(op.id, ref); } });
+        return;
+      }
+      case "opcao-voltar": { pararVideo(); const o = S.opcaoAberta || {}; S.opcaoAberta = null; const de = o.de || {}; S.tela = de.tela || "presentes"; if (de.presente) S.presente = de.presente; render(); window.scrollTo({ top: o.y || 0 }); return; }
       case "ler-pdf-aula": { const id = S.tela === "presente" ? conteudoAtual()?.id : MODS()[S.mod]?.aulas[S.aula]?.id; if (id) void lerPdfAula(id); return; }
       case "buscar": return; // arrastar e tocar na trilha: ver "trilha do vídeo" abaixo
       case "de-novo": { const k = chaveAtual(); delete S.fim[k]; if (VID) { VID.currentTime = 0; void VID.play().catch(() => {}); render(); } else acao("tocar", {}); return; }
@@ -1568,7 +1676,8 @@ export function montar(raiz: HTMLElement) {
       }
       case "aba-fechar": S.abaAula = null; break;
       case "pdf-ver": {
-        const c = conteudoAtual(); const lista = c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
+        const oa = S.tela === "opcao" ? opcaoAberta() : null;
+        const c = conteudoAtual(); const lista = oa ? oa.op.extras : c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
         const x = (lista || []).find((y) => y.id === d.id); if (!x) return;
         const tit = (c.tipo === "aula" ? c.md.rot + " " + c.md.num + " · " + lA(c.md, c.a) : c.curso.nome) + " — PDF";
         const nome = (x.titulo || c.titulo || "material").replace(/[\\/:*?"<>|]+/g, " ").trim() + ".pdf";
@@ -1602,7 +1711,8 @@ export function montar(raiz: HTMLElement) {
         const pl = app.querySelector(".player[data-aula]"); if (pl && pl.requestFullscreen) void pl.requestFullscreen().catch(() => {}); return;
       }
       case "extra": {
-        const c = conteudoAtual(); const lista = c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
+        const oa = S.tela === "opcao" ? opcaoAberta() : null;
+        const c = conteudoAtual(); const lista = oa ? oa.op.extras : c ? (c.tipo === "aula" ? c.md.aulas[c.a].conteudos : c.curso.itens[c.j].conteudos) : [];
         const x = (lista || []).find((y) => y.id === d.id); if (!x) return;
         if (x.url) { window.open(x.url, "_blank", "noopener"); return; }
         if (x.arquivoPath) { void api.enderecoDoArquivo(x.tipo === "audio" ? "audios" : "materiais", x.arquivoPath).then((u) => (u ? window.open(u, "_blank", "noopener") : aviso("Não conseguimos abrir este arquivo agora."))); return; }

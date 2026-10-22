@@ -49,6 +49,8 @@ export type Aula = {
   /** Vídeo, áudio ou PDF; áudio e PDF guardam o caminho do arquivo (0067). */
   tipo?: string | null;
   arquivoPath?: string | null;
+  botaoEbook?: string | null;
+  botaoEbookCor?: string | null;
   titulo: string;
   ordem: number;
   duracaoSegundos: number | null;
@@ -124,6 +126,14 @@ export type Conteudo = {
   videoRef: string | null;
   ordem: number;
   publicado: boolean;
+  /** Opção a mais na tela do e-book (0068): botão com nome e cor. */
+  opcao?: boolean;
+  cor?: string | null;
+  capaPath?: string | null;
+  tituloTela?: string | null;
+  instrucoes?: string | null;
+  /** Conteúdo extra de uma opção: aponta para ela. */
+  paiId?: string | null;
 };
 
 /**

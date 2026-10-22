@@ -155,6 +155,8 @@ type LinhaModulo = {
 
 type LinhaAula = {
   id: string;
+  botao_ebook?: string | null;
+  botao_ebook_cor?: string | null;
   tipo?: string | null;
   arquivo_path?: string | null;
   rotulo?: string | null;
@@ -207,6 +209,12 @@ type LinhaProduto = {
 };
 
 type LinhaConteudo = {
+  opcao?: boolean | null;
+  cor?: string | null;
+  capa_path?: string | null;
+  titulo_tela?: string | null;
+  instrucoes?: string | null;
+  pai_id?: string | null;
   id: string;
   produto_id: string;
   modulo_id: string | null;
@@ -328,6 +336,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       videoRef: k.video_ref,
       ordem: k.ordem,
       publicado: k.publicado,
+      opcao: !!k.opcao, cor: k.cor ?? null, capaPath: k.capa_path ?? null,
+      tituloTela: k.titulo_tela ?? null, instrucoes: k.instrucoes ?? null, paiId: k.pai_id ?? null,
     };
 
     const [mapa, chave] = k.aula_id
@@ -384,6 +394,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         numero: a.numero,
         rotulo: a.rotulo ?? null,
         tipo: a.tipo ?? "video",
+        botaoEbook: a.botao_ebook ?? null,
+        botaoEbookCor: a.botao_ebook_cor ?? null,
         arquivoPath: a.arquivo_path ?? null,
         titulo: a.titulo,
         ordem: a.ordem,

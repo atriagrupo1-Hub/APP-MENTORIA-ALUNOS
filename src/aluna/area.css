@@ -1295,3 +1295,13 @@
   .ex-card.desc .ex-rot { color: #9fe3df; }
   html[data-tema="claro"] .ex-card.desc { background: linear-gradient(135deg, #e9f6f5 0%, #ffffff 70%); border-color: rgba(40,130,130,.45); box-shadow: 0 8px 20px -14px rgba(20,90,90,.4); }
   html[data-tema="claro"] .ex-card.desc .ex-rot { color: #1f6f6c; }
+
+/* E-book (0068): botões com a cor escolhida no painel e cartão do item */
+.eb-ler.eb-cor { color: var(--bt-txt, #1a1206) !important; background: linear-gradient(180deg, color-mix(in srgb, var(--bt) 72%, #fff) 0%, var(--bt) 50%, color-mix(in srgb, var(--bt) 78%, #000) 100%) !important; border-color: color-mix(in srgb, var(--bt) 80%, #fff) !important; box-shadow: 0 8px 20px -12px color-mix(in srgb, var(--bt) 70%, transparent) !important; }
+.eb-ler.eb-cor svg { color: currentColor; }
+.eb-fech { display: inline-flex; align-items: center; gap: 6px; }
+.eb-fech svg { width: 15px; height: 15px; }
+.eb-card .mc-capa { aspect-ratio: 2 / 3; }
+.eb-card .mc-meta { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 15px; color: var(--texto-2); }
+.eb-card .mc-meta svg { width: 20px; height: 20px; }
+.eb-card.fechada .mc-capa { filter: grayscale(.4) brightness(.7); }

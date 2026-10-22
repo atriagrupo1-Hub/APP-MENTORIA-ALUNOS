@@ -37,6 +37,13 @@ type Aula = {
   libera: string;
   /** Vídeo, áudio ou PDF (e-book); áudio e PDF guardam o caminho do arquivo (0067). */
   tipo: "video" | "audio" | "pdf"; arquivo: string;
+  /** E-book: nome e cor do botão do PDF e as outras opções (0068). */
+  botaoEbook: string; botaoEbookCor: string; opcoes: Opcao[];
+};
+/** Uma opção a mais na tela do e-book (conteúdo da aula com `opcao`). */
+type Opcao = {
+  id: string; rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf";
+  texto: string; arquivo: string; video: string; capa: string; tituloTela: string; instrucoes: string; extras: Extra[];
 };
 type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
@@ -210,7 +217,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
-    supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, ordem").not("aula_id", "is", null).order("ordem"),
+    supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id").not("aula_id", "is", null).order("ordem"),
     supabase.rpc("alunas_do_painel"),
     emPaginas((de, ate) => supabase.from("acessos").select("aluna_id, escopo, produto_id, modulo_id, aula_id, abre_em, concedido_em").order("id").range(de, ate)),
     supabase.from("cronograma_modulo").select("aluna_id, modulo_id, dias"),
@@ -240,15 +247,20 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const video = new Map<string, string>();
   for (const m of midias.data ?? []) video.set(m.aula_id, m.video_ref ?? "");
 
-  const extrasDa = new Map<string, Extra[]>();
+  const extrasDa = new Map<string, Extra[]>(), opcoesDa = new Map<string, Opcao[]>(), extrasDaOpcao = new Map<string, Extra[]>();
+  const comoExtra = (k: any): Extra => ({ id: k.id, tipo: tipoDoBanco(k.tipo), nome: k.titulo ?? "", arquivo: k.arquivo_path ?? k.url ?? k.video_ref ?? k.texto ?? "" });
   for (const k of extras.data ?? []) {
+    if (k.pai_id) { const l = extrasDaOpcao.get(k.pai_id) ?? []; l.push(comoExtra(k)); extrasDaOpcao.set(k.pai_id, l); continue; }
+    if (k.opcao) {
+      const l = opcoesDa.get(k.aula_id) ?? [];
+      l.push({ id: k.id, rotulo: k.titulo ?? "", cor: k.cor || "", tipo: ["texto", "audio", "video", "pdf"].includes(k.tipo) ? k.tipo : "texto", texto: k.texto ?? "", arquivo: k.arquivo_path ?? "", video: k.video_ref ?? "", capa: k.capa_path ?? "", tituloTela: k.titulo_tela ?? "", instrucoes: k.instrucoes ?? "", extras: [] });
+      opcoesDa.set(k.aula_id, l); continue;
+    }
     const lista = extrasDa.get(k.aula_id) ?? [];
-    lista.push({
-      id: k.id, tipo: tipoDoBanco(k.tipo), nome: k.titulo ?? "",
-      arquivo: k.arquivo_path ?? k.url ?? k.video_ref ?? k.texto ?? "",
-    });
+    lista.push(comoExtra(k));
     extrasDa.set(k.aula_id, lista);
   }
+  for (const l of opcoesDa.values()) for (const o of l) o.extras = extrasDaOpcao.get(o.id) ?? [];
 
   const aulasDo = new Map<string, Aula[]>();
   for (const a of aulas.data ?? []) {
@@ -261,6 +273,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
       num: Number(a.numero) || 0, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
       tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
+      botaoEbook: a.botao_ebook ?? "", botaoEbookCor: a.botao_ebook_cor ?? "", opcoes: opcoesDa.get(a.id) ?? [],
     });
     aulasDo.set(a.modulo_id, lista);
   }
@@ -447,6 +460,19 @@ export function montar(app: HTMLElement) {
   let imgPara: { form: string; campo: string; previa: string; pasta: string } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
   const arquivoAula = Object.assign(document.createElement("input"), { type: "file", id: "arquivoAula", hidden: true });
+  // Arquivos das opções do e-book: um seletor só, e quem pediu diz para onde vai.
+  const arquivoOp = Object.assign(document.createElement("input"), { type: "file", id: "arquivoOp", hidden: true });
+  let paraOp: { deposito: string; pronto: (caminho: string, nome: string) => void } | null = null;
+  arquivoOp.addEventListener("change", () => {
+    const file = arquivoOp.files?.[0]; arquivoOp.value = ""; const alvo = paraOp; paraOp = null;
+    const x = ui.aula ? acharAula(ui.aula) : null; if (!file || !alvo || !x) return;
+    toast("Enviando o arquivo…");
+    void (async () => {
+      try { const caminho = await enviarArquivo(alvo.deposito, x.c.id, file); alvo.pronto(caminho, file.name.replace(/\.[^.]+$/, "")); if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Arquivo enviado. Clique em Salvar aula para guardar."); }
+      catch (e) { toast(motivo(e)); }
+    })();
+  });
+  document.body.append(arquivoOp);
   document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg);
 
   const KT = "aion-painel-tema";
@@ -2610,49 +2636,55 @@ export function montar(app: HTMLElement) {
   const IC_ORAR_BT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M10 5h4M7 21v-7l5-4 5 4v7M10 21v-4h4v4"/></svg>`;
   const textoSobre = (hex: string) => { const n = parseInt(hex.slice(1), 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? "#1a1206" : "#fff"; };
   const estiloBotao = (cor: string) => `--bt:${cor};color:${textoSobre(cor)}`;
-  const editorBotao = (campo: string, rotulo: string, nome: string, cor: string, icone = "") => `
+  const editorBotao = (campo: string, rotulo: string, nome: string, cor: string, icone = "", form = "") => `
     <div class="eb" data-eb="${campo}">
-      <label class="grupo"><span class="rotulo-ajuda mp-rot">${rotulo}</span><input class="campo" name="${campo}" value="${h(nome)}" maxlength="40" data-eb-nome /></label>
-      <label class="grupo eb-cor"><span class="rotulo-ajuda mp-rot">Cor</span><span class="eb-cor-linha"><input type="color" class="campo-cor" name="${campo}Cor" value="${h(cor)}" data-eb-cor /><button type="button" class="eb-padrao" data-a="eb-padrao" data-v="${campo}">Cor padrão</button></span></label>
+      <label class="grupo"><span class="rotulo-ajuda mp-rot">${rotulo}</span><input class="campo" name="${campo}"${form ? ` form="${form}"` : ""} value="${h(nome)}" maxlength="40" data-eb-nome /></label>
+      <label class="grupo eb-cor"><span class="rotulo-ajuda mp-rot">Cor</span><span class="eb-cor-linha"><input type="color" class="campo-cor" name="${campo}Cor"${form ? ` form="${form}"` : ""} value="${h(cor)}" data-eb-cor /><button type="button" class="eb-padrao" data-a="eb-padrao" data-v="${campo}">Cor padrão</button></span></label>
       <div class="grupo eb-previa"><span class="rotulo-ajuda mp-rot">Como a aluna vê</span><span class="eb-fundo"><span class="eb-botao" style="${estiloBotao(cor)}">${icone}<b>${h(nome)}</b></span></span></div>
     </div>`;
   // Ordinal do título de cada opção extra do e-book (a 1ª opção é o próprio PDF).
   const ORDINAL = ["Segunda", "Terceira", "Quarta", "Quinta", "Sexta", "Sétima", "Oitava", "Nona", "Décima"];
-  type OpcaoEbook = { rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf" };
-  function blocoOpcao(k: number, op: OpcaoEbook) {
+  const OPCAO_NOVA = (rotulo = ""): Opcao => ({ id: "", rotulo, cor: COR_BOTAO, tipo: "texto", texto: "", arquivo: "", video: "", capa: "", tituloTela: "", instrucoes: "", extras: [] });
+  function blocoOpcao(k: number, op: Opcao) {
     const t = op.tipo, f = ` form="formAula"`;
     const grupo = t === "video" || t === "audio" ? "midia" : t;
+    const midia = grupo === "midia";
+    const capa = op.capa ? urlDaCapa(op.capa) : "";
+    const tipoEx = TIPOS[3].tela;
     return `
-              <div class="ea-op2" data-op-bloco>
+              <div class="ea-op2" data-op-bloco data-op-id="${op.id}" data-op-extra-tipo="${tipoEx}">
                 <div class="ea-op2-tit"><span data-op-tit>${ORDINAL[k] || k + 2 + "ª"} opção</span>${k > 0 ? `<button type="button" class="ea-op-tirar" data-a="op-tirar">${IC_MOD.lixo}Tirar esta opção</button>` : ""}</div>
+                <input type="hidden" name="op${k}Capa"${f} value="${h(op.capa)}" data-op-capa />
                 <div class="ea-op-topo">
-                  ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor, IC_ORAR_BT)}
+                  ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor || COR_BOTAO, IC_ORAR_BT, "formAula")}
                   <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
                     <select class="campo" name="op${k}Tipo"${f} data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, n]) => `<option value="${v}"${t === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
                 </div>
-                <label class="grupo" data-op2="texto"${grupo === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op${k}Texto"${f} rows="6" placeholder="Escreva aqui o texto deste botão. Uma linha em branco separa parágrafo."></textarea></label>
-                <label class="grupo" data-op2="pdf"${grupo === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo PDF</span><span class="ea-arq"><input class="campo" name="op${k}Pdf"${f} placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
-                <div class="ea-op-midia" data-op2="midia"${grupo === "midia" ? "" : " hidden"}>
+                <label class="grupo" data-op2="texto"${grupo === "texto" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Texto (o que a aluna lê ao tocar no botão)</span><textarea class="campo" name="op${k}Texto"${f} rows="6" placeholder="Escreva aqui o texto deste botão. Uma linha em branco separa parágrafo.">${t === "texto" ? h(op.texto) : ""}</textarea></label>
+                <label class="grupo" data-op2="pdf"${grupo === "pdf" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo PDF</span><span class="ea-arq"><input class="campo" name="op${k}Pdf"${f} value="${t === "pdf" ? h(op.arquivo) : ""}" placeholder="Nenhum arquivo selecionado" readonly data-op-arq="pdf" /><button type="button" class="al-botao" data-a="op-arquivo" data-v="pdf">Escolher arquivo</button></span></label>
+                <div class="ea-op-midia" data-op2="midia"${midia ? "" : " hidden"}>
                   <div class="ea-op-esq">
-                    <label class="grupo" data-midia="video"${t === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span><input class="campo" name="op${k}Video"${f} placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
-                    <label class="grupo" data-midia="audio"${t === "audio" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo de áudio ${dicaCampo(AJ.arquivoAula)}</span><span class="ea-arq"><input class="campo" name="op${k}Audio"${f} placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="op2-arquivo">Escolher arquivo</button></span></label>
-                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Título (aparece na tela) </span><input class="campo" name="op${k}Titulo"${f} placeholder="Ex.: Resumo do e-book em vídeo" /></label>
-                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição (o que a aluna verá)</span><textarea class="campo" name="op${k}Desc"${f} rows="4" placeholder="Uma linha em branco separa parágrafo."></textarea></label>
-                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções”)</span><textarea class="campo" name="op${k}Instr"${f} rows="3" placeholder="Título das instruções na primeira linha. Depois, o texto."></textarea></label>
+                    <label class="grupo" data-midia="video"${t === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span><input class="campo" name="op${k}Video"${f} value="${h(op.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+                    <label class="grupo" data-midia="audio"${t === "audio" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Arquivo de áudio ${dicaCampo(AJ.arquivoAula)}</span><span class="ea-arq"><input class="campo" name="op${k}Audio"${f} value="${t === "audio" ? h(op.arquivo) : ""}" placeholder="Nenhum arquivo selecionado" readonly data-op-arq="audio" /><button type="button" class="al-botao" data-a="op-arquivo" data-v="audio">Escolher arquivo</button></span></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Título (aparece na tela)</span><input class="campo" name="op${k}Titulo"${f} value="${h(op.tituloTela)}" placeholder="Ex.: Resumo do e-book em vídeo" /></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição (o que a aluna verá)</span><textarea class="campo" name="op${k}Desc"${f} rows="4" placeholder="Uma linha em branco separa parágrafo.">${midia ? h(op.texto) : ""}</textarea></label>
+                    <label class="grupo"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções”)</span><textarea class="campo" name="op${k}Instr"${f} rows="3" placeholder="Título das instruções na primeira linha. Depois, o texto.">${h(op.instrucoes)}</textarea></label>
                   </div>
                   <div class="ea-op-dir">
                     <div class="ea-op-caixa">
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_IMG}Capa ${dicaCampo(AJ.capa)}</span>
-                      <span class="ea-op-capa"></span>
+                      <span class="ea-op-capa" data-op-capa-previa${capa ? ` style="background:url('${h(capa)}') center/cover no-repeat"` : ""}></span>
                       <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="op-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="op-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
                       <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
                     </div>
                     <div class="ea-op-caixa">
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_LIVRO_BT}Conteúdo extra ${dicaCampo(AJ.extras)}</span>
-                      <div class="ea-chips">${TIPOS.map((x) => x.tela).map((x, n) => `<button type="button" data-a="op-extra-tipo" aria-pressed="${n === 3}">${x}</button>`).join("")}</div>
-                      <span class="ea-arq"><input class="campo" placeholder="Nome do conteúdo" /></span>
-                      <span class="ea-arq"><input class="campo" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao">Escolher arquivo</button></span>
-                      <div><button type="button" class="al-botao-ouro">Adicionar</button></div>
+                      ${op.id ? `
+                      ${op.extras.length ? `<div class="ea-extras" style="margin:0;padding:0;border:0">${op.extras.map((e) => `<div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="op-extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
+                      <div class="ea-chips">${TIPOS.map((x) => x.tela).map((x) => `<button type="button" data-a="op-extra-tipo" data-v="${x}" aria-pressed="${x === tipoEx}">${x}</button>`).join("")}</div>
+                      <input class="campo" data-op-extra-nome placeholder="Nome do conteúdo" />
+                      <span class="ea-arq"><input class="campo" data-op-extra-arq placeholder="Nenhum arquivo selecionado" /><button type="button" class="al-botao" data-a="op-extra-arquivo" data-op-extra-bt>Escolher arquivo</button></span>
+                      <div><button type="button" class="al-botao-ouro" data-a="op-extra-add" data-id="${op.id}">Adicionar</button></div>` : `<p class="mp-dica" style="margin:0">Salve a aula uma vez e depois adicione aqui o conteúdo extra desta opção.</p>`}
                     </div>
                   </div>
                 </div>
@@ -2670,7 +2702,7 @@ export function montar(app: HTMLElement) {
     const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>`;
     const tipoA = (ui.aulaTipo || a.tipo) as Aula["tipo"];
     return `
-    <section class="tela ativa cs mp ea">
+    <section class="tela ativa cs mp ea" data-form-de="formAula">
       <div class="mp-topo">
         <nav class="mp-trilha" aria-label="Você está em">
           <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
@@ -2700,7 +2732,7 @@ export function montar(app: HTMLElement) {
           <label class="grupo" data-campo-arquivo${tipoA === "video" ? " hidden" : ""}><span class="rotulo-ajuda mp-rot"><span data-rot-arquivo>${tipoA === "pdf" ? "Arquivo PDF (e-book)" : "Arquivo de áudio"}</span> ${dicaCampo(AJ.arquivoAula)}</span>
             <span class="ea-arq"><input class="campo" name="arquivoAula" value="${h(tipoA === a.tipo ? a.arquivo : "")}" placeholder="Nenhum arquivo selecionado" readonly /><button type="button" class="al-botao" data-a="aula-arquivo">Escolher arquivo</button></span></label>
           <div class="ea-ebook" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
-            ${editorBotao("botaoEbook", "Nome do botão do e-book " + dicaCampo(AJ.botaoEbook), "Ler ebook completo", COR_BOTAO, IC_LIVRO_BT)}
+            ${editorBotao("botaoEbook", "Nome do botão do e-book " + dicaCampo(AJ.botaoEbook), a.botaoEbook || "Ler ebook completo", a.botaoEbookCor || COR_BOTAO, IC_LIVRO_BT)}
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>
             <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
@@ -2745,7 +2777,7 @@ export function montar(app: HTMLElement) {
 
       <section class="cs-cartao ea-opcoes" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
         <div class="mp-cab"><span class="mp-cab-ic">${IC_LIVRO_BT}</span><div><h3 class="rotulo-ajuda">Outras opções do e-book ${dicaCampo(AJ.op2)}</h3><p>Cada opção vira um botão na tela do e-book, embaixo do “${"Ler ebook completo"}”.</p></div></div>
-        <div class="ea-ops" data-ops>${blocoOpcao(0, { rotulo: "Ler apenas as orações", cor: COR_BOTAO, tipo: "texto" })}</div>
+        <div class="ea-ops" data-ops>${(a.opcoes.length ? a.opcoes : [OPCAO_NOVA("Ler apenas as orações")]).map((op, k) => blocoOpcao(k, op)).join("")}</div>
         <button type="button" class="al-botao ea-op-add" data-a="op-add">${IC_CURSO.mais}Adicionar outra opção</button>
       </section>
     </section>`;
@@ -3495,10 +3527,55 @@ export function montar(app: HTMLElement) {
       case "op-add": {
         const box = document.querySelector<HTMLElement>("[data-ops]"); if (!box) return;
         const n = box.querySelectorAll("[data-op-bloco]").length;
-        box.insertAdjacentHTML("beforeend", blocoOpcao(n, { rotulo: "", cor: COR_BOTAO, tipo: "texto" }));
+        box.insertAdjacentHTML("beforeend", blocoOpcao(n + Date.now() % 100000, OPCAO_NOVA()));
         if (ui.aula) ui.sujo = { f: "aula", id: ui.aula };
+        document.querySelectorAll<HTMLElement>("[data-ops] [data-op-tit]").forEach((x, k) => { x.textContent = (ORDINAL[k] || k + 2 + "ª") + " opção"; });
         box.querySelectorAll<HTMLInputElement>("[data-op-bloco]")[n]?.querySelector<HTMLInputElement>("[data-eb-nome]")?.focus();
         return;
+      }
+      case "op-arquivo": {
+        const bl = el.closest<HTMLElement>("[data-op-bloco]"); const pdf = d.v === "pdf"; if (!bl) return;
+        arquivoOp.accept = pdf ? "application/pdf,.pdf" : "audio/*";
+        paraOp = { deposito: pdf ? "materiais" : "audios", pronto: (c) => { const i = bl.querySelector<HTMLInputElement>(`[data-op-arq="${d.v}"]`); if (i) i.value = c; } };
+        arquivoOp.click(); return;
+      }
+      case "op-capa": {
+        const bl = el.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return;
+        arquivoOp.accept = "image/*";
+        paraOp = { deposito: "capas", pronto: (c) => { const i = bl.querySelector<HTMLInputElement>("[data-op-capa]"); if (i) i.value = c; const pv = bl.querySelector<HTMLElement>("[data-op-capa-previa]"); if (pv) pv.style.background = "url('" + urlDaCapa(c) + "') center/cover no-repeat"; } };
+        arquivoOp.click(); return;
+      }
+      case "op-capa-tirar": { const bl = el.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return; const i = bl.querySelector<HTMLInputElement>("[data-op-capa]"); if (i) i.value = ""; const pv = bl.querySelector<HTMLElement>("[data-op-capa-previa]"); if (pv) pv.style.background = ""; if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Capa tirada. Clique em Salvar aula para guardar."); return; }
+      case "op-extra-tipo": {
+        const bl = el.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return; bl.dataset.opExtraTipo = d.v;
+        bl.querySelectorAll<HTMLElement>('[data-a="op-extra-tipo"]').forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === d.v)));
+        const t = tipoDaTela(d.v as TipoExtra); const bt = bl.querySelector<HTMLElement>("[data-op-extra-bt]"); if (bt) bt.hidden = !t.deposito;
+        const arq = bl.querySelector<HTMLInputElement>("[data-op-extra-arq]"); if (arq) arq.placeholder = t.banco === "link" ? "https://" : t.banco === "texto" ? "Escreva aqui" : t.banco === "video" ? "uid do Cloudflare Stream" : "Nenhum arquivo selecionado";
+        return;
+      }
+      case "op-extra-arquivo": {
+        const bl = el.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return; const t = tipoDaTela((bl.dataset.opExtraTipo || TIPOS[3].tela) as TipoExtra); if (!t.deposito) return;
+        arquivoOp.accept = "";
+        paraOp = { deposito: t.deposito, pronto: (c, nome) => { const i = bl.querySelector<HTMLInputElement>("[data-op-extra-arq]"); if (i) i.value = c; const n = bl.querySelector<HTMLInputElement>("[data-op-extra-nome]"); if (n && !n.value) n.value = nome; } };
+        arquivoOp.click(); return;
+      }
+      case "op-extra-add": {
+        const bl = el.closest<HTMLElement>("[data-op-bloco]"); const x = ui.aula ? acharAula(ui.aula) : null; if (!bl || !x) return;
+        const t = tipoDaTela((bl.dataset.opExtraTipo || TIPOS[3].tela) as TipoExtra);
+        const nome = bl.querySelector<HTMLInputElement>("[data-op-extra-nome]")?.value.trim() || "", arq = bl.querySelector<HTMLInputElement>("[data-op-extra-arq]")?.value.trim() || "";
+        if (!nome || !arq) { toast("Preencha o nome e o arquivo (ou o link) do conteúdo."); return; }
+        const linha: Record<string, unknown> = { produto_id: x.c.id, aula_id: x.a.id, pai_id: d.id, tipo: t.banco, titulo: nome, ordem: 0, publicado: true };
+        if (t.banco === "link") linha.url = arq; else if (t.banco === "texto") linha.texto = arq;
+        else if (t.banco === "video") { const r = idDoVideo(arq); if (!r) { toast("Não reconheci o vídeo. Cole o link ou só o identificador."); return; } linha.video_ref = r; linha.video_provider = provedorDoLink(arq); }
+        else linha.arquivo_path = arq;
+        void executar(async () => { const r = falhou(await supabase.from("conteudos").insert(linha).select("id").single()); return { msg: "Conteúdo adicionado à opção.", texto: "conteúdo extra " + nome, desfazer: async () => { falhou(await supabase.from("conteudos").delete().eq("id", r.data!.id).select("id").single()); } }; });
+        return;
+      }
+      case "op-extra-remover": {
+        confirmar({ titulo: "Remover este conteúdo?", texto: "O conteúdo extra sai desta opção.", palavra: "REMOVER", rotulo: "Remover" }, async () => {
+          falhou(await supabase.from("conteudos").delete().eq("id", d.id).select("id").single()); toast("Conteúdo removido.");
+        });
+        break;
       }
       case "op-tirar": {
         el.closest("[data-op-bloco]")?.remove();
@@ -3800,13 +3877,44 @@ export function montar(app: HTMLElement) {
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
         const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
+        // E-book: o botão do PDF e as outras opções, lidas de cada bloco na tela.
+        type LinhaOp = { id: string; dados: Record<string, unknown> };
+        const opcoes: LinhaOp[] = [];
+        if (tipo === "pdf") {
+          let erroOp = "";
+          document.querySelectorAll<HTMLElement>("[data-ops] [data-op-bloco]").forEach((bl, ordem) => {
+            const campo = (sufixo: string) => (bl.querySelector<HTMLInputElement>(`[name$="${sufixo}"]`)?.value ?? "").trim();
+            const rot = campo("Rotulo"); const t = (bl.querySelector<HTMLSelectElement>("[data-op2-tipo]")?.value || "texto") as Opcao["tipo"];
+            const vid = t === "video" ? campo("Video") : ""; const vref = vid ? idDoVideo(vid) : null;
+            if (vid && !vref) erroOp = "Não reconheci o vídeo da opção " + (ordem + 2) + ". Cole o link do Cloudflare Stream ou só o identificador.";
+            if (!rot && !campo("Texto") && !campo("Pdf") && !vid && !campo("Audio")) return; // bloco vazio: não guarda
+            opcoes.push({ id: bl.dataset.opId || "", dados: {
+              titulo: rot || "Opção", cor: campo("RotuloCor") || null, tipo: t, ordem,
+              texto: (t === "texto" ? campo("Texto") : t === "pdf" ? "" : campo("Desc")) || null,
+              arquivo_path: (t === "pdf" ? campo("Pdf") : t === "audio" ? campo("Audio") : "") || null,
+              video_ref: vref, video_provider: vref ? provedorDoLink(vid) : null,
+              capa_path: t === "video" || t === "audio" ? campo("Capa") || null : null,
+              titulo_tela: t === "video" || t === "audio" ? campo("Titulo") || null : null,
+              instrucoes: t === "video" || t === "audio" ? campo("Instr") || null : null,
+            } });
+          });
+          if (erroOp) { toast(erroOp); return; }
+        }
+        const idsOp = new Set(opcoes.map((o) => o.id).filter(Boolean));
+        const opApagar = tipo === "pdf" ? xa.a.opcoes.filter((o) => !idsOp.has(o.id)).map((o) => o.id) : [];
+        const botaoEb = tipo === "pdf" ? { botao_ebook: v("botaoEbook") || null, botao_ebook_cor: v("botaoEbookCor") || null } : {};
         const extrasAula: Record<string, string | null> = {};
         if (x0.resumo !== null) {
           const e = (form.elements.namedItem("exercicio") as HTMLTextAreaElement).value;
           extrasAula.exercicio = e.trim() ? e : null;
         }
         void executar(async () => {
-          falhou(await supabase.from("aulas").update({ ...base, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
+          falhou(await supabase.from("aulas").update({ ...base, ...botaoEb, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
+          for (const o of opcoes) {
+            if (o.id) falhou(await supabase.from("conteudos").update(o.dados).eq("id", o.id).select("id").single());
+            else falhou(await supabase.from("conteudos").insert({ ...o.dados, produto_id: xa.c.id, aula_id: id, opcao: true, publicado: true }).select("id").single());
+          }
+          if (opApagar.length) falhou(await supabase.from("conteudos").delete().in("id", opApagar).select("id"));
           if (mudouStatus) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: !ativa });
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
@@ -3989,7 +4097,8 @@ export function montar(app: HTMLElement) {
     if (ui.sujo && !LIVRE.has(a)) {
       const fd = formSujo();
       if (!fd || CANCELA.has(a)) ui.sujo = null;
-      else if (!(el && fd.contains(el))) { mostrarAviso(() => acao(a, d, el!, alvo)); return; }
+      // A tela Editar aula tem campos fora do <form> (capa, opções, configurações), ligados a ele.
+      else if (!(el && (fd.contains(el) || (fd.id && el.closest('[data-form-de="' + fd.id + '"]') && !["aula-voltar-modulo", "abrir-curso", "aba"].includes(a))))) { mostrarAviso(() => acao(a, d, el!, alvo)); return; }
     }
     acao(a, d, el!, alvo);
   }
