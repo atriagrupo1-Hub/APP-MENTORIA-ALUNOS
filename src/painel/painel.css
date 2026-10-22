@@ -1587,3 +1587,10 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .cs-add-aula { margin-top: 12px; color: #8a6a2c; border-color: #dcbb7e; }
 .cs-mod-aulas svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .cs-mod-aulas .mp-aula-capa i svg { stroke-width: 1.5; }
+/* Situação da liberação da aula */
+.lib-info { display: inline-flex; align-items: center; gap: 6px; min-height: var(--botao-alto, 36px); padding: 0 12px; font-size: 13px; font-weight: 600; border-radius: var(--botao-raio, 4px); }
+.lib-info svg, .al-botao.lib-ok svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lib-info.lib-ok, .al-botao.lib-ok { color: #1f7a45; background: #e3f4e9; border-color: #b9e2c7; }
+.lib-info.lib-breve { color: #8a5a00; background: #fbefcf; }
+[data-tema="escuro"] .lib-info.lib-ok, [data-tema="escuro"] .al-botao.lib-ok { color: #7fd8a0; background: rgba(47,158,90,.18); border-color: transparent; }
+[data-tema="escuro"] .lib-info.lib-breve { color: #f2c46b; background: rgba(242,196,107,.15); }
