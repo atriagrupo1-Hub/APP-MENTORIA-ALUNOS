@@ -424,7 +424,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -1987,6 +1987,8 @@ export function montar(app: HTMLElement) {
     nomeIni: "Só no curso da mentoria: o nome grande do bloco da mentoria, no Início da aluna (ex.: Bênçãos Ilimitadas). Vazio, não aparece.",
     numMod: "A aluna vê o nome antes do número (Módulo, Documentário, Frequência…), o número e o nome do módulo. O número vai de 0 a 999, não repete no mesmo curso, e a ordem segue o número. Para mudar, clique em Editar no módulo.",
     numAula: "A aluna vê o nome antes do número (Aula, Episódio…), o número e o nome da aula. O número vai de 0 a 999, não repete no mesmo módulo, e a ordem segue o número. Para mudar o nome antes do número ou o número, clique em Editar na aula.",
+    nomeMod: "O nome do módulo que a aluna vê depois do número. Ex.: Boas-vindas e diagnóstico.",
+    modCriado: "A data que aparece como criação do módulo. Deixe como está se não quiser mudar.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2138,6 +2140,103 @@ export function montar(app: HTMLElement) {
     lixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10.5 11v5.5M13.5 11v5.5"/></svg>`,
     seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
   };
+  /* --- Página do módulo (referência aprovada): informações e capas no alto, aulas embaixo --- */
+  const IC_INFO = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14.5h8"/></svg>`;
+  const IC_SALVAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11.5l3 3V19a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/><path d="M8 4.5v5h7v-5M8 19.5v-6h8v6"/></svg>`;
+  const IC_PLAY_C = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
+  function paginaModulo(c: Curso, m: Modulo, i: number) {
+    const capaH = previas["modh-" + m.id] || capaSite(m.capaH), capaV = previas["modv-" + m.id] || capaSite(m.capa);
+    const ident = h(m.rot) + " " + numModulo(c, i);
+    const linhaAulaPag = (a: Aula, j: number) => {
+      if (editando("aula", a.id)) return `<div class="mp-aula editando">${linhaAula(m, a, j)}</div>`;
+      const capa = capaSite(a.capa), mais = ui.aulaMais === a.id;
+      const quando = a.criado ? dataHoraCurta(a.criado).split(" ") : ["—", ""];
+      return `
+        <div class="mp-aula${mais ? " aberta" : ""}" draggable="true" data-arrasta="${a.id}">
+          <div class="mp-aula-linha">
+            <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
+            <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_PLAY_C}</i></button>
+            <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
+            <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
+            ${a.acesso === "bloqueada" ? pilula("Bloqueada", "vermelho") : pilula("Ativa", "verde")}
+            <span class="mp-aula-acoes">
+              <button type="button" class="al-botao" data-a="aula-editar" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
+              <button type="button" class="mp-ic" data-a="aula-duplicar" data-id="${a.id}" aria-label="Duplicar a aula" title="Duplicar">${IC_MOD.copiar}</button>
+              <button type="button" class="mp-ic perigo" data-a="aula-remover" data-id="${a.id}" aria-label="Remover a aula" title="Remover">${IC_MOD.lixo}</button>
+              <button type="button" class="mp-ic mp-seta" data-a="aula-mais" data-id="${a.id}" aria-label="${mais ? "Esconder opções" : "Mais opções"}" aria-expanded="${mais}">${IC_MOD.seta}</button>
+            </span>
+          </div>
+          ${mais ? `<div class="mp-aula-mais">
+            <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
+            <button type="button" class="al-botao" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
+            <button type="button" class="al-botao${a.acesso === "bloqueada" ? "" : " perigo"}" data-a="aula-bloquear" data-id="${a.id}">${a.acesso === "bloqueada" ? "Desbloquear" : "Bloquear"}</button>
+          </div>` : ""}
+        </div>`;
+    };
+    return `
+    <section class="tela ativa cs mp">
+      <div class="mp-topo">
+        <nav class="mp-trilha" aria-label="Você está em">
+          <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
+          <button type="button" data-a="mod-pagina-voltar">${h(c.nome)}</button><i>›</i>
+          <b>${ident}</b>
+        </nav>
+        <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
+      </div>
+      <div class="mp-tit"><h2>${ident}</h2>${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}</div>
+      <p class="mp-sub">${h(m.nome)}</p>
+
+      <form data-f="mod-renomear" data-id="${m.id}" class="cs-cartao mp-info">
+        <div class="mp-cab"><span class="mp-cab-ic">${IC_INFO}</span><div><h3>Informações do módulo</h3><p>Edite as informações e as capas do módulo.</p></div></div>
+        <div class="mp-grade">
+          <div class="mp-capas">
+            <span class="rotulo-ajuda mp-rot">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
+            <span class="mp-capa-h" data-previa="modh-${m.id}">${capaH ? `<img src="${h(capaH)}" alt="" />` : ""}</span>
+            <input type="hidden" name="capaH" value="${h(m.capaH)}" />
+            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Tirar capa</button></span>
+            <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+            <span class="rotulo-ajuda mp-rot">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
+            <span class="mp-pe">
+              <span class="mp-capa-v" data-previa="modv-${m.id}">${capaV ? `<img src="${h(capaV)}" alt="" />` : ""}</span>
+              <input type="hidden" name="capa" value="${h(m.capa)}" />
+              <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Tirar capa</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
+            </span>
+          </div>
+          <div class="mp-campos">
+            <div class="mp-linha3">
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.num, "Número do módulo")}</label>
+            </div>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="4">${h(m.intro)}</textarea></label>
+            <div class="mp-linha-cor">
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Cor do módulo ${dicaCampo(AJ.modCor)}</span><input type="color" class="campo-cor" name="cor" value="${h(/^#[0-9a-f]{6}$/i.test(m.cor) ? m.cor : "#e6b85a")}" /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Data de criação (opcional) ${dicaCampo(AJ.modCriado)}</span><input type="datetime-local" class="campo" name="criado" value="${h(dataLocal(m.criado))}" /></label>
+            </div>
+            <div class="grupo mp-vivo"><span class="rotulo-ajuda mp-rot">Aula ao vivo ${dicaCampo(AJ.modVivo)}</span>
+              <label class="mp-vivo-marca"><input type="checkbox" name="temVivo" value="1" ${m.vivo ? "checked" : ""} /> Este módulo tem aula ao vivo</label>
+              <label class="mp-vivo-data">Data e hora (vazio = "data a confirmar")<input type="datetime-local" class="campo" name="vivoData" value="${h(dataLocal(m.vivo?.data || ""))}" /></label>
+            </div>
+            <div class="mp-bts"><button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button><button class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button></div>
+          </div>
+        </div>
+      </form>
+
+      <section class="cs-cartao mp-aulas">
+        <div class="mp-aulas-topo">
+          <div class="mp-cab"><span class="mp-cab-ic">${IC_PLAY_C}</span><div><h3>Aulas deste módulo (${m.aulas.length})</h3><p>Gerencie as aulas do ${ident}. Arraste para mudar a ordem.</p></div></div>
+          <button type="button" class="al-botao-ouro" data-a="aula-add-abrir" data-id="${m.id}">${IC_CURSO.mais}Adicionar aula</button>
+        </div>
+        ${ui.addAula === m.id ? `
+        <form data-f="aula-add" data-id="${m.id}" class="mp-add">
+          <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumAula(m), "Número da aula")}</label>
+          <input id="novaAula" class="campo" name="nome" placeholder="Nome da nova aula" required />
+          <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="aula-add-cancelar">Cancelar</button>
+        </form>` : ""}
+        <div class="mp-lista">${m.aulas.map((a, j) => linhaAulaPag(a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}</div>
+      </section>
+    </section>`;
+  }
   function modulosCurso(c: Curso) {
     return `
       <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
@@ -2356,6 +2455,8 @@ export function montar(app: HTMLElement) {
   function telaCurso() {
     const c = curso(ui.curso);
     if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
+    const mp = ui.modPagina ? acharModulo(ui.modPagina) : null;
+    if (mp && mp.c.id === c.id) return paginaModulo(c, mp.m, mp.i);
     const aba = ui.cursoAba || "visao";
     const todas = alunasDoCurso(c);
     const capa = capaSite(c.capa);
@@ -3041,7 +3142,10 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
 
       case "cat-editar": ui.editando = { tipo: "cat", id: d.id }; ui.focar = "editarCampo"; break;
-      case "mod-editar": ui.editando = { tipo: "mod", id: d.id }; ui.focar = "editarCampo"; break;
+      case "mod-editar": ui.modPagina = d.id; ui.editando = null; ui.aulaMais = null; ui.addAula = null; window.scrollTo(0, 0); break;
+      case "mod-pagina-voltar": ui.modPagina = null; ui.editando = null; ui.cursoAba = "modulos"; window.scrollTo(0, 0); break;
+      case "aula-mais": ui.aulaMais = ui.aulaMais === d.id ? null : d.id; break;
+      case "aula-duplicar": { const x = acharAula(d.id)!; void executar(async () => { const novo = await rpc("duplicar_aula", { p_aula: x.a.id }) as string; return { msg: "Aula duplicada.", texto: "cópia da aula " + x.a.nome, desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", novo).select("id").single()); } }; }); return; }
       case "aula-editar": ui.editando = { tipo: "aula", id: d.id }; ui.focar = "editarCampo"; break;
       case "cancelar-edicao": ui.editando = null; break;
       case "cat-sobe": case "cat-desce": {
@@ -3206,6 +3310,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="cur-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar para guardar."); return; }
       case "mod-capa-v": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capa", previa: "modv-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
       case "mod-capa-h": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capaH", previa: "modh-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
+      case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modv-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
@@ -3226,7 +3331,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         break;
       }
       case "abrir-curso": {
-        ui.curso = d.id; ui.tab = "curso"; ui.editando = null; ui.cursoAba = d.v || "visao"; ui.curAlBusca = ""; ui.curAlFiltro = ""; ui.curAlDe = ""; ui.curAlAte = "";
+        ui.curso = d.id; ui.tab = "curso"; ui.editando = null; ui.modPagina = null; ui.cursoAba = d.v || "visao"; ui.curAlBusca = ""; ui.curAlFiltro = ""; ui.curAlDe = ""; ui.curAlAte = "";
         ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
       }
@@ -3545,9 +3650,10 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, num = Number(v("numero"));
           const erro = erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
           const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
+          const criado = v("criado"), mudouCriado = !!criado && criado !== dataLocal(mm.criado) && !isNaN(+new Date(criado));
           const capa = v("capa") || null, cor = v("cor") || null, temVivo = (form.elements.namedItem("temVivo") as HTMLInputElement).checked, vivoData = v("vivoData");
           void executar(async () => {
-            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
             else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do " + (v("rotulo") || "Módulo") + " " + num, data_hora: dataHora }).select("id"));
@@ -3942,6 +4048,16 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
   app.addEventListener("drop", (e) => {
     const t = (e.target as HTMLElement).closest?.<HTMLElement>("[data-arrasta]"); if (!t || !ui.arrasto) return;
     e.preventDefault();
+    const ax = acharAula(ui.arrasto), ay = acharAula(t.dataset.arrasta!);
+    if (ax && ay && ax.m.id === ay.m.id) {
+      ui.arrasto = null;
+      if (ax.ai !== ay.ai) {
+        const nova = ax.m.aulas.slice(); const [k] = nova.splice(ax.ai, 1); nova.splice(ay.ai, 0, k);
+        const velha = ax.m.aulas.map((x) => x.id);
+        void executar(async () => { await rpc("ordenar_aulas", { p_modulo: ax.m.id, p_ids: nova.map((x) => x.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + ax.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: ax.m.id, p_ids: velha }); } }; });
+      } else render();
+      return;
+    }
     const mx = acharModulo(ui.arrasto), my = acharModulo(t.dataset.arrasta!);
     if (mx && my && mx.c.id === my.c.id) {
       ui.arrasto = null;

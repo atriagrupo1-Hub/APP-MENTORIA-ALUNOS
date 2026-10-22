@@ -1377,3 +1377,85 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 /* Número do módulo/aula: digita ou usa as setinhas */
 .campo-num { width: 96px; max-width: 96px; }
 .cs-add-num .campo-num { width: 84px; }
+
+/* ===== Página do módulo ===== */
+.mp-topo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.mp-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; color: var(--texto-3); }
+.mp-trilha button { padding: 0; font: inherit; color: var(--texto-3); background: none; border: 0; cursor: pointer; }
+.mp-trilha button:hover { color: var(--texto); text-decoration: underline; }
+.mp-trilha b { color: var(--texto); font-weight: 600; }
+.mp-trilha i { font-style: normal; }
+.mp-tit { display: flex; align-items: center; gap: 16px; margin-top: 6px; }
+.mp-tit h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 40px; font-weight: 600; line-height: 1.1; }
+.mp-sub { margin: 6px 0 22px; font-size: 15px; letter-spacing: .18em; text-transform: uppercase; color: var(--texto-3); }
+.mp svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.mp .al-botao svg, .mp .al-botao-ouro svg { width: 17px; height: 17px; }
+.mp .al-botao.perigo { color: var(--aa-verm); border-color: color-mix(in srgb, var(--aa-verm) 55%, transparent); }
+.mp-cab { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+.mp-cab-ic svg { width: 28px; height: 28px; }
+.mp-cab h3 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 24px; font-weight: 600; }
+.mp-cab p { margin: 4px 0 0; font-size: 14px; color: var(--texto-3); }
+.mp-info { padding: 22px 24px; margin-bottom: 22px; }
+.mp-grade { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 0 26px; }
+.mp-capas { display: flex; flex-direction: column; gap: 8px; padding-right: 26px; border-right: 1px solid var(--linha-suave); }
+.mp-rot { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--texto-3); }
+.mp-capa-h { display: block; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 8px; }
+.mp-capa-v { display: block; width: 130px; aspect-ratio: 2 / 3; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border-radius: 8px; flex: none; }
+.mp-capa-h img, .mp-capa-v img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mp-capa-bts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.mp-dica { font-size: 13px; color: var(--texto-3); margin-bottom: 10px; }
+.mp-pe { display: flex; align-items: flex-end; gap: 14px; }
+.mp-pe-bts { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.mp-pe-bts .mp-dica { margin: 0; }
+.mp-campos { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.mp-campos .grupo { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.mp-linha3 { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 16px; }
+.mp-linha3 .campo-num { width: 100%; max-width: none; }
+.mp-linha-cor { display: grid; grid-template-columns: auto minmax(0, 260px); justify-content: start; gap: 28px; align-items: start; }
+.mp-vivo-marca { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.mp-vivo-data { display: flex; flex-direction: column; gap: 4px; max-width: 260px; font-size: 13px; color: var(--texto-3); }
+.mp-bts { display: flex; justify-content: flex-end; gap: 12px; }
+.mp-bts .al-botao { min-width: 160px; justify-content: center; }
+.mp-aulas { padding: 22px 24px; }
+.mp-aulas-topo { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.mp-add { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+.mp-add input[name="nome"] { flex: 1 1 260px; }
+.mp-lista { display: flex; flex-direction: column; gap: 10px; }
+.mp-aula { border: 1px solid var(--linha-suave); border-radius: 10px; background: var(--aa-cartao); }
+.mp-aula.editando { padding: 10px 14px; }
+.mp-aula.alvo { outline: 2px dashed var(--aa-ouro); }
+.mp-aula-linha { display: grid; grid-template-columns: auto 150px minmax(0, 1fr) auto auto auto; align-items: center; gap: 16px; padding: 10px 12px; }
+.mp-aula-capa { position: relative; display: block; width: 150px; aspect-ratio: 2.5 / 1; padding: 0; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border: 0; border-radius: 6px; cursor: pointer; }
+.mp-aula-capa img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mp-aula-capa i { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; }
+.mp-aula-capa i svg { width: 34px; height: 34px; stroke-width: 1.5; }
+.mp-aula-txt { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mp-aula-txt b { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-aula-txt span { font-size: 13px; color: var(--texto-3); }
+.mp-aula-txt i { font-style: normal; margin: 0 6px; }
+.mp-aula-data { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--texto); }
+.mp-aula-data svg { width: 22px; height: 22px; color: var(--aa-ouro); }
+.mp-aula-acoes { display: flex; align-items: center; gap: 10px; }
+.mp-ic { display: grid; place-items: center; width: 40px; height: var(--botao-alto, 36px); color: var(--texto-2); background: var(--aa-cartao); border: 1px solid var(--linha); border-radius: var(--botao-raio, 4px); cursor: pointer; }
+.mp-ic svg { width: 18px; height: 18px; }
+.mp-ic.perigo { color: var(--aa-verm); }
+.mp-aula.aberta .mp-seta svg { transform: rotate(180deg); }
+.mp-aula-mais { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px 12px 190px; }
+@media (max-width: 1100px) {
+  .mp-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .mp-capas { padding-right: 0; border-right: 0; }
+  .mp-aula-linha { grid-template-columns: auto 110px minmax(0, 1fr) auto; }
+  .mp-aula-capa { width: 110px; }
+  .mp-aula-data { display: none; }
+  .mp-aula-acoes { grid-column: 2 / -1; flex-wrap: wrap; }
+  .mp-aula-mais { padding-left: 12px; }
+}
+@media (max-width: 560px) {
+  .mp-linha3, .mp-linha-cor { grid-template-columns: minmax(0, 1fr); }
+  .mp-tit h2 { font-size: 32px; }
+  .mp-aula-linha { grid-template-columns: 90px minmax(0, 1fr); }
+  .mp-aula-linha .cs-alca { display: none; }
+  .mp-aula-capa { width: 90px; }
+  .mp-aula-acoes { grid-column: 1 / -1; }
+  .mp-bts { flex-direction: column-reverse; }
+}
