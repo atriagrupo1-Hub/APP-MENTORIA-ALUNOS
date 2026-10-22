@@ -155,6 +155,8 @@ type LinhaModulo = {
 
 type LinhaAula = {
   id: string;
+  tipo?: string | null;
+  arquivo_path?: string | null;
   rotulo?: string | null;
   modulo_id: string;
   numero: number;
@@ -381,6 +383,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         moduloId: a.modulo_id,
         numero: a.numero,
         rotulo: a.rotulo ?? null,
+        tipo: a.tipo ?? "video",
+        arquivoPath: a.arquivo_path ?? null,
         titulo: a.titulo,
         ordem: a.ordem,
         duracaoSegundos: a.duracao_segundos,
@@ -861,10 +865,11 @@ export function enderecoDoVideo(video: Video): string {
 export async function enderecoDoArquivo(
   deposito: "materiais" | "audios",
   caminho: string,
+  segundos = 600,
 ): Promise<string | null> {
   const { data, error } = await supabase.storage
     .from(deposito)
-    .createSignedUrl(caminho, 600);
+    .createSignedUrl(caminho, segundos);
   if (error) return null;
   return data?.signedUrl ?? null;
 }
