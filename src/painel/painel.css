@@ -1373,3 +1373,7 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .cs-mod-nome { flex: 1 1 auto; display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
 .cs-mod-nome .cs-mod-txt { flex: 0 1 auto; }
 .linha .nome b .ajuda-amarela { vertical-align: middle; margin-left: 2px; }
+
+/* Número do módulo/aula: digita ou usa as setinhas */
+.campo-num { width: 96px; max-width: 96px; }
+.cs-add-num .campo-num { width: 84px; }
