@@ -184,6 +184,14 @@ async function emPaginas<T>(pedir: (de: number, ate: number) => PromiseLike<{ da
   }
 }
 
+// As fotos das alunas são o maior peso da abertura: vêm por último, sem segurar a tela.
+let fotosCache: Record<string, string> = {};
+async function carregarFotos(): Promise<boolean> {
+  const r = await supabase.from("fotos_aluna").select("aluna_id, foto");
+  if (r.error) return false;
+  fotosCache = Object.fromEntries(((r.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto]));
+  return true;
+}
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
   const euP = Promise.resolve(quem);
@@ -209,7 +217,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
-    supabase.from("fotos_aluna").select("aluna_id, foto"),
+    Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
     supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
@@ -217,7 +225,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   ]);
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await ondaA;
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, fotosAl, cfgIni, versos, dests, vivos] = await ondaB;
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos] = await ondaB;
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -346,7 +354,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       destino: x.destino === "categoria" ? "categoria" : "presentes", categoriaId: x.categoria_id ?? "", categoriaNome: x.categoria_nome ?? "",
       icone: x.icone ?? "estrela", cor: x.cor ?? "dourado", visivel: !!x.visivel,
     })),
-    fotos: Object.fromEntries(((fotosAl.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto])),
+    fotos: fotosCache,
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
@@ -3044,6 +3052,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         const al = S.alunas.find((x) => x.id === d.id)!;
         confirmar({ titulo: "Remover a foto de " + al.nome + "?", texto: "No lugar dela volta a aparecer a inicial do nome, aqui e na área de membros.", palavra: "REMOVER", rotulo: "Remover foto" }, async () => {
           await rpc("salvar_foto_aluna", { p_aluna: al.id, p_foto: null, p_original: null, p_ajuste: null });
+          delete fotosCache[al.id];
           await registrar(al.id, "Removeu a foto");
           return { msg: "Foto removida.", texto: "foto de " + al.nome };
         });
@@ -3801,6 +3810,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     if (!pronta) return;
     void executar(async () => {
       await rpc("salvar_foto_aluna", { p_aluna: al.id, p_foto: pronta.foto, p_original: pronta.original, p_ajuste: pronta.ajuste });
+      fotosCache[al.id] = pronta.foto;
       await registrar(al.id, "Colocou a foto");
       return { msg: "Foto salva. Ela já aparece na área de membros de " + primeiroNome(al.nome) + ".", texto: "foto de " + al.nome };
     });
@@ -3938,6 +3948,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         return;
       }
       S = await dadosP;
+      void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
         const c = S.cursos[0]; if (c && c.modulos[0]) ui.abertos.add(c.modulos[0].id);
