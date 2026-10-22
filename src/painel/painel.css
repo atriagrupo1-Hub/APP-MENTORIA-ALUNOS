@@ -2014,3 +2014,17 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ac-cat-alca { width: 14px; }
 .ac-cat-ed { flex-basis: 24px; width: 24px; }
 .ac-cats { padding-left: 22px; padding-right: 22px; }
+/* Categorias como cartões (Abas e Categorias) */
+.ac-cat-cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.ac-catcard { position: relative; }
+.ac-catcard.sel { outline: 3px solid #c9a04e; outline-offset: 0; }
+.ac-catcard .cur-capa { position: relative; }
+.ac-catcard-alca { position: absolute; top: 10px; left: 10px; display: grid; place-items: center; width: 28px; height: 28px; color: #fff; background: rgba(0, 0, 0, .6); border-radius: 6px; cursor: grab; }
+.ac-catcard-alca svg { width: 16px; height: 16px; fill: currentColor; }
+.ac-catcard-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.ac-catcard .cur-botoes { grid-template-columns: 1fr !important; display: grid; }
+.ac-catcard-ed { justify-content: center; gap: 8px; width: 100%; }
+.ac-catcard-ed svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ac-catcard.arrastando { opacity: .5; }
+.ac-catcard.alvo { outline: 2px dashed var(--al-ouro); }
+.ac-sem-cursos { margin-top: 0; }
