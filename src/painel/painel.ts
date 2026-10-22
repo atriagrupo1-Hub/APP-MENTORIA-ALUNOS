@@ -1938,7 +1938,7 @@ export function montar(app: HTMLElement) {
     pontos: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>`,
   };
   const icDaAba = (k: Cat) => (k.id === curso(S.config.jornada)?.cat ? IC_ABAC.olho : IC_ABAC.presente);
-  function telaAbasCat(todas: boolean, filtroCat: string, daAba: Curso[], filtroProd: string, lista: Curso[], cartao: (c: Curso) => string, vista: string, ordem: string) {
+  function telaAbasCat(todas: boolean, filtroCat: string, daAba: Curso[], filtroProd: string, _lista: Curso[], _cartao: (c: Curso) => string, vista: string, ordem: string) {
     const aba = cat(filtroCat), prod = curso(filtroProd);
     const pub = !!aba && aba.pub, ajuda = (key: string, tit: string, txt: string) => `<span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="${key}" aria-label="${h(tit)}" aria-expanded="${ui.ajuda === key}">?</button>${ui.ajuda === key ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>${h(tit)}</b>${txt}</span>` : ""}</span>`;
     const niveis = `<span class="aba-niveis"><i>1</i><b>Aba</b> no menu do app (ex.: Presentes)<br /><i>2</i><b>Categoria</b> dentro da aba (ex.: E-books)<br /><i>3</i><b>Cursos e conteúdos</b> dentro da categoria, com os módulos e as aulas</span>`;
@@ -1971,12 +1971,20 @@ export function montar(app: HTMLElement) {
         </div>
         <div class="ac-cats">
           <h3>${todas ? "Todas as categorias" : "Categorias desta aba"} (${daAba.length}) ${ajuda("o-que-e-categoria", "O que é uma categoria", `<span>A categoria fica dentro de uma aba. No aplicativo, aparece como um botão e um cartão dentro da aba.</span>${niveis}<em>O que fazer: clique numa categoria para ver os cursos e conteúdos dela; arraste para mudar a ordem.</em>`)}</h3>
-          ${daAba.length ? `<div class="ac-cats-grade">${daAba.map((c) => { const img = capaSite(c.capa); return `
-            <div class="ac-cat${c.id === filtroProd ? " sel" : ""}" draggable="true" data-arrasta="${c.id}">
-              <button type="button" class="ac-cat-alvo" data-a="lay-cat" data-v="${c.id}" aria-pressed="${c.id === filtroProd}"><span class="ac-cat-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span><span class="ac-cat-nome">${h(c.nome)}${todas ? `<small>${h(cat(c.cat)?.nome || "")}</small>` : ""}</span></button>
-              <button type="button" class="ac-cat-ed" data-a="abrir-curso" data-id="${c.id}" data-v="config" aria-label="Editar ${h(c.nome)}">${IC_ABAC.lapis}</button>
-              <span class="ac-cat-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
-            </div>`; }).join("")}</div>` : `<div class="cl-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`}
+          ${daAba.length ? `<div class="cur-grade ac-cat-cards">${daAba.map((c) => { const img = capaSite(c.capa); const dias = c.criado ? diasEntre(diaDe(c.criado), hoje()) : -1; return `
+            <article class="cur-card ac-catcard${c.id === filtroProd ? " sel" : ""}" draggable="true" data-arrasta="${c.id}">
+              <button type="button" class="cur-capa" data-a="lay-cat" data-v="${c.id}" aria-label="Ver os cursos de ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}<span class="ac-catcard-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span></button>
+              <div class="cur-corpo">
+                <button type="button" class="cur-tit" data-a="lay-cat" data-v="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
+                <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Aba:</em><b>${h(cat(c.cat)?.nome || "Sem aba")}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), false, true)}</div>
+                <div class="cur-stats ac-catcard-stats">
+                  <span>${IC_CUR.pasta}<b>0</b><em>cursos</em></span>
+                  <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
+                  <span>${IC_CUR.cal}<b>${c.criado ? br(diaDe(c.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span>
+                </div>
+                <div class="cur-botoes"><button type="button" class="al-botao ac-catcard-ed" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_ABAC.lapis}Editar</button></div>
+              </div>
+            </article>`; }).join("")}</div>` : `<div class="cl-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`}
         </div>
       </div>
       ${prod ? `
@@ -1986,7 +1994,7 @@ export function montar(app: HTMLElement) {
         <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["categorias", "Ordem da área de membros"], ["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
         <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
-      ${lista.length ? `<div class="cur-grade${vista === "lista" ? " em-lista" : ""}">${lista.map(cartao).join("")}</div>` : `<div class="vazio">Nenhum curso encontrado.</div>`}` : ""}
+      <div class="vazio ac-sem-cursos">Nenhum curso nesta categoria ainda. Os cursos e conteúdos de ${h(prod.nome)} vão aparecer aqui.</div>` : ""}
     </section>`;
   }
   /*
