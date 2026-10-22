@@ -33,6 +33,8 @@ type Aula = {
   num: number;
   /** Desativada (não publicada): some da área da aluna. */
   pub: boolean;
+  /** Quando foi liberada para todas (0070). */
+  liberadaEm: string;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rot: string;
   /** Data de liberação da aula para todas; vazio = sem data própria (0066). */
@@ -211,7 +213,10 @@ async function carregarFotos(): Promise<boolean> {
   fotosCache = Object.fromEntries(((r.data ?? []) as Array<{ aluna_id: string; foto: string }>).map((x) => [x.aluna_id, x.foto]));
   return true;
 }
+/** Liberação de cada aula pelas alunas: a próxima data marcada e a última já aberta. */
+const libPorAula = new Map<string, { prox: string; ult: string }>();
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
+  libPorAula.clear();
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
   const euP = Promise.resolve(quem);
   const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
@@ -275,7 +280,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
-      num: Number(a.numero) || 0, pub: a.publicado !== false, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
+      num: Number(a.numero) || 0, pub: a.publicado !== false, liberadaEm: a.liberada_em ?? "", rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
       tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
       botaoEbook: a.botao_ebook ?? "", botaoEbookCor: a.botao_ebook_cor ?? "", opcoes: opcoesDa.get(a.id) ?? [],
     });
@@ -337,6 +342,14 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       al.acesso.aulas.push(ac.aula_id);
       if (ac.abre_em) al.datas[ac.aula_id] = diaDe(ac.abre_em);
     }
+  }
+  for (const ac of acessos.data ?? []) {
+    if (ac.escopo !== "aula" || !ac.aula_id) continue;
+    const quando = ac.abre_em || ac.concedido_em || "";
+    const l = libPorAula.get(ac.aula_id) ?? { prox: "", ult: "" };
+    if (ac.abre_em && new Date(ac.abre_em).getTime() > Date.now()) { if (!l.prox || ac.abre_em < l.prox) l.prox = ac.abre_em; }
+    else if (quando && (!l.ult || quando > l.ult)) l.ult = quando;
+    libPorAula.set(ac.aula_id, l);
   }
   for (const c of crono.data ?? []) {
     const al = porId.get(c.aluna_id);
@@ -1003,6 +1016,24 @@ export function montar(app: HTMLElement) {
   };
   const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
   const IC_OLHO_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.8M6.6 7.6C4 9.4 2.5 12 2.5 12S6 18 12 18c1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+  /*
+   * Liberação da aula: "Liberada para todas · data" (clica para tirar);
+   * "Libera em N dias · data" quando há data marcada (da aula ou das
+   * alunas); "Liberada · data" quando já abriu para as alunas; senão, o
+   * botão "Liberar para todas".
+   */
+  function botaoLiberacao(a: Aula) {
+    const dia = (iso: string) => br(diaDe(iso));
+    const emDias = (iso: string) => { const n = Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 864e5)); return n === 1 ? "amanhã" : "em " + n + " dias"; };
+    if (a.acesso === "liberada") return `<button type="button" class="al-botao lib-ok" data-a="aula-liberar" data-id="${a.id}" title="Clique para tirar a liberação para todas">${IC_OK_LIB}Liberada para todas${a.liberadaEm ? " · " + dia(a.liberadaEm) : ""}</button>`;
+    const l = libPorAula.get(a.id), futuro = (x: string) => !!x && new Date(x).getTime() > Date.now();
+    const prox = [futuro(a.libera) ? a.libera : "", l?.prox || ""].filter(Boolean).sort()[0];
+    if (prox) return `<span class="lib-info lib-breve">${IC_CUR.cal}Libera ${emDias(prox)} · ${dia(prox)}</span>`;
+    const ult = [a.libera && !futuro(a.libera) ? a.libera : "", l?.ult || ""].filter(Boolean).sort().pop();
+    if (ult) return `<span class="lib-info lib-ok">${IC_OK_LIB}Liberada · ${dia(ult)}</span>`;
+    return `<button type="button" class="al-botao" data-a="aula-liberar" data-id="${a.id}">Liberar para todas</button>`;
+  }
+  const IC_OK_LIB = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>`;
   /** Pílula clicável: abre as três opções; `sub` mostra a explicação embaixo. */
   function seletorEstado(tipo: "curso" | "mod" | "aula", id: string, e: Estado3, sub = false, fem = false) {
     const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
@@ -2237,7 +2268,7 @@ export function montar(app: HTMLElement) {
           </div>
           ${mais ? `<div class="mp-aula-mais">
             <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
-            <button type="button" class="al-botao" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
+            ${botaoLiberacao(a)}
           </div>` : ""}
         </div>`;
   }
@@ -2655,7 +2686,7 @@ export function montar(app: HTMLElement) {
           <button class="botao-neutro" data-a="aula-sobe" data-id="${a.id}" ${j === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
           <button class="botao-neutro" data-a="aula-desce" data-id="${a.id}" ${j === m.aulas.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
           <button class="botao-neutro" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
-          <button class="botao-neutro" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
+          ${botaoLiberacao(a)}
           <button class="botao-neutro" data-a="abrir-aula" data-id="${a.id}">Editar</button>
           ${a.acesso === "bloqueada"
             ? `<button class="botao-neutro" data-a="aula-bloquear" data-id="${a.id}">Desbloquear</button>`
