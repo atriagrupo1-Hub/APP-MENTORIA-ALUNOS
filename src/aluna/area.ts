@@ -91,7 +91,7 @@ export function montar(raiz: HTMLElement) {
       .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
       .filter((c) => c.publicado !== false)
       .map((c) => ({
-        id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
+        id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral, aba: c.abaId || null,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
           id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
@@ -101,7 +101,7 @@ export function montar(raiz: HTMLElement) {
     const pj = cat.produtos.find((x) => x.id === jornada);
     MIDIA.clear();
     for (const m of cat.modulos.concat(cat.produtos.flatMap((x) => x.modulos || []))) for (const a of m.aulas) MIDIA.set(a.id, { tipo: a.tipo || "video", arquivo: a.arquivoPath || "" });
-    D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
+    D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, abas: cat.abas, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
     S.nome = perfil?.nome || "";
     // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
     // foto antiga, salva só neste aparelho, sobe uma vez e sai daqui.
@@ -241,8 +241,17 @@ export function montar(raiz: HTMLElement) {
     trofeu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>',
     coroa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>',
   };
-  const NAV = [["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"]];
-  const navAtual = () => ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", opcao: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela;
+  /*
+   * Abas do app (0074): Início e Módulos, as abas criadas no painel (cada
+   * uma com as suas categorias, como Presentes) e Perfil. Sem a lista de
+   * abas, fica a aba Presentes de antes, com todas as categorias.
+   */
+  const ABAS = () => (D && D.abas) || null;
+  const abaAtual = () => { const l = ABAS(); if (!l || !l.length) return null; return l.find((a) => a.id === S.aba) || l.find((a) => /presente/i.test(a.titulo)) || l[0]; };
+  const NAVL = () => { const l = ABAS(); return [["inicio", "Início"], ["modulos", "Módulos"], ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
+  const icNav = (id, ic) => ICONES[id] || ICONES[ic] || ICONES.presentes;
+  const navPres = () => { const a = abaAtual(); return a ? "aba:" + a.id : "presentes"; };
+  const navAtual = () => { const t = ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", opcao: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela; return t === "presentes" ? navPres() : t; };
   const NOME_ORIGEM = { inicio: "Início", modulos: "Módulos", perfil: "Perfil", presentes: "Presentes" };
   const avTopo = () => (S.foto ? `<img src="${S.foto}" alt="" />` : h((S.nome || "?").trim().charAt(0).toUpperCase()));
   const avCom = (nome, cor, foto, pq) => foto
@@ -281,11 +290,11 @@ export function montar(raiz: HTMLElement) {
     app.innerHTML = `
       ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
         <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
-        <nav class="nav-topo" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
+        <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
       </div></header>`}
       <main>${telas[S.tela]()}</main>
-      ${S.tela === "leitor" ? "" : `<nav class="nav-base" aria-label="Principal">${NAV.map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${ICONES[id]}${t}</button>`).join("")}</nav>`}`;
+      ${S.tela === "leitor" ? "" : `<nav class="nav-base" aria-label="Principal">${NAVL().map(([id, t, ic]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${icNav(id, ic)}${h(t)}</button>`).join("")}</nav>`}`;
   }
 
   function telaEntrada() {
@@ -1013,17 +1022,19 @@ export function montar(raiz: HTMLElement) {
         </section>`;
   }
   function telaPresentes() {
-    const lista = PRESENTES();
+    const aba = abaAtual();
+    const lista = PRESENTES().filter((x) => !aba || x.c.aba === aba.id);
     return `
     <div class="pagina">
-      <h1 class="todos-mod serif">Presentes</h1>
+      <h1 class="todos-mod serif">${h(aba ? aba.titulo : "Presentes")}</h1>
       ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
-      <div class="cat-grade">${lista.map(cartaoPresente).join("") || `<div class="vazio">Em breve, presentes para você.</div>`}</div>
+      <div class="cat-grade">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
     </div>`;
   }
   function telaCategoria() {
     const c = S.cat < 0 && S.catVazia ? { nome: S.catVazia, cursos: [] } : CATS()[S.cat];
     if (!c) { S.tela = "presentes"; return telaPresentes(); }
+    if (c.aba) S.aba = c.aba;
     const ci = S.cat;
     return `
     <div class="pagina">
@@ -1162,6 +1173,7 @@ export function montar(raiz: HTMLElement) {
     const [ci, i] = String(S.cursoPres || "").split("-").map(Number);
     const c = CATS()[ci], curso = c && c.cursos[i];
     if (!curso) { S.tela = "presentes"; return telaPresentes(); }
+    if (c.aba) S.aba = c.aba;
     const cat = c.nome, COR = CORES_CAT[ci % CORES_CAT.length], freq = cat === "Frequências";
     const soLeitura = curso.itens.length > 0 && curso.itens.every((t) => t.tipoMidia === "pdf");
     const nomeTipo = freq ? ["frequência", "frequências"] : soLeitura ? ["e-book", "e-books"] : ["vídeo", "vídeos"];
@@ -1589,7 +1601,8 @@ export function montar(raiz: HTMLElement) {
   /* ---------- ações ---------- */
   function acao(a, d) {
     switch (a) {
-      case "ir": S.config = false; document.documentElement.classList.remove("trava-rolagem"); pararVideo(); if (S.tela !== d.v || d.v !== "perfil") S.perfilDe = null; S.tela = d.v; topo(); break;
+      case "ir": if (String(d.v).startsWith("aba:")) { S.aba = d.v.slice(4); d = { ...d, v: "presentes" }; } else if (d.v === "presentes" && S.tela !== "categoria" && S.tela !== "cursoPres") S.aba = null;
+        S.config = false; document.documentElement.classList.remove("trava-rolagem"); pararVideo(); if (S.tela !== d.v || d.v !== "perfil") S.perfilDe = null; S.tela = d.v; topo(); break;
       case "perfil-av": if (S.tela !== "perfil") { pararVideo(); S.perfilDe = { tela: S.tela, mod: S.mod, aula: S.aula, presente: S.presente, y: window.scrollY }; S.tela = "perfil"; topo(); } break;
       case "jornada": pararVideo(); if (S.tela !== "jornada") S.jornadaDe = { tela: S.tela, mod: S.mod, aula: S.aula, presente: S.presente, y: window.scrollY }; S.tela = "jornada"; topo(); break;
       case "voltar-jornada": case "voltar-perfil": {
