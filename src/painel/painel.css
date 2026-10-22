@@ -1595,3 +1595,24 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 [data-tema="escuro"] .lib-info.lib-ok, [data-tema="escuro"] .al-botao.lib-ok { color: #7fd8a0; background: rgba(47,158,90,.18); border-color: transparent; }
 [data-tema="escuro"] .lib-info.lib-breve { color: #f2c46b; background: rgba(242,196,107,.15); }
 .ea-lib { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--linha-suave); }
+
+/* Página do módulo: informações à esquerda; configurações e ações rápidas à direita */
+.mp-dupla { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; margin-bottom: 22px; }
+.mp-dupla .mp-info { margin-bottom: 0; }
+.mp-dupla .mp-grade { grid-template-columns: 280px minmax(0, 1fr); }
+.mp-dupla .mp-linha3 { grid-template-columns: minmax(0, 1fr) 128px minmax(0, 1.3fr); gap: 12px; }
+.mp-lado { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.mp-lado .cs-cartao { padding: 20px 22px; }
+.mp-lado .mp-cab { margin-bottom: 14px; align-items: center; }
+.mp-lado .mp-cab h3 { font-size: 22px; }
+.mp-config { display: flex; flex-direction: column; gap: 14px; }
+.mp-config .grupo { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.mp-config .mp-rot svg { width: 18px; height: 18px; }
+.mp-lado .ea-lib { flex-direction: column; align-items: flex-start; }
+.mp-lado .lib-info { min-height: 32px; }
+@media (max-width: 1200px) { .mp-dupla { grid-template-columns: minmax(0, 1fr); } }
+.mp-dupla .mp-grade { grid-template-columns: 240px minmax(0, 1fr); gap: 0 22px; }
+.mp-dupla .mp-capas { padding-right: 22px; }
+.mp-dupla .mp-linha3 .mp-rot { white-space: normal; align-items: flex-end; min-height: 20px; }
+.mp-dupla .mp-linha3 { align-items: end; }
+.mp-dupla .mp-pe { flex-direction: column; align-items: flex-start; }

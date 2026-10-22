@@ -49,7 +49,7 @@ type Opcao = {
   id: string; rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf";
   texto: string; arquivo: string; video: string; capa: string; tituloTela: string; instrucoes: string; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; pub: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -223,7 +223,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, publicado, bloqueado_geral, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, publicado, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id").not("aula_id", "is", null).order("ordem"),
@@ -291,7 +291,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -1022,6 +1022,26 @@ export function montar(app: HTMLElement) {
    * alunas); "Liberada · data" quando já abriu para as alunas; senão, o
    * botão "Liberar para todas".
    */
+  const IC_ENGR_M = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>`;
+  const IC_EXP_M = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
+  /** Liberação do módulo: a data dele, ou o que as aulas já têm (a mais próxima a abrir, ou a última aberta). */
+  function situacaoModulo(m: Modulo) {
+    const dia = (iso: string) => br(diaDe(iso)), futuro = (x: string) => !!x && new Date(x).getTime() > Date.now();
+    const emDias = (iso: string) => { const n = Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 864e5)); return n === 1 ? "amanhã" : "em " + n + " dias"; };
+    if (futuro(m.libera)) return `<span class="lib-info lib-breve">${IC_CUR.cal}Libera ${emDias(m.libera)} · ${dia(m.libera)}</span>`;
+    const proxs: string[] = [], ults: string[] = [];
+    for (const a of m.aulas) {
+      const l = libPorAula.get(a.id);
+      if (a.acesso === "liberada") ults.push(a.liberadaEm || "");
+      if (l?.prox) proxs.push(l.prox); if (futuro(a.libera)) proxs.push(a.libera);
+      if (l?.ult) ults.push(l.ult); if (a.libera && !futuro(a.libera)) ults.push(a.libera);
+    }
+    const ult = ults.filter(Boolean).sort().pop(), prox = proxs.sort()[0];
+    if (ult) return `<span class="lib-info lib-ok">${IC_OK_LIB}Liberado · ${dia(ult)}</span>${prox ? `<span class="lib-info lib-breve">${IC_CUR.cal}Próxima aula ${emDias(prox)} · ${dia(prox)}</span>` : ""}`;
+    if (prox) return `<span class="lib-info lib-breve">${IC_CUR.cal}Libera ${emDias(prox)} · ${dia(prox)}</span>`;
+    if (m.libera) return `<span class="lib-info lib-ok">${IC_OK_LIB}Liberado · ${dia(m.libera)}</span>`;
+    return `<span class="lib-info">Nenhuma aula liberada ainda</span>`;
+  }
   function botaoLiberacao(a: Aula) {
     const dia = (iso: string) => br(diaDe(iso));
     const emDias = (iso: string) => { const n = Math.max(1, Math.ceil((new Date(iso).getTime() - Date.now()) / 864e5)); return n === 1 ? "amanhã" : "em " + n + " dias"; };
@@ -2090,6 +2110,8 @@ export function montar(app: HTMLElement) {
     listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
     botaoEbook: "O texto do botão que abre o PDF completo dentro da área. Ex.: Ler ebook completo.",
     op2: "Mais botões na tela do e-book. Cada um tem nome e cor e abre o que você escolher: um texto escrito aqui, outro PDF, ou um vídeo ou áudio com a tela completa (capa, descrição, instruções e conteúdo extra).",
+    statusMod: "Ativo: aparece e abre para quem tem acesso. Bloqueado: aparece, mas não abre. Desativado: não aparece para a aluna. Muda na hora, ao escolher.",
+    liberaMod: "Antes desta data nenhuma aula do módulo abre para ninguém (aparece \"Libera em breve\"). Vazio: vale a liberação de cada aula e de cada aluna.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2276,7 +2298,7 @@ export function montar(app: HTMLElement) {
     const capaH = previas["modh-" + m.id] || capaSite(m.capaH), capaV = previas["modv-" + m.id] || capaSite(m.capa);
     const ident = h(m.rot) + " " + numModulo(c, i);
     return `
-    <section class="tela ativa cs mp">
+    <section class="tela ativa cs mp" data-form-de="formMod">
       <div class="mp-topo">
         <nav class="mp-trilha" aria-label="Você está em">
           <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
@@ -2285,10 +2307,11 @@ export function montar(app: HTMLElement) {
         </nav>
         <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
       </div>
-      <div class="mp-tit"><h2>${ident}</h2>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</div>
+      <div class="mp-tit"><h2>${ident}</h2></div>
       <p class="mp-sub">${h(m.nome)}</p>
 
-      <form data-f="mod-renomear" data-id="${m.id}" class="cs-cartao mp-info">
+      <div class="mp-dupla">
+      <form id="formMod" data-f="mod-renomear" data-id="${m.id}" class="cs-cartao mp-info">
         <div class="mp-cab"><span class="mp-cab-ic">${IC_INFO}</span><div><h3>Informações do módulo</h3><p>Edite as informações e as capas do módulo.</p></div></div>
         <div class="mp-grade">
           <div class="mp-capas">
@@ -2319,6 +2342,24 @@ export function montar(app: HTMLElement) {
           </div>
         </div>
       </form>
+      <div class="mp-lado">
+        <section class="cs-cartao ea-config">
+          <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR_M}</span><div><h3>Configurações</h3></div></div>
+          <div class="mp-config">
+            <div class="grupo"><span class="rotulo-ajuda mp-rot">Status do módulo ${dicaCampo(AJ.statusMod)}</span>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</div>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
+          </div>
+          <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo(m)}</div>
+        </section>
+        <section class="cs-cartao cs-rapidas">
+          <h3>Ações rápidas</h3>
+          <button type="button" data-a="cs-ver-aluna">${IC_OLHO_C}Ver na área da aluna</button>
+          <button type="button" data-a="mod-duplicar" data-id="${m.id}">${IC_MOD.copiar}Duplicar módulo</button>
+          <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}" data-mod="${m.id}">${IC_EXP_M}Exportar conteúdo</button>
+          <button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Apagar módulo</button>
+        </section>
+      </div>
+      </div>
 
       <section class="cs-cartao mp-aulas">
         <div class="mp-aulas-topo">
@@ -3406,9 +3447,9 @@ export function montar(app: HTMLElement) {
       case "cs-exportar-conteudo": {
         const c = curso(d.id || ui.curso); if (!c) return;
         const q = (x: string) => '"' + String(x ?? "").replace(/"/g, '""') + '"';
-        const linhas = ["Módulo;Aula;Vídeo;Capa;Tem texto;Instruções;Extras"].concat(c.modulos.flatMap((m, mi) => m.aulas.map((a) => [ "Módulo " + numModulo(c, mi) + " — " + m.nome, a.nome, a.video, a.capa, a.texto ? "sim" : "não", a.exercicio ? "sim" : "não", String(a.extras.length)].map(q).join(";"))));
+        const linhas = ["Módulo;Aula;Vídeo;Capa;Tem texto;Instruções;Extras"].concat(c.modulos.filter((m) => !d.mod || m.id === d.mod).flatMap((m) => m.aulas.map((a) => [ "Módulo " + numModulo(c, c.modulos.indexOf(m)) + " — " + m.nome, a.nome, a.video, a.capa, a.texto ? "sim" : "não", a.exercicio ? "sim" : "não", String(a.extras.length)].map(q).join(";"))));
         const url = URL.createObjectURL(new Blob(["\ufeff" + linhas.join("\n")], { type: "text/csv;charset=utf-8" }));
-        const el2 = Object.assign(document.createElement("a"), { href: url, download: "conteúdo - " + c.nome + ".csv" }); document.body.append(el2); el2.click(); el2.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
+        const el2 = Object.assign(document.createElement("a"), { href: url, download: "conteúdo - " + c.nome + (d.mod ? " - " + (acharModulo(d.mod)?.m.nome || "módulo") : "") + ".csv" }); document.body.append(el2); el2.click(); el2.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
         toast("Conteúdo exportado."); return;
       }
       case "cs-duplicar": {
@@ -3552,7 +3593,7 @@ export function montar(app: HTMLElement) {
       case "mod-remover": {
         const x = acharModulo(d.id)!;
         confirmar({ titulo: "Remover o módulo " + x.m.nome + "?", texto: "As " + p(x.m.aulas.length, "aula dele é apagada", "aulas dele são apagadas") + " junto. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover módulo" }, async () => {
-          falhou(await supabase.from("modulos").delete().eq("id", x.m.id).select("id").single()); toast("Módulo removido.");
+          falhou(await supabase.from("modulos").delete().eq("id", x.m.id).select("id").single()); if (ui.modPagina === x.m.id) ui.modPagina = null; toast("Módulo removido.");
         });
         break;
       }
@@ -3939,17 +3980,18 @@ export function montar(app: HTMLElement) {
         { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, num = Number(v("numero"));
           const erro = erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
           const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
+          const libMod = v("libera"), liberaMod = libMod && !isNaN(+new Date(libMod)) ? new Date(libMod).toISOString() : null, liberaVelha = mm.libera || null;
           const criado = v("criado"), mudouCriado = !!criado && criado !== dataLocal(mm.criado) && !isNaN(+new Date(criado));
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
-            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
             else if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
             else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do " + (v("rotulo") || "Módulo") + " " + num, data_hora: dataHora }).select("id"));
             else if (mm.vivo) falhou(await supabase.from("aulas_ao_vivo").delete().eq("modulo_id", id).select("id"));
-            ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho, numero: numVelho }).eq("id", id).select("id").single()); } }; }); }
+            ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho, numero: numVelho, libera_em: liberaVelha }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula-add": {
         const x = acharModulo(id)!; const num = Number(v("numero"));
@@ -4205,7 +4247,7 @@ export function montar(app: HTMLElement) {
       const fd = formSujo();
       if (!fd || CANCELA.has(a)) ui.sujo = null;
       // A tela Editar aula tem campos fora do <form> (capa, opções, configurações), ligados a ele.
-      else if (!(el && (fd.contains(el) || (fd.id && el.closest('[data-form-de="' + fd.id + '"]') && !["aula-voltar-modulo", "abrir-curso", "aba"].includes(a))))) { mostrarAviso(() => acao(a, d, el!, alvo)); return; }
+      else if (!(el && (fd.contains(el) || (fd.id && el.closest('[data-form-de="' + fd.id + '"]') && !["aula-voltar-modulo", "abrir-curso", "aba", "mod-pagina-voltar", "abrir-aula", "mod-remover"].includes(a))))) { mostrarAviso(() => acao(a, d, el!, alvo)); return; }
     }
     acao(a, d, el!, alvo);
   }
