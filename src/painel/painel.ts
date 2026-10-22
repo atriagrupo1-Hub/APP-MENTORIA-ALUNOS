@@ -2315,10 +2315,6 @@ export function montar(app: HTMLElement) {
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Cor do módulo ${dicaCampo(AJ.modCor)}</span><input type="color" class="campo-cor" name="cor" value="${h(/^#[0-9a-f]{6}$/i.test(m.cor) ? m.cor : "#e6b85a")}" /></label>
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Data de criação (opcional) ${dicaCampo(AJ.modCriado)}</span><input type="datetime-local" class="campo" name="criado" value="${h(dataLocal(m.criado))}" /></label>
             </div>
-            <div class="grupo mp-vivo"><span class="rotulo-ajuda mp-rot">Aula ao vivo ${dicaCampo(AJ.modVivo)}</span>
-              <label class="mp-vivo-marca"><input type="checkbox" name="temVivo" value="1" ${m.vivo ? "checked" : ""} /> Este módulo tem aula ao vivo</label>
-              <label class="mp-vivo-data">Data e hora (vazio = "data a confirmar")<input type="datetime-local" class="campo" name="vivoData" value="${h(dataLocal(m.vivo?.data || ""))}" /></label>
-            </div>
             <div class="mp-bts"><button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button><button class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button></div>
           </div>
         </div>
@@ -3944,11 +3940,13 @@ export function montar(app: HTMLElement) {
           const erro = erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
           const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
           const criado = v("criado"), mudouCriado = !!criado && criado !== dataLocal(mm.criado) && !isNaN(+new Date(criado));
-          const capa = v("capa") || null, cor = v("cor") || null, temVivo = (form.elements.namedItem("temVivo") as HTMLInputElement).checked, vivoData = v("vivoData");
+          const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
             falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
-            if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
+            // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
+            if (!campoVivo) { /* mantém como está */ }
+            else if (temVivo && mm.vivo) falhou(await supabase.from("aulas_ao_vivo").update({ data_hora: dataHora }).eq("modulo_id", id).select("id"));
             else if (temVivo) falhou(await supabase.from("aulas_ao_vivo").insert({ modulo_id: id, titulo: "Encontro ao vivo do " + (v("rotulo") || "Módulo") + " " + num, data_hora: dataHora }).select("id"));
             else if (mm.vivo) falhou(await supabase.from("aulas_ao_vivo").delete().eq("modulo_id", id).select("id"));
             ui.editando = null; delete previas["modh-" + id]; delete previas["modv-" + id]; return { msg: "Módulo salvo.", texto: "nome do módulo " + velho, desfazer: async () => { falhou(await supabase.from("modulos").update({ titulo: velho, numero: numVelho }).eq("id", id).select("id").single()); } }; }); }
