@@ -68,8 +68,8 @@ export function montar(raiz: HTMLElement) {
     const [perfil, cat, libs, abert, prodLib, inicio] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd, api.dadosDoInicio().catch(() => null)]);
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
     const jornada = cat.produtoJornada;
-    // Categoria desligada no painel ("Visível" apagado): some daqui inteira.
-    const catOculta = new Set(cat.categorias.filter((c) => c.bloqueadaGeral).map((c) => c.id));
+    // Categoria Desativada no painel: some daqui inteira. Bloqueada aparece, com cadeado.
+    const catOculta = new Set(cat.categorias.filter((c) => c.publicado === false).map((c) => c.id));
     const jornadaOculta = (() => { const pj = cat.produtos.find((x) => x.id === jornada); return !!(pj && catOculta.has(pj.categoriaId)); })();
     const mods = cat.modulos
       .filter((m) => !jornadaOculta && (jornada ? m.produtoId === jornada : true))
@@ -89,7 +89,7 @@ export function montar(raiz: HTMLElement) {
     const prodJ = cat.produtos.find((x) => x.id === jornada);
     const cats = cat.categorias
       .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
-      .filter((c) => !c.bloqueadaGeral)
+      .filter((c) => c.publicado !== false)
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
