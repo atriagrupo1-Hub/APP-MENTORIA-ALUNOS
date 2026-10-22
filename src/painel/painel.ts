@@ -1997,6 +1997,7 @@ export function montar(app: HTMLElement) {
     extraArquivo: "Escolha o arquivo do seu computador; ele vai para o depósito e o caminho aparece aqui.",
     liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
     statusAula: "Ativa: a aula aparece para quem tem acesso. Desligada: bloqueada para todas.",
+    listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2247,7 +2248,7 @@ export function montar(app: HTMLElement) {
   }
   function modulosCurso(c: Curso) {
     return `
-      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
+      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem ${dicaCampo(AJ.listaMods)}</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
       ${ui.csAddMod ? `
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
         <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>
@@ -2264,7 +2265,7 @@ export function montar(app: HTMLElement) {
             <div class="cs-mod-linha">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button>${dicaCampo(AJ.numMod)}</span>
+              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
               ${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
@@ -2574,7 +2575,7 @@ export function montar(app: HTMLElement) {
     const est = a.acesso === "liberada" ? etiqueta("Liberada para todas", OURO) : a.acesso === "bloqueada" ? etiqueta("Bloqueada", VERMELHO) : "";
     return `
       <div class="linha">
-        <span class="nome"><b>${h(a.rot)} ${a.num} — ${h(a.nome)} ${dicaCampo(AJ.numAula)}</b><span>${info}</span></span>
+        <span class="nome"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${info}</span></span>
         ${est}
         ${a.criado ? `<span class="aula-criada" title="Data de criação da aula">${IC_CUR.cal}${br(diaDe(a.criado))}</span>` : ""}
         <span class="acoes">
