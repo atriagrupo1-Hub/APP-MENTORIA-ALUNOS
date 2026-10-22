@@ -174,6 +174,7 @@ type LinhaCategoria = {
   ordem: number;
   destacada: boolean;
   bloqueada_geral: boolean;
+  publicado?: boolean;
 };
 
 type LinhaPresente = {
@@ -469,6 +470,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       ordem: c.ordem,
       destacada: c.destacada,
       bloqueadaGeral: c.bloqueada_geral,
+      publicado: c.publicado !== false,
       presentes: (porCategoriaPresentes.get(c.id) ?? []).sort((x, y) => x.ordem - y.ordem),
       produtos: listaProdutos
         .filter((p) => p.categoriaId === c.id)
@@ -761,7 +763,7 @@ export type Destaque = {
  */
 export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[] }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
@@ -770,7 +772,7 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
     marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
     fraseRetorno: cfg.data?.frase_retorno ?? "",
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
-    destaques: ((ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
+    destaques: (cfg.data?.exibir_destaques === false ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",
       botao: d.botao ?? "", destino: d.destino === "categoria" ? "categoria" : "presentes", categoriaId: d.categoria_id ?? null,
       categoriaNome: d.categoria_nome ?? "", icone: d.icone ?? "estrela", cor: d.cor ?? "dourado",

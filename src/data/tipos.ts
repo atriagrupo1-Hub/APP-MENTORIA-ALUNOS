@@ -102,6 +102,7 @@ export type Categoria = {
   ordem: number;
   destacada: boolean;
   bloqueadaGeral: boolean;
+  publicado: boolean;
   presentes: Presente[];
   /** Os produtos desta categoria, na ordem definida no painel. */
   produtos: Produto[];

@@ -66,7 +66,7 @@ type Destaque = {
   id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
   destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
 };
-type Cat = { id: string; nome: string; visivel: boolean; capa: string; descricao: string; criado: string };
+type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
   celular: string; email: string;
@@ -107,7 +107,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean };
   versiculos: Versiculo[];
   destaques: Destaque[];
 };
@@ -244,7 +244,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -387,9 +387,9 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   }
 
   return {
-    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
+    cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     cursos, alunas: listaAlunas, comentarios, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "" },
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -443,7 +443,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -454,7 +454,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "",
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -602,11 +602,11 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "Organize as categorias que aparecem na área de membros, e os destaques da página inicial.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
-    layout: `<button class="al-botao-ouro" data-a="cat-nova-foco"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
+    layout: `<button class="al-botao cl-ver" data-a="cs-ver-aluna">Ver na área da aluna <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg></button><button class="al-botao-ouro" data-a="cat-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar categoria</button>`,
   };
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias / Layout"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
@@ -1072,7 +1072,7 @@ export function montar(app: HTMLElement) {
   }
   const IC_OK_LIB = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg>`;
   /** Pílula clicável: abre as três opções; `sub` mostra a explicação embaixo. */
-  function seletorEstado(tipo: "curso" | "mod" | "aula", id: string, e: Estado3, sub = false, fem = false) {
+  function seletorEstado(tipo: "curso" | "mod" | "aula" | "cat", id: string, e: Estado3, sub = false, fem = false) {
     const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
     const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : fem ? "Desativada" : EST3[x][0]);
     return `<span class="est3${sub ? " com-sub" : ""}">
@@ -1845,38 +1845,91 @@ export function montar(app: HTMLElement) {
   const capaSite = (c: string) => (c ? (c.startsWith("/") ? c : urlDaCapa(c)) : "");
   const capaCat = (k: Cat) => capaSite(k.capa);
   const chave = (on: boolean, acao: string, id: string, rotulo: string) => `<button type="button" class="cat-chave" role="switch" aria-checked="${on}" data-a="${acao}" data-id="${id}" aria-label="${h(rotulo)}"><i></i></button>`;
+  /*
+   * Categorias / Layout: em cima, as categorias da área de membros em
+   * cartões pretos (ou em lista), com os três estados — Ativa, Bloqueada
+   * (aparece com cadeado) e Desativada (some da área da aluna). Embaixo,
+   * os destaques do Início em cartões brancos, na ordem em que aparecem.
+   */
+  const IC_LAY = {
+    pasta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4.6l2 2h8.4A1.5 1.5 0 0 1 21 9.5V18a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/><path d="M3 11h18"/></svg>`,
+    grade: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 12h16M12 4v16"/></svg>`,
+    lista: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.5" cy="6.5" r=".6"/><circle cx="4.5" cy="12" r=".6"/><circle cx="4.5" cy="17.5" r=".6"/></svg>`,
+    copia: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>`,
+    olho: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`,
+    alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>`,
+    modulo: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 9.5h16M9 13.5h6"/></svg>`,
+    aula: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M10.5 9.5l4 2.5-4 2.5z"/></svg>`,
+    destaque: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.5l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg>`,
+    mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  };
+  const estadoCat = (k: Cat): Estado3 => estado3(k.pub, !k.visivel);
+  function resumoCat(k: Cat) {
+    const cs = S.cursos.filter((c) => c.cat === k.id);
+    const mods = cs.reduce((s, c) => s + c.modulos.length, 0), aulas = cs.reduce((s, c) => s + totalAulas(c), 0);
+    return mods
+      ? `<span>${IC_LAY.modulo}${p(mods, "módulo", "módulos")}</span><span>${IC_LAY.aula}${p(aulas, "aula", "aulas")}</span>`
+      : `<span>${IC_LAY.modulo}${p(cs.length, "conteúdo", "conteúdos")}</span>`;
+  }
   function telaLayout() {
     const anima = ui.catAnima; ui.catAnima = false;
+    const q = norm(ui.catBusca || "").trim();
+    const lista = S.cats.filter((k) => !q || norm(k.nome + " " + k.descricao).includes(q));
+    const cards = ui.catVista !== "lista";
+    const olho = (k: Cat) => estadoCat(k) === "desativado" ? "" : `<button type="button" class="cl-olho" data-a="cs-ver-aluna" title="Ver na área da aluna" aria-label="Ver ${h(k.nome)} na área da aluna">${IC_LAY.olho}</button>`;
+    const acoes = (k: Cat) => `
+      <button type="button" class="cl-btn" data-a="cat-abrir-editar" data-id="${k.id}">${IC_CAT.lapis}Editar</button>
+      <button type="button" class="cl-btn ic" data-a="cat-duplicar" data-id="${k.id}" title="Duplicar categoria" aria-label="Duplicar ${h(k.nome)}">${IC_LAY.copia}</button>
+      <button type="button" class="cl-btn ic perigo" data-a="cat-remover" data-id="${k.id}" title="Excluir categoria" aria-label="Excluir ${h(k.nome)}">${IC_CAT.lixo}</button>`;
+    const cartao = (k: Cat) => {
+      const img = capaCat(k);
+      return `
+        <article class="cl-card${ui.catEditar === k.id ? " sel" : ""}" draggable="${q ? "false" : "true"}" data-arrasta="${k.id}">
+          <div class="cl-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<span class="cl-alca" title="Arraste para mudar a ordem">${IC_LAY.alca}</span></div>
+          <div class="cl-corpo">
+            <b class="cl-nome">${h(k.nome)}</b>
+            ${k.descricao ? `<span class="cl-desc">${h(k.descricao)}</span>` : ""}
+            <span class="cl-meta">${resumoCat(k)}</span>
+            <span class="cl-estado">${seletorEstado("cat", k.id, estadoCat(k), false, true)}${olho(k)}</span>
+          </div>
+          <div class="cl-acoes">${acoes(k)}</div>
+        </article>`;
+    };
+    const linha = (k: Cat) => {
+      const img = capaCat(k), i = S.cats.indexOf(k);
+      return `
+        <div class="cl-linha${ui.catEditar === k.id ? " sel" : ""}" draggable="${q ? "false" : "true"}" data-arrasta="${k.id}">
+          <span class="cl-alca" title="Arraste para mudar a ordem">${IC_LAY.alca}</span>
+          <span class="cl-mini">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
+          <span class="cl-linha-txt"><b class="cl-nome">${h(k.nome)}</b>${k.descricao ? `<span class="cl-desc">${h(k.descricao)}</span>` : ""}</span>
+          <span class="cl-meta">${resumoCat(k)}</span>
+          <span class="cl-estado">${seletorEstado("cat", k.id, estadoCat(k), false, true)}${olho(k)}</span>
+          <span class="cl-acoes">
+            <button type="button" class="cl-btn ic" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
+            <button type="button" class="cl-btn ic" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
+            ${acoes(k)}
+          </span>
+        </div>`;
+    };
     return `
     <section class="tela ativa cat">
-      <div class="cat-info"><span class="cat-info-ic" aria-hidden="true">i</span><span><b>A ordem em que a aluna vê</b><span>Arraste as categorias para reordenar. A ordem definida aqui será exibida na área de membros.</span></span></div>
-      ${S.cats.map((k, i) => {
-        const n = S.cursos.filter((c) => c.cat === k.id).length;
-        const img = capaCat(k);
-        return `
-        <div class="cat-linha${ui.catEditar === k.id ? " sel" : ""}" draggable="true" data-arrasta="${k.id}">
-          <div class="cat-linha-topo">
-            <span class="cat-alca" title="Arraste para mudar a ordem">${IC_CAT.alca}</span>
-            <span class="cat-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-            <span class="cat-nome"><b>${h(k.nome)}</b><span>${p(n, "curso", "cursos")} · ${k.visivel ? "Visível na área de membros" : "Oculta da área de membros"}</span></span>
-            <span class="cat-vis">${chave(k.visivel, "cat-visivel", k.id, (k.visivel ? "Ocultar " : "Mostrar ") + k.nome + " na área de membros")}<span>${k.visivel ? "Visível" : "Oculta"}</span></span>
-            <span class="cat-acoes">
-              <button class="al-botao pequeno" data-a="cat-ver" data-id="${k.id}" aria-expanded="${ui.catVer.has(k.id)}">${IC_CAT.olho}${ui.catVer.has(k.id) ? "Fechar" : "Ver"}</button>
-              <button class="al-botao pequeno" data-a="cat-abrir-editar" data-id="${k.id}">${IC_CAT.lapis}Editar</button>
-              <button class="al-botao pequeno quadrado" data-a="cat-sobe" data-id="${k.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-              <button class="al-botao pequeno quadrado" data-a="cat-desce" data-id="${k.id}" ${i === S.cats.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
-              <button class="al-botao pequeno cat-remover" data-a="cat-remover" data-id="${k.id}">${IC_CAT.lixo}Remover</button>
+      <div class="cl-escuro">
+        <div class="cl-cab">
+          <span class="cl-cab-ic">${IC_LAY.pasta}</span>
+          <div class="cl-cab-txt">
+            <h2>Categorias da Área de Membros <span class="cl-num">${S.cats.length}</span></h2>
+            <p>Defina a ordem, nome, capa e visibilidade das categorias. Cada categoria reúne cursos, módulos e conteúdos.</p>
+          </div>
+          <div class="cl-ferr">
+            <label class="cl-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></label>
+            <span class="cl-vista" role="group" aria-label="Modo de exibição">
+              <button type="button" data-a="cat-vista" data-v="cards" aria-pressed="${cards}">${IC_LAY.grade}Cards</button>
+              <button type="button" data-a="cat-vista" data-v="lista" aria-pressed="${!cards}">${IC_LAY.lista}Lista</button>
             </span>
           </div>
-          ${ui.catVer.has(k.id) ? `<div class="cat-cursos">${cursosDaCat(k)}</div>` : ""}
-        </div>`;
-      }).join("") || `<div class="vazio">Nenhuma categoria.</div>`}
-      <form data-f="cat-add" class="cat-add">
-        <span class="cat-add-mais" aria-hidden="true">+</span>
-        <b>Adicionar nova categoria</b>
-        <input id="catNova" class="campo" name="nome" placeholder="Nome da nova categoria" required />
-        <button class="al-botao-ouro">Adicionar categoria</button>
-      </form>
+        </div>
+        ${lista.length ? (cards ? `<div class="cl-grade">${lista.map(cartao).join("")}</div>` : `<div class="cl-lista">${lista.map(linha).join("")}</div>`) : `<div class="cl-vazio">${q ? "Nenhuma categoria encontrada." : "Nenhuma categoria."}</div>`}
+      </div>
       ${blocoDestaques()}
       ${ui.catEditar ? editarCategoria(anima) : ""}
       ${ui.destEditar ? editarDestaque() : ""}
@@ -1884,26 +1937,43 @@ export function montar(app: HTMLElement) {
   }
   const COR_DEST: Record<string, string> = { dourado: "Dourado", violeta: "Violeta", verde: "Verde", azul: "Azul", vermelho: "Vermelho", turquesa: "Turquesa" };
   const ICONE_DEST: Record<string, string> = { estrela: "Estrela", presente: "Presente", filme: "Filme", video: "Vídeo", livro: "Livro", som: "Som", lupa: "Lupa" };
-  const destinoTxt = (d: Destaque) => d.destino === "presentes" ? "Aba Presentes" : (cat(d.categoriaId)?.nome || d.categoriaNome || "categoria") + (d.categoriaId && cat(d.categoriaId) ? "" : " (categoria ainda não criada)");
+  const destinoTxt = (d: Destaque) => d.destino === "presentes" ? "Aba Presentes" : "Categoria: " + (cat(d.categoriaId)?.nome || d.categoriaNome || "categoria") + (d.categoriaId && cat(d.categoriaId) ? "" : " (ainda não criada)");
   function blocoDestaques() {
+    const on = S.config.exibirDestaques;
     return `
-      <h3 class="dest-titulo">Destaques do Início</h3>
-      <p class="al-sub">Os cartões que aparecem no Início da aluna, depois de "Também para você", nesta ordem.</p>
-      ${S.destaques.map((d, i) => `
-        <div class="cat-linha dest-linha${ui.destEditar === d.id ? " sel" : ""}">
-          <div class="cat-linha-topo">
-            <span class="cat-img">${capaSite(d.imagem) ? `<img src="${h(capaSite(d.imagem))}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-            <span class="cat-nome"><b>${h(d.titulo)}</b><span>${h(d.rotulo)} · leva para ${h(destinoTxt(d))} · ${COR_DEST[d.cor] || d.cor}</span></span>
-            <span class="cat-vis">${chave(d.visivel, "dest-visivel", d.id, (d.visivel ? "Esconder " : "Mostrar ") + d.titulo)}<span>${d.visivel ? "Visível" : "Escondido"}</span></span>
-            <span class="cat-acoes">
-              <button class="al-botao pequeno" data-a="dest-editar" data-id="${d.id}">${IC_CAT.lapis}Editar</button>
-              <button class="al-botao pequeno quadrado" data-a="dest-sobe" data-id="${d.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-              <button class="al-botao pequeno quadrado" data-a="dest-desce" data-id="${d.id}" ${i === S.destaques.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
-              <button class="al-botao pequeno cat-remover" data-a="dest-remover" data-id="${d.id}">${IC_CAT.lixo}Remover</button>
-            </span>
+      <div class="cl-claro">
+        <div class="cl-cab">
+          <span class="cl-cab-ic">${IC_LAY.destaque}</span>
+          <div class="cl-cab-txt">
+            <h2>Destaques do Início <span class="cl-num">${S.destaques.length}</span></h2>
+            <p>Cartões que aparecem na página inicial da aluna, depois de "Também para você".</p>
           </div>
-        </div>`).join("") || `<div class="vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}
-      <button class="al-botao" data-a="dest-editar" data-id="novo" style="margin-top:4px">+ Adicionar destaque</button>`;
+          <div class="cl-ferr">
+            <span class="cl-exibir">${chave(on, "dest-exibir", "", on ? "Esconder os destaques do Início" : "Exibir os destaques no Início")}<span>Exibir destaques</span></span>
+            <button type="button" class="al-botao-ouro" data-a="dest-editar" data-id="novo">${IC_LAY.mais}Adicionar destaque</button>
+          </div>
+        </div>
+        ${S.destaques.length ? `<div class="cl-grade dest">${S.destaques.map((d, i) => {
+          const img = capaSite(d.imagem);
+          return `
+          <article class="cl-card branco${ui.destEditar === d.id ? " sel" : ""}" draggable="true" data-arrasta="${d.id}">
+            <div class="cl-capa">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<span class="cl-alca" title="Arraste para mudar a ordem">${IC_LAY.alca}</span><span class="cl-ordem">${i + 1}</span></div>
+            <div class="cl-corpo">
+              <b class="cl-nome">${h(d.titulo)}</b>
+              <span class="cl-desc">${h(d.rotulo)} · ${h(destinoTxt(d))}</span>
+              <span class="cl-estado">
+                <button type="button" class="est3-pil ${d.visivel ? "verde" : "vermelho"}" data-a="dest-visivel" data-id="${d.id}" title="${d.visivel ? "Esconder do Início" : "Mostrar no Início"}">${d.visivel ? IC_LAY.olho : IC_OLHO_X}${d.visivel ? "Ativa" : "Desativada"}</button>
+                ${d.visivel ? `<button type="button" class="cl-olho" data-a="cs-ver-aluna" title="Ver na área da aluna" aria-label="Ver ${h(d.titulo)} na área da aluna">${IC_LAY.olho}</button>` : ""}
+              </span>
+            </div>
+            <div class="cl-acoes">
+              <button type="button" class="cl-btn" data-a="dest-editar" data-id="${d.id}">${IC_CAT.lapis}Editar</button>
+              <button type="button" class="cl-btn ic" data-a="dest-duplicar" data-id="${d.id}" title="Duplicar destaque" aria-label="Duplicar ${h(d.titulo)}">${IC_LAY.copia}</button>
+              <button type="button" class="cl-btn ic perigo" data-a="dest-remover" data-id="${d.id}" title="Excluir destaque" aria-label="Excluir ${h(d.titulo)}">${IC_CAT.lixo}</button>
+            </div>
+          </article>`;
+        }).join("")}</div>` : `<div class="cl-vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}
+      </div>`;
   }
   function editarDestaque() {
     const novo = ui.destEditar === "novo";
@@ -1949,16 +2019,16 @@ export function montar(app: HTMLElement) {
   function editarCategoria(entra: boolean) {
     const k = cat(ui.catEditar!); if (!k) { ui.catEditar = null; return ""; }
     const img = previas["cat-" + k.id] || capaCat(k);
-    const n = S.cursos.filter((c) => c.cat === k.id).length;
+    const n = S.cursos.filter((c) => c.cat === k.id).length, nova = ui.catNova === k.id;
     return `
       <div class="aa-fundo dois" data-a="cat-fechar-editar"></div>
-      <aside class="aa-painel largo cat-painel${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="cat-painel-cab"><h2>Editar categoria</h2><button type="button" class="aa-fechar" data-a="cat-fechar-editar" aria-label="Fechar">${xis}</button></header>
+      <aside class="aa-painel largo cat-painel${entra ? " entra" : ""}" role="dialog" aria-modal="true" aria-label="${nova ? "Nova categoria" : "Editar categoria"}">
+        <header class="cat-painel-cab"><h2>${nova ? "Nova categoria" : "Editar categoria"}</h2><button type="button" class="aa-fechar" data-a="cat-fechar-editar" aria-label="Fechar">${xis}</button></header>
         <form data-f="cat-salvar" data-id="${k.id}" class="aa-corpo cat-form" data-rolagem="cat-${k.id}">
           <div class="cat-capa">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}<button type="button" class="cat-capa-btn" data-a="cat-imagem">Alterar imagem</button></div>
-          <label class="cat-campo"><span>Nome da categoria</span><input class="campo" name="nome" value="${h(k.nome)}" required maxlength="60" /></label>
+          <label class="cat-campo"><span>Nome da categoria</span><input id="catNome" class="campo" name="nome" value="${h(nova ? "" : k.nome)}" placeholder="Nome da categoria" required maxlength="60" /></label>
           <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="3" maxlength="200" data-conta="catConta">${h(k.descricao)}</textarea><small id="catConta" class="cat-conta">${k.descricao.length}/200</small></label>
-          <label class="cat-vis-linha">${chave(k.visivel, "cat-visivel", k.id, "Visível na área de membros")}<span>Visível na área de membros</span></label>
+          ${nova ? "" : `<div class="cat-vis-linha"><span>Status</span>${seletorEstado("cat", k.id, estadoCat(k), true, true)}</div>`}
           <h3 class="cat-sub">Cursos nesta categoria (${n})</h3>
           <div class="cat-cursos">${cursosDaCat(k)}</div>
           <button type="button" class="al-botao cat-largo" data-a="cat-add-curso" data-id="${k.id}">+ Adicionar curso</button>
@@ -3560,6 +3630,22 @@ export function montar(app: HTMLElement) {
         break;
       }
       case "dest-editar": ui.destEditar = d.id; break;
+      case "dest-exibir": {
+        const on = !S.config.exibirDestaques;
+        void executar(async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: on }).not("id", "is", null).select("id")); await registrar(null, (on ? "Exibiu" : "Escondeu") + " os destaques do Início"); return { msg: on ? "Os destaques aparecem no Início." : "Os destaques foram escondidos do Início.", texto: "exibição dos destaques", desfazer: async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: !on }).not("id", "is", null).select("id")); } }; });
+        return;
+      }
+      case "dest-duplicar": {
+        const x = S.destaques.find((k) => k.id === d.id)!; const pos = S.destaques.indexOf(x);
+        void executar(async () => {
+          const r = falhou(await supabase.from("destaques_inicio").insert({ imagem_path: x.imagem || null, rotulo: x.rotulo, titulo: x.titulo + " (cópia)", descricao: x.descricao || null, botao: x.botao, destino: x.destino, categoria_id: x.destino === "categoria" && x.categoriaId ? x.categoriaId : null, categoria_nome: x.categoriaNome || null, icone: x.icone, cor: x.cor, visivel: false, ordem: S.destaques.length + 1 }).select("id").single());
+          const ids = S.destaques.map((k) => k.id); ids.splice(pos + 1, 0, r.data!.id);
+          for (let k = 0; k < ids.length; k++) falhou(await supabase.from("destaques_inicio").update({ ordem: k + 1 }).eq("id", ids[k]).select("id").single());
+          await registrar(null, "Duplicou o destaque " + x.titulo);
+          return { msg: "Destaque duplicado. A cópia está desativada.", texto: "cópia do destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
       case "dest-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["dest-" + ui.destEditar]; ui.destEditar = null; ui.sujo = null; break;
       case "dest-imagem": imgPara = { form: 'form[data-f="dest-salvar"]', campo: "imagem", previa: "dest-" + d.id, pasta: "destaques" }; arquivoImg.click(); return;
       case "dest-visivel": {
@@ -3589,8 +3675,36 @@ export function montar(app: HTMLElement) {
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
-      case "cat-fechar-editar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["cat-" + ui.catEditar]; ui.catEditar = null; ui.sujo = null; break;
+      case "cat-fechar-editar": {
+        if (alvo !== el && el.classList.contains("aa-fundo")) return;
+        const rascunho = ui.catNova && ui.catNova === ui.catEditar ? ui.catNova : "";
+        delete previas["cat-" + ui.catEditar]; ui.catEditar = null; ui.sujo = null; ui.catNova = "";
+        if (rascunho) { void executar(async () => { falhou(await supabase.from("categorias").delete().eq("id", rascunho).select("id").single()); return "Nova categoria descartada."; }); return; }
+        break;
+      }
       case "cat-nova-foco": ui.focar = "catNova"; break;
+      case "cat-vista": ui.catVista = d.v === "lista" ? "lista" : "cards"; break;
+      case "cat-nova": {
+        // Nasce desativada; ao salvar, fica ativa. Fechar sem salvar apaga.
+        void executar(async () => {
+          const r = falhou(await supabase.from("categorias").insert({ titulo: "Nova categoria", ordem: S.cats.length, publicado: false }).select("id").single());
+          await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: [...S.cats.map((k) => k.id), r.data!.id] });
+          ui.catNova = r.data!.id; ui.catEditar = r.data!.id; ui.catAnima = true; ui.focar = "catNome";
+          return "Preencha a nova categoria e salve.";
+        });
+        return;
+      }
+      case "cat-duplicar": {
+        const k = cat(d.id)!; const pos = S.cats.indexOf(k);
+        void executar(async () => {
+          const r = falhou(await supabase.from("categorias").insert({ titulo: k.nome + " (cópia)", descricao: k.descricao || null, capa_path: k.capa || null, ordem: S.cats.length, publicado: false }).select("id").single());
+          const ids = S.cats.map((x) => x.id); ids.splice(pos + 1, 0, r.data!.id);
+          await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: ids });
+          await registrar(null, "Duplicou a categoria " + k.nome);
+          return { msg: "Categoria duplicada. A cópia está desativada, sem cursos.", texto: "cópia da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
       case "cat-imagem": arquivoCat.click(); return;
       case "cat-add-curso": ui.modal = { tipo: "curso", cat: d.id }; ui.focar = "cursoNome"; break;
       case "cat-visivel": {
@@ -3715,8 +3829,15 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "estado-set": {
-        const [tipo, id, novo] = d.v.split(":") as ["curso" | "mod" | "aula", string, Estado3]; ui.estMenu = "";
+        const [tipo, id, novo] = d.v.split(":") as ["curso" | "mod" | "aula" | "cat", string, Estado3]; ui.estMenu = "";
         const pub = novo !== "desativado", bloq = novo === "bloqueado";
+        if (tipo === "cat") {
+          const k = cat(id); if (!k) break; const antes = { publicado: k.pub, bloqueada_geral: !k.visivel };
+          if (estado3(antes.publicado, antes.bloqueada_geral) === novo) break;
+          const nome = novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "desativada";
+          void executar(async () => { falhou(await supabase.from("categorias").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou a categoria " + k.nome + " " + nome); return { msg: k.nome + ": " + nome + ".", texto: "estado da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(antes).eq("id", id).select("id").single()); } }; });
+          return;
+        }
         if (tipo === "curso") {
           const c = curso(id); if (!c) break; const antes = { publicado: c.visivel, bloqueado_geral: c.bloq };
           if (estado3(antes.publicado, antes.bloqueado_geral) === novo) break;
@@ -4002,7 +4123,9 @@ export function montar(app: HTMLElement) {
         const novaCapa = (form.querySelector<HTMLInputElement>('input[name="capa"]')?.value) || k.capa || null;
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
         void executar(async () => {
-          falhou(await supabase.from("categorias").update({ titulo: v("nome"), descricao: desc || null, capa_path: novaCapa }).eq("id", id).select("id").single());
+          const nova = ui.catNova === id;
+          falhou(await supabase.from("categorias").update({ titulo: v("nome"), descricao: desc || null, capa_path: novaCapa, ...(nova ? { publicado: true } : {}) }).eq("id", id).select("id").single());
+          if (nova) ui.catNova = "";
           await registrar(null, "Editou a categoria " + v("nome"));
           ui.catEditar = null; delete previas["cat-" + id];
           return { msg: "Categoria salva.", texto: "edição da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(velho).eq("id", id).select("id").single()); } };
@@ -4358,6 +4481,7 @@ export function montar(app: HTMLElement) {
     if (t.dataset.i === "busca") { ui.busca = t.value; ui.paginaAl = 1; render(); return; }
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-cat-busca")) { ui.catBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; ui.csPag = 1; render(); return; }
     if (t.dataset.contaMax) { const em = t.parentElement?.querySelector(".cs-conta"); if (em) em.textContent = t.value.length + "/" + t.dataset.contaMax; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
@@ -4554,6 +4678,15 @@ export function montar(app: HTMLElement) {
         const nova = mx.c.modulos.slice(); const [k] = nova.splice(mx.i, 1); nova.splice(my.i, 0, k);
         const velha = mx.c.modulos.map((x) => x.id);
         void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + mx.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
+      } else render();
+      return;
+    }
+    const dx = S.destaques.findIndex((k) => k.id === ui.arrasto);
+    if (dx >= 0) {
+      const dy = S.destaques.findIndex((k) => k.id === t.dataset.arrasta); ui.arrasto = null;
+      if (dy >= 0 && dy !== dx) {
+        const nova = S.destaques.slice(); const [k] = nova.splice(dx, 1); nova.splice(dy, 0, k);
+        void executar(async () => { for (let n = 0; n < nova.length; n++) falhou(await supabase.from("destaques_inicio").update({ ordem: n + 1 }).eq("id", nova[n].id).select("id").single()); return "Ordem dos destaques salva."; });
       } else render();
       return;
     }
