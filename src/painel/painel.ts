@@ -461,7 +461,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, estMenu: "", modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2335,7 +2335,7 @@ export function montar(app: HTMLElement) {
             <div class="mp-linha3">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required /></label>
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.num, "Número do módulo")}</label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><input id="editarCampo" class="campo" name="nome" value="${ui.novoMod === m.id ? "" : h(m.nome)}" placeholder="Nome do novo módulo" required /></label>
             </div>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="4">${h(m.intro)}</textarea></label>
             <div class="mp-linha-cor">
@@ -2833,7 +2833,7 @@ export function montar(app: HTMLElement) {
         <button type="button" class="al-botao" data-a="aula-voltar-modulo" data-id="${m.id}">${IC_CURSO.voltar}Voltar para o módulo</button>
       </div>
       <div class="ea-tit">
-        <div><h2 class="mp-h2">Editar aula</h2><p class="ea-sub">${ident} — ${h(m.nome)}</p></div>
+        <div><h2 class="mp-h2">${ui.novaAula === a.id ? "Nova aula" : "Editar aula"}</h2><p class="ea-sub">${ident} — ${h(m.nome)}</p></div>
         <button type="button" class="al-botao perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir aula</button>
       </div>
 
@@ -2843,7 +2843,7 @@ export function montar(app: HTMLElement) {
           <div class="ea-linha3">
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required /></label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.num, "Número da aula")}</label>
-            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input class="campo" name="nome" value="${h(a.nome)}" required /></label>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input id="nomeAula" class="campo" name="nome" value="${ui.novaAula === a.id ? "" : h(a.nome)}" placeholder="Nome da nova aula" required /></label>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
             <select class="campo" name="tipo" data-aula-tipo>${([["video", "Vídeo"], ["audio", "Áudio"], ["pdf", "PDF (e-book)"]] as const).map(([v, t]) => `<option value="${v}"${tipoA === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
@@ -3386,7 +3386,13 @@ export function montar(app: HTMLElement) {
 
       case "cat-editar": ui.editando = { tipo: "cat", id: d.id }; ui.focar = "editarCampo"; break;
       case "mod-editar": ui.modPagina = d.id; ui.editando = null; ui.aulaMais = null; ui.addAula = null; window.scrollTo(0, 0); break;
-      case "mod-pagina-voltar": ui.modPagina = null; ui.editando = null; ui.cursoAba = "modulos"; window.scrollTo(0, 0); break;
+      case "mod-pagina-voltar": {
+        // Módulo novo que nunca foi salvo: sai sem deixar rascunho.
+        const rasc = ui.novoMod && ui.novoMod === ui.modPagina ? ui.novoMod : ""; ui.novoMod = "";
+        ui.modPagina = null; ui.editando = null; ui.cursoAba = "modulos"; window.scrollTo(0, 0);
+        if (rasc) { void executar(async () => { falhou(await supabase.from("modulos").delete().eq("id", rasc).select("id")); return "Módulo novo descartado."; }); return; }
+        break;
+      }
       case "aula-mais": ui.aulaMais = ui.aulaMais === d.id ? null : d.id; break;
       case "aula-duplicar": { const x = acharAula(d.id)!; void executar(async () => { const novo = await rpc("duplicar_aula", { p_aula: x.a.id }) as string; return { msg: "Aula duplicada.", texto: "cópia da aula " + x.a.nome, desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", novo).select("id").single()); } }; }); return; }
       case "aula-editar": ui.editando = { tipo: "aula", id: d.id }; ui.focar = "editarCampo"; break;
@@ -3431,7 +3437,16 @@ export function montar(app: HTMLElement) {
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
       case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
-      case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
+      case "cs-add-mod": {
+        // Cria o módulo (ainda desativado) e abre a página completa; salvar ativa, cancelar descarta.
+        const c = curso(ui.curso); if (!c) return; const ult = c.modulos[c.modulos.length - 1];
+        void executar(async () => {
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: c.id, numero: proxNumModulo(c), titulo: "NOVO MÓDULO", rotulo: ult?.rot || "Módulo", publicado: false }).select("id").single());
+          ui.novoMod = r.data!.id; ui.modPagina = r.data!.id; ui.focar = "editarCampo"; window.scrollTo(0, 0);
+          return "Preencha o módulo e clique em Salvar módulo.";
+        });
+        return;
+      }
       case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
       case "cs-com-filtro": ui.csComFiltro = d.v; break;
       case "cs-com-per": ui.csComPer = d.v; break;
@@ -3610,7 +3625,16 @@ export function montar(app: HTMLElement) {
         break;
       }
       case "mod-abrir-fechar": if (ui.abertos.has(d.id)) ui.abertos.delete(d.id); else ui.abertos.add(d.id); break;
-      case "aula-add-abrir": ui.addAula = d.id; ui.focar = "novaAula"; break;
+      case "aula-add-abrir": {
+        // Cria a aula (ainda desativada) e abre Editar aula completo; salvar ativa, voltar sem salvar descarta.
+        const x = acharModulo(d.id); if (!x) return; const ult = x.m.aulas[x.m.aulas.length - 1];
+        void executar(async () => {
+          const r = falhou(await supabase.from("aulas").insert({ modulo_id: x.m.id, numero: proxNumAula(x.m), titulo: "Nova aula", rotulo: ult?.rot || "Aula", publicado: false }).select("id").single());
+          ui.novaAula = r.data!.id; ui.aula = r.data!.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.focar = "nomeAula"; window.scrollTo(0, 0);
+          return "Preencha a aula e clique em Salvar aula.";
+        });
+        return;
+      }
       case "aula-add-cancelar": ui.addAula = null; break;
       case "aula-sobe": case "aula-desce": {
         const x = acharAula(d.id)!; const nova = trocado(x.m.aulas, x.ai, a === "aula-sobe" ? -1 : 1);
@@ -3619,7 +3643,12 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0); break; }
-      case "aula-voltar-modulo": ui.modPagina = d.id; ui.tab = "curso"; ui.aula = null; window.scrollTo(0, 0); break;
+      case "aula-voltar-modulo": {
+        const rasc = ui.novaAula && ui.novaAula === ui.aula ? ui.novaAula : ""; ui.novaAula = "";
+        ui.modPagina = d.id; ui.tab = "curso"; ui.aula = null; window.scrollTo(0, 0);
+        if (rasc) { void executar(async () => { falhou(await supabase.from("aulas").delete().eq("id", rasc).select("id")); return "Aula nova descartada."; }); return; }
+        break;
+      }
       case "aula-capa-tirar": { const cp = document.getElementById("campoCapa") as HTMLInputElement | null; if (cp) cp.value = ""; if (ui.aula) delete previas[ui.aula]; const pv = document.getElementById("previaCapa"); if (pv) pv.style.background = "linear-gradient(160deg,#2a2116,#0c0a07 65%)"; if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Capa tirada. Clique em Salvar aula para guardar."); return; }
       case "aula-liberar": {
         const x = acharAula(d.id)!; const liberar = x.a.acesso !== "liberada";
@@ -3643,7 +3672,12 @@ export function montar(app: HTMLElement) {
         break;
       }
 
-      case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
+      case "voltar-sem-salvar": {
+        const rasc = ui.novaAula && ui.novaAula === ui.aula ? ui.novaAula : ""; ui.novaAula = "";
+        if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; window.scrollTo(0, 0);
+        if (rasc) { void executar(async () => { falhou(await supabase.from("aulas").delete().eq("id", rasc).select("id")); return "Aula nova descartada."; }); return; }
+        toast("Voltou sem salvar."); break;
+      }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
       case "op-add": {
@@ -3997,7 +4031,8 @@ export function montar(app: HTMLElement) {
           const criado = v("criado"), mudouCriado = !!criado && criado !== dataLocal(mm.criado) && !isNaN(+new Date(criado));
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
-            falhou(await supabase.from("modulos").update({ numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            const novoM = ui.novoMod === id; if (novoM) ui.novoMod = "";
+            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
@@ -4034,7 +4069,8 @@ export function montar(app: HTMLElement) {
         // O estado da aula (ativa, bloqueada, desativada) muda na hora, pelo seletor; não passa por aqui.
         const ativa = true, mudouStatus = false;
         const mudouMidia = tipo !== xa.a.tipo || (arquivo || "") !== (xa.a.tipo === "video" ? "" : xa.a.arquivo);
-        const base = { titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
+        const nova = ui.novaAula === id;
+        const base = { ...(nova ? { publicado: true } : {}), titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
         const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null, tipo: xa.a.tipo, arquivo_path: xa.a.arquivo || null, ...(mudouMidia ? { duracao_segundos: xa.a.duracao || null } : {}) };
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
@@ -4078,6 +4114,7 @@ export function montar(app: HTMLElement) {
           }
           if (opApagar.length) falhou(await supabase.from("conteudos").delete().in("id", opApagar).select("id"));
           if (mudouStatus) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: !ativa });
+          if (nova) ui.novaAula = "";
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
           delete previas[id];
