@@ -1982,13 +1982,13 @@ export function montar(app: HTMLElement) {
    */
   function telaAbas() {
     const jor = curso(S.config.jornada)?.cat || "";
-    const sel = ui.layAba === "inicio" || !cat(ui.layAba) ? "inicio" : ui.layAba;
+    const sel = cat(ui.layAba) ? ui.layAba : S.cats.find((k) => k.id !== jor)?.id || S.cats[0]?.id || "";
     const ic = { inicio: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>`, seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`, estrela: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l2.4 5 5.4.6-4 3.7 1.1 5.4L12 15.5l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg>`, livro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg>` };
     const nCat = (k: Cat) => S.cursos.filter((c) => c.cat === k.id).length;
     const ponto = (e: Estado3) => `<i class="ab-ponto ${EST3[e][1]}" title="${e === "ativo" ? "Ativa" : e === "bloqueado" ? "Bloqueada" : "Oculta"}"></i>`;
     const guia = `
       <div class="ab-guia">
-        <div class="ab-passo"><span class="ab-num">1</span><span><b>Aba</b><em>O menu da área da aluna: Início, Presentes…</em></span></div>
+        <div class="ab-passo"><span class="ab-num">1</span><span><b>Aba</b><em>O menu da área da aluna: Mentoria, Presentes…</em></span></div>
         <span class="ab-flecha">${ic.seta}</span>
         <div class="ab-passo"><span class="ab-num">2</span><span><b>Categoria</b><em>Fica dentro de uma aba: Mestres espirituais, E-books…</em></span></div>
         <span class="ab-flecha">${ic.seta}</span>
@@ -1997,22 +1997,21 @@ export function montar(app: HTMLElement) {
     const lista = `
       <aside class="ab-lista" aria-label="Abas do aplicativo">
         <h3>Abas do aplicativo</h3>
-        <button type="button" class="ab-item" data-a="lay-aba" data-v="inicio" aria-pressed="${sel === "inicio"}"><span class="ab-item-ic">${ic.inicio}</span><span class="ab-item-txt"><b>Início</b><em>${p(S.destaques.length, "destaque", "destaques")}</em></span><span class="ab-fixa">Fixa</span></button>
         ${S.cats.map((k) => `<button type="button" class="ab-item" data-a="lay-aba" data-v="${k.id}" aria-pressed="${sel === k.id}" draggable="true" data-arrasta="${k.id}"><span class="ab-item-ic">${icDaAba(k)}</span><span class="ab-item-txt"><b>${h(k.nome)}</b><em>${k.id === jor ? "No app: Início e Módulos · " : ""}${p(nCat(k), "categoria", "categorias")}</em></span>${ponto(estado3(k.pub, !k.visivel))}</button>`).join("")}
         ${ui.abaNova ? `<form data-f="cat-add" class="ab-nova"><input id="abaNovaNome" class="campo" name="nome" placeholder="Nome da nova aba" maxlength="30" required aria-label="Nome da nova aba" /><span><button class="al-botao-ouro">Criar</button><button type="button" class="al-botao" data-a="aba-nova-fechar">Cancelar</button></span></form>`
           : `<button type="button" class="ab-add" data-a="aba-nova-abrir">${IC_ABAC.mais}Nova aba</button>`}
       </aside>`;
-    let det = "";
-    if (sel === "inicio") {
+    let det = "", inicio = "";
+    {
       const on = S.config.exibirDestaques;
-      det = `
+      inicio = `
         <div class="ab-cab">
           <span class="ab-cab-ic">${ic.inicio}</span>
-          <div class="ab-cab-txt"><small>Aba fixa</small><h2>Início</h2><p>A primeira tela da aluna. Aqui você escolhe os destaques que aparecem nela, nesta ordem.</p></div>
+          <div class="ab-cab-txt"><small>Início da área de membros</small><h2>Destaques do Início</h2><p>A primeira tela da aluna. Os destaques levam para uma aba ou categoria; aqui você escolhe quais aparecem, nesta ordem.</p></div>
           <span class="cl-exibir">${chaveL(on, "dest-exibir", "", on ? "Esconder os destaques do Início" : "Exibir os destaques no Início")}<span>Exibir destaques</span></span>
           <button type="button" class="al-botao-ouro" data-a="dest-editar" data-id="novo">${IC_ABAC.mais}Novo destaque</button>
         </div>
-        <h3 class="ab-sub">Destaques do Início (${S.destaques.length})</h3>
+        <h3 class="ab-sub">Destaques (${S.destaques.length})</h3>
         <div class="ab-linhas">${S.destaques.map((d, i) => { const img = capaSite(d.imagem); const alvo = d.destino === "presentes" ? "Leva para a aba Presentes" : "Leva para a categoria " + (cat(d.categoriaId)?.nome || d.categoriaNome || "—"); return `
           <div class="ab-linha" draggable="true" data-arrasta="${d.id}">
             <span class="ac-cat-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2022,7 +2021,8 @@ export function montar(app: HTMLElement) {
             <button type="button" class="est3-pil ${d.visivel ? "verde" : "vermelho"}" data-a="dest-visivel" data-id="${d.id}" title="Clique para ${d.visivel ? "ocultar" : "mostrar"}">${d.visivel ? IC_ABAC.olho : IC_OLHO_X}${d.visivel ? "Ativa" : "Oculta"}</button>
             <button type="button" class="al-botao" data-a="dest-editar" data-id="${d.id}">${IC_ABAC.lapis}Editar</button>
           </div>`; }).join("") || `<div class="cl-vazio">Nenhum destaque. O Início fica só com a mentoria.</div>`}</div>`;
-    } else {
+    }
+    if (cat(sel)) {
       const k = cat(sel)!, cs = S.cursos.filter((c) => c.cat === k.id), pub = k.pub;
       det = `
         <div class="ab-cab">
@@ -2049,7 +2049,8 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa ab">
       ${guia}
-      <div class="ab-dupla">${lista}<div class="ab-det">${det}</div></div>
+      <div class="ab-dupla">${lista}<div class="ab-det">${det || `<div class="cl-vazio">Nenhuma aba. Use Nova aba.</div>`}</div></div>
+      <div class="ab-det ab-inicio">${inicio}</div>
       ${ui.destEditar ? editarDestaque() : ""}
     </section>`;
   }
