@@ -1074,7 +1074,7 @@ export function montar(app: HTMLElement) {
   /** Pílula clicável: abre as três opções; `sub` mostra a explicação embaixo. */
   function seletorEstado(tipo: "curso" | "mod" | "aula" | "cat", id: string, e: Estado3, sub = false, fem = false) {
     const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
-    const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : fem ? "Desativada" : EST3[x][0]);
+    const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : tipo === "cat" ? "Oculta" : fem ? "Desativada" : EST3[x][0]);
     return `<span class="est3${sub ? " com-sub" : ""}">
       <button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${chave}" aria-haspopup="menu" aria-expanded="${ui.estMenu === chave}" title="Mudar o estado">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : "<i></i>"}${h(fem ? rot(e) : nome)}</button>
       ${sub ? `<em>${txt}</em>` : ""}
@@ -3705,7 +3705,7 @@ export function montar(app: HTMLElement) {
           const ids = S.cats.map((x) => x.id); ids.splice(pos + 1, 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: ids });
           await registrar(null, "Duplicou a categoria " + k.nome);
-          return { msg: "Categoria duplicada. A cópia está desativada, sem cursos.", texto: "cópia da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
+          return { msg: "Categoria duplicada. A cópia está oculta, sem cursos.", texto: "cópia da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -3838,7 +3838,7 @@ export function montar(app: HTMLElement) {
         if (tipo === "cat") {
           const k = cat(id); if (!k) break; const antes = { publicado: k.pub, bloqueada_geral: !k.visivel };
           if (estado3(antes.publicado, antes.bloqueada_geral) === novo) break;
-          const nome = novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "desativada";
+          const nome = novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "oculta";
           void executar(async () => { falhou(await supabase.from("categorias").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou a categoria " + k.nome + " " + nome); return { msg: k.nome + ": " + nome + ".", texto: "estado da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(antes).eq("id", id).select("id").single()); } }; });
           return;
         }
