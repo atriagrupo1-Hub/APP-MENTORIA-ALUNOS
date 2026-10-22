@@ -2842,6 +2842,8 @@ export function montar(app: HTMLElement) {
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Status da aula ${dicaCampo(AJ.statusAula)}</span>
                 ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), true, true)}</label>
             </div>
+            <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${botaoLiberacao(a)}</div>
+            
           </section>
         </div>
       </div>
@@ -3606,7 +3608,13 @@ export function montar(app: HTMLElement) {
       }
       case "mods-expandir": { const c = curso(d.id); if (c) c.modulos.forEach((m) => ui.abertos.add(m.id)); break; }
       case "mods-recolher": ui.abertos.clear(); break;
-      case "estado-menu": ui.estMenu = ui.estMenu === d.v ? "" : d.v; break;
+      case "estado-menu": {
+        ui.estMenu = ui.estMenu === d.v ? "" : d.v; render();
+        // As opções abrem sempre à vista: rola até elas se ficaram abaixo da tela.
+        const mn = app.querySelector<HTMLElement>(".est3-menu");
+        if (mn) { if (mn.getBoundingClientRect().right > window.innerWidth - 8) { mn.style.left = "auto"; mn.style.right = "0"; } mn.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+        return;
+      }
       case "estado-set": {
         const [tipo, id, novo] = d.v.split(":") as ["curso" | "mod" | "aula", string, Estado3]; ui.estMenu = "";
         const pub = novo !== "desativado", bloq = novo === "bloqueado";

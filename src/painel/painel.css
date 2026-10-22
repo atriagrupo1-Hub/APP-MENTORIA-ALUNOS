@@ -1594,3 +1594,4 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .lib-info.lib-breve { color: #8a5a00; background: #fbefcf; }
 [data-tema="escuro"] .lib-info.lib-ok, [data-tema="escuro"] .al-botao.lib-ok { color: #7fd8a0; background: rgba(47,158,90,.18); border-color: transparent; }
 [data-tema="escuro"] .lib-info.lib-breve { color: #f2c46b; background: rgba(242,196,107,.15); }
+.ea-lib { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--linha-suave); }
