@@ -2351,7 +2351,7 @@ export function montar(app: HTMLElement) {
     const aba = ui.cursoAba || "visao";
     const todas = alunasDoCurso(c);
     const capa = capaSite(c.capa);
-    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["config", "Configurações"], ["relatorios", "Relatórios"]];
+    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["config", "Sobre o curso"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["relatorios", "Relatórios"]];
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
@@ -3515,7 +3515,7 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
             descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
             rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
           }).eq("id", cid).select("id").single());
-          return { msg: "Configurações salvas.", texto: "configurações de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(velho).eq("id", cid).select("id").single()); } };
+          return { msg: "Sobre o curso salvo.", texto: "configurações de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(velho).eq("id", cid).select("id").single()); } };
         });
         return;
       }
