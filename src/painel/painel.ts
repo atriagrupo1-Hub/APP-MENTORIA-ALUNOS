@@ -33,6 +33,8 @@ type Aula = {
   num: number;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rot: string;
+  /** Data de liberação da aula para todas; vazio = sem data própria (0066). */
+  libera: string;
 };
 type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
@@ -255,7 +257,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
-      num: Number(a.numero) || 0, rot: (a.rotulo ?? "").trim() || "Aula",
+      num: Number(a.numero) || 0, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
     });
     aulasDo.set(a.modulo_id, lista);
   }
@@ -424,7 +426,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, aulaTipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -671,7 +673,7 @@ export function montar(app: HTMLElement) {
           <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1989,6 +1991,12 @@ export function montar(app: HTMLElement) {
     numAula: "A aluna vê o nome antes do número (Aula, Episódio…), o número e o nome da aula. O número vai de 0 a 999, não repete no mesmo módulo, e a ordem segue o número. Para mudar o nome antes do número ou o número, clique em Editar na aula.",
     nomeMod: "O nome do módulo que a aluna vê depois do número. Ex.: Boas-vindas e diagnóstico.",
     modCriado: "A data que aparece como criação do módulo. Deixe como está se não quiser mudar.",
+    nomeAula: "O nome da aula que a aluna vê depois do número.",
+    tipoAula: "Vídeo: a aula tem vídeo, e o link vai no campo abaixo. Só texto: a aula não tem vídeo; ao salvar, o vídeo é tirado.",
+    extraNome: "O nome do botão que a aluna vê para abrir este conteúdo.",
+    extraArquivo: "Escolha o arquivo do seu computador; ele vai para o depósito e o caminho aparece aqui.",
+    liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
+    statusAula: "Ativa: a aula aparece para quem tem acesso. Desligada: bloqueada para todas.",
     rotMod: "A palavra que aparece antes do número para a aluna. Escreveu Módulo, ela vê \"Módulo 0\"; escreveu Documentário, vê \"Documentário 0\".",
     rotAula: "A palavra antes do número desta aula. Escreveu Aula, a aluna vê \"Aula 1\"; escreveu Episódio, vê \"Episódio 1\".",
     modDesc: "A descrição do módulo. Aparece no Início (\"Comece por aqui\", quando é o primeiro módulo) e na página do módulo.",
@@ -2160,7 +2168,7 @@ export function montar(app: HTMLElement) {
             <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
             ${a.acesso === "bloqueada" ? pilula("Bloqueada", "vermelho") : pilula("Ativa", "verde")}
             <span class="mp-aula-acoes">
-              <button type="button" class="al-botao" data-a="aula-editar" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
+              <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
               <button type="button" class="mp-ic" data-a="aula-duplicar" data-id="${a.id}" aria-label="Duplicar a aula" title="Duplicar">${IC_MOD.copiar}</button>
               <button type="button" class="mp-ic perigo" data-a="aula-remover" data-id="${a.id}" aria-label="Remover a aula" title="Remover">${IC_MOD.lixo}</button>
               <button type="button" class="mp-ic mp-seta" data-a="aula-mais" data-id="${a.id}" aria-label="${mais ? "Esconder opções" : "Mais opções"}" aria-expanded="${mais}">${IC_MOD.seta}</button>
@@ -2574,7 +2582,7 @@ export function montar(app: HTMLElement) {
           <button class="botao-neutro" data-a="aula-desce" data-id="${a.id}" ${j === m.aulas.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
           <button class="botao-neutro" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
           <button class="botao-neutro" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
-          <button class="botao-neutro" data-a="aula-editar" data-id="${a.id}">Editar</button>
+          <button class="botao-neutro" data-a="abrir-aula" data-id="${a.id}">Editar</button>
           ${a.acesso === "bloqueada"
             ? `<button class="botao-neutro" data-a="aula-bloquear" data-id="${a.id}">Desbloquear</button>`
             : `<button class="botao-neutro botao-remover" data-a="aula-bloquear" data-id="${a.id}">Bloquear</button>`}
@@ -2587,77 +2595,81 @@ export function montar(app: HTMLElement) {
   function telaAula() {
     const x = ui.aula ? acharAula(ui.aula) : null;
     if (!x) return `<section class="tela ativa"><div class="vazio">Nenhuma aula aberta. Abra uma pela lista do curso.</div></section>`;
-    const a = x.a;
+    const a = x.a, m = x.m, c = x.c;
     const previa = previas[a.id] || (a.capa ? urlDaCapa(a.capa) : "");
     const tipo = ui.extraTipo;
     const semArquivo = tipo === "Link" || tipo === "Texto" || tipo === "Vídeo";
+    const ident = h(m.rot) + " " + numModulo(c, x.mi);
+    const IC_DOC = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h7l4 4v13h-11z"/><path d="M13.5 3.5v4h4M9 12h6M9 15.5h6"/></svg>`;
+    const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>`;
+    const comVideo = !!a.video || (ui.aulaTipo !== "texto");
     return `
-    <section class="tela ativa">
-      <div style="display:flex;flex-wrap:wrap;align-items:start;gap:14px;margin-bottom:22px">
-        <span style="flex:1 1 320px"><span class="rotulo">${localAula(a.id)}</span><div class="titulo" style="font-size:22px">${h(a.nome)}</div></span>
-        <button class="botao-neutro grande" data-a="aba" data-v="curso">← Voltar</button>
+    <section class="tela ativa cs mp ea">
+      <div class="mp-topo">
+        <nav class="mp-trilha" aria-label="Você está em">
+          <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
+          <button type="button" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button><i>›</i>
+          <button type="button" data-a="aula-voltar-modulo" data-id="${m.id}">${ident}</button><i>›</i>
+          <b>Editar aula</b>
+        </nav>
+        <button type="button" class="al-botao" data-a="aula-voltar-modulo" data-id="${m.id}">${IC_CURSO.voltar}Voltar para o módulo</button>
+      </div>
+      <div class="ea-tit">
+        <div><h2 class="mp-h2">Editar aula</h2><p class="ea-sub">${ident} — ${h(m.nome)}</p></div>
+        <button type="button" class="al-botao perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir aula</button>
       </div>
 
-      <form data-f="aula" data-id="${a.id}">
-        <label class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo rotulo-ajuda">Vídeo — link ou identificador (Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
-          <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt;  ou só o uid" />
-        </label>
-
-        <div class="grupo largo" style="margin-bottom:16px">
-          <span class="rotulo rotulo-ajuda">Capa da aula ${dicaCampo(AJ.capa)}</span>
-          <span style="display:flex;flex-wrap:wrap;gap:8px">
-            <input id="campoCapa" class="campo" name="capa" style="flex:1 1 240px" value="${h(a.capa)}" placeholder="modulo-1-aula-1.webp" />
-            <button type="button" class="botao-neutro grande" data-a="escolher-capa">Escolher imagem</button>
-          </span>
-          <div id="previaCapa" style="width:220px;max-width:100%;aspect-ratio:16/9;margin-top:6px;border-radius:8px;border:1px solid var(--linha-suave);background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#131c33,#060911 60%,#101830)"></div>
-        </div>
-
-        <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">O texto desta aula — é o que a aluna lê ${dicaCampo(AJ.texto)}</span>
-          <textarea class="campo" name="texto" rows="16" style="min-height:420px" placeholder="Escreva a aula como você quiser.
-
-Uma linha em branco separa parágrafo.
-
-Para destacar, use *asteriscos* — igual ao WhatsApp.">${h(a.texto)}</textarea>
-        </label>
-        ${a.resumo === null ? "" : `
-        <label class="grupo largo" style="margin-bottom:18px">
-          <span class="rotulo rotulo-ajuda">Instruções — botão "Instruções" da aula ${dicaCampo(AJ.exercicio)}</span>
-          <textarea class="campo" name="exercicio" rows="7" placeholder="Título das instruções na primeira linha.
-
-Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}</textarea>
-        </label>`}
-
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px">
-          <button class="botao">Salvar aula</button>
-          <button type="button" class="botao-neutro grande" data-a="voltar-sem-salvar">Voltar sem salvar</button>
-        </div>
-      </form>
-
-      <p class="rotulo rotulo-ajuda" style="margin:0 0 10px">Conteúdo extra desta aula ${dicaCampo(AJ.extras)}</p>
-      <div class="cartao" style="padding:16px">
-        ${a.extras.length ? `<div style="margin:-4px 0 16px">${a.extras.map((e) => `
-          <div class="linha">
-            <span class="nome"><b>${h(e.nome)}</b><span>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</span></span>
-            <span class="acoes"><button class="botao-neutro botao-remover" data-a="extra-remover" data-id="${e.id}">Remover</button></span>
-          </div>`).join("")}</div>` : ""}
-        <div class="chips" style="margin-bottom:14px">
-          ${TIPOS.map((t) => t.tela).map((t) => `<button type="button" class="chip" style="cursor:pointer" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}
-        </div>
-        <form data-f="extra-add" data-id="${a.id}">
-          <div class="campos">
-            <label class="grupo nome"><span class="rotulo">Nome do conteúdo</span><input class="campo" name="nome" placeholder="Baixar o PDF" required /></label>
-            <label class="grupo" style="flex:1 1 240px">
-              <span class="rotulo">${tipo === "Link" ? "Endereço do link" : tipo === "Texto" ? "Texto" : tipo === "Vídeo" ? "Link ou identificador do vídeo" : "Arquivo no depósito " + tipoDaTela(tipo).deposito}</span>
-              <span style="display:flex;gap:8px">
-                <input class="campo" name="arquivo" placeholder="${tipo === "Link" ? "https://" : tipo === "Texto" ? "Escreva aqui" : tipo === "Vídeo" ? "uid do Cloudflare Stream" : "livro.pdf"}" required />
-                ${semArquivo ? "" : `<button type="button" class="botao-neutro grande" data-a="enviar-arquivo">Enviar arquivo</button>`}
-              </span>
-            </label>
+      <div class="ea-grade">
+        <form id="formAula" data-f="aula" data-id="${a.id}" class="cs-cartao ea-info">
+          <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>Informações da aula</h3><p>Edite o conteúdo e as configurações da aula.</p></div></div>
+          <div class="ea-linha3">
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required /></label>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.num, "Número da aula")}</label>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input class="campo" name="nome" value="${h(a.nome)}" required /></label>
           </div>
-          <div style="margin-top:14px"><button class="botao">Adicionar</button></div>
+          <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
+            <select class="campo" name="tipo" data-aula-tipo><option value="video"${comVideo ? " selected" : ""}>Vídeo</option><option value="texto"${comVideo ? "" : " selected"}>Só texto (sem vídeo)</option></select></label>
+          <label class="grupo" data-campo-video${comVideo ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
+            <input class="campo" name="video" value="${h(a.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label>
+          <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição da aula (o que a aluna verá) ${dicaCampo(AJ.texto)}</span>
+            <textarea class="campo" name="texto" rows="5" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(a.texto)}</textarea></label>
+          ${a.resumo === null ? "" : `
+          <label class="grupo"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções” da aula) ${dicaCampo(AJ.exercicio)}</span>
+            <textarea class="campo" name="exercicio" rows="4" placeholder="Título das instruções na primeira linha. Depois, o texto.">${h(a.exercicio || "")}</textarea></label>`}
+          <input type="hidden" id="campoCapa" name="capa" value="${h(a.capa)}" />
+          <div class="ea-bts"><button class="al-botao-ouro">${IC_SALVAR}Salvar aula</button><button type="button" class="al-botao" data-a="voltar-sem-salvar">Voltar sem salvar</button></div>
         </form>
+
+        <div class="ea-lado">
+          <section class="cs-cartao ea-capa">
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda">Capa da aula ${dicaCampo(AJ.capa)}</h3></div></div>
+            <div id="previaCapa" class="ea-capa-img" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)"></div>
+            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
+            <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+          </section>
+
+          <section class="cs-cartao ea-extra">
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
+            <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
+            <form data-f="extra-add" data-id="${a.id}" class="ea-extra-form">
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do conteúdo ${dicaCampo(AJ.extraNome)}</span><input class="campo" name="nome" placeholder="Ex: Material da aula" required /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">${tipo === "Link" ? "Endereço do link" : tipo === "Texto" ? "Texto" : tipo === "Vídeo" ? "Link ou identificador do vídeo" : "Arquivo no depósito de " + tipoDaTela(tipo).deposito} ${dicaCampo(AJ.extraArquivo)}</span>
+                <span class="ea-arq"><input class="campo" name="arquivo" placeholder="${tipo === "Link" ? "https://" : tipo === "Texto" ? "Escreva aqui" : tipo === "Vídeo" ? "uid do Cloudflare Stream" : "Nenhum arquivo selecionado"}" required />${semArquivo ? "" : `<button type="button" class="al-botao" data-a="enviar-arquivo">Escolher arquivo</button>`}</span></label>
+              <div><button class="al-botao-ouro">Adicionar</button></div>
+            </form>
+            ${a.extras.length ? `<div class="ea-extras">${a.extras.map((e) => `
+              <div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}" title="Remover">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
+          </section>
+
+          <section class="cs-cartao ea-config">
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR}</span><div><h3>Configurações</h3></div></div>
+            <div class="ea-config-grade">
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaAula)}</span><input type="datetime-local" class="campo" name="libera" form="formAula" value="${h(dataLocal(a.libera))}" /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Status da aula ${dicaCampo(AJ.statusAula)}</span>
+                <span class="ea-chave"><input type="checkbox" name="ativa" value="1" form="formAula" ${a.acesso === "bloqueada" ? "" : "checked"} data-chave-status /><i aria-hidden="true"></i><b>${a.acesso === "bloqueada" ? "Bloqueada" : "Ativa"}</b></span></label>
+            </div>
+          </section>
+        </div>
       </div>
     </section>`;
   }
@@ -3375,7 +3387,9 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
         if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + x.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: velha }); } }; });
         return;
       }
-      case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.tab = "aula"; window.scrollTo(0, 0); break; }
+      case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0); break; }
+      case "aula-voltar-modulo": ui.modPagina = d.id; ui.tab = "curso"; ui.aula = null; window.scrollTo(0, 0); break;
+      case "aula-capa-tirar": { const cp = document.getElementById("campoCapa") as HTMLInputElement | null; if (cp) cp.value = ""; if (ui.aula) delete previas[ui.aula]; const pv = document.getElementById("previaCapa"); if (pv) pv.style.background = "linear-gradient(160deg,#2a2116,#0c0a07 65%)"; if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Capa tirada. Clique em Salvar aula para guardar."); return; }
       case "aula-liberar": {
         const x = acharAula(d.id)!; const liberar = x.a.acesso !== "liberada";
         void executar(async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: liberar }); return { msg: liberar ? "Aula liberada para todas." : "Liberação retirada.", texto: "liberação da aula " + x.a.nome, desfazer: async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: !liberar }); } }; });
@@ -3393,12 +3407,12 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
       case "aula-remover": {
         const x = acharAula(d.id)!;
         confirmar({ titulo: "Remover a aula " + x.a.nome + "?", texto: "O texto, o vídeo e os extras dela são apagados. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover aula" }, async () => {
-          falhou(await supabase.from("aulas").delete().eq("id", x.a.id).select("id").single()); if (ui.aula === x.a.id) ui.aula = null; toast("Aula removida.");
+          falhou(await supabase.from("aulas").delete().eq("id", x.a.id).select("id").single()); if (ui.aula === x.a.id) { ui.aula = null; ui.modPagina = x.m.id; if (ui.tab === "aula") ui.tab = "curso"; } toast("Aula removida.");
         });
         break;
       }
 
-      case "voltar-sem-salvar": if (ui.aula) delete previas[ui.aula]; ui.tab = "curso"; toast("Voltou sem salvar."); break;
+      case "voltar-sem-salvar": { if (ui.aula) { delete previas[ui.aula]; const x = acharAula(ui.aula); if (x) ui.modPagina = x.m.id; } ui.tab = "curso"; ui.aula = null; toast("Voltou sem salvar."); window.scrollTo(0, 0); break; }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
       case "extra-tipo": ui.extraTipo = d.v as TipoExtra; break;
@@ -3679,7 +3693,15 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
             return { msg: "Aula salva.", texto: "nome da aula " + velho, desfazer: async () => { falhou(await supabase.from("aulas").update({ titulo: velho, numero: numVelho, rotulo: rotVelho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula": {
-        const video = v("video"); const ref = idDoVideo(video);
+        const xa = acharAula(id)!; const num = Number(v("numero"));
+        const erro = erroNumero(num, xa.m.aulas.filter((k) => k.id !== id).map((k) => k.num), "aula"); if (erro) { toast(erro); return; }
+        const soTexto = v("tipo") === "texto";
+        const video = soTexto ? "" : v("video"); const ref = idDoVideo(video);
+        const libera = v("libera"), liberaIso = libera && !isNaN(+new Date(libera)) ? new Date(libera).toISOString() : null;
+        const ativa = (form.elements.namedItem("ativa") as HTMLInputElement | null)?.checked ?? true;
+        const mudouStatus = ativa !== (xa.a.acesso !== "bloqueada");
+        const base = { titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso };
+        const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null };
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
         const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
@@ -3689,14 +3711,16 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
           extrasAula.exercicio = e.trim() ? e : null;
         }
         void executar(async () => {
-          falhou(await supabase.from("aulas").update({ capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
+          falhou(await supabase.from("aulas").update({ ...base, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
+          if (mudouStatus) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: !ativa });
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
           delete previas[id];
           return {
             msg: "Aula salva.", texto: "conteúdo da aula " + x0.nome,
             desfazer: async () => {
-              falhou(await supabase.from("aulas").update({ capa_path: velho.capa || null, texto: velho.texto || null, ...(velho.resumo === null ? {} : { resumo: velho.resumo || null, exercicio: velho.exercicio || null }) }).eq("id", id).select("id").single());
+              if (mudouStatus) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: ativa });
+              falhou(await supabase.from("aulas").update({ ...baseVelha, capa_path: velho.capa || null, texto: velho.texto || null, ...(velho.resumo === null ? {} : { resumo: velho.resumo || null, exercicio: velho.exercicio || null }) }).eq("id", id).select("id").single());
               const vref = velho.video ? idDoVideo(velho.video) : null;
               if (vref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(velho.video), video_ref: vref }));
               else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
@@ -3920,6 +3944,8 @@ Depois, o texto. Uma linha em branco separa parágrafo.">${h(a.exercicio || "")}
     if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
+    if (t.hasAttribute("data-aula-tipo")) { ui.aulaTipo = t.value; const g = document.querySelector<HTMLElement>("[data-campo-video]"); if (g) g.hidden = t.value === "texto"; return; }
+    if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
