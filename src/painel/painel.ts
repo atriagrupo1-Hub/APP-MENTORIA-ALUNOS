@@ -1917,7 +1917,7 @@ export function montar(app: HTMLElement) {
         : posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y));
     const vista = ui.cursoVista || "grade";
     const cartao = (c: Curso) => {
-      const n = numerosCurso(c);
+      const n = numerosCurso(c), k = cat(c.cat);
       const capa = capaSite(c.capa);
       return `
         <article class="cur-card">
@@ -1929,6 +1929,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
           <div class="cur-corpo">
             <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}${c.visivel ? "" : ` <span class="cur-oculto">oculto</span>`}</button>
+            <div class="cur-linha">${IC_CUR.pasta}<em>Categoria:</em><b>${h(k?.nome || "Sem categoria")}</b></div>
             <div class="cur-stats">
               <span>${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span>
               <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
