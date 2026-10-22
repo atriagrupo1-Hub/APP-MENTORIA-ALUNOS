@@ -1945,3 +1945,5 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .aba-niveis { display: block; margin-top: 8px; line-height: 1.9; }
 .aba-niveis i { display: inline-grid; place-items: center; width: 18px; height: 18px; margin-right: 6px; font-size: 11px; font-style: normal; font-weight: 700; color: #1a140a; background: #e3bd6e; border-radius: 50%; }
 .aba-niveis b { margin-right: 4px; }
+.cur-cats2 { margin-top: -8px; padding: 12px 14px; background: var(--al-cab); border: 1px solid var(--linha-suave); border-radius: 12px; }
+.cur-cats2 .cur-cat { min-height: 36px; font-size: 14px; }

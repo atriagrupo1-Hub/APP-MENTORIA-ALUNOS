@@ -454,7 +454,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", layAba: "", abaNova: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", layAba: "", layCat: "", abaNova: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -602,7 +602,7 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "As abas da área de membros e os cursos de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", layout: "As abas da área de membros e as categorias de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
@@ -1930,9 +1930,12 @@ export function montar(app: HTMLElement) {
     const q = norm(ui.cursoBusca || "").trim();
     const ordem = ui.cursoOrdem || "categorias";
     const filtroCat = abas ? (cat(ui.layAba) ? ui.layAba : S.cats[0]?.id || "") : "";
+    // Abas / Layout: os produtos da aba são as categorias dela (Mestres espirituais, E-books…).
+    const daAba = abas ? S.cursos.filter((c) => c.cat === filtroCat) : [];
+    const filtroProd = abas && daAba.some((c) => c.id === ui.layCat) ? ui.layCat : "";
     // Padrão: a mesma ordem que a aluna vê (categoria, depois o curso dentro dela).
     const posCat = (c: Curso) => { const i = S.cats.findIndex((k) => k.id === c.cat); return i < 0 ? 999 : i; };
-    const lista = S.cursos.filter((c) => (!filtroCat || c.cat === filtroCat) && (!q || casa(q, c.nome + " " + (cat(c.cat)?.nome || ""))))
+    const lista = S.cursos.filter((c) => (!filtroCat || c.cat === filtroCat) && (!filtroProd || c.id === filtroProd) && (!q || casa(q, c.nome + " " + (cat(c.cat)?.nome || ""))))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "recentes" ? (y.criado || "").localeCompare(x.criado || "")
         : posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y));
     const vista = ui.cursoVista || "grade";
@@ -1963,8 +1966,8 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa cur">
       <div class="cur-barra-topo">
-        <p class="cur-sub">Todos os cursos cadastrados. Clique em um curso para gerenciar seus módulos e conteúdos.</p>
-        <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
+        <p class="cur-sub">${abas ? "Escolha a aba e a categoria. Clique numa categoria para gerenciar o conteúdo dela." : "Todos os cursos cadastrados. Clique em um curso para gerenciar seus módulos e conteúdos."}</p>
+        <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="${abas ? "Buscar categoria..." : "Buscar curso..."}" aria-label="${abas ? "Buscar categoria" : "Buscar curso"}" /></label>
         <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["categorias", "Ordem da área de membros"], ["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
         <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
@@ -1973,6 +1976,12 @@ export function montar(app: HTMLElement) {
         ${S.cats.map((k) => [k.id, k.nome, S.cursos.filter((c) => c.cat === k.id).length] as [string, string, number]).map(([id, nome, n]) => `<button type="button" class="cur-cat" data-a="lay-aba" data-v="${id}" aria-pressed="${filtroCat === id}">${h(nome)}<span>${n}</span></button>`).join("")}
         ${ui.abaNova ? `<form data-f="cat-add" class="cur-aba-nova"><input id="abaNovaNome" class="campo" name="nome" placeholder="Nome da aba" maxlength="30" required aria-label="Nome da nova aba" /><button class="al-botao-ouro">Criar</button><button type="button" class="al-botao" data-a="aba-nova-fechar">Cancelar</button></form>`
           : `<button type="button" class="al-botao cur-aba-criar" data-a="aba-nova-abrir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar aba</button>`}
+      </div>
+      <div class="cur-cats cur-cats2" role="group" aria-label="Categorias da aba ${h(cat(filtroCat)?.nome || "")}">
+        <span class="cur-cats-rot">Categorias: <span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="o-que-e-categoria" aria-label="O que é uma categoria" aria-expanded="${ui.ajuda === "o-que-e-categoria"}">?</button>${ui.ajuda === "o-que-e-categoria" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>O que é uma categoria</b><span>A categoria é o segundo nível: fica dentro de uma aba. Na área de membros, aparece como um botão e um cartão dentro da aba (ex.: na aba Presentes, as categorias Mestres espirituais, Documentários, E-books…).</span><span class="aba-niveis"><i>1</i><b>Aba</b> ${h(cat(filtroCat)?.nome || "")}<br /><i>2</i><b>Categoria</b> dentro da aba<br /><i>3</i><b>Cursos</b> dentro da categoria</span><em>O que fazer: clique numa categoria para ver só ela, ou em Criar categoria para colocar uma nova nesta aba.</em></span>` : ""}</span></span>
+        <button type="button" class="cur-cat" data-a="lay-cat" data-v="" aria-pressed="${!filtroProd}">Todas<span>${daAba.length}</span></button>
+        ${daAba.map((c) => `<button type="button" class="cur-cat" data-a="lay-cat" data-v="${c.id}" aria-pressed="${filtroProd === c.id}">${h(c.nome)}</button>`).join("")}
+        <button type="button" class="al-botao cur-aba-criar" data-a="cat-criar" data-id="${filtroCat}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar categoria</button>
       </div>` : ""}
       ${lista.length ? `<div class="cur-grade${vista === "lista" ? " em-lista" : ""}">${lista.map(cartao).join("")}</div>` : `<div class="vazio">${q ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`}
     </section>`;
@@ -2972,8 +2981,8 @@ export function montar(app: HTMLElement) {
     } else if (m.tipo === "curso") {
       corpo = `
       <form data-f="curso-novo">
-        <h2 class="titulo">Criar novo produto</h2>
-        <p class="explica">Depois de criar, ele abre para você montar módulos e aulas.</p>
+        <h2 class="titulo">${m.rotulo === "categoria" ? "Criar nova categoria" : "Criar novo produto"}</h2>
+        <p class="explica">${m.rotulo === "categoria" ? "A categoria fica dentro da aba escolhida. Depois de criar, ela abre para você montar o conteúdo." : "Depois de criar, ele abre para você montar módulos e aulas."}</p>
         <div class="campos">
           <label class="grupo nome"><span class="rotulo">Nome</span><input id="cursoNome" class="campo" name="nome" required /></label>
           <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Aba</span>
@@ -3401,7 +3410,9 @@ export function montar(app: HTMLElement) {
         toast("Lista exportada."); return;
       }
       case "cur-cat": ui.cursoCat = d.v || ""; break;
-      case "lay-aba": ui.layAba = d.v || ""; break;
+      case "lay-aba": ui.layAba = d.v || ""; ui.layCat = ""; break;
+      case "lay-cat": ui.layCat = d.v || ""; break;
+      case "cat-criar": ui.modal = { tipo: "curso", cat: d.id, rotulo: "categoria" }; ui.focar = "cursoNome"; break;
       case "aba-nova-abrir": ui.abaNova = true; ui.focar = "abaNovaNome"; break;
       case "aba-nova-fechar": ui.abaNova = false; break;
       case "ini-periodo-rapido": {
