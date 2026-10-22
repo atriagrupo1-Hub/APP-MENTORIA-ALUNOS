@@ -1409,7 +1409,8 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 .mp-pe-bts .mp-dica { margin: 0; }
 .mp-campos { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .mp-campos .grupo { display: flex; flex-direction: column; gap: 8px; margin: 0; }
-.mp-linha3 { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 16px; }
+.mp-linha3 { display: grid; grid-template-columns: minmax(0, 1fr) 170px minmax(0, 1.3fr); gap: 16px; }
+.mp-linha3 .mp-rot { white-space: nowrap; }
 .mp-linha3 .campo-num { width: 100%; max-width: none; }
 .mp-linha-cor { display: grid; grid-template-columns: auto minmax(0, 260px); justify-content: start; gap: 28px; align-items: start; }
 .mp-vivo-marca { display: flex; align-items: center; gap: 8px; font-size: 14px; }
