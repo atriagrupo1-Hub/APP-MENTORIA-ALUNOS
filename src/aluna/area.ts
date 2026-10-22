@@ -91,7 +91,7 @@ export function montar(raiz: HTMLElement) {
       .filter((c) => !prodJ || c.id !== prodJ.categoriaId || c.produtos.some((x) => x.id !== jornada && x.publicado !== false))
       .filter((c) => c.publicado !== false)
       .map((c) => ({
-        id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral, aba: c.abaId || null,
+        id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
           id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
@@ -101,7 +101,9 @@ export function montar(raiz: HTMLElement) {
     const pj = cat.produtos.find((x) => x.id === jornada);
     MIDIA.clear();
     for (const m of cat.modulos.concat(cat.produtos.flatMap((x) => x.modulos || []))) for (const a of m.aulas) MIDIA.set(a.id, { tipo: a.tipo || "video", arquivo: a.arquivoPath || "" });
-    D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, abas: cat.abas, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
+    // Abas do menu (0075): cada categoria publicada, menos a da mentoria (Início e Módulos).
+    const abas = cat.categorias.filter((c) => c.publicado !== false && (!prodJ || c.id !== prodJ.categoriaId)).map((c) => ({ id: c.id, titulo: c.titulo, icone: c.icone || "presentes" }));
+    D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, abas, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
     S.nome = perfil?.nome || "";
     // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
     // foto antiga, salva só neste aparelho, sobe uma vez e sai daqui.
@@ -242,9 +244,8 @@ export function montar(raiz: HTMLElement) {
     coroa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>',
   };
   /*
-   * Abas do app (0074): Início e Módulos, as abas criadas no painel (cada
-   * uma com as suas categorias, como Presentes) e Perfil. Sem a lista de
-   * abas, fica a aba Presentes de antes, com todas as categorias.
+   * Abas do app (0075): Início e Módulos (a mentoria), uma aba para cada
+   * "aba" do painel (Presentes…, com as categorias dela) e Perfil.
    */
   const ABAS = () => (D && D.abas) || null;
   const abaAtual = () => { const l = ABAS(); if (!l || !l.length) return null; return l.find((a) => a.id === S.aba) || l.find((a) => /presente/i.test(a.titulo)) || l[0]; };
@@ -1023,7 +1024,7 @@ export function montar(raiz: HTMLElement) {
   }
   function telaPresentes() {
     const aba = abaAtual();
-    const lista = PRESENTES().filter((x) => !aba || x.c.aba === aba.id);
+    const lista = PRESENTES().filter((x) => !aba || x.c.id === aba.id);
     return `
     <div class="pagina">
       <h1 class="todos-mod serif">${h(aba ? aba.titulo : "Presentes")}</h1>
@@ -1034,7 +1035,7 @@ export function montar(raiz: HTMLElement) {
   function telaCategoria() {
     const c = S.cat < 0 && S.catVazia ? { nome: S.catVazia, cursos: [] } : CATS()[S.cat];
     if (!c) { S.tela = "presentes"; return telaPresentes(); }
-    if (c.aba) S.aba = c.aba;
+    if (c.id) S.aba = c.id;
     const ci = S.cat;
     return `
     <div class="pagina">
@@ -1173,7 +1174,7 @@ export function montar(raiz: HTMLElement) {
     const [ci, i] = String(S.cursoPres || "").split("-").map(Number);
     const c = CATS()[ci], curso = c && c.cursos[i];
     if (!curso) { S.tela = "presentes"; return telaPresentes(); }
-    if (c.aba) S.aba = c.aba;
+    if (c.id) S.aba = c.id;
     const cat = c.nome, COR = CORES_CAT[ci % CORES_CAT.length], freq = cat === "Frequências";
     const soLeitura = curso.itens.length > 0 && curso.itens.every((t) => t.tipoMidia === "pdf");
     const nomeTipo = freq ? ["frequência", "frequências"] : soLeitura ? ["e-book", "e-books"] : ["vídeo", "vídeos"];

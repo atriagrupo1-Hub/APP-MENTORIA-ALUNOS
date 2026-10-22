@@ -25,7 +25,6 @@ import type { Aula, Catalogo, Modulo } from "./tipos";
 const CATALOGO_VAZIO: Catalogo = {
   modulos: [],
   categorias: [],
-  abas: null,
   aoVivo: {},
   produtos: [],
   produtoJornada: null,
