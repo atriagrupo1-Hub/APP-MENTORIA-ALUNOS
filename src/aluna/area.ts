@@ -81,7 +81,7 @@ export function montar(raiz: HTMLElement) {
           capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-            id: a.id, num: Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
+            id: a.id, num: Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
           })),
         };
       });
@@ -95,7 +95,7 @@ export function montar(raiz: HTMLElement) {
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
           id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
-          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
+          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
       }));
     const pj = cat.produtos.find((x) => x.id === jornada);
@@ -157,7 +157,8 @@ export function montar(raiz: HTMLElement) {
   const posicaoId = (id) => { const l = D && D.prog.get(id); if (!l || !l.duracaoSegundos) return 0; return Math.min(1, (l.posicaoSegundos || 0) / l.duracaoSegundos); };
   const posicao = (m, a) => posicaoId(MODS()[m].aulas[a].id);
   // Dentro do módulo, a aula abre quando a anterior foi concluída (0054).
-  const seqOk = (m, a) => a === 0 || feita(m, a - 1);
+  // Em sequência: a anterior que conta é a última não bloqueada pela equipe (igual ao banco, 0069).
+  const seqOk = (m, a) => { const as = MODS()[m].aulas; for (let k = a - 1; k >= 0; k--) if (!as[k].bloq) return feita(m, k); return true; };
   const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
   const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
   const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
@@ -1217,7 +1218,8 @@ export function montar(raiz: HTMLElement) {
   function estadoItem(curso, j, R) {
     const t = curso.itens[j];
     if (!aulaAdmin(t.id)) return { fech: true, txt: "Libera em breve" };
-    if (j > 0 && curso.itens[j - 1].mod === t.mod && !feitaId(curso.itens[j - 1].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + j + " para liberar" };
+    let k = j - 1; while (k >= 0 && curso.itens[k].mod === t.mod && curso.itens[k].bloq) k--;
+    if (k >= 0 && curso.itens[k].mod === t.mod && !feitaId(curso.itens[k].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + (k + 1) + " para liberar" };
     return { fech: false, txt: feitaId(t.id) ? "Concluído" : "Disponível" };
   }
   function telaPresente() {

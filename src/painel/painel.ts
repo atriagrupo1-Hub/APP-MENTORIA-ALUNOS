@@ -31,6 +31,8 @@ type Aula = {
   acesso: AcessoAula; extras: Extra[]; criado: string; duracao: number;
   /** Número escolhido no painel (0063). */
   num: number;
+  /** Desativada (não publicada): some da área da aluna. */
+  pub: boolean;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rot: string;
   /** Data de liberação da aula para todas; vazio = sem data própria (0066). */
@@ -45,9 +47,11 @@ type Opcao = {
   id: string; rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf";
   texto: string; arquivo: string; video: string; capa: string; tituloTela: string; instrucoes: string; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; pub: boolean; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; visivel: boolean; inicio: number;
+  /** Bloqueado: aparece para a aluna, sem acesso (0069). */
+  bloq: boolean;
   descricao: string; fundacao: string; aviso: string; modulos: Modulo[];
   criado: string; capa: string;
   /** Início da área da aluna (0052): rótulo e nome curto do bloco da mentoria. */
@@ -213,8 +217,8 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
-    supabase.from("produtos").select("id, titulo, categoria_id, publicado, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
+    supabase.from("produtos").select("id, titulo, categoria_id, publicado, bloqueado_geral, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, publicado, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id").not("aula_id", "is", null).order("ordem"),
@@ -271,7 +275,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
-      num: Number(a.numero) || 0, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
+      num: Number(a.numero) || 0, pub: a.publicado !== false, rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
       tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
       botaoEbook: a.botao_ebook ?? "", botaoEbookCor: a.botao_ebook_cor ?? "", opcoes: opcoesDa.get(a.id) ?? [],
     });
@@ -282,12 +286,12 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
   const cursos: Curso[] = (prods.data ?? []).map((c) => ({
-    id: c.id, nome: c.titulo, cat: c.categoria_id ?? "", visivel: !!c.publicado,
+    id: c.id, nome: c.titulo, cat: c.categoria_id ?? "", visivel: !!c.publicado, bloq: !!c.bloqueado_geral,
     inicio: c.inicio ?? 1, descricao: c.descricao ?? "", fundacao: c.fundacao ?? "",
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
     criado: c.criado_em ?? "", capa: c.capa_path ?? "",
@@ -442,7 +446,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, estMenu: "", modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -985,6 +989,30 @@ export function montar(app: HTMLElement) {
     return `<span class="avatar${grande ? " grande" : ""}${foto ? " com-foto" : ""}" style="--cor:${AA_CORES[n % AA_CORES.length]}" aria-hidden="true">${foto ? `<img src="${foto}" alt="" />` : h(iniciais(a.nome))}</span>`;
   };
   const pilula = (txt: string, tipo: "ouro" | "verde" | "vermelho" | "neutro") => `<span class="aa-pilula ${tipo}"><i></i>${h(txt)}</span>`;
+  /*
+   * Três estados de curso, módulo e aula (0069): Ativo (publicado, sem
+   * bloqueio), Bloqueado (publicado e bloqueado_geral: aparece, sem acesso)
+   * e Desativado (não publicado: some da área da aluna).
+   */
+  type Estado3 = "ativo" | "bloqueado" | "desativado";
+  const estado3 = (pub: boolean, bloq: boolean): Estado3 => (!pub ? "desativado" : bloq ? "bloqueado" : "ativo");
+  const EST3: Record<Estado3, [string, string, string]> = {
+    ativo: ["Ativo", "verde", "Visível e liberado para as alunas"],
+    bloqueado: ["Bloqueado", "amarelo", "Visível, mas não acessível para as alunas"],
+    desativado: ["Desativado", "vermelho", "Não aparece na área da aluna"],
+  };
+  const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
+  const IC_OLHO_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.8M6.6 7.6C4 9.4 2.5 12 2.5 12S6 18 12 18c1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+  /** Pílula clicável: abre as três opções; `sub` mostra a explicação embaixo. */
+  function seletorEstado(tipo: "curso" | "mod" | "aula", id: string, e: Estado3, sub = false, fem = false) {
+    const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
+    const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : fem ? "Desativada" : EST3[x][0]);
+    return `<span class="est3${sub ? " com-sub" : ""}">
+      <button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${chave}" aria-haspopup="menu" aria-expanded="${ui.estMenu === chave}" title="Mudar o estado">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : "<i></i>"}${h(fem ? rot(e) : nome)}</button>
+      ${sub ? `<em>${txt}</em>` : ""}
+      ${ui.estMenu === chave ? `<span class="est3-menu" role="menu">${(["ativo", "bloqueado", "desativado"] as Estado3[]).map((x) => `<button type="button" role="menuitemradio" aria-checked="${x === e}" data-a="estado-set" data-v="${chave}:${x}"><span class="est3-pil ${EST3[x][1]}">${x === "bloqueado" ? IC_CAD : x === "desativado" ? IC_OLHO_X : "<i></i>"}${h(fem ? rot(x) : EST3[x][0])}</span><em>${EST3[x][2]}</em></button>`).join("")}</span>` : ""}
+    </span>`;
+  }
   const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
   const xis = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
@@ -1972,8 +2000,8 @@ export function montar(app: HTMLElement) {
             <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config">Editar</button>
           </span>` : ""}</span>
           <div class="cur-corpo">
-            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}${c.visivel ? "" : ` <span class="cur-oculto">oculto</span>`}</button>
-            <div class="cur-linha">${IC_CUR.pasta}<em>Categoria:</em><b>${h(k?.nome || "Sem categoria")}</b></div>
+            <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
+            <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Categoria:</em><b>${h(k?.nome || "Sem categoria")}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
             <div class="cur-stats">
               <span>${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span>
               <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
@@ -2027,7 +2055,7 @@ export function montar(app: HTMLElement) {
     extraNome: "O nome do botão que a aluna vê para abrir este conteúdo.",
     extraArquivo: "Escolha o arquivo do seu computador; ele vai para o depósito e o caminho aparece aqui.",
     liberaAula: "Antes desta data a aula fica fechada para todas as alunas (aparece \"Libera em breve\"). Vazio: vale só a liberação de cada aluna.",
-    statusAula: "Ativa: a aula aparece para quem tem acesso. Desligada: bloqueada para todas.",
+    statusAula: "Ativa: aparece e abre para quem tem acesso. Bloqueada: aparece, mas não abre. Desativada: não aparece para a aluna. Muda na hora, ao escolher.",
     listaMods: "Cada linha mostra o nome antes do número (Módulo, Documentário…), o número e o nome do módulo; nas aulas, o mesmo (Aula, Episódio…). É assim que a aluna vê. Para mudar, clique no lápis do módulo ou em Editar na aula.",
     botaoEbook: "O texto do botão que abre o PDF completo dentro da área. Ex.: Ler ebook completo.",
     op2: "Mais botões na tela do e-book. Cada um tem nome e cor e abre o que você escolher: um texto escrito aqui, outro PDF, ou um vídeo ou áudio com a tela completa (capa, descrição, instruções e conteúdo extra).",
@@ -2186,21 +2214,20 @@ export function montar(app: HTMLElement) {
   const IC_INFO = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14.5h8"/></svg>`;
   const IC_SALVAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11.5l3 3V19a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/><path d="M8 4.5v5h7v-5M8 19.5v-6h8v6"/></svg>`;
   const IC_PLAY_C = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
-  function paginaModulo(c: Curso, m: Modulo, i: number) {
-    const capaH = previas["modh-" + m.id] || capaSite(m.capaH), capaV = previas["modv-" + m.id] || capaSite(m.capa);
-    const ident = h(m.rot) + " " + numModulo(c, i);
-    const linhaAulaPag = (a: Aula, j: number) => {
+  const IC_EXPANDIR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>`;
+  const IC_RECOLHER = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M4 12h7M4 17h10M17 9l3 3-3 3"/></svg>`;
+  function linhaAulaNova(m: Modulo, a: Aula, j: number) {
       if (editando("aula", a.id)) return `<div class="mp-aula editando">${linhaAula(m, a, j)}</div>`;
       const capa = capaSite(a.capa), mais = ui.aulaMais === a.id;
       const quando = a.criado ? dataHoraCurta(a.criado).split(" ") : ["—", ""];
       return `
-        <div class="mp-aula${mais ? " aberta" : ""}" draggable="true" data-arrasta="${a.id}">
+        <div class="mp-aula${mais ? " aberta" : ""}${a.pub ? "" : " desativada"}" draggable="true" data-arrasta="${a.id}">
           <div class="mp-aula-linha">
             <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
             <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_PLAY_C}</i></button>
             <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.tipo === "audio" ? (a.arquivo ? "Áudio" : "Sem áudio") : a.tipo === "pdf" ? (a.arquivo ? "PDF (e-book)" : "Sem PDF") : a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
             <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
-            ${a.acesso === "bloqueada" ? pilula("Bloqueada", "vermelho") : pilula("Ativa", "verde")}
+            ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), false, true)}
             <span class="mp-aula-acoes">
               <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
               <button type="button" class="mp-ic" data-a="aula-duplicar" data-id="${a.id}" aria-label="Duplicar a aula" title="Duplicar">${IC_MOD.copiar}</button>
@@ -2211,10 +2238,12 @@ export function montar(app: HTMLElement) {
           ${mais ? `<div class="mp-aula-mais">
             <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">Abrir</button>
             <button type="button" class="al-botao" data-a="aula-liberar" data-id="${a.id}">${a.acesso === "liberada" ? "Tirar liberação" : "Liberar para todas"}</button>
-            <button type="button" class="al-botao${a.acesso === "bloqueada" ? "" : " perigo"}" data-a="aula-bloquear" data-id="${a.id}">${a.acesso === "bloqueada" ? "Desbloquear" : "Bloquear"}</button>
           </div>` : ""}
         </div>`;
-    };
+  }
+  function paginaModulo(c: Curso, m: Modulo, i: number) {
+    const capaH = previas["modh-" + m.id] || capaSite(m.capaH), capaV = previas["modv-" + m.id] || capaSite(m.capa);
+    const ident = h(m.rot) + " " + numModulo(c, i);
     return `
     <section class="tela ativa cs mp">
       <div class="mp-topo">
@@ -2225,7 +2254,7 @@ export function montar(app: HTMLElement) {
         </nav>
         <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
       </div>
-      <div class="mp-tit"><h2>${ident}</h2>${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}</div>
+      <div class="mp-tit"><h2>${ident}</h2>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</div>
       <p class="mp-sub">${h(m.nome)}</p>
 
       <form data-f="mod-renomear" data-id="${m.id}" class="cs-cartao mp-info">
@@ -2275,13 +2304,21 @@ export function montar(app: HTMLElement) {
           <input id="novaAula" class="campo" name="nome" placeholder="Nome da nova aula" required />
           <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="aula-add-cancelar">Cancelar</button>
         </form>` : ""}
-        <div class="mp-lista">${m.aulas.map((a, j) => linhaAulaPag(a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}</div>
+        <div class="mp-lista">${m.aulas.map((a, j) => linhaAulaNova(m, a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}</div>
       </section>
     </section>`;
   }
   function modulosCurso(c: Curso) {
+    const q = norm(ui.modBusca || "").trim();
     return `
-      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem ${dicaCampo(AJ.listaMods)}</span><button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
+      <div class="cs-mods-barra">
+        <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
+        <button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}">${IC_EXPANDIR}Expandir todos</button>
+        <button type="button" class="al-botao" data-a="mods-recolher">${IC_RECOLHER}Recolher todos</button>
+        <span style="flex:1"></span>
+        <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button>
+      </div>
+      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem ${dicaCampo(AJ.listaMods)}</span></div>
       ${ui.csAddMod ? `
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
         <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>
@@ -2290,7 +2327,10 @@ export function montar(app: HTMLElement) {
       </form>` : ""}
       <div class="cs-cartao cs-mods">
         ${c.modulos.map((m, i) => {
-          const aberto = ui.abertos.has(m.id);
+          const casaMod = !q || norm(m.nome).includes(q) || norm(m.rot + " " + m.num).includes(q);
+          const aulasVis = q && !casaMod ? m.aulas.filter((a) => norm(a.nome).includes(q) || norm(a.rot + " " + a.num).includes(q)) : m.aulas;
+          if (q && !casaMod && !aulasVis.length) return "";
+          const aberto = ui.abertos.has(m.id) || (!!q && !casaMod);
           if (editando("mod", m.id)) return `<div class="cs-mod-edita">${blocoModulo(c, m, i)}</div>`;
           const capa = capaSite(m.capaH) || capaSite(m.capa);
           return `
@@ -2299,7 +2339,7 @@ export function montar(app: HTMLElement) {
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
-              ${m.ativo ? pilula("Ativo", "verde") : pilula("Bloqueado", "vermelho")}
+              ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
                 <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
@@ -2308,18 +2348,17 @@ export function montar(app: HTMLElement) {
               </span>
             </div>
             ${aberto ? `<div class="cs-mod-aulas">
-              <div class="cs-mod-extra"><button class="al-botao pequeno" data-a="mod-bloquear" data-id="${m.id}">${m.ativo ? "Bloquear para todas" : "Desbloquear"}</button></div>
-              ${m.aulas.map((a, j) => linhaAula(m, a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}
+              <div class="mp-lista">${aulasVis.map((a) => linhaAulaNova(m, a, m.aulas.indexOf(a))).join("") || `<p class="ini-vazio">${q ? "Nenhuma aula com esse nome neste módulo." : "Nenhuma aula neste módulo."}</p>`}</div>
               ${ui.addAula === m.id ? `
                 <form data-f="aula-add" data-id="${m.id}" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">
                   <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumAula(m), "Número da aula")}</label>
                   <input id="novaAula" class="campo" style="flex:1 1 260px;max-width:520px" name="nome" placeholder="Nome da nova aula" required />
                   <button class="botao-neutro grande">Adicionar</button>
                   <button type="button" class="botao-neutro grande" data-a="aula-add-cancelar">Cancelar</button>
-                </form>` : `<button class="botao-neutro grande" style="margin-top:12px" data-a="aula-add-abrir" data-id="${m.id}">+ Adicionar aula</button>`}
+                </form>` : `<button type="button" class="al-botao cs-add-aula" data-a="aula-add-abrir" data-id="${m.id}">${IC_CURSO.mais}Adicionar aula</button>`}
             </div>` : ""}
           </div>`;
-        }).join("") || `<p class="ini-vazio">Este curso ainda não tem módulos. Clique em Adicionar módulo.</p>`}
+        }).join("") || `<p class="ini-vazio">${q ? "Nenhum módulo ou aula com esse nome." : "Este curso ainda não tem módulos. Clique em Adicionar módulo."}</p>`}
       </div>`;
   }
 
@@ -2524,6 +2563,7 @@ export function montar(app: HTMLElement) {
         <div class="cs-heroi-txt">
           <span class="cs-etq">Curso</span>
           <h1>${h(c.nome)}</h1>
+          <div class="cs-heroi-est">${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</div>
           ${c.descricao ? `<p>${h(c.descricao)}</p>` : ""}
         </div>
         <div class="cs-heroi-acoes">
@@ -2769,7 +2809,7 @@ export function montar(app: HTMLElement) {
             <div class="ea-config-grade">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaAula)}</span><input type="datetime-local" class="campo" name="libera" form="formAula" value="${h(dataLocal(a.libera))}" /></label>
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Status da aula ${dicaCampo(AJ.statusAula)}</span>
-                <span class="ea-chave"><input type="checkbox" name="ativa" value="1" form="formAula" ${a.acesso === "bloqueada" ? "" : "checked"} data-chave-status /><i aria-hidden="true"></i><b>${a.acesso === "bloqueada" ? "Bloqueada" : "Ativa"}</b></span></label>
+                ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), true, true)}</label>
             </div>
           </section>
         </div>
@@ -3533,6 +3573,36 @@ export function montar(app: HTMLElement) {
         box.querySelectorAll<HTMLInputElement>("[data-op-bloco]")[n]?.querySelector<HTMLInputElement>("[data-eb-nome]")?.focus();
         return;
       }
+      case "mods-expandir": { const c = curso(d.id); if (c) c.modulos.forEach((m) => ui.abertos.add(m.id)); break; }
+      case "mods-recolher": ui.abertos.clear(); break;
+      case "estado-menu": ui.estMenu = ui.estMenu === d.v ? "" : d.v; break;
+      case "estado-set": {
+        const [tipo, id, novo] = d.v.split(":") as ["curso" | "mod" | "aula", string, Estado3]; ui.estMenu = "";
+        const pub = novo !== "desativado", bloq = novo === "bloqueado";
+        if (tipo === "curso") {
+          const c = curso(id); if (!c) break; const antes = { publicado: c.visivel, bloqueado_geral: c.bloq };
+          if (estado3(antes.publicado, antes.bloqueado_geral) === novo) break;
+          void executar(async () => { falhou(await supabase.from("produtos").update({ publicado: pub, bloqueado_geral: bloq }).eq("id", id).select("id").single()); return { msg: c.nome + ": " + EST3[novo][0].toLowerCase() + ".", texto: "estado do curso " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(antes).eq("id", id).select("id").single()); } }; });
+          return;
+        }
+        if (tipo === "mod") {
+          const x = acharModulo(id); if (!x) break; const antes = { publicado: x.m.pub, bloqueado_geral: !x.m.ativo };
+          if (estado3(antes.publicado, antes.bloqueado_geral) === novo) break;
+          void executar(async () => { falhou(await supabase.from("modulos").update({ publicado: pub, bloqueado_geral: bloq }).eq("id", id).select("id").single()); return { msg: x.m.rot + " " + x.m.num + ": " + EST3[novo][0].toLowerCase() + ".", texto: "estado do módulo " + x.m.nome, desfazer: async () => { falhou(await supabase.from("modulos").update(antes).eq("id", id).select("id").single()); } }; });
+          return;
+        }
+        const x = acharAula(id); if (!x) break; const bloqAntes = x.a.acesso === "bloqueada", pubAntes = x.a.pub;
+        if (estado3(pubAntes, bloqAntes) === novo) break;
+        void executar(async () => {
+          if (bloq !== bloqAntes) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: bloq });
+          if (pub !== pubAntes) falhou(await supabase.from("aulas").update({ publicado: pub }).eq("id", id).select("id").single());
+          return { msg: x.a.rot + " " + x.a.num + ": " + (novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "desativada") + ".", texto: "estado da aula " + x.a.nome, desfazer: async () => {
+            if (bloq !== bloqAntes) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: bloqAntes });
+            if (pub !== pubAntes) falhou(await supabase.from("aulas").update({ publicado: pubAntes }).eq("id", id).select("id").single());
+          } };
+        });
+        return;
+      }
       case "op-arquivo": {
         const bl = el.closest<HTMLElement>("[data-op-bloco]"); const pdf = d.v === "pdf"; if (!bl) return;
         arquivoOp.accept = pdf ? "application/pdf,.pdf" : "audio/*";
@@ -3869,8 +3939,8 @@ export function montar(app: HTMLElement) {
         const video = tipo === "video" ? v("video") : ""; const ref = idDoVideo(video);
         const arquivo = tipo === "video" ? null : v("arquivoAula") || null;
         const libera = v("libera"), liberaIso = libera && !isNaN(+new Date(libera)) ? new Date(libera).toISOString() : null;
-        const ativa = (form.elements.namedItem("ativa") as HTMLInputElement | null)?.checked ?? true;
-        const mudouStatus = ativa !== (xa.a.acesso !== "bloqueada");
+        // O estado da aula (ativa, bloqueada, desativada) muda na hora, pelo seletor; não passa por aqui.
+        const ativa = true, mudouStatus = false;
         const mudouMidia = tipo !== xa.a.tipo || (arquivo || "") !== (xa.a.tipo === "video" ? "" : xa.a.arquivo);
         const base = { titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
         const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null, tipo: xa.a.tipo, arquivo_path: xa.a.arquivo || null, ...(mudouMidia ? { duracao_segundos: xa.a.duracao || null } : {}) };
@@ -4109,6 +4179,7 @@ export function montar(app: HTMLElement) {
     if (ui.buscaAberta && !alvo.closest(".busca-geral")) { ui.buscaAberta = false; atualizarBusca(); }
     const b = alvo.closest<HTMLElement>("[data-a]");
     const solto = !b || (b as HTMLButtonElement).disabled;
+    if (ui.estMenu && !alvo.closest(".est3")) { ui.estMenu = ""; render(); if (solto) return; }
     if (solto && ui.menu && !alvo.closest(".menu-pop")) { ui.menu = null; render(); return; }
     if (solto && ui.ajuda && !alvo.closest(".ajuda-pop")) { ui.ajuda = null; render(); return; }
     if (solto) return;
@@ -4141,6 +4212,7 @@ export function montar(app: HTMLElement) {
     if (t.dataset.conta) { const c = document.getElementById(t.dataset.conta); if (c) c.textContent = t.value.length + "/200"; }
     if (t.dataset.i === "busca") { ui.busca = t.value; ui.paginaAl = 1; render(); return; }
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; ui.csPag = 1; render(); return; }
     if (t.dataset.contaMax) { const em = t.parentElement?.querySelector(".cs-conta"); if (em) em.textContent = t.value.length + "/" + t.dataset.contaMax; }
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
