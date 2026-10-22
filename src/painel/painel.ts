@@ -2444,6 +2444,7 @@ export function montar(app: HTMLElement) {
       <div class="linha">
         <span class="nome"><b>${j + 1}. ${h(a.nome)}</b><span>${info}</span></span>
         ${est}
+        ${a.criado ? `<span class="aula-criada" title="Data de criação da aula">${IC_CUR.cal}${br(diaDe(a.criado))}</span>` : ""}
         <span class="acoes">
           <button class="botao-neutro" data-a="aula-sobe" data-id="${a.id}" ${j === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
           <button class="botao-neutro" data-a="aula-desce" data-id="${a.id}" ${j === m.aulas.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
