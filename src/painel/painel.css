@@ -2293,3 +2293,8 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-cursos-chip { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); border: 1px solid #c9a25c; border-radius: 8px; }
 .ax-cursos-chip svg { width: 20px; height: 20px; fill: none; stroke: #e3bd6e; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
 .ax-cursos-chip b { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; font-family: Lato, Helvetica, Arial, sans-serif; font-size: 14px; background: rgba(255, 255, 255, .18); border-radius: 50%; }
+/* A aba como ela aparece no menu do app: ícone em cima, nome embaixo, em dourado */
+.ax-navapp { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-width: 92px; min-height: 62px; padding: 6px 12px 4px; color: #f0dca8; background: #000; border: 1px solid rgba(212, 177, 112, .35); border-radius: 12px; }
+.ax-navapp::before { content: ""; position: absolute; top: -1px; left: 28%; right: 28%; height: 3px; background: #d4b170; border-radius: 0 0 3px 3px; }
+.ax-navapp svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
+.ax-navapp b { font-family: Lato, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; }
