@@ -2119,3 +2119,8 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ab-abacard .cur-botoes .al-botao-ouro { justify-content: center; gap: 6px; }
 .ab-abacard .cur-botoes svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .ab-capa-q { aspect-ratio: 16 / 9; }
+.ab-cats-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 18px; padding: 0 24px; }
+.ab-catcard { width: auto; }
+.ab-catcard .cur-capa { position: relative; }
+.ab-catcard.arrastando { opacity: .5; }
+.ab-catcard.alvo { outline: 2px dashed var(--al-ouro); }
