@@ -2079,6 +2079,7 @@ export function montar(app: HTMLElement) {
     const on = S.config.exibirDestaques;
     return `
     <section class="tela ativa ax">
+      <div class="ax-lado">
       <div class="ax-abas" role="group" aria-label="Abas do aplicativo">
         <button type="button" class="ax-aba" data-a="lay-aba" data-v="*" aria-pressed="${todas}">${IC_ABAC.todas}Todas as abas<span>${S.cats.length}</span></button>
         ${S.cats.map((k) => `<button type="button" class="ax-aba" data-a="lay-aba" data-v="${k.id}" aria-pressed="${!todas && ui.layAba === k.id}" draggable="true" data-arrasta="${k.id}">${icDaAba(k)}${h(k.nome)}<span>${S.catsAba.filter((x) => x.aba === k.id).length}</span></button>`).join("")}
@@ -2086,6 +2087,7 @@ export function montar(app: HTMLElement) {
           : `<button type="button" class="ax-aba ax-nova" data-a="aba-nova-abrir">${IC_ABAC.mais}Nova aba</button>`}
       </div>
       <div class="ax-secs">${visiveis.map(secao).join("") || `<div class="ax-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
+      </div>
       <div class="ax-dest">
         <span class="ax-dest-ic">${ic.estrela}</span>
         <div class="ax-dest-txt"><h2>Destaques do Início <span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="dest-inicio" aria-label="O que são os destaques" aria-expanded="${ui.ajuda === "dest-inicio"}">?</button>${ui.ajuda === "dest-inicio" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>Destaques do Início</b><span>Os cartões grandes da primeira tela da aluna. Cada um leva para uma aba ou categoria.</span></span>` : ""}</span></h2><p>Defina quais conteúdos aparecem na página inicial da aluna.</p></div>
