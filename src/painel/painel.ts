@@ -1999,16 +1999,6 @@ export function montar(app: HTMLElement) {
     const secao = (k: Cat) => {
       const cs = S.cursos.filter((c) => c.cat === k.id), pub = k.pub;
       const corpo = !cs.length ? `<div class="ax-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`
-        : cs.length === 1 ? (() => { const c = cs[0], img = capaSite(c.capa); return `
-          <div class="ax-larga">
-            <button type="button" class="ax-larga-img" data-a="abrir-curso" data-id="${c.id}" data-v="modulos" aria-label="Entrar na categoria ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button>
-            <div class="ax-larga-txt">
-              <button type="button" class="ax-nome grande" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">${h(c.nome)}${ic.seta}</button>
-              <span class="ax-info">${ic.camadas}${conteudo(c)}</span>
-              ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), false, true)}
-            </div>
-            <div class="ax-acoes">${acoes(c, false)}</div>
-          </div>`; })()
         : `<div class="ax-grade">${cs.map((c) => { const img = capaSite(c.capa); return `
           <article class="ax-card" draggable="true" data-arrasta="${c.id}">
             <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="abrir-curso" data-id="${c.id}" data-v="modulos" aria-label="Entrar na categoria ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${kbCat(c)}</div>
