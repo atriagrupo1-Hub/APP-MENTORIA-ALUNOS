@@ -2017,7 +2017,6 @@ export function montar(app: HTMLElement) {
           <div class="ax-cab-txt">
             ${ui.abaRen === k.id ? `<form data-f="aba-renomear" data-id="${k.id}" class="ac-ren"><input id="abaRenNome" class="campo" name="nome" value="${h(k.nome)}" maxlength="30" required aria-label="Nome da aba" /><button class="al-botao-ouro">Salvar</button><button type="button" class="al-botao" data-a="aba-ren" data-id="">Cancelar</button></form>`
               : `<h2>${!pub ? `<span class="ax-selo-cab" title="Oculta">${IC_OLHO_X}</span>` : !k.visivel ? `<span class="ax-selo-cab" title="Bloqueada">${IC_CAD}</span>` : ""}Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
-            <p>${k.id === jor ? "Esta aba aparece no aplicativo da aluna como Início e Módulos." : "Esta aba aparece no aplicativo da aluna."} Clique nas categorias para gerenciar seus conteúdos.</p>
           </div>
           <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
           <button type="button" class="al-botao-ouro" data-a="cat-criar" data-id="${k.id}">${IC_ABAC.mais}Nova categoria</button>
