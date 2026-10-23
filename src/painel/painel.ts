@@ -2033,7 +2033,7 @@ export function montar(app: HTMLElement) {
               <span class="cur-tit ab-abacard-tit">${h(k.nome)}</span>
               <div class="cur-linha cur-linha-est">${icDaAba(k)}<em>Aba</em><b>${k.id === jor ? "Início e Módulos" : "no menu do app"}</b>${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</div>
               <div class="cur-stats ac-catcard-stats">
-                <span>${IC_CUR.pasta}<b>${cs.length}</b><em>${cs.length === 1 ? "curso" : "cursos"}</em></span>
+                <span>${IC_CUR.pasta}<b>${cs.length}</b><em>${cs.length === 1 ? "categoria" : "categorias"}</em></span>
                 <span>${IC_CUR.camadas}<b>${mods}</b><em>${mods === 1 ? "módulo" : "módulos"}</em></span>
                 <span>${IC_CUR.cal}<b>${k.criado ? br(diaDe(k.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span>
               </div>
@@ -2042,15 +2042,20 @@ export function montar(app: HTMLElement) {
           </article>`; })()}
         </div>
         <h3 class="ab-sub">Categorias desta aba (${cs.length})</h3>
-        <div class="ab-linhas">${cs.map((c) => { const img = capaSite(c.capa); return `
-          <div class="ab-linha" draggable="true" data-arrasta="${c.id}">
-            <span class="ac-cat-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
-            <span class="ab-linha-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
-            <span class="ab-linha-txt"><b>${h(c.nome)}</b><em>Categoria · dentro da aba ${h(k.nome)}</em></span>
-            ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), false, true)}
-            <button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_ABAC.lapis}Editar</button>
-            <button type="button" class="al-botao-ouro ab-entrar" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Entrar na categoria${ic.seta}</button>
-          </div>`; }).join("") || `<div class="cl-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`}</div>
+        <div class="ab-cats-grade">${cs.map((c) => { const img = capaSite(c.capa); const dias = c.criado ? diasEntre(diaDe(c.criado), hoje()) : -1; return `
+          <article class="cur-card ab-abacard ab-catcard" draggable="true" data-arrasta="${c.id}">
+            <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" data-v="modulos" aria-label="Entrar na categoria ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}<span class="ac-catcard-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span></button>
+            <div class="cur-corpo">
+              <span class="cur-tit ab-abacard-tit">${h(c.nome)}</span>
+              <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Categoria</em><b>na aba ${h(k.nome)}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), false, true)}</div>
+              <div class="cur-stats ac-catcard-stats">
+                <span>${IC_CUR.pasta}<b>0</b><em>cursos</em></span>
+                <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
+                <span>${IC_CUR.cal}<b>${c.criado ? br(diaDe(c.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span>
+              </div>
+              <div class="cur-botoes"><button type="button" class="al-botao ac-catcard-ed" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_ABAC.lapis}Editar</button><button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Entrar${ic.seta}</button></div>
+            </div>
+          </article>`; }).join("") || `<div class="cl-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`}</div>
         ${pub ? "" : `<p class="ab-aviso">Esta aba está oculta: não aparece no app.</p>`}`;
     }
     return `
