@@ -2000,20 +2000,20 @@ export function montar(app: HTMLElement) {
       const cs = S.cursos.filter((c) => c.cat === k.id), pub = k.pub;
       const corpo = !cs.length ? `<div class="ax-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`
         : `<div class="ax-grade">${cs.map((c) => { const img = capaSite(c.capa); return `
-          <article class="ax-card" draggable="true" data-arrasta="${c.id}">
-            <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="abrir-curso" data-id="${c.id}" data-v="modulos" aria-label="Entrar na categoria ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${kbCat(c)}</div>
+          <article class="ax-card${estado3(c.visivel, c.bloq) === "desativado" ? " ax-oculta" : estado3(c.visivel, c.bloq) === "bloqueado" ? " ax-bloq" : ""}" draggable="true" data-arrasta="${c.id}">
+            <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="abrir-curso" data-id="${c.id}" data-v="modulos" aria-label="Entrar na categoria ${h(c.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</button>${estado3(c.visivel, c.bloq) === "desativado" ? `<span class="ax-selo" title="Oculta: não aparece na área da aluna">${IC_OLHO_X}</span>` : estado3(c.visivel, c.bloq) === "bloqueado" ? `<span class="ax-selo" title="Bloqueada: a aluna vê, mas não acessa">${IC_CAD}</span>` : ""}<span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${kbCat(c)}</div>
             <button type="button" class="ax-nome" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">${h(c.nome)}${ic.seta}</button>
             <span class="ax-info">${conteudo(c)}</span>
             ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), false, true)}
             <div class="ax-acoes">${acoes(c, true)}</div>
           </article>`; }).join("")}</div>`;
       return `
-      <section class="ax-sec${pub ? "" : " oculta"}" aria-label="Aba ${h(k.nome)}">
+      <section class="ax-sec${pub ? "" : " oculta"}${pub && !k.visivel ? " bloq" : ""}" aria-label="Aba ${h(k.nome)}">
         <div class="ax-cab">
           <span class="ax-cab-ic">${icDaAba(k)}</span>
           <div class="ax-cab-txt">
             ${ui.abaRen === k.id ? `<form data-f="aba-renomear" data-id="${k.id}" class="ac-ren"><input id="abaRenNome" class="campo" name="nome" value="${h(k.nome)}" maxlength="30" required aria-label="Nome da aba" /><button class="al-botao-ouro">Salvar</button><button type="button" class="al-botao" data-a="aba-ren" data-id="">Cancelar</button></form>`
-              : `<h2>Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
+              : `<h2>${!pub ? `<span class="ax-selo-cab" title="Oculta">${IC_OLHO_X}</span>` : !k.visivel ? `<span class="ax-selo-cab" title="Bloqueada">${IC_CAD}</span>` : ""}Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
             <p>${k.id === jor ? "Esta aba aparece no aplicativo da aluna como Início e Módulos." : "Esta aba aparece no aplicativo da aluna."} Clique nas categorias para gerenciar seus conteúdos.</p>
           </div>
           <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
