@@ -2049,7 +2049,7 @@ export function montar(app: HTMLElement) {
     const secao = (k: Cat) => {
       const xs = S.catsAba.filter((x) => x.aba === k.id), pub = k.pub;
       const corpo = !xs.length ? `<div class="ax-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`
-        : `<div class="ax-grade" style="--n:${Math.min(xs.length, 5)}">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
+        : `<div class="ax-grade" style="--n:${Math.min(xs.length, 3)}">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
           <article class="ax-card${cls3(e)}" draggable="true" data-arrasta="${x.id}">
             <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="ax-sem-capa">Sem capa</span>`}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${selo3(e)}</div>
             <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${ic.seta}</button>
