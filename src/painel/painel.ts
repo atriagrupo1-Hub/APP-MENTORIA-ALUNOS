@@ -2049,7 +2049,7 @@ export function montar(app: HTMLElement) {
     const secao = (k: Cat) => {
       const xs = S.catsAba.filter((x) => x.aba === k.id), pub = k.pub;
       const corpo = !xs.length ? `<div class="ax-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`
-        : `<div class="ax-grade">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
+        : `<div class="ax-grade" style="--n:${Math.min(xs.length, 5)}">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
           <article class="ax-card${cls3(e)}" draggable="true" data-arrasta="${x.id}">
             <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="ax-sem-capa">Sem capa</span>`}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${selo3(e)}</div>
             <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${ic.seta}</button>
@@ -2070,10 +2070,9 @@ export function montar(app: HTMLElement) {
             ${ui.abaRen === k.id ? `<form data-f="aba-renomear" data-id="${k.id}" class="ac-ren"><input id="abaRenNome" class="campo" name="nome" value="${h(k.nome)}" maxlength="30" required aria-label="Nome da aba" /><button class="al-botao-ouro">Salvar</button><button type="button" class="al-botao" data-a="aba-ren" data-id="">Cancelar</button></form>`
               : `<h2>${!pub ? `<span class="ax-selo-cab" title="Oculta">${IC_OLHO_X}</span>` : !k.visivel ? `<span class="ax-selo-cab" title="Bloqueada">${IC_CAD}</span>` : ""}Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
           </div>
-          <span class="ax-cats-no"><span class="ax-cats-tit">${IC_CUR.camadas}Categorias<b>${xs.length}</b></span><button type="button" class="ax-cats-add" data-a="catx-nova" data-id="${k.id}" title="Nova categoria nesta aba" aria-label="Nova categoria na aba ${h(k.nome)}">${IC_ABAC.mais}</button></span>
           <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
         </div>
-        <div class="ax-corpo${xs.length ? " ax-arvore" : ""}">${corpo}</div>
+        <div class="ax-corpo ax-arvore"><div class="ax-no-linha"><span class="ax-cats-no"><span class="ax-cats-tit">${IC_CUR.camadas}Categorias<b>${xs.length}</b></span><button type="button" class="ax-cats-add" data-a="catx-nova" data-id="${k.id}" title="Nova categoria nesta aba" aria-label="Nova categoria na aba ${h(k.nome)}">${IC_ABAC.mais}</button></span></div>${corpo}</div>
       </section>`;
     };
     const visiveis = todas ? S.cats : S.cats.filter((k) => k.id === ui.layAba);
@@ -2086,7 +2085,7 @@ export function montar(app: HTMLElement) {
         ${ui.abaNova ? `<form data-f="cat-add" class="cur-aba-nova"><input id="abaNovaNome" class="campo" name="nome" placeholder="Nome da aba" maxlength="30" required aria-label="Nome da nova aba" /><button class="al-botao-ouro">Criar</button><button type="button" class="al-botao" data-a="aba-nova-fechar">Cancelar</button></form>`
           : `<button type="button" class="ax-aba ax-nova" data-a="aba-nova-abrir">${IC_ABAC.mais}Nova aba</button>`}
       </div>
-      ${visiveis.map(secao).join("") || `<div class="ax-vazio">Nenhuma aba. Use Nova aba.</div>`}
+      <div class="ax-secs">${visiveis.map(secao).join("") || `<div class="ax-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
       <div class="ax-dest">
         <span class="ax-dest-ic">${ic.estrela}</span>
         <div class="ax-dest-txt"><h2>Destaques do Início <span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="dest-inicio" aria-label="O que são os destaques" aria-expanded="${ui.ajuda === "dest-inicio"}">?</button>${ui.ajuda === "dest-inicio" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>Destaques do Início</b><span>Os cartões grandes da primeira tela da aluna. Cada um leva para uma aba ou categoria.</span></span>` : ""}</span></h2><p>Defina quais conteúdos aparecem na página inicial da aluna.</p></div>
