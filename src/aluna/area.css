@@ -1305,3 +1305,12 @@
 .eb-card .mc-meta { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 15px; color: var(--texto-2); }
 .eb-card .mc-meta svg { width: 20px; height: 20px; }
 .eb-card.fechada .mc-capa { filter: grayscale(.4) brightness(.7); }
+
+  /* Aula trancada: cadeado vermelho, pequeno, num selo redondo; aviso em vermelho. */
+  .la-ic .cadeado, .prox-play .cadeado, .mc-capa > .cadeado { width: 30px; height: 30px; background: rgba(12, 8, 8, .78); border: 1.5px solid #e5484d; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  .la-ic .cadeado::before, .prox-play .cadeado::before, .mc-capa > .cadeado::before { left: 11px; top: 6px; width: 6px; height: 6px; border: 1.8px solid #ff5a5f; border-bottom: 0; border-radius: 4px 4px 0 0; }
+  .la-ic .cadeado::after, .prox-play .cadeado::after, .mc-capa > .cadeado::after { left: 8px; bottom: 7px; width: 12px; height: 9px; background: #ff5a5f; border-radius: 2px; }
+  .prox-play:has(.cadeado) { width: auto; height: auto; background: none; border: 0; }
+  .mc-capa > .cadeado { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  .la-info .aviso-lib, .prox-info .aviso-lib, .info .aviso-lib, .mc-corpo .aviso-lib { color: #ff6b6b; background: rgba(229, 72, 77, .12); border-color: rgba(229, 72, 77, .5); }
+  html[data-tema="claro"] .la-info .aviso-lib, html[data-tema="claro"] .prox-info .aviso-lib, html[data-tema="claro"] .info .aviso-lib { color: #c0262d; background: rgba(229, 72, 77, .08); border-color: rgba(192, 38, 45, .45); }
