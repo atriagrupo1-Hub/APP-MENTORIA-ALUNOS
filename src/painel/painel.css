@@ -2267,3 +2267,17 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .na-cats em { font-size: 13px; color: var(--texto-2); }
 .cs-heroi-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: rgba(255, 255, 255, .8); }
 @media (max-width: 640px) { .cx-add { grid-template-columns: 1fr; } }
+/* Onde o curso aparece: abas (várias) e categorias */
+.onde-curso { display: flex; flex-direction: column; gap: 8px; }
+.oc-abas { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.oc-aba { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; font: inherit; font-size: 14px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha); border-radius: 8px; cursor: pointer; }
+.oc-aba svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.oc-aba[aria-pressed="true"] { color: #1a140a; background: linear-gradient(180deg, #e9c579, #c9a04e); border-color: #b8913f; }
+.oc-aba[aria-pressed="true"]::before { content: "✓"; font-weight: 700; }
+.oc-cats { display: flex; flex-direction: column; gap: 10px; }
+.oc-grupo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; border: 1px solid var(--linha-suave); border-radius: 8px; }
+.oc-grupo[hidden] { display: none; }
+.oc-grupo b { flex: 0 0 100%; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
+.oc-cat { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; cursor: pointer; }
+.oc-cat input { width: 18px; height: 18px; }
+.oc-cats em { font-size: 13px; color: var(--texto-2); }
