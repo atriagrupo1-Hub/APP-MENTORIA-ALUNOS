@@ -2315,3 +2315,11 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 @media (max-width: 760px) { .ax-cats-no { position: static; transform: none; margin-left: auto; } .ax-arvore { padding-top: 14px; } .ax-arvore::before, .ax-arvore .ax-grade::before, .ax-arvore .ax-card::before { display: none; } }
 .ax-arvore .ax-grade::before { left: var(--arv-de, 50%); right: auto; width: calc(var(--arv-ate, 50%) - var(--arv-de, 50%)); }
 .ax-arvore .ax-card.arv-fora::before { display: none; }
+/* Todo texto do painel pode ser selecionado e copiado. */
+.casca, .casca * { -webkit-user-select: text; user-select: text; }
+.casca button, .casca [role="button"] { -webkit-user-select: text; user-select: text; }
+.casca [class*="alca"], .casca [class*="alca"] * { -webkit-user-select: none; user-select: none; }
+.cur-linha-aba svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; color: var(--texto-2); }
+.cur-linha-aba { margin-bottom: -4px; }
+.ax-seq { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ax-seq i { font-style: normal; font-size: 14px; color: #e3bd6e; }
