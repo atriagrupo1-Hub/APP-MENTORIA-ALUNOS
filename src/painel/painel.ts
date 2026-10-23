@@ -2048,7 +2048,6 @@ export function montar(app: HTMLElement) {
               : `<h2>${!pub ? `<span class="ax-selo-cab" title="Oculta">${IC_OLHO_X}</span>` : !k.visivel ? `<span class="ax-selo-cab" title="Bloqueada">${IC_CAD}</span>` : ""}Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
           </div>
           <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
-          <button type="button" class="al-botao-ouro" data-a="catx-nova" data-id="${k.id}">${IC_ABAC.mais}Nova categoria</button>
         </div>
         <div class="ax-corpo">${corpo}</div>
       </section>`;
@@ -2125,7 +2124,7 @@ export function montar(app: HTMLElement) {
     const k = cat(x.aba), img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
     return `
     <section class="tela ativa ax">
-      <nav class="ax-trilha"><button type="button" data-a="aba" data-v="layout">Abas e Categorias</button><span>›</span><button type="button" data-a="lay-aba-ir" data-v="${x.aba}">${h(k?.nome || "")}</button><span>›</span><b>${h(x.nome)}</b></nav>
+      <nav class="ax-trilha"><button type="button" data-a="lay-aba-ir" data-v="${x.aba}">Aba: ${h(k?.nome || "")}</button><span>›</span><b>Categoria: ${h(x.nome)}</b></nav>
       <div class="ax-catcab${cls3(e)}">
         <span class="ax-catcab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="ax-sem-capa">Sem capa</span>`}${selo3(e)}</span>
         <div class="ax-catcab-txt"><small>Categoria · aba ${h(k?.nome || "")}</small><h2>${h(x.nome)}</h2>${x.descricao ? `<p>${h(x.descricao)}</p>` : ""}${seletorEstado("catx", x.id, e, false, true)}</div>
