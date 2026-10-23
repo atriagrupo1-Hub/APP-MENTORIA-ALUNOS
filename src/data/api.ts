@@ -195,6 +195,7 @@ type LinhaProduto = {
   rotulo_inicio?: string | null;
   nome_curto?: string | null;
   categoria_id: string;
+  categoria_aba_id?: string | null;
   titulo: string;
   descricao: string | null;
   capa_path: string | null;
@@ -291,7 +292,7 @@ export async function minhasAberturas(): Promise<Map<string, string>> {
 }
 
 export async function carregarCatalogo(): Promise<Catalogo> {
-  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes] =
+  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes, catsAba] =
     await Promise.all([
       supabase.from("modulos").select("*").order("ordem"),
       supabase.from("aulas").select("*").order("ordem"),
@@ -301,6 +302,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
+      supabase.from("categorias_aba").select("id, publicado, bloqueada_geral"),
     ]);
 
   for (const r of [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos]) {
@@ -433,6 +435,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
    * mesma leitura que o painel usa — `src/admin/dados.ts` reexporta
    * esta função —, então admin e aluna nunca divergem.
    */
+  // Categoria dentro da aba (0076): Oculta esconde o curso; Bloqueada o deixa à vista, sem acesso.
+  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; publicado: boolean; bloqueada_geral: boolean }>).map((x) => [x.id, x]));
   const listaProdutos: Produto[] = ((produtos.data ?? []) as LinhaProduto[]).map(
     (p): Produto => ({
       id: p.id,
@@ -443,8 +447,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       descricao: p.descricao ?? "",
       capaPath: p.capa_path,
       ordem: p.ordem,
-      publicado: p.publicado,
-      bloqueadoGeral: p.bloqueado_geral,
+      publicado: p.publicado && estadoCatAba.get(p.categoria_aba_id ?? "")?.publicado !== false,
+      bloqueadoGeral: p.bloqueado_geral || !!estadoCatAba.get(p.categoria_aba_id ?? "")?.bloqueada_geral,
       modulos: listaModulos
         .filter((m) => m.produtoId === p.id)
         .sort((x, y) => x.ordem - y.ordem),
