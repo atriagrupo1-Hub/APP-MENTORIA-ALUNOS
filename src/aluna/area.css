@@ -1314,3 +1314,20 @@
   .mc-capa > .cadeado { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
   .la-info .aviso-lib, .prox-info .aviso-lib, .info .aviso-lib, .mc-corpo .aviso-lib { color: #ff6b6b; background: rgba(229, 72, 77, .12); border-color: rgba(229, 72, 77, .5); }
   html[data-tema="claro"] .la-info .aviso-lib, html[data-tema="claro"] .prox-info .aviso-lib, html[data-tema="claro"] .info .aviso-lib { color: #c0262d; background: rgba(229, 72, 77, .08); border-color: rgba(192, 38, 45, .45); }
+
+  /* Padrão de tudo que está trancado: cadeado vermelho num selo redondo e
+     o texto em vermelho, com contorno. Vale nos dois temas. */
+  .cat-fech-cad, .tranca-ic, .tr-curso-veu .tranca-ic, html[data-tema="claro"] .cat-fech-cad, html[data-tema="claro"] .tranca-ic {
+    color: #ff5a5f !important; background: rgba(12, 8, 8, .8) !important; border: 1.5px solid #e5484d !important; box-shadow: 0 2px 10px rgba(0,0,0,.5) !important; backdrop-filter: none;
+  }
+  .cat-fech-chama, html[data-tema="claro"] .cat-fech-chama {
+    padding: 5px 12px; color: #ff6b6b !important; text-shadow: none !important; background: rgba(12, 8, 8, .8); border: 1px solid rgba(229, 72, 77, .65); border-radius: 6px;
+  }
+  .mod-fim-cad { color: #ff5a5f; }
+  .mod-fim-cad svg { padding: 6px; width: 34px !important; height: 34px !important; background: rgba(12, 8, 8, .8); border: 1.5px solid #e5484d; border-radius: 50%; box-sizing: border-box; }
+  .mp-fechado { color: #ff6b6b; background: rgba(229, 72, 77, .1); border: 1px solid rgba(229, 72, 77, .55); border-style: solid; }
+  .mp-fechado .cadeado { color: #ff5a5f; }
+  .eb-fech { padding: 4px 10px; color: #ff6b6b; background: rgba(229, 72, 77, .1); border: 1px solid rgba(229, 72, 77, .55); border-radius: 6px; }
+  .mv-acao.tranc, .mv-entre button.tranc, .nav-prox.trancado { color: #ff6b6b !important; border-color: rgba(229, 72, 77, .6) !important; background: rgba(229, 72, 77, .08) !important; }
+  .mv-acao.tranc svg, .mv-entre button.tranc svg, .nav-prox.trancado svg { color: #ff5a5f !important; }
+  html[data-tema="claro"] .mp-fechado, html[data-tema="claro"] .eb-fech, html[data-tema="claro"] .mv-acao.tranc, html[data-tema="claro"] .mv-entre button.tranc, html[data-tema="claro"] .nav-prox.trancado { color: #c0262d !important; }
