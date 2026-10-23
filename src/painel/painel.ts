@@ -4376,7 +4376,8 @@ export function montar(app: HTMLElement) {
         // Categorias marcadas, só das abas ligadas.
         const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value);
         if (!marcadas.length) { toast("Marque pelo menos uma aba e uma categoria para o curso."); return; }
-        const xa = catAba(marcadas[0]);
+        // A categoria principal (a que o app usa hoje) só muda se ela foi desmarcada.
+        const xa = catAba(marcadas.includes(c.catAba) ? c.catAba : marcadas[0]);
         const antes = S.catItens.filter((x) => x.tipo === "curso" && x.item === cid);
         const velho = { titulo: c.nome, capa_path: c.capa || null, categoria_id: c.cat || null, categoria_aba_id: c.catAba || null, libera_em: c.libera || null, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null, rotulo_inicio: c.rotuloInicio || null, nome_curto: c.nomeCurto || null };
         void executar(async () => {
