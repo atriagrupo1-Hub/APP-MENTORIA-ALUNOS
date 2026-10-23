@@ -2281,3 +2281,11 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .oc-cat { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; cursor: pointer; }
 .oc-cat input { width: 18px; height: 18px; }
 .oc-cats em { font-size: 13px; color: var(--texto-2); }
+/* Cabeçalho da aba: só a configuração da aba, mais curto */
+.ax-cab { padding: 12px 20px; gap: 10px 16px; }
+.ax-cab-ic { width: 42px; height: 42px; }
+.ax-cab-ic svg { width: 22px; height: 22px; }
+.ax-cab-txt h2 { margin: 0; font-size: 25px; }
+.ax-est .est3-pil { min-height: 36px; }
+.ax-trilha { font-size: 15px; }
+.ax-trilha button { color: var(--texto); font-weight: 600; }
