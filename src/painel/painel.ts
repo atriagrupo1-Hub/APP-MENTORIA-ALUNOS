@@ -2080,7 +2080,18 @@ export function montar(app: HTMLElement) {
     const resumo = (k: Cat) => { const xs = S.catsAba.filter((x) => x.aba === k.id), e = estado3(k.pub, !k.visivel); return `
       <article class="ax-res${cls3(e)}">
         <div class="ax-res-cab"><span class="ax-navapp">${icDaAba(k)}<b>${h(k.nome)}</b></span><div class="ax-res-tit"><h3>Aba: ${h(k.nome)}</h3><span>${p(xs.length, "categoria", "categorias")}</span></div>${seletorEstado("cat", k.id, e, false, true)}</div>
-        <ul class="ax-res-cats">${xs.map((x) => { const img = capaSite(x.capa); return `<li><button type="button" data-a="catx-entrar" data-id="${x.id}"><span class="ax-res-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span><span class="ax-res-nome">${h(x.nome)}<small>${resumoItens(x.id)}</small></span>${estado3(x.pub, x.bloq) === "ativo" ? "" : `<em class="ax-res-est">${estado3(x.pub, x.bloq) === "bloqueado" ? "Bloqueada" : "Oculta"}</em>`}</button></li>`; }).join("") || `<li class="ax-res-vazio">Nenhuma categoria ainda.</li>`}</ul>
+        <ul class="ax-res-cats">${xs.map((x) => { const img = capaSite(x.capa), e2 = estado3(x.pub, x.bloq); return `<li class="ax-res-item${cls3(e2)}">
+          <button type="button" class="ax-res-img" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e2)}</button>
+          <div class="ax-res-info">
+            <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+            <div class="ax-res-l2"><span class="ax-info"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></svg>${resumoItens(x.id)}</span>${seletorEstado("catx", x.id, e2, false, true)}</div>
+            <div class="ax-acoes">
+              <button type="button" class="al-botao ax-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button>
+              <button type="button" class="ax-ic" data-a="catx-duplicar" data-id="${x.id}" title="Duplicar" aria-label="Duplicar ${h(x.nome)}"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button>
+              <button type="button" class="ax-ic perigo" data-a="catx-remover" data-id="${x.id}" title="Excluir" aria-label="Excluir ${h(x.nome)}">${IC_CAT.lixo}</button>
+              <button type="button" class="ax-ic" data-a="catx-entrar" data-id="${x.id}" title="Entrar na categoria" aria-label="Entrar na categoria ${h(x.nome)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+            </div>
+          </div></li>`; }).join("") || `<li class="ax-res-vazio">Nenhuma categoria ainda.</li>`}</ul>
         <button type="button" class="al-botao-ouro ax-res-abrir" data-a="lay-aba" data-v="${k.id}">Abrir aba ${h(k.nome)}</button>
       </article>`; };
     const on = S.config.exibirDestaques;
