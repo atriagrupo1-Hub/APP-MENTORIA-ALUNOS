@@ -2229,3 +2229,22 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .mp-aula-capa .ax-selo, .cs-mod-capa .ax-selo { width: 30px; height: 30px; }
 .mp-aula-capa .ax-selo svg, .cs-mod-capa .ax-selo svg { width: 16px; height: 16px; }
 .e3-oculto .mp-aula-capa > i, .e3-bloq .mp-aula-capa > i { display: none; }
+/* Categoria (dentro da aba) */
+.ax-sem-capa { display: grid; place-items: center; width: 100%; height: 100%; font-size: 13px; color: rgba(255, 255, 255, .7); background: linear-gradient(160deg, #2a2116, #0c0a07 65%); }
+.ax-trilha { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 14px; color: var(--texto-2); }
+.ax-trilha button { padding: 0; font: inherit; color: var(--texto-2); background: none; border: 0; text-decoration: underline; cursor: pointer; }
+.ax-trilha b { color: var(--texto); }
+.ax-catcab { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 24px; margin-bottom: 22px; padding: 18px; color: #fff; background: linear-gradient(180deg, #17120c, #0b0a08); border: 1px solid rgba(201, 162, 92, .55); border-radius: 12px; }
+.ax-catcab-img { position: relative; flex: 0 0 auto; width: 260px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 8px; background: #1a140a; }
+.ax-catcab-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ax-catcab-txt { flex: 1 1 260px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.ax-catcab-txt small { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #c9a25c; }
+.ax-catcab-txt h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 32px; font-weight: 600; color: #f6efe0; }
+.ax-catcab-txt p { margin: 0; color: rgba(255, 255, 255, .8); }
+.ax-catcab .est3-menu { color: var(--texto); }
+.ax-catcab-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+.ax-catcab-acoes .al-botao, .ax-catcab-acoes .al-botao-ouro { gap: 8px; }
+.ax-catcab-acoes svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.ax-catcab.e3-oculto .ax-catcab-img { opacity: .55; } .ax-catcab.e3-oculto .ax-catcab-img img { filter: grayscale(.85); }
+.ax-catcab.e3-bloq .ax-catcab-img img { filter: brightness(.55); }
+.ax-catcab .cur { padding: 0; }
