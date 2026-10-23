@@ -649,6 +649,7 @@ export function montar(app: HTMLElement) {
     document.body.classList.toggle("aa-trava", !!app.querySelector(".aa-painel"));
     ajustarListaLateral();
     ajustarArvore();
+    soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -663,6 +664,14 @@ export function montar(app: HTMLElement) {
    * esquerda do painel e o escolhido ficar à vista, encostado nele. Em
    * tela estreita o painel fica por cima, na largura toda.
    */
+  /*
+   * Todo texto do painel pode ser selecionado e copiado com o mouse. Por
+   * isso o que se arrasta (cartões, linhas) só arrasta pela alça: fora
+   * dela, segurar e arrastar seleciona o texto.
+   */
+  function soltarTexto() {
+    app.querySelectorAll<HTMLElement>('[draggable="true"]').forEach((el) => { if (el.tagName !== "BUTTON") el.draggable = false; });
+  }
   /** A linha que liga o rótulo "Categorias" da aba aos cartões: do centro do cabeçalho até o primeiro e o último cartão da primeira fileira. */
   function ajustarArvore() {
     app.querySelectorAll<HTMLElement>(".ax-arvore").forEach((caixa) => {
@@ -1990,6 +1999,7 @@ export function montar(app: HTMLElement) {
     alca: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>`,
     pontos: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>`,
   };
+  const icDaAbaCurso = (c: Curso) => { const k = cat(c.cat); return k ? icDaAba(k) : IC_ABAC.presente; };
   const icDaAba = (k: Cat) => (k.id === curso(S.config.jornada)?.cat ? IC_ABAC.olho : IC_ABAC.presente);
   const COR_DEST: Record<string, string> = { dourado: "Dourado", violeta: "Violeta", verde: "Verde", azul: "Azul", vermelho: "Vermelho", turquesa: "Turquesa" };
   const ICONE_DEST: Record<string, string> = { estrela: "Estrela", presente: "Presente", filme: "Filme", video: "Vídeo", livro: "Livro", som: "Som", lupa: "Lupa" };
@@ -2141,7 +2151,7 @@ export function montar(app: HTMLElement) {
       <nav class="ax-trilha"><button type="button" data-a="lay-aba-ir" data-v="${x.aba}">Aba: ${h(k?.nome || "")}</button><span>›</span><b>Categoria: ${h(x.nome)}</b></nav>
       <div class="ax-catcab${cls3(e)}">
         <span class="ax-catcab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="ax-sem-capa">Sem capa</span>`}${selo3(e)}</span>
-        <div class="ax-catcab-txt"><small>Categoria · aba ${h(k?.nome || "")}</small><h2>${h(x.nome)}</h2>${x.descricao ? `<p>${h(x.descricao)}</p>` : ""}${seletorEstado("catx", x.id, e, false, true)}</div>
+        <div class="ax-catcab-txt"><small class="ax-seq">Aba: ${h(k?.nome || "")}<i>›</i>Categoria: ${h(x.nome)}</small><h2>${h(x.nome)}</h2>${x.descricao ? `<p>${h(x.descricao)}</p>` : ""}${seletorEstado("catx", x.id, e, false, true)}</div>
         <div class="ax-catcab-acoes"><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></div>
       </div>
       ${(() => { const n = S.catItens.filter((y) => y.cat === x.id && y.tipo === "curso").length; return `<div class="ax-cursos-rot"><span class="ax-cursos-chip">${IC_CUR.camadas}Cursos<b>${n}</b></span><span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="cursos-da-cat" aria-label="O que são estes cursos" aria-expanded="${ui.ajuda === "cursos-da-cat"}">?</button>${ui.ajuda === "cursos-da-cat" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>Cursos</b><span>Abaixo estão os cursos da aba ${h(k?.nome || "")}, categoria ${h(x.nome)}. Clique num curso para gerenciar os módulos e as aulas dele.</span></span>` : ""}</span></div>`; })()}
@@ -2270,6 +2280,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
           <div class="cur-corpo">
             <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
+            <div class="cur-linha cur-linha-aba">${icDaAbaCurso(c)}<em>Aba:</em><b>${h([...new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => cat(catAba(x.cat)?.aba ?? "")?.nome).filter(Boolean))].join(", ") || k?.nome || "Sem aba")}</b></div>
             <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Categoria:</em><b title="Aba ${h(k?.nome || "—")}">${h(S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria")}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
             <div class="cur-stats">
               <span>${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span>
@@ -4699,8 +4710,17 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- eventos ---------- */
+  let apertou = { x: 0, y: 0 };
+  app.addEventListener("mousedown", (e) => {
+    apertou = { x: e.clientX, y: e.clientY };
+    const alca = (e.target as HTMLElement).closest?.('[class*="alca"]');
+    const item = alca?.closest<HTMLElement>("[data-arrasta]"); if (item) item.draggable = true;
+  });
   app.addEventListener("click", (e) => {
     const alvo = e.target as HTMLElement;
+    // Terminou de selecionar texto: não é um clique (não abre nada nem redesenha).
+    const arrastou = Math.abs(e.clientX - apertou.x) + Math.abs(e.clientY - apertou.y) > 6;
+    const sel = getSelection(); if (arrastou && sel && !sel.isCollapsed && String(sel).trim() && !alvo.closest("input, textarea, select")) return;
     if (ui.buscaAberta && !alvo.closest(".busca-geral")) { ui.buscaAberta = false; atualizarBusca(); }
     const b = alvo.closest<HTMLElement>("[data-a]");
     const solto = !b || (b as HTMLButtonElement).disabled;
@@ -4975,7 +4995,7 @@ export function montar(app: HTMLElement) {
       void executar(async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem das categorias salva.", texto: "ordem das categorias", desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: velha }); } }; });
     } else render();
   });
-  app.addEventListener("dragend", () => { ui.arrasto = null; document.querySelectorAll("[data-arrasta].arrastando, [data-arrasta].alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
+  app.addEventListener("dragend", () => { ui.arrasto = null; soltarTexto(); document.querySelectorAll("[data-arrasta].arrastando, [data-arrasta].alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
 
   /* ---------- sessão ---------- */
   async function abrirSessao(acabouDeEntrar: boolean) {
