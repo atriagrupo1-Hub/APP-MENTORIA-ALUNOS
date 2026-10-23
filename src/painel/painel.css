@@ -2323,3 +2323,27 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .cur-linha-aba { margin-bottom: -4px; }
 .ax-seq { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .ax-seq i { font-style: normal; font-size: 14px; color: #e3bd6e; }
+/* Modelo compacto: aba (preta, do tamanho do conteúdo) → Categorias → cartões */
+.ax-secs { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 22px; margin-bottom: 22px; }
+.ax-secs .ax-sec { flex: 0 1 auto; width: fit-content; max-width: 100%; margin: 0; }
+.ax-sec .ax-cab { flex-wrap: nowrap; padding: 10px 14px; gap: 12px; }
+.ax-sec .ax-cab-txt { flex: 1 1 auto; }
+.ax-sec .ax-cab-txt h2 { font-size: 22px; white-space: nowrap; }
+.ax-sec .ax-navapp { min-width: 80px; min-height: 56px; }
+.ax-sec .ax-corpo { padding: 0 14px 14px; }
+.ax-arvore { padding-top: 0 !important; }
+.ax-arvore::before { display: none; }
+.ax-no-linha { position: relative; display: flex; justify-content: center; padding: 20px 0 22px; }
+.ax-no-linha::before { content: ""; position: absolute; left: 50%; top: 0; height: 20px; border-left: 2px solid #c9a25c; }
+.ax-no-linha::after { content: ""; position: absolute; left: 50%; bottom: 0; height: 22px; border-left: 2px solid #c9a25c; }
+.ax-no-linha .ax-cats-no { position: relative; left: auto; bottom: auto; transform: none; z-index: 1; }
+.ax-no-linha .ax-cats-no:only-child ~ * { }
+.ax-sec .ax-grade { grid-template-columns: repeat(auto-fit, 215px); gap: 14px; }
+.ax-arvore .ax-grade::before { top: -11px !important; }
+.ax-arvore .ax-card::before { top: -12px !important; height: 11px !important; }
+.ax-no-linha::after { height: 11px; }
+.ax-sec .ax-vazio { padding: 10px 14px; }
+@media (max-width: 760px) { .ax-secs .ax-sec { width: 100%; } .ax-sec .ax-grade { grid-template-columns: 1fr; } .ax-no-linha::before, .ax-no-linha::after { display: none; } .ax-no-linha { padding: 12px 0; } }
+.ax-sec .ax-grade { grid-template-columns: repeat(var(--n, 1), 215px); }
+@media (max-width: 760px) { .ax-sec .ax-grade { grid-template-columns: 1fr; } }
+.ax-sec .ax-grade { justify-content: center; }
