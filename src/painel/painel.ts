@@ -648,6 +648,7 @@ export function montar(app: HTMLElement) {
     app.innerHTML = carregando ? carregandoTela() : eu ? painel() : login();
     document.body.classList.toggle("aa-trava", !!app.querySelector(".aa-painel"));
     ajustarListaLateral();
+    ajustarArvore();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -662,6 +663,18 @@ export function montar(app: HTMLElement) {
    * esquerda do painel e o escolhido ficar à vista, encostado nele. Em
    * tela estreita o painel fica por cima, na largura toda.
    */
+  /** A linha que liga o rótulo "Categorias" da aba aos cartões: do centro do cabeçalho até o primeiro e o último cartão da primeira fileira. */
+  function ajustarArvore() {
+    app.querySelectorAll<HTMLElement>(".ax-arvore").forEach((caixa) => {
+      const g = caixa.querySelector<HTMLElement>(".ax-grade"); if (!g) return;
+      const cards = [...g.querySelectorAll<HTMLElement>(".ax-card")]; if (!cards.length) return;
+      const topo = cards[0].offsetTop, linha1 = cards.filter((c) => c.offsetTop === topo);
+      const gx = g.getBoundingClientRect().left, meio = caixa.getBoundingClientRect().left + caixa.clientWidth / 2 - gx;
+      const centros = linha1.map((c) => c.getBoundingClientRect().left - gx + c.offsetWidth / 2);
+      g.style.setProperty("--arv-de", Math.min(meio, ...centros) + "px"); g.style.setProperty("--arv-ate", Math.max(meio, ...centros) + "px");
+      cards.forEach((c) => c.classList.toggle("arv-fora", c.offsetTop !== topo));
+    });
+  }
   function ajustarListaLateral() {
     const painel = document.getElementById("aaLista"); const grade = app.querySelector<HTMLElement>(".aa-grade");
     if (!painel || !grade || innerWidth <= 900) return;
@@ -2047,9 +2060,10 @@ export function montar(app: HTMLElement) {
             ${ui.abaRen === k.id ? `<form data-f="aba-renomear" data-id="${k.id}" class="ac-ren"><input id="abaRenNome" class="campo" name="nome" value="${h(k.nome)}" maxlength="30" required aria-label="Nome da aba" /><button class="al-botao-ouro">Salvar</button><button type="button" class="al-botao" data-a="aba-ren" data-id="">Cancelar</button></form>`
               : `<h2>${!pub ? `<span class="ax-selo-cab" title="Oculta">${IC_OLHO_X}</span>` : !k.visivel ? `<span class="ax-selo-cab" title="Bloqueada">${IC_CAD}</span>` : ""}Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
           </div>
+          <span class="ax-cats-no"><span class="ax-cats-tit">${IC_CUR.camadas}Categorias<b>${xs.length}</b></span><button type="button" class="ax-cats-add" data-a="catx-nova" data-id="${k.id}" title="Nova categoria nesta aba" aria-label="Nova categoria na aba ${h(k.nome)}">${IC_ABAC.mais}</button></span>
           <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
         </div>
-        <div class="ax-corpo">${corpo}</div>
+        <div class="ax-corpo${xs.length ? " ax-arvore" : ""}">${corpo}</div>
       </section>`;
     };
     const visiveis = todas ? S.cats : S.cats.filter((k) => k.id === ui.layAba);
@@ -4886,7 +4900,7 @@ export function montar(app: HTMLElement) {
       render();
     }
   });
-  window.addEventListener("resize", ajustarListaLateral);
+  window.addEventListener("resize", () => { ajustarListaLateral(); ajustarArvore(); });
   document.addEventListener("focusin", (e) => { if ((e.target as HTMLElement).id === "buscaGeral" && ui.buscaGeral.trim()) { ui.buscaAberta = true; atualizarBusca(); } });
   window.addEventListener("beforeunload", (e) => { if (ui.sujo && formSujo()) { e.preventDefault(); e.returnValue = ""; } });
 

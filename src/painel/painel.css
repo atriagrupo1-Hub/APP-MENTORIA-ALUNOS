@@ -2298,3 +2298,20 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-navapp::before { content: ""; position: absolute; top: -1px; left: 28%; right: 28%; height: 3px; background: #d4b170; border-radius: 0 0 3px 3px; }
 .ax-navapp svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; stroke-linecap: round; }
 .ax-navapp b { font-family: Lato, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; }
+/* Ligação aba → categorias: o rótulo "Categorias" no centro do cabeçalho e uma linha até cada cartão */
+.ax-cab { position: relative; }
+.ax-cats-no { position: absolute; left: 50%; bottom: -1px; z-index: 3; display: inline-flex; align-items: stretch; transform: translate(-50%, 50%); background: #120f0b; border: 1.5px solid #c9a25c; border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.ax-cats-tit { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 18px; font-weight: 600; color: #f6efe0; }
+.ax-cats-tit svg { width: 17px; height: 17px; fill: none; stroke: #e3bd6e; stroke-width: 1.7; stroke-linejoin: round; }
+.ax-cats-tit b { display: inline-grid; place-items: center; min-width: 22px; height: 22px; font-family: Lato, Helvetica, Arial, sans-serif; font-size: 12px; background: rgba(255,255,255,.18); border-radius: 50%; }
+.ax-cats-add { display: grid; place-items: center; width: 36px; padding: 0; color: #1a140a; background: linear-gradient(180deg, #e9c579, #c9a04e); border: 0; border-left: 1px solid #c9a25c; border-radius: 0 6px 6px 0; cursor: pointer; }
+.ax-cats-add svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.ax-arvore { position: relative; padding-top: 44px; }
+.ax-arvore::before { content: ""; position: absolute; left: 50%; top: 0; height: 22px; border-left: 2px solid #c9a25c; }
+.ax-arvore .ax-grade { position: relative; }
+.ax-arvore .ax-grade::before { content: ""; position: absolute; left: calc(min(107px, 50%)); right: 107px; top: -22px; border-top: 2px solid #c9a25c; }
+.ax-arvore .ax-card { position: relative; overflow: visible; }
+.ax-arvore .ax-card::before { content: ""; position: absolute; left: 50%; top: -23px; height: 22px; border-left: 2px solid #c9a25c; }
+@media (max-width: 760px) { .ax-cats-no { position: static; transform: none; margin-left: auto; } .ax-arvore { padding-top: 14px; } .ax-arvore::before, .ax-arvore .ax-grade::before, .ax-arvore .ax-card::before { display: none; } }
+.ax-arvore .ax-grade::before { left: var(--arv-de, 50%); right: auto; width: calc(var(--arv-ate, 50%) - var(--arv-de, 50%)); }
+.ax-arvore .ax-card.arv-fora::before { display: none; }
