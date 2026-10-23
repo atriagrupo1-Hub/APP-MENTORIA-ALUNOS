@@ -1034,6 +1034,9 @@ export function montar(app: HTMLElement) {
   const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`;
   const IC_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
   const IC_OLHO_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.8M6.6 7.6C4 9.4 2.5 12 2.5 12S6 18 12 18c1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
+  /** Em todo item com os três estados: Oculto enfraquece e ganha o olho fechado; Bloqueado ganha o cadeado. */
+  const cls3 = (e: Estado3) => (e === "desativado" ? " e3-oculto" : e === "bloqueado" ? " e3-bloq" : "");
+  const selo3 = (e: Estado3) => (e === "desativado" ? `<span class="ax-selo" title="Oculto: não aparece na área da aluna">${IC_OLHO_X}</span>` : e === "bloqueado" ? `<span class="ax-selo" title="Bloqueado: a aluna vê, mas não acessa">${IC_CAD}</span>` : "");
   /*
    * Liberação da aula: "Liberada para todas · data" (clica para tirar);
    * "Libera em N dias · data" quando há data marcada (da aula ou das
@@ -2166,8 +2169,8 @@ export function montar(app: HTMLElement) {
       const n = numerosCurso(c), k = cat(c.cat);
       const capa = capaSite(c.capa);
       return `
-        <article class="cur-card">
-          <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</button>
+        <article class="cur-card${cls3(estado3(c.visivel, c.bloq))}">
+          <button type="button" class="cur-capa" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}${selo3(estado3(c.visivel, c.bloq))}</button>
           <span class="cur-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Opções de ${h(c.nome)}" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
             <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="visao">Visão geral</button>
             <button role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
@@ -2409,10 +2412,10 @@ export function montar(app: HTMLElement) {
       const capa = capaSite(a.capa), mais = ui.aulaMais === a.id;
       const quando = a.criado ? dataHoraCurta(a.criado).split(" ") : ["—", ""];
       return `
-        <div class="mp-aula${mais ? " aberta" : ""}${a.pub ? "" : " desativada"}" draggable="true" data-arrasta="${a.id}">
+        <div class="mp-aula${mais ? " aberta" : ""}${a.pub ? "" : " desativada"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" draggable="true" data-arrasta="${a.id}">
           <div class="mp-aula-linha">
             <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
-            <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}<i>${IC_PLAY_C}</i></button>
+            <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"))}<i>${IC_PLAY_C}</i></button>
             <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.tipo === "audio" ? (a.arquivo ? "Áudio" : "Sem áudio") : a.tipo === "pdf" ? (a.arquivo ? "PDF (e-book)" : "Sem PDF") : a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
             <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
             ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), false, true)}
@@ -2537,10 +2540,10 @@ export function montar(app: HTMLElement) {
           if (editando("mod", m.id)) return `<div class="cs-mod-edita">${blocoModulo(c, m, i)}</div>`;
           const capa = capaSite(m.capaH) || capaSite(m.capa);
           return `
-          <div class="cs-mod${aberto ? " aberto" : ""}" draggable="true" data-arrasta="${m.id}">
+          <div class="cs-mod${aberto ? " aberto" : ""}${cls3(estado3(m.pub, !m.ativo))}" draggable="true" data-arrasta="${m.id}">
             <div class="cs-mod-linha">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
-              <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span>
+              <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
               ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}
               <span class="cs-mod-acoes">
@@ -2769,8 +2772,8 @@ export function montar(app: HTMLElement) {
         <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
         <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
       </div>
-      <div class="cs-heroi">
-        <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}<button type="button" class="cs-alterar-capa" data-a="cs-capa-direto" data-id="${c.id}">${IC_IMG}Alterar capa</button></span>
+      <div class="cs-heroi${cls3(estado3(c.visivel, c.bloq))}">
+        <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}${selo3(estado3(c.visivel, c.bloq))}<button type="button" class="cs-alterar-capa" data-a="cs-capa-direto" data-id="${c.id}">${IC_IMG}Alterar capa</button></span>
         <div class="cs-heroi-txt">
           <span class="cs-etq">Curso</span>
           <h1>${h(c.nome)}</h1>

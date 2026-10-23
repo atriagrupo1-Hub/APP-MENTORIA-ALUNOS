@@ -2219,3 +2219,13 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-sec.oculta { opacity: .6; }
 .ax-sec.oculta .ax-corpo { opacity: 1; }
 .ax-sec.bloq .ax-corpo { opacity: .75; }
+/* Três estados em todos os itens (cursos, categorias, módulos, aulas) */
+.cur-capa, .mp-aula-capa, .cs-mod-capa, .cs-capa { position: relative; }
+.e3-oculto .cur-capa, .e3-oculto .mp-aula-capa, .e3-oculto .cs-mod-capa, .e3-oculto .cs-capa { opacity: .55; }
+.e3-oculto .cur-capa img, .e3-oculto .mp-aula-capa img, .e3-oculto .cs-mod-capa img, .e3-oculto .cs-capa img { filter: grayscale(.85); }
+.cur-card.e3-oculto, .mp-aula.e3-oculto .mp-aula-txt, .cs-mod.e3-oculto .cs-mod-nome { opacity: .6; }
+.e3-bloq .cur-capa img, .e3-bloq .mp-aula-capa img, .e3-bloq .cs-mod-capa img, .e3-bloq .cs-capa img { filter: brightness(.55); }
+.e3-bloq .ax-selo { color: #f1d391; border-color: #c9a25c; }
+.mp-aula-capa .ax-selo, .cs-mod-capa .ax-selo { width: 30px; height: 30px; }
+.mp-aula-capa .ax-selo svg, .cs-mod-capa .ax-selo svg { width: 16px; height: 16px; }
+.e3-oculto .mp-aula-capa > i, .e3-bloq .mp-aula-capa > i { display: none; }
