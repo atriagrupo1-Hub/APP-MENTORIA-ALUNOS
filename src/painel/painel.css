@@ -2358,3 +2358,23 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-lado .ax-secs { margin: 0; flex-wrap: wrap; }
 .ax-lado .cur-aba-nova { display: flex; flex-direction: column; gap: 8px; }
 @media (max-width: 900px) { .ax-lado { grid-template-columns: 1fr; } .ax-lado .ax-abas { position: static; flex-direction: row; flex-wrap: wrap; } .ax-lado .ax-aba { width: auto; } }
+/* Todas as abas: resumo, um cartão igual por aba */
+.ax-res-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; width: 100%; }
+.ax-res { display: flex; flex-direction: column; overflow: visible; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; box-shadow: var(--aa-sombra); }
+.ax-res-cab { display: flex; align-items: center; gap: 12px; padding: 12px 14px; color: #fff; background: radial-gradient(60% 140% at 55% 0%, rgba(201, 162, 92, .3) 0%, rgba(201, 162, 92, 0) 60%), linear-gradient(180deg, #17120c, #0b0a08); border-radius: 11px 11px 0 0; }
+.ax-res-cab .ax-navapp { min-width: 76px; min-height: 54px; }
+.ax-res-tit { flex: 1 1 auto; min-width: 0; }
+.ax-res-tit h3 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; color: #f6efe0; }
+.ax-res-tit span { font-size: 13px; color: rgba(255,255,255,.75); }
+.ax-res-cab .est3-menu { color: var(--texto); left: auto; right: 0; }
+.ax-res-cab .est3-pil svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.ax-res-cats { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 14px; list-style: none; }
+.ax-res-cats button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 6px; font: inherit; text-align: left; color: var(--texto); background: none; border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.ax-res-cats button:hover { border-color: var(--al-ouro); }
+.ax-res-img { flex: 0 0 auto; width: 84px; aspect-ratio: 16 / 9; overflow: hidden; background: #1a140a; border-radius: 5px; }
+.ax-res-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ax-res-nome { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 600; }
+.ax-res-nome small { font-size: 12.5px; font-weight: 400; color: var(--texto-2); }
+.ax-res-est { padding: 2px 8px; font-size: 11.5px; font-style: normal; font-weight: 700; color: #b42318; background: #fde7e5; border-radius: 99px; }
+.ax-res-vazio { padding: 10px; font-size: 14px; color: var(--texto-2); }
+.ax-res-abrir { margin: 0 14px 14px; justify-content: center; }
