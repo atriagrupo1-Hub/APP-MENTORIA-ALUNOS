@@ -2289,3 +2289,7 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-est .est3-pil { min-height: 36px; }
 .ax-trilha { font-size: 15px; }
 .ax-trilha button { color: var(--texto); font-weight: 600; }
+.ax-cursos-rot { display: flex; align-items: center; gap: 10px; margin: 6px 0 -6px; }
+.ax-cursos-chip { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); border: 1px solid #c9a25c; border-radius: 8px; }
+.ax-cursos-chip svg { width: 20px; height: 20px; fill: none; stroke: #e3bd6e; stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.ax-cursos-chip b { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; font-family: Lato, Helvetica, Arial, sans-serif; font-size: 14px; background: rgba(255, 255, 255, .18); border-radius: 50%; }
