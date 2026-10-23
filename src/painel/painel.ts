@@ -102,7 +102,7 @@ type Pessoa = {
 type Eu = { id: string; nome: string; papel: Papel };
 
 type Dados = {
-  cats: Cat[]; catsAba: CatAba[]; cursos: Curso[]; alunas: Aluna[];
+  cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; equipe: Pessoa[];
   historico: Hist[]; sugestoes: Sugestao[];
   /** Foto de cada aluna (o recorte redondo), quando tem. */
@@ -250,10 +250,11 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
     supabase.from("categorias_aba").select("*").order("ordem").order("criada_em"),
+    supabase.from("categoria_itens").select("id, categoria_aba_id, tipo, item_id").order("ordem").order("criado_em"),
   ]);
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await ondaA;
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR] = await ondaB;
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR, catItensR] = await ondaB;
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -391,6 +392,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "" })),
+    catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, equipe,
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "" },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
@@ -446,7 +448,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -457,7 +459,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
     filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1853,6 +1855,18 @@ export function montar(app: HTMLElement) {
   const capaSite = (c: string) => (c ? (c.startsWith("/") ? c : urlDaCapa(c)) : "");
   const capaCat = (k: Cat) => capaSite(k.capa);
   const catAba = (id: string | null | undefined) => S.catsAba.find((x) => x.id === id);
+  /** O que está dentro de cada categoria (0077): cursos, módulos ou aulas; um item pode estar em várias. */
+  const itensDe = (catId: string) => S.catItens.filter((x) => x.cat === catId);
+  const todosModulos = () => S.cursos.flatMap((c) => c.modulos.map((m) => ({ c, m })));
+  const todasAulas = () => S.cursos.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((a) => ({ c, m, a }))));
+  const nomeItem = (tipo: string, id: string) => {
+    if (tipo === "curso") return curso(id)?.nome || "";
+    if (tipo === "modulo") { const x = todosModulos().find((y) => y.m.id === id); return x ? x.m.rot + " " + x.m.num + " — " + x.m.nome + " (" + x.c.nome + ")" : ""; }
+    const x = todasAulas().find((y) => y.a.id === id); return x ? x.a.rot + " " + x.a.num + " — " + x.a.nome + " (" + x.m.rot + " " + x.m.num + ")" : "";
+  };
+  const resumoItens = (catId: string) => { const xs = itensDe(catId), n = (t: string) => xs.filter((x) => x.tipo === t).length; const partes = [n("curso") ? p(n("curso"), "curso", "cursos") : "", n("modulo") ? p(n("modulo"), "módulo", "módulos") : "", n("aula") ? p(n("aula"), "aula", "aulas") : ""].filter(Boolean); return partes.join(" · ") || "Vazia"; };
+  /** Em quais categorias o item está (mostrado no curso, no módulo e na aula). */
+  const naCategoria = (tipo: string, id: string) => { const cs = S.catItens.filter((x) => x.tipo === tipo && x.item === id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x); return `<span class="na-cats">${cs.map((x) => `<span class="na-cat">${h(cat(x.aba)?.nome || "")} › ${h(x.nome)}</span>`).join("") || `<em>Em nenhuma categoria</em>`}</span>`; };
   /** Lista de categorias para escolher, agrupadas pela aba. */
   const opcoesCatAba = (sel: string) => S.cats.map((k) => { const xs = S.catsAba.filter((x) => x.aba === k.id); return xs.length ? `<optgroup label="Aba ${h(k.nome)}">${xs.map((x) => `<option value="${x.id}" ${x.id === sel ? "selected" : ""}>${h(x.nome)}</option>`).join("")}</optgroup>` : ""; }).join("");
 
@@ -1996,11 +2010,11 @@ export function montar(app: HTMLElement) {
     const secao = (k: Cat) => {
       const xs = S.catsAba.filter((x) => x.aba === k.id), pub = k.pub;
       const corpo = !xs.length ? `<div class="ax-vazio">Nenhuma categoria nesta aba ainda. Use Nova categoria.</div>`
-        : `<div class="ax-grade">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = S.cursos.filter((c) => c.catAba === x.id).length; return `
+        : `<div class="ax-grade">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
           <article class="ax-card${cls3(e)}" draggable="true" data-arrasta="${x.id}">
             <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="ax-sem-capa">Sem capa</span>`}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${selo3(e)}</div>
             <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${ic.seta}</button>
-            <span class="ax-info">${ic.camadas}${p(n, "curso", "cursos")}</span>
+            <span class="ax-info">${ic.camadas}${n}</span>
             ${seletorEstado("catx", x.id, e, false, true)}
             <div class="ax-acoes">
               <button type="button" class="al-botao ax-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button>
@@ -2060,7 +2074,7 @@ export function montar(app: HTMLElement) {
   /** Editar categoria (dentro da aba): nome, capa, descrição e estado. */
   function editarCatAba() {
     const x = catAba(ui.catxEditar); if (!x) { ui.catxEditar = ""; return ""; }
-    const img = previas["catx-" + x.id] || capaSite(x.capa), n = S.cursos.filter((c) => c.catAba === x.id).length;
+    const img = previas["catx-" + x.id] || capaSite(x.capa);
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel" role="dialog" aria-modal="true" aria-label="Editar categoria">
@@ -2072,12 +2086,21 @@ export function montar(app: HTMLElement) {
           <label class="cat-campo"><span>Nome da categoria</span><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" /></label>
           <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea></label>
           <div class="cat-vis-linha"><span>Status</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
-          <p class="cat-aviso-aba">Aba: ${h(cat(x.aba)?.nome || "—")} · ${p(n, "curso", "cursos")} dentro desta categoria.</p>
           <div class="cat-rodape">
             <button type="button" class="al-botao cat-remover" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button>
             <button class="al-botao-ouro">Salvar alterações</button>
           </div>
         </form>
+        <section class="cx-cont">
+          <h3>O que fica dentro desta categoria <small>(aba ${h(cat(x.aba)?.nome || "—")})</small></h3>
+          <p>Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.</p>
+          <div class="cx-itens">${itensDe(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
+          <div class="cx-add">
+            <select class="campo" id="catxTipo" data-catx-tipo aria-label="Tipo">${[["curso", "Curso"], ["modulo", "Módulo"], ["aula", "Aula"]].map(([v2, t]) => `<option value="${v2}" ${ui.catxTipo === v2 ? "selected" : ""}>${t}</option>`).join("")}</select>
+            <select class="campo" id="catxItem" aria-label="Escolha o item">${(ui.catxTipo === "modulo" ? todosModulos().map((y) => [y.m.id, nomeItem("modulo", y.m.id)]) : ui.catxTipo === "aula" ? todasAulas().map((y) => [y.a.id, nomeItem("aula", y.a.id)]) : S.cursos.map((c) => [c.id, c.nome])).filter(([id]) => !itensDe(x.id).some((it) => it.tipo === ui.catxTipo && it.item === id)).map(([id, t]) => `<option value="${id}">${h(t)}</option>`).join("")}</select>
+            <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
+          </div>
+        </section>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -2093,6 +2116,7 @@ export function montar(app: HTMLElement) {
         <div class="ax-catcab-acoes"><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></div>
       </div>
       ${telaCursos(false, x.id)}
+      ${(() => { const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso"); return soltos.length ? `<h3 class="ab-sub" style="margin-left:0">Módulos e aulas nesta categoria</h3><div class="cx-itens">${soltos.map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b>${it.tipo === "aula" ? `<button type="button" class="al-botao" data-a="abrir-aula" data-id="${it.item}">Abrir</button>` : ""}</div>`).join("")}</div>` : ""; })()}
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;
   }
@@ -2199,7 +2223,7 @@ export function montar(app: HTMLElement) {
     const filtroProd = abas ? (daAba.some((c) => c.id === ui.layCat) ? ui.layCat : daAba[0]?.id || "-") : "";
     // Padrão: a mesma ordem que a aluna vê (categoria, depois o curso dentro dela).
     const posCat = (c: Curso) => { const i = S.cats.findIndex((k) => k.id === c.cat); return i < 0 ? 999 : i; };
-    const lista = S.cursos.filter((c) => (!soCatAba || c.catAba === soCatAba) && (!filtroCat || c.cat === filtroCat) && (!filtroProd || c.id === filtroProd) && (!q || casa(q, c.nome + " " + (cat(c.cat)?.nome || ""))))
+    const lista = S.cursos.filter((c) => (!soCatAba || S.catItens.some((x) => x.cat === soCatAba && x.tipo === "curso" && x.item === c.id)) && (!filtroCat || c.cat === filtroCat) && (!filtroProd || c.id === filtroProd) && (!q || casa(q, c.nome + " " + (cat(c.cat)?.nome || ""))))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "recentes" ? (y.criado || "").localeCompare(x.criado || "")
         : posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y));
     const vista = ui.cursoVista || "grade";
@@ -2216,7 +2240,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
           <div class="cur-corpo">
             <button type="button" class="cur-tit" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${h(c.nome)}</button>
-            <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Categoria:</em><b title="Aba ${h(k?.nome || "—")}">${h(catAba(c.catAba)?.nome || "Sem categoria")}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
+            <div class="cur-linha cur-linha-est">${IC_CUR.pasta}<em>Categoria:</em><b title="Aba ${h(k?.nome || "—")}">${h(S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria")}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
             <div class="cur-stats">
               <span>${IC_CUR.pessoas}<b>${n.alunas}</b><em>${n.alunas === 1 ? "aluna ativa" : "alunas ativas"}</em></span>
               <span>${IC_CUR.camadas}<b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "módulo" : "módulos"}</em></span>
@@ -2523,6 +2547,7 @@ export function montar(app: HTMLElement) {
           <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR_M}</span><div><h3>Configurações</h3></div></div>
           <div class="mp-config">
             <div class="grupo"><span class="rotulo-ajuda mp-rot">Status do módulo ${dicaCampo(AJ.statusMod)}</span>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</div>
+            <div class="grupo"><span class="rotulo-ajuda mp-rot">Também nas categorias</span>${naCategoria("modulo", m.id)}</div>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
           </div>
           <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo(m)}</div>
@@ -2816,6 +2841,7 @@ export function montar(app: HTMLElement) {
           <span class="cs-etq">Curso</span>
           <h1>${h(c.nome)}</h1>
           <div class="cs-heroi-est">${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</div>
+          <div class="cs-heroi-cats"><span>Categorias:</span>${naCategoria("curso", c.id)}</div>
           ${c.descricao ? `<p>${h(c.descricao)}</p>` : ""}
         </div>
         <div class="cs-heroi-acoes">
@@ -3064,6 +3090,7 @@ export function montar(app: HTMLElement) {
                 ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), true, true)}</label>
             </div>
             <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${botaoLiberacao(a)}</div>
+            <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Também nas categorias</span>${naCategoria("aula", a.id)}</div>
             
           </section>
         </div>
@@ -3691,6 +3718,26 @@ export function montar(app: HTMLElement) {
       case "catx-entrar": ui.catxSel = d.id; ui.tab = "catAba"; ui.estMenu = ""; window.scrollTo(0, 0); break;
       case "lay-aba-ir": ui.layAba = d.v; ui.tab = "layout"; window.scrollTo(0, 0); break;
       case "catx-editar": ui.catxEditar = d.id; break;
+      case "catx-item-add": {
+        const x = catAba(d.id)!; const tipo = ui.catxTipo as "curso" | "modulo" | "aula"; const item = (document.getElementById("catxItem") as HTMLSelectElement | null)?.value || "";
+        if (!item) { toast("Escolha o que vai entrar na categoria."); return; }
+        const nome = nomeItem(tipo, item);
+        void executar(async () => {
+          const r = falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: x.id, tipo, item_id: item, ordem: itensDe(x.id).length }).select("id").single());
+          await registrar(null, "Colocou " + nome + " na categoria " + x.nome);
+          return { msg: nome + " agora está na categoria " + x.nome + ".", texto: "item da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categoria_itens").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
+      case "catx-item-tirar": {
+        const it = S.catItens.find((y) => y.id === d.id)!; const x = catAba(it.cat); const nome = nomeItem(it.tipo, it.item);
+        void executar(async () => {
+          falhou(await supabase.from("categoria_itens").delete().eq("id", it.id).select("id").single());
+          await registrar(null, "Tirou " + nome + " da categoria " + (x?.nome || ""));
+          return { msg: nome + " saiu da categoria " + (x?.nome || "") + ". Nas outras categorias, continua.", texto: "item da categoria " + (x?.nome || ""), desfazer: async () => { falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: it.cat, tipo: it.tipo, item_id: it.item }).select("id").single()); } };
+        });
+        return;
+      }
       case "catx-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["catx-" + ui.catxEditar]; ui.catxEditar = ""; ui.sujo = null; break;
       case "catx-imagem": imgPara = { form: 'form[data-f="catx-salvar"]', campo: "capa", previa: "catx-" + d.id, pasta: "categorias" }; arquivoImg.click(); return;
       case "curso-novo-cat": ui.modal = { tipo: "curso", catAba: d.id }; ui.focar = "cursoNome"; break;
@@ -4199,6 +4246,7 @@ export function montar(app: HTMLElement) {
         if (!xa) { toast("Crie uma categoria antes, em Abas e Categorias."); return; }
         void executar(async () => {
           const r = falhou(await supabase.from("produtos").insert({ titulo: v("nome"), categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length }).select("id").single());
+          falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o produto " + v("nome"));
           ui.modal = null; ui.curso = r.data!.id; ui.tab = "curso";
@@ -4314,6 +4362,7 @@ export function montar(app: HTMLElement) {
             descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
             rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
           }).eq("id", cid).select("id").single());
+          if (xa && !S.catItens.some((x) => x.cat === xa.id && x.tipo === "curso" && x.item === cid)) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: cid }).select("id").single());
           return { msg: "Sobre o curso salvo.", texto: "configurações de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update(velho).eq("id", cid).select("id").single()); } };
         });
         return;
@@ -4657,6 +4706,7 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.hasAttribute("data-catx-tipo")) { ui.catxTipo = t.value; render(); return; }
     marcarSujo(t);
     if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }

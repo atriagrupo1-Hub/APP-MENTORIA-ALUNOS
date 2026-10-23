@@ -2248,3 +2248,22 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-catcab.e3-oculto .ax-catcab-img { opacity: .55; } .ax-catcab.e3-oculto .ax-catcab-img img { filter: grayscale(.85); }
 .ax-catcab.e3-bloq .ax-catcab-img img { filter: brightness(.55); }
 .ax-catcab .cur { padding: 0; }
+/* O que fica dentro da categoria */
+.cx-cont { margin: 0 24px 24px; padding-top: 18px; border-top: 1px solid var(--linha-suave); }
+.cx-cont h3 { margin: 0 0 4px; font-size: 16px; }
+.cx-cont h3 small { font-weight: 400; color: var(--texto-2); }
+.cx-cont > p { margin: 0 0 12px; font-size: 13px; color: var(--texto-2); }
+.cx-itens { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cx-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--linha-suave); border-radius: 8px; background: var(--aa-cartao); }
+.cx-item b { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.cx-tipo { flex: 0 0 auto; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8a6424; background: var(--al-ouro-fundo); border-radius: 99px; }
+.cx-tirar { flex: 0 0 auto; width: 28px; height: 28px; padding: 0; font-size: 18px; line-height: 1; color: var(--texto-2); background: none; border: 1px solid var(--linha); border-radius: 6px; cursor: pointer; }
+.cx-tirar:hover { color: var(--perigo); border-color: var(--perigo); }
+.cx-add { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 8px; }
+.cx-add .al-botao-ouro { gap: 6px; }
+.cx-add svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.na-cats { display: flex; flex-wrap: wrap; gap: 6px; }
+.na-cat { padding: 3px 10px; font-size: 12.5px; font-weight: 600; color: #8a6424; background: var(--al-ouro-fundo); border-radius: 99px; }
+.na-cats em { font-size: 13px; color: var(--texto-2); }
+.cs-heroi-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px; color: rgba(255, 255, 255, .8); }
+@media (max-width: 640px) { .cx-add { grid-template-columns: 1fr; } }
