@@ -2369,8 +2369,8 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-res-cab .est3-menu { color: var(--texto); left: auto; right: 0; }
 .ax-res-cab .est3-pil svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .ax-res-cats { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 14px; list-style: none; }
-.ax-res-cats button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 6px; font: inherit; text-align: left; color: var(--texto); background: none; border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
-.ax-res-cats button:hover { border-color: var(--al-ouro); }
+.ax-res-cats .ax-res-velho { display: flex; align-items: center; gap: 12px; width: 100%; padding: 6px; font: inherit; text-align: left; color: var(--texto); background: none; border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.ax-res-cats .ax-res-velho:hover { border-color: var(--al-ouro); }
 .ax-res-img { flex: 0 0 auto; width: 84px; aspect-ratio: 16 / 9; overflow: hidden; background: #1a140a; border-radius: 5px; }
 .ax-res-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .ax-res-nome { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 600; }
@@ -2378,3 +2378,22 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-res-est { padding: 2px 8px; font-size: 11.5px; font-style: normal; font-weight: 700; color: #b42318; background: #fde7e5; border-radius: 99px; }
 .ax-res-vazio { padding: 10px; font-size: 14px; color: var(--texto-2); }
 .ax-res-abrir { margin: 0 14px 14px; justify-content: center; }
+.ax-res-grade { grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); }
+.ax-res-item { display: flex; align-items: center; gap: 14px; padding: 10px; border: 1px solid var(--linha-suave); border-radius: 10px; box-shadow: var(--aa-sombra); }
+.ax-res-item > .ax-res-img { position: relative; flex: 0 0 auto; width: 170px; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; background: #1a140a; border: 0; border-radius: 7px; cursor: pointer; }
+.ax-res-item > .ax-res-img .ax-selo { width: 38px; height: 38px; }
+.ax-res-info { flex: 1 1 auto; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ax-res-info .ax-nome { width: 100%; justify-content: space-between; font-size: 20px; }
+.ax-res-l2 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ax-res-info .ax-acoes { margin: 0; gap: 6px; }
+.ax-res-info .al-botao.ax-ed { min-height: 38px; padding: 0 12px; font-size: 14px; }
+.ax-res-info .ax-ic { width: 38px; height: 38px; }
+.ax-res-info .ax-ic svg, .ax-res-info .ax-ed svg { width: 16px; height: 16px; }
+.ax-res-item.e3-oculto > .ax-res-img img { filter: grayscale(.85); opacity: .55; }
+.ax-res-item.e3-bloq > .ax-res-img img { filter: brightness(.55); }
+.ax-res-item .est3-menu { left: auto; right: 0; }
+@media (max-width: 640px) { .ax-res-item { flex-direction: column; align-items: stretch; } .ax-res-item > .ax-res-img { width: 100%; } }
+.ax-res-info .ax-nome { padding: 0; border: 0; background: none; }
+.ax-res-info .ax-nome svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ax-res-info .ax-info svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+.ax-res-info .ax-ic svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
