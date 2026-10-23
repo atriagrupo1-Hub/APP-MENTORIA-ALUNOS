@@ -2076,6 +2076,13 @@ export function montar(app: HTMLElement) {
       </section>`;
     };
     const visiveis = todas ? S.cats : S.cats.filter((k) => k.id === ui.layAba);
+    // "Todas as abas": um resumo limpo, um cartão igual por aba, com as categorias em lista. Clicar abre a aba.
+    const resumo = (k: Cat) => { const xs = S.catsAba.filter((x) => x.aba === k.id), e = estado3(k.pub, !k.visivel); return `
+      <article class="ax-res${cls3(e)}">
+        <div class="ax-res-cab"><span class="ax-navapp">${icDaAba(k)}<b>${h(k.nome)}</b></span><div class="ax-res-tit"><h3>Aba: ${h(k.nome)}</h3><span>${p(xs.length, "categoria", "categorias")}</span></div>${seletorEstado("cat", k.id, e, false, true)}</div>
+        <ul class="ax-res-cats">${xs.map((x) => { const img = capaSite(x.capa); return `<li><button type="button" data-a="catx-entrar" data-id="${x.id}"><span class="ax-res-img">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}</span><span class="ax-res-nome">${h(x.nome)}<small>${resumoItens(x.id)}</small></span>${estado3(x.pub, x.bloq) === "ativo" ? "" : `<em class="ax-res-est">${estado3(x.pub, x.bloq) === "bloqueado" ? "Bloqueada" : "Oculta"}</em>`}</button></li>`; }).join("") || `<li class="ax-res-vazio">Nenhuma categoria ainda.</li>`}</ul>
+        <button type="button" class="al-botao-ouro ax-res-abrir" data-a="lay-aba" data-v="${k.id}">Abrir aba ${h(k.nome)}</button>
+      </article>`; };
     const on = S.config.exibirDestaques;
     return `
     <section class="tela ativa ax">
@@ -2086,7 +2093,7 @@ export function montar(app: HTMLElement) {
         ${ui.abaNova ? `<form data-f="cat-add" class="cur-aba-nova"><input id="abaNovaNome" class="campo" name="nome" placeholder="Nome da aba" maxlength="30" required aria-label="Nome da nova aba" /><button class="al-botao-ouro">Criar</button><button type="button" class="al-botao" data-a="aba-nova-fechar">Cancelar</button></form>`
           : `<button type="button" class="ax-aba ax-nova" data-a="aba-nova-abrir">${IC_ABAC.mais}Nova aba</button>`}
       </div>
-      <div class="ax-secs">${visiveis.map(secao).join("") || `<div class="ax-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
+      <div class="ax-secs">${todas ? `<div class="ax-res-grade">${S.cats.map(resumo).join("")}</div>` : visiveis.map(secao).join("") || `<div class="ax-vazio">Nenhuma aba. Use Nova aba.</div>`}</div>
       </div>
       <div class="ax-dest">
         <span class="ax-dest-ic">${ic.estrela}</span>
