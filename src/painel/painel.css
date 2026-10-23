@@ -2397,3 +2397,20 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-res-info .ax-nome svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .ax-res-info .ax-info svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
 .ax-res-info .ax-ic svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* Categorias: botões em cima e cartões lado a lado */
+.kc-filtros { display: flex; flex-wrap: wrap; gap: 12px; margin: 4px 0 20px; }
+.kc-filtros .ax-aba { min-height: 48px; padding: 0 18px; font-size: 17px; }
+.kc-filtros .ax-nova { border-style: dashed; }
+.kc-grade { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.kc-card .cur-capa { position: relative; }
+.kc-card .ax-alca { top: 10px; left: 10px; }
+.kc-card .ax-selo { z-index: 1; }
+.kc-nome { width: 100%; justify-content: space-between; font-size: 22px; }
+.kc-nome svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.kc-l2 { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.kc-l2 .ax-info svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+.kc-acoes { display: grid; grid-template-columns: minmax(0, 1fr) 42px 42px 42px; gap: 6px; margin: 0; }
+.kc-acoes .al-botao.ax-ed { min-height: 42px; padding: 0 10px; font-size: 15px; justify-content: center; }
+.kc-acoes .ax-ic { width: 42px; height: 42px; }
+.kc-acoes svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.kc .cur-corpo { gap: 12px; }
