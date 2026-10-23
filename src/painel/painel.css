@@ -2349,3 +2349,12 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-sec .ax-grade { justify-content: center; }
 @media (min-width: 1100px) { .ax-secs { flex-wrap: nowrap; } }
 .ax-sec .ax-grade { row-gap: 26px; }
+/* Menu lateral das abas: Todas, cada aba e Nova aba; a escolhida abre ao lado */
+.ax-lado { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 22px; }
+.ax-lado .ax-abas { position: sticky; top: 12px; flex-direction: column; flex-wrap: nowrap; gap: 10px; margin: 0; padding: 12px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; box-shadow: var(--aa-sombra); }
+.ax-lado .ax-aba { width: 100%; justify-content: flex-start; min-height: 50px; padding: 0 14px; font-size: 18px; box-shadow: none; }
+.ax-lado .ax-aba span { margin-left: auto; }
+.ax-lado .ax-nova { justify-content: center; border-style: dashed; }
+.ax-lado .ax-secs { margin: 0; flex-wrap: wrap; }
+.ax-lado .cur-aba-nova { display: flex; flex-direction: column; gap: 8px; }
+@media (max-width: 900px) { .ax-lado { grid-template-columns: 1fr; } .ax-lado .ax-abas { position: static; flex-direction: row; flex-wrap: wrap; } .ax-lado .ax-aba { width: auto; } }
