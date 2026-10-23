@@ -2204,3 +2204,6 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ax-card .ax-acoes { display: grid; grid-template-columns: minmax(0, 1fr) 34px 34px 34px; gap: 4px; }
 .ax-card .ax-ic { width: 34px; height: 36px; flex: none; }
 .ax-card .al-botao.ax-ed { min-width: 0; min-height: 36px; padding: 0 6px; font-size: 13.5px; }
+.ax-est .est3-pil { min-height: 40px; padding: 0 16px; font-size: 15px; }
+.ax-est .est3-pil svg { width: 16px; height: 16px; }
+.ax-est .est3-menu { color: var(--texto); left: auto; right: 0; }

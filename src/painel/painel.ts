@@ -2016,7 +2016,7 @@ export function montar(app: HTMLElement) {
               : `<h2>Aba: ${h(k.nome)}<button type="button" class="ab-lapis" data-a="cat-abrir-editar" data-id="${k.id}" aria-label="Editar a aba ${h(k.nome)}">${IC_ABAC.lapis}</button></h2>`}
             <p>${k.id === jor ? "Esta aba aparece no aplicativo da aluna como Início e Módulos." : "Esta aba aparece no aplicativo da aluna."} Clique nas categorias para gerenciar seus conteúdos.</p>
           </div>
-          <button type="button" class="ac-chave" role="switch" aria-checked="${pub}" data-a="estado-set" data-v="cat:${k.id}:${pub ? "desativado" : "ativo"}" title="${pub ? "Ocultar a aba do aplicativo" : "Mostrar a aba no aplicativo"}"><i></i>${pub ? "Ativa" : "Oculta"}</button>
+          <span class="ax-est">${seletorEstado("cat", k.id, estado3(k.pub, !k.visivel), false, true)}</span>
           <button type="button" class="al-botao-ouro" data-a="cat-criar" data-id="${k.id}">${IC_ABAC.mais}Nova categoria</button>
         </div>
         <div class="ax-corpo">${corpo}</div>
