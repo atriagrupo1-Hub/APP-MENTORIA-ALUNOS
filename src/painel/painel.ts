@@ -3588,7 +3588,7 @@ export function montar(app: HTMLElement) {
           <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
           <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           <div class="eq-acoes">
-            ${pode || e.souEu ? `<button type="button" class="al-botao" data-a="equipe-editar" data-id="${e.id}">${IC_EQ.lapis}Editar</button>` : ""}
+            ${pode || (e.souEu && souPrincipal()) ? `<button type="button" class="al-botao" data-a="equipe-editar" data-id="${e.id}">${IC_EQ.lapis}Editar</button>` : ""}
             ${e.codigo ? `<button type="button" class="al-botao" data-a="copiar-acesso-equipe" data-id="${e.id}">${IC_EQ.copia}Copiar acesso</button><button type="button" class="al-botao" data-a="ver-codigo" data-id="${e.id}">${IC_EQ.chave}Ver código</button>` : ""}
             ${!pode ? "" : e.bloqueada
               ? `<button type="button" class="al-botao eq-desb" data-a="equipe-desbloquear" data-id="${e.id}">${IC_EQ.aberto}Desbloquear</button>`
