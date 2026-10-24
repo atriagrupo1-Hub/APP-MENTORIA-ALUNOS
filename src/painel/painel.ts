@@ -810,7 +810,8 @@ export function montar(app: HTMLElement) {
   /** Círculo da pessoa da equipe: a foto, ou as iniciais na cor escolhida. */
   const avatarEq = (id: string, nome: string, cor: string, cls: string, extra = "") => {
     const foto = S.fotos[id];
-    if (foto) return `<span class="${cls} com-foto"><img src="${foto}" alt="" />${extra}</span>`;
+    // Com foto, a cor escolhida vira o anel em volta dela.
+    if (foto) return `<span class="${cls} com-foto${cor ? " com-anel" : ""}"${cor ? ` style="background:${corFundo(cor)}"` : ""}><img src="${foto}" alt="" />${extra}</span>`;
     return `<span class="${cls}"${cor ? ` style="background:${corFundo(cor)};color:${corLetra(cor)}"` : ""}>${h(iniciais(nome))}${extra}</span>`;
   };
   const iniciais = (n: string) => String(n || "?").trim().split(/\s+/).filter((w) => w.length > 2 || /^[A-ZÁ-Ú]/.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
@@ -3833,7 +3834,7 @@ export function montar(app: HTMLElement) {
             <div class="pf-fbts">${temFoto
               ? `<button type="button" class="al-botao" data-a="perfil-foto-escolher">${IC_PF.troca}Trocar</button><button type="button" class="al-botao" data-a="perfil-foto-editar">${IC_EQ.lapis}Editar</button><button type="button" class="al-botao pf-rm" data-a="perfil-foto-remover">${IC_MOD.lixo}Remover</button>`
               : `<button type="button" class="al-botao" data-a="perfil-foto-escolher">${IC_PF.up}Adicionar foto</button>`}</div>
-            <small>Cor do círculo${temFoto ? " (aparece sem foto)" : ""}</small>
+            <small>Cor do círculo${temFoto ? " (anel em volta da foto)" : ""}</small>
             <div class="pf-cores">
               ${CORES.map((x) => `<button type="button" class="pf-cor${x === cor ? " sel" : ""}" data-a="perfil-cor" data-v="${x}" style="background:${corFundo(x)}" aria-label="Cor ${x}"></button>`).join("")}
               <label class="pf-cor pf-livre" title="Escolher qualquer cor"><input type="color" data-perf-cor="1" value="${c1}" aria-label="Escolher qualquer cor" /></label>
@@ -5329,7 +5330,7 @@ export function montar(app: HTMLElement) {
       const [a1, a2] = (ui.perfCor || "#e9d9b8").split(","), n = t.dataset.perfCor;
       const nova = n === "2" ? a1 + "," + t.value : a2 ? t.value + "," + a2 : t.value;
       ui.perfCor = nova.toLowerCase();
-      const g = document.querySelector<HTMLElement>(".pf-grande:not(.com-foto)"); if (g) { g.style.background = corFundo(nova); g.style.color = corLetra(nova); }
+      const g = document.querySelector<HTMLElement>(".pf-grande"); if (g) { g.style.background = corFundo(nova); g.style.color = corLetra(nova); g.classList.toggle("com-anel", g.classList.contains("com-foto")); }
       const sv = document.querySelector<HTMLButtonElement>('[data-a="perfil-salvar"]'); if (sv) sv.disabled = (ui.perfCor || "") === (eu?.cor || "");
       document.querySelectorAll(".pf-cor.sel").forEach((x) => x.classList.remove("sel"));
       return;
