@@ -2544,3 +2544,11 @@ button.est3-pil[data-a="estado-menu"]::after { content: ""; width: 6px; height: 
 .capa-bts svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .capa-bts .perigo { color: var(--perigo); }
 .mp-capa-bts, .mp-pe-bts { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag-removido { display: inline-block; margin-left: 6px; padding: 2px 8px; font-size: 11.5px; font-weight: 700; color: #b42318; background: #fde7e5; border-radius: 99px; vertical-align: middle; }
+.rest-opcoes { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 0; padding: 0; border: 0; }
+.rest-opcoes legend { margin-bottom: 6px; }
+.rest-opcoes label { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.rest-opcoes label:has(input:checked) { border-color: var(--al-ouro); background: var(--al-ouro-fundo); }
+.rest-opcoes input { width: 18px; height: 18px; margin-top: 2px; }
+.rest-opcoes span { display: flex; flex-direction: column; gap: 2px; }
+.rest-opcoes em { font-size: 13px; font-style: normal; color: var(--texto-2); }
