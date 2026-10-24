@@ -10,10 +10,10 @@
  * grava nas funções de remover, bloquear e trocar código: a promessa de
  * que só o dono mexe na equipe não pode viver na tela.
  *
- * E o papel que vem no corpo é conferido contra uma lista de dois. Sem
- * isso, uma chamada montada à mão com `papel: "dono"` criaria um
- * segundo dono — que é exatamente a coisa que esta função existe para
- * impedir.
+ * E o papel que vem no corpo é conferido contra a lista abaixo e contra
+ * quem pede (0080): só o dono principal cria outro dono, e já com o que
+ * esse dono secundário pode fazer na equipe. O dono secundário só
+ * adiciona alguém se o principal deixou ("pode_adicionar").
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -24,8 +24,8 @@ const CHAVE_SERVICO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 /** Domínio reservado, sem MX: nenhuma mensagem sai daqui. */
 const DOMINIO_INTERNO = "equipe.mentoria-aion.invalid";
 
-/** Os dois papéis que o dono pode criar. `dono` não está aqui. */
-const PAPEIS = ["admin", "suporte"];
+/** Os papéis que se pode criar. `dono` só pelo dono principal. */
+const PAPEIS = ["dono", "admin", "suporte"];
 
 const ORIGENS = (Deno.env.get("ORIGENS_PERMITIDAS") ?? "")
   .split(",")
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
   // administrador e suporte; o administrador, só suporte (0040).
   const { data: perfil, error: erroPerfil } = await admin
     .from("profiles")
-    .select("papel, status")
+    .select("papel, status, dono_principal, pode_adicionar")
     .eq("id", quem.user.id)
     .single();
 
@@ -93,25 +93,47 @@ Deno.serve(async (req) => {
   ) {
     return resposta({ erro: "sem_permissao" }, 403, origem);
   }
+  if (perfil.papel === "dono" && !perfil.dono_principal && !perfil.pode_adicionar) {
+    return resposta(
+      { erro: "sem_permissao", mensagem: "O dono principal não liberou adicionar membros para você." },
+      403,
+      origem,
+    );
+  }
 
   let nome = "";
   let login = "";
   let codigo = "";
   let papel = "";
+  let pode = { adicionar: true, remover: true, codigo: true, nome: true };
   try {
     const corpo = await req.json();
     nome = String(corpo?.nome ?? "").trim();
     login = String(corpo?.login ?? "").trim().toLowerCase();
     codigo = String(corpo?.codigo ?? "").trim();
     papel = String(corpo?.papel ?? "").trim();
+    const p = corpo?.permissoes ?? {};
+    pode = {
+      adicionar: p.adicionar !== false,
+      remover: p.remover !== false,
+      codigo: p.codigo !== false,
+      nome: p.nome !== false,
+    };
   } catch {
     return resposta({ erro: "corpo_invalido" }, 400, origem);
   }
 
   if (!PAPEIS.includes(papel)) {
     return resposta(
-      { erro: "papel_invalido", mensagem: "Escolha suporte ou administrador." },
+      { erro: "papel_invalido", mensagem: "Escolha dono, administrador ou suporte." },
       400,
+      origem,
+    );
+  }
+  if (papel === "dono" && !perfil.dono_principal) {
+    return resposta(
+      { erro: "sem_permissao", mensagem: "Só o dono principal adiciona outro dono." },
+      403,
       origem,
     );
   }
@@ -185,7 +207,12 @@ Deno.serve(async (req) => {
 
   const { error: erroPerfilNovo } = await admin
     .from("profiles")
-    .insert({ id: conta.user.id, nome, login, papel, status: "ativa" });
+    .insert({
+      id: conta.user.id, nome, login, papel, status: "ativa",
+      ...(papel === "dono"
+        ? { pode_adicionar: pode.adicionar, pode_remover: pode.remover, pode_codigo: pode.codigo, pode_nome: pode.nome }
+        : {}),
+    });
 
   if (erroPerfilNovo) {
     await admin.auth.admin.deleteUser(conta.user.id);

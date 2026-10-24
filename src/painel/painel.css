@@ -2779,3 +2779,13 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .reg-ses .reg-q { min-width: 86px; }
 .reg-ses .reg-t { display: inline-flex; align-items: center; gap: 8px; }
 .reg-ses b { font-size: 13px; color: var(--texto-2); }
+.eq-sub { font-size: 12px; color: var(--texto-3); }
+.eq-perm { display: none; margin: 4px 0 14px; padding: 14px 16px; border: 1px solid var(--linha-suave); border-radius: 12px; background: var(--al-cab, #f8f5ef); }
+.eq-form:has(select[name="papel"] option[value="Dono"]:checked) .eq-perm, .eq-form:not(:has(select[name="papel"])) .eq-perm[data-dono] { display: block; }
+.eq-perm legend { padding: 0 6px; font-size: 13px; font-weight: 700; }
+.eq-chk { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 14px; cursor: pointer; }
+.eq-chk input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--eq-azul); }
+.eq-chk.tudo { padding-bottom: 10px; margin-bottom: 4px; border-bottom: 1px solid var(--linha-suave); }
+.eq-chk.tudo span { display: flex; flex-direction: column; }
+.eq-chk em { font-style: normal; font-size: 12px; color: var(--texto-3); }
+.eq-perm small { display: block; margin-top: 6px; font-size: 12px; color: var(--texto-3); }
