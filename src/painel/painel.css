@@ -2625,7 +2625,19 @@ button.est3-pil[data-a="estado-menu"]::after { content: ""; width: 6px; height: 
 /* ---------- Equipe: banner, cartões horizontais e modais ---------- */
 :root { --eq-azul: #13284a; --eq-azul-esc: #0c1a31; --eq-azul-txt: #9fb6dc; --eq-azul-fundo: rgba(70, 110, 180, .16); --eq-ouro: #c9a25c; }
 html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq-ouro: #a5732a; }
-.eq-filtros { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 14px; }
+.eq-filtros { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 0 0 14px; }
+.eq-busca { flex: 0 1 210px; min-width: 150px; }
+@media (max-width: 1100px) { .eq-filtros .cm-dir { flex-wrap: wrap; margin-left: 0; } }
+.eq-busca .campo { width: 100%; min-height: 46px; }
+.eq-ordem { position: relative; display: inline-flex; }
+.eq-ordem svg { position: absolute; left: 12px; top: 50%; width: 17px; height: 17px; transform: translateY(-50%); fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.eq-ordem .campo { min-width: 190px; padding-left: 38px; }
+.eq-lista.grade { grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.eq-lista.grade .eq-card { grid-column: auto; display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+.eq-lista.grade .eq-card > .eq-av { align-self: flex-start; }
+.eq-lista.grade .eq-col { flex-direction: row; align-items: center; justify-content: space-between; padding-right: 0; }
+.eq-lista.grade .eq-acoes { flex-wrap: wrap; padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--linha-suave); }
+.eq-lista.grade .eq-acoes:not(:has(button)) { display: none; }
 .eq-filtro { display: inline-flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 16px; font: inherit; font-size: 15px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 8px; box-shadow: var(--aa-sombra); cursor: pointer; }
 .eq-filtro svg { width: 19px; height: 19px; flex: none; fill: none; stroke: var(--eq-ouro); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .eq-filtro b { display: inline-grid; place-items: center; min-width: 26px; height: 24px; padding: 0 7px; font-size: 13px; background: var(--aa-cinza); border-radius: 99px; }
