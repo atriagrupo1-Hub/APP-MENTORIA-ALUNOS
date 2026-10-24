@@ -1850,9 +1850,9 @@ export function montar(app: HTMLElement) {
               ${avatarEq(y.id, y.nome, y.pes?.cor || "", "eq-av " + c, y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : "")}
               <div class="reg-dados">
                 <div class="eq-col"><small>Nome</small><b>${h(y.nome)}</b></div>
-                <div class="eq-col"><small>Função</small><span>${y.papel ? h(y.papel === "Administrador" ? "Administração" : y.papel) : "Fora da equipe"}</span></div>
                 <div class="eq-col"><small>Login</small><b>${y.login ? h(y.login) : "—"}</b></div>
                 <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">${y.login ? "••••" : "—"}</b></div>
+                <div class="eq-col"><small>Função</small><span>${y.papel ? h(y.papel === "Administrador" ? "Administração" : y.papel) : "Fora da equipe"}</span></div>
                 <div class="eq-col"><small>Status</small>${statusReg(y)}</div>
               </div>
               <button type="button" class="reg-abrir" data-a="reg-sel" data-id="${h(y.id)}" aria-label="Ver o histórico de ${h(y.nome)}" aria-pressed="${y.id === ui.regSel}">${IC_REG.seta}</button>
@@ -3591,9 +3591,9 @@ export function montar(app: HTMLElement) {
           ${avatarEq(e.id, e.nome, e.cor, "eq-av " + papelCls, `<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i>`)}
           <div class="eq-info">
             <div class="eq-col"><small>Nome</small><b>${h(e.nome)}</b></div>
-            <div class="eq-col"><small>Função</small><span>${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
             <div class="eq-col"><small>Login</small><b>${h(e.login)}</b></div>
             <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">••••</b></div>
+            <div class="eq-col"><small>Função</small><span>${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
             <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
             <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           </div>
@@ -3850,7 +3850,7 @@ export function montar(app: HTMLElement) {
             <label class="eq-campo"><span>Nome completo</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>Acesso bloqueado.</small>` : ""}</label>
             <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar no painel.</small></label>
             ${semCodigo ? "" : `<div class="eq-campo"><span>Código de acesso</span><span class="eqn-cod"><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} aria-label="Código de acesso" /><button type="button" class="eqn-dado" data-a="eqn-sortear" title="Gerar um código" aria-label="Gerar um código">${IC_PF.dado}</button></span><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></div>`}
-            ${comPapel ? `<label class="eq-campo"><span>Função</span><span class="eq-sel eqn-sel">${papeis.map((x) => `<i data-ic="${x}">${ICP[x]}</i>`).join("")}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
+            ${comPapel ? `<label class="eq-campo"><span>Função</span><span class="eq-sel eqn-sel">${papeis.map((x) => `<i data-ic="${x}">${ICP[x]}</i>`).join("")}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x === "Administrador" ? "Administração" : x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
           </div>
           <div class="eqn-dir">
             ${permDono}
