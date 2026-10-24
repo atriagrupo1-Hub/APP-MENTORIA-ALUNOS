@@ -255,7 +255,8 @@
   html[data-tema="claro"] .etiqueta[style*="var(--ouro)"] { color: #8a6424 !important; }
   .tema { display: inline-flex; align-items: center; gap: 8px; }
   .tema .bola { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--linha); background: linear-gradient(90deg, var(--texto) 50%, transparent 50%); }
-  body { transition: background-color .25s ease, color .25s ease; }
+  /* Troca de tema: a tela toda esmaece de uma vez (View Transitions), sem cada parte mudar num tempo. */
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .35s; animation-timing-function: ease; }
 
 /* No aplicativo, o `index.css` da área da aluna pinta o html de preto.
    No painel, o fundo da página acompanha o tema, como na maquete. */
