@@ -92,8 +92,8 @@ export function montar(raiz: HTMLElement) {
       .filter((c) => c.publicado !== false)
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
-        cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({
-          id: x.id, nome: x.titulo, descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
+        cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
+          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
@@ -534,11 +534,14 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
 
+  /** Como o painel configurou as telas (Configurações → Módulos e Presentes). */
+  const TELAS = () => (D && D.inicio && D.inicio.telas) || {};
   function telaModulos() {
+    const t = TELAS();
     return `
     <div class="pagina">
-      <h1 class="todos-mod serif">Todos os módulos</h1>
-      <div class="grade-mod">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
+      <h1 class="todos-mod serif tit-${h(t.modTitEstilo || "padrao")}">${h(t.modTitulo || "Todos os módulos")}</h1>
+      <div class="grade-mod gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
     </div>`;
   }
 
@@ -1000,8 +1003,8 @@ export function montar(raiz: HTMLElement) {
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   // Os presentes (Mestres espirituais, Documentários, Frequências, E-books…), cada um num cartão.
   const PRESENTES = () => CATS().flatMap((c, ci) => c.cursos.map((curso, i) => ({ c, ci, i, curso })));
-  const icPresente = (c, curso) => (/descobert/i.test(curso.nome) ? ICONE_DESTAQUE.lupa : /e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
-  const corPresente = (c, curso) => (/descobert/i.test(curso.nome) ? "desc" : /e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
+  const icPresente = (c, curso) => curso.icone && ICONE_DESTAQUE[curso.icone] ? ICONE_DESTAQUE[curso.icone] : (/descobert/i.test(curso.nome) ? ICONE_DESTAQUE.lupa : /e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
+  const corPresente = (c, curso) => curso.cor && curso.cor in COR_DESTAQUE ? COR_DESTAQUE[curso.cor] : (/descobert/i.test(curso.nome) ? "desc" : /e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
   const botaoPresente = (curso) => (/descobert/i.test(curso.nome) ? "Ver as descobertas" : /e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
   function cartaoPresente({ c, ci, i, curso }) {
     const key = ci + "-" + i;
@@ -1032,14 +1035,33 @@ export function montar(raiz: HTMLElement) {
           </div>
         </section>`;
   }
+  /** Botão de categoria em grade ou lista (Configurações → Presentes → Layout dos botões). */
+  function botaoCategoria({ c, ci, i, curso }) {
+    const key = ci + "-" + i, fech = !cursoLiberado(curso);
+    const acao = fech ? `data-a="curso-pres" data-v="${key}"` : ehEbook(curso) ? `data-a="ebook" data-v="${key}"` : `data-a="curso-pres" data-v="${key}"`;
+    return `<button class="pb-item ${corPresente(c, curso)}${fech ? " fech" : ""}" ${acao} aria-label="${h(curso.nome)}${fech ? ". Bloqueado, ainda não liberado." : ""}">
+        <span class="pb-img">${img(curso.capa, "")}</span>
+        <span class="pb-nome">${icPresente(c, curso)}<b class="serif">${h(curso.nome)}</b></span>
+        ${fech ? `<span class="pb-cad">${ICONES.cadeado}</span>` : `<span class="pb-seta" aria-hidden="true">›</span>`}
+      </button>`;
+  }
   function telaPresentes() {
     const aba = abaAtual();
     const lista = PRESENTES().filter((x) => !aba || x.c.id === aba.id);
+    // A configuração vale para a tela do botão Presentes (o primeiro botão com o ícone de presente).
+    const t = TELAS(), ehPres = !aba || aba.icone === "presentes";
+    const layout = ehPres ? t.presLayout || "grandes" : "grandes";
+    const titulo = ehPres && t.presTitulo ? t.presTitulo : aba ? aba.titulo : "Presentes";
+    if (layout !== "grandes") return `
+    <div class="pagina">
+      <h1 class="todos-mod serif tit-${h(t.presTitEstilo || "padrao")}">${h(titulo)}</h1>
+      ${lista.length ? `<div class="pb-grade pb-${h(layout)} pb-est-${h(t.presEstilo || "padrao")}">${lista.map(botaoCategoria).join("")}</div>` : `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}
+    </div>`;
     return `
     <div class="pagina">
-      <h1 class="todos-mod serif">${h(aba ? aba.titulo : "Presentes")}</h1>
+      <h1 class="todos-mod serif${ehPres ? " tit-" + h(t.presTitEstilo || "padrao") : ""}">${h(titulo)}</h1>
       ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
-      <div class="cat-grade">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
+      <div class="cat-grade${ehPres ? " pg-est-" + h(t.presEstilo || "padrao") : ""}">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
     </div>`;
   }
   function telaCategoria() {

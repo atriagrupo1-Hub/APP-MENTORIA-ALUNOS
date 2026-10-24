@@ -67,7 +67,7 @@ type Destaque = {
   id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
   destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
 };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -120,7 +120,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string> };
   versiculos: Versiculo[];
   destaques: Destaque[];
 };
@@ -257,7 +257,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -412,10 +412,11 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
 
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "" })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao" },
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
+      telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -470,7 +471,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {} }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -2174,6 +2175,129 @@ export function montar(app: HTMLElement) {
         <nav class="pv-nav">${abasApp.map(([ic, nm], i) => `<span${i === 0 ? ' class="on"' : ""}>${IC_CFG[ic] || IC_CFG.modulos}<em>${h(nm)}</em></span>`).join("")}</nav>
       </div>`;
   }
+  const EST_TIT: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
+  const IC_CAT_P: Record<string, string> = {
+    estrela: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3"/></svg>`,
+    presente: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11"/></svg>`,
+    filme: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M7 5v14M17 5v14M3.5 9.5H7M3.5 14.5H7M17 9.5h3.5M17 14.5h3.5"/></svg>`,
+    video: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>`,
+    livro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h10l3 3v14H6z"/><path d="M9 10h7M9 13.5h7M9 17h4"/></svg>`,
+    som: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6" rx="1.5"/></svg>`,
+    lupa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l3 6 6 .8-4.5 4.2 1.2 6L12 17l-5.7 3 1.2-6L3 9.8 9 9z"/></svg>`,
+  };
+  const COR_HEX: Record<string, string> = { dourado: "#c9a25c", violeta: "#8e6cc9", verde: "#4f9a5a", azul: "#4a78c2", vermelho: "#b8352d", turquesa: "#2f9c98" };
+  /** Opções em cartões (estilo/layout) com o visto. */
+  const opcoesCfg = (nome: string, atual: string, ops: [string, string][], cls = "") => `<div class="cfg-estilos ${cls}">${ops.map(([k, t]) => `<label class="cfg-est"><input type="radio" name="${nome}" value="${k}" ${atual === k ? "checked" : ""} /><span class="cfg-est-cx est-${k}"><i>${IC_CFG.img}</i><span><b></b><b></b><b></b></span></span><em>${t}</em></label>`).join("")}</div>`;
+  const tituloCfg = (nomeT: string, nomeE: string, valor: string, est: string, ajuda: string) => `
+          <div class="cfg-bloco">
+            <div class="cfg-2">
+              <label class="cfg-c"><span><b class="cfg-l">Título da seção</b>${ajuda}</span><input class="campo" name="${nomeT}" value="${h(valor)}" maxlength="40" required /></label>
+              <label class="cfg-c"><span>Estilo do título</span><span class="cfg-sel-aa"><i>Aa</i><select class="campo" name="${nomeE}">${EST_TIT.map(([k, t]) => `<option value="${k}" ${est === k ? "selected" : ""}>${t}</option>`).join("")}</select></span></label>
+            </div>
+          </div>`;
+  /** Valores do formulário de Módulos ou Presentes (ou os salvos). */
+  function valoresTelas(f?: HTMLFormElement | null) {
+    const t = { ...S.config.telas };
+    if (!f) return t;
+    f.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[name]").forEach((x) => {
+      if (x instanceof HTMLInputElement && x.type === "radio") { if (x.checked) t[x.name] = x.value; }
+      else if (x instanceof HTMLInputElement && x.type === "checkbox") t[x.name] = x.checked ? "sim" : "nao";
+      else t[x.name] = x.value;
+    });
+    return t;
+  }
+  const presBotao = () => S.cats.find((k) => k.icone === "presentes" && !S.cursos.some((c) => c.id === S.config.jornada && c.cat === k.id));
+  function cfgModulos() {
+    const t = S.config.telas, jor = curso(S.config.jornada);
+    const mods = jor ? jor.modulos : [];
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="modulos">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.modulos}</span><div><h2>Módulos</h2><p>Configure a exibição dos módulos e das aulas no aplicativo.</p></div></div>
+          ${tituloCfg("modTitulo", "modTitEstilo", t.modTitulo, t.modTitEstilo, `<small>Nome que aparece no topo da tela de módulos.</small>`)}
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Cards dos módulos</h3><p class="cfg-sub">Personalize a aparência dos cards que aparecem para a aluna.</p></div><label class="cfg-chave"><input type="checkbox" name="modProgresso" ${t.modProgresso !== "nao" ? "checked" : ""} /><i></i>Exibir progresso</label></div>
+            <div class="cfg-cards">${mods.map((m) => { const c = capaSite(m.capa); return `<span class="cfg-mcard">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}<small>${h(m.rot)} ${m.num}</small><b>${h(m.nome)}</b><em>${IC_CUR.camadas}${p(m.aulas.length, "aula", "aulas")}</em></span>`; }).join("") || `<p class="cfg-sub">A mentoria ainda não tem módulos.</p>`}</div>
+          </div>
+          <div class="cfg-bloco cfg-2l">
+            <div><h3>Layout dos cards</h3>${opcoesCfg("modLayout", t.modLayout, EST_TIT)}</div>
+            <div><h3>Tamanho</h3><div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modTamanho" value="${k}" ${t.modTamanho === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Ordem dos módulos</h3><p class="cfg-sub">Arraste para mudar a ordem que aparece no app.</p>
+            <div class="cfg-ordem">${mods.map((m, i) => { const c = capaSite(m.capa); return `
+              <div class="cfg-orl" draggable="true" data-arrasta="${m.id}">
+                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
+                <span class="cfg-n">${i + 1}</span>
+                <span class="cfg-mini">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}</span>
+                <b>${h(m.nome)}</b>
+                <span class="cfg-aulas">${p(m.aulas.length, "aula", "aulas")}</span>
+                ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo))}
+                <button type="button" class="eq-pts" data-a="cfg-mod-ir" data-id="${jor!.id}" title="Abrir o curso para editar" aria-label="Editar ${h(m.nome)}">${IC_EQ.pontos}</button>
+              </div>`; }).join("")}</div>
+          </div>
+        </form>
+        ${previaCfgBox(previaModulos(t))}
+      </div>`;
+  }
+  function cfgPresentes() {
+    const t = S.config.telas, pb = presBotao();
+    const cats = pb ? S.catsAba.filter((x) => x.aba === pb.id) : [];
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="presentes">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.presentes}</span><div><h2>Presentes</h2><p>Configure os botões de categorias e o conteúdo que aparece na área de Presentes.</p></div></div>
+          ${tituloCfg("presTitulo", "presTitEstilo", t.presTitulo, t.presTitEstilo, `<small>Nome que aparece no topo da tela de Presentes.</small>`)}
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Botões de categorias</h3><p class="cfg-sub">Personalize os botões que aparecem para a aluna na área de Presentes.</p></div>${pb ? `<button type="button" class="al-botao-ouro pequeno" data-a="catx-nova" data-id="${pb.id}">${IC_EQ.mais}Adicionar categoria</button>` : ""}</div>
+            <div class="cfg-ordem">${cats.map((x) => { const c = capaSite(x.capa), ic = x.icone || "estrela", cor = x.cor || "dourado", vis = x.pub; return `
+              <div class="cfg-orl cfg-catl" draggable="true" data-arrasta="${x.id}">
+                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
+                <span class="cfg-mini lg">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}</span>
+                <b>${h(x.nome)}</b>
+                <span class="est3"><button type="button" class="cfg-icbt" data-a="estado-menu" data-v="pic:${x.id}" title="Ícone" aria-label="Ícone de ${h(x.nome)}">${IC_CAT_P[ic]}</button>${ui.estMenu === "pic:" + x.id ? `<span class="est3-menu cfg-icmenu" role="menu">${Object.entries(ICONE_DEST).map(([k, nm]) => `<button type="button" role="menuitem" data-a="pcat-icone" data-id="${x.id}" data-v="${k}" title="${nm}" aria-label="${nm}">${IC_CAT_P[k]}</button>`).join("")}</span>` : ""}</span>
+                <span class="est3"><button type="button" class="cfg-corbt" data-a="estado-menu" data-v="pcor:${x.id}" title="Cor" aria-label="Cor de ${h(x.nome)}" style="background:${COR_HEX[cor]}"></button>${ui.estMenu === "pcor:" + x.id ? `<span class="est3-menu cfg-cormenu" role="menu">${Object.entries(COR_DEST).map(([k, nm]) => `<button type="button" role="menuitem" data-a="pcat-cor" data-id="${x.id}" data-v="${k}" title="${nm}" aria-label="${nm}" style="background:${COR_HEX[k]}"></button>`).join("")}</span>` : ""}</span>
+                <button type="button" class="cfg-vis${vis ? " on" : ""}" data-a="pcat-vis" data-id="${x.id}" aria-pressed="${vis}"><i></i>${vis ? "Visível" : "Oculta"}</button>
+                <button type="button" class="al-botao pequeno" data-a="catx-editar" data-id="${x.id}">${IC_EQ.lapis}Editar</button>
+                <button type="button" class="cfg-lixo" data-a="catx-remover" data-id="${x.id}" aria-label="Excluir ${h(x.nome)}">${IC_MOD.lixo}</button>
+              </div>`; }).join("") || `<p class="cfg-sub">Nenhuma categoria em Presentes.</p>`}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Layout dos botões</h3><p class="cfg-sub">Escolha como os botões serão exibidos.</p>
+            <div class="cfg-radios cfg-lay">${[["grade2", "Grade 2 colunas", IC_CUR.grade], ["grade3", "Grade 3 colunas", IC_CUR.grade], ["lista", "Lista", IC_CUR.lista], ["grandes", "Botões grandes", IC_CFG.img]].map(([k, tt, ic]) => `<label class="cfg-radio"><input type="radio" name="presLayout" value="${k}" ${t.presLayout === k ? "checked" : ""} />${ic}<span>${tt}</span></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Estilo visual</h3><p class="cfg-sub">Escolha o estilo dos botões de categoria.</p>
+            ${opcoesCfg("presEstilo", t.presEstilo, [["padrao", "Padrão"], ["borda", "Com borda"], ["minimalista", "Minimalista"]])}
+          </div>
+        </form>
+        ${previaCfgBox(previaPresentes(t))}
+      </div>
+      ${ui.catxEditar ? editarCatAba() : ""}`;
+  }
+  const previaCfgBox = (miolo: string) => `
+        <aside class="cfg-previa">
+          <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
+            <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
+          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${miolo}</div></div>
+        </aside>`;
+  /** Moldura comum da prévia (topo com o nome, rolagem e o menu do app). */
+  function pvTela(ativo: string, miolo: string) {
+    const abasApp = [["inicio", "Início"], ["modulos", "Módulos"], ...S.cats.filter((k) => k.pub && !S.cursos.some((c) => c.id === S.config.jornada && c.cat === k.id)).map((k) => [k.icone === "presentes" ? "presentes" : "modulos", k.nome]), ["perfil", "Perfil"]].slice(0, 5);
+    return `<div class="pv-tela"><div class="pv-topo"><span><b>${h(S.config.marcaTitulo)}</b><small>${h(S.config.marcaSub)}</small></span><i></i></div><div class="pv-rolo">${miolo}</div>
+      <nav class="pv-nav">${abasApp.map(([ic, nm]) => `<span${ic === ativo ? ' class="on"' : ""}>${IC_CFG[ic] || IC_CFG.modulos}<em>${h(nm)}</em></span>`).join("")}</nav></div>`;
+  }
+  function previaModulos(t: Record<string, string>) {
+    const jor = curso(S.config.jornada), mods = jor ? jor.modulos.filter((m) => m.pub) : [];
+    return pvTela("modulos", `<h4 class="pv-tit pv-t-${h(t.modTitEstilo)}">${h(t.modTitulo)}</h4>
+      <div class="pv-mods pv-ml-${h(t.modLayout)} pv-mt-${h(t.modTamanho)}">${mods.slice(0, 4).map((m) => { const c = capaSite(m.capa); return `<div class="pv-mod${m.ativo ? "" : " fech"}" style="--mc:${h(m.cor || "#c9a25c")}"><span class="pv-mcapa">${c ? `<img src="${h(c)}" alt="" />` : ""}</span><span class="pv-minfo"><small>${h(m.rot)} ${m.num}</small><b>${h(m.nome)}</b><em>${p(m.aulas.length, "aula", "aulas")}</em>${t.modProgresso !== "nao" && m.ativo ? `<span class="pv-prog"><i></i></span><em>Progresso da aluna</em>` : ""}${m.ativo ? `<span class="pv-ver">Ver aulas (${m.aulas.length})</span>` : ""}</span></div>`; }).join("")}</div>`);
+  }
+  function previaPresentes(t: Record<string, string>) {
+    const pb = presBotao(), cats = pb ? S.catsAba.filter((x) => x.aba === pb.id && x.pub) : [];
+    const item = (x: CatAba) => { const c = capaSite(x.capa); return `<div class="pv-pb${x.bloq ? " fech" : ""}" style="--pc:${COR_HEX[x.cor || "dourado"]}">${c ? `<img src="${h(c)}" alt="" />` : ""}<span>${IC_CAT_P[x.icone || "estrela"]}<b>${h(x.nome)}</b></span><i>${x.bloq ? "🔒" : "›"}</i></div>`; };
+    return pvTela("presentes", `<h4 class="pv-tit pv-t-${h(t.presTitEstilo)}">${h(t.presTitulo)}</h4>
+      <div class="pv-pbs pv-pl-${h(t.presLayout)} pv-pe-${h(t.presEstilo)}">${cats.map(item).join("")}</div>`);
+  }
   function telaConfig() {
     const aba = ui.cfgAba;
     let corpo = "";
@@ -2181,7 +2305,7 @@ export function montar(app: HTMLElement) {
       const v = valoresInicio(), est: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
       corpo = `
       <div class="cfg-grade">
-        <form data-f="cfg-inicio" class="cfg-painel" id="cfgInicio">
+        <form data-f="cfg-inicio" class="cfg-painel cfg-form" id="cfgInicio">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
             <h3>Nome no cabeçalho</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros.</p>
@@ -2212,6 +2336,8 @@ export function montar(app: HTMLElement) {
           <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${previaInicio(v)}</div></div>
         </aside>
       </div>`;
+    } else if (aba === "modulos" || aba === "presentes") {
+      corpo = aba === "modulos" ? cfgModulos() : cfgPresentes();
     } else if (aba === "versiculos") {
       const vh = versiculoDeHoje();
       corpo = `
@@ -3702,6 +3828,8 @@ export function montar(app: HTMLElement) {
 
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {
+    const ft = document.querySelector<HTMLFormElement>("#cfgTelas"), pvt = document.getElementById("cfgPrevia");
+    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : previaPresentes(t); return; }
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"), pv = document.getElementById("cfgPrevia");
     if (!f || !pv) return;
     const v = valoresInicio(f);
@@ -4818,7 +4946,19 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
-      case "cfg-salvar": { if (ui.cfgAba !== "inicio") { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } document.querySelector<HTMLFormElement>("#cfgInicio")?.requestSubmit(); return; }
+      case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
+      case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
+      case "pcat-icone": case "pcat-cor": {
+        ui.estMenu = ""; const x = S.catsAba.find((y) => y.id === d.id); if (!x) break;
+        const campo = a === "pcat-icone" ? "icone" : "cor";
+        void executar(async () => { falhou(await supabase.from("categorias_aba").update({ [campo]: d.v }).eq("id", x.id).select("id").single()); await registrar(null, (campo === "icone" ? "Mudou o ícone" : "Mudou a cor") + " da categoria " + x.nome, ["catx", x.id]); return (campo === "icone" ? "Ícone" : "Cor") + " de " + x.nome + " salvo."; });
+        return;
+      }
+      case "pcat-vis": {
+        const x = S.catsAba.find((y) => y.id === d.id); if (!x) break; const pub = !x.pub;
+        void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub }).eq("id", x.id).select("id").single()); await registrar(null, (pub ? "Mostrou" : "Ocultou") + " a categoria " + x.nome, ["catx", x.id]); return x.nome + (pub ? " visível." : " oculta."); });
+        return;
+      }
       case "cfg-banner-img": arquivoBanner.click(); return;
       case "cfg-banner-tirar": { const f = document.querySelector<HTMLFormElement>("#cfgInicio"); const x = f?.querySelector<HTMLInputElement>('input[name="bannerImg"]'); if (x) { x.value = ""; delete previas["cfg-banner"]; ui.sujo = { f: "cfg-inicio", id: "" }; atualizarPreviaCfg(); el.remove(); } return; }
       case "perfil-abrir": {
@@ -5048,6 +5188,18 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           falhou(await supabase.from("configuracoes").update({ frase_retorno: v("fraseRetorno") }).not("id", "is", null).select("id"));
           await registrar(null, "Mudou a frase de retorno do Início"); return "Frase de retorno salva.";
+        });
+        return;
+      }
+      case "cfg-telas": {
+        const tv = valoresTelas(form), mod = form.dataset.tela === "modulos";
+        const linha = mod
+          ? { modulos_titulo: (tv.modTitulo || "").trim() || "Todos os módulos", modulos_titulo_estilo: tv.modTitEstilo, modulos_progresso: tv.modProgresso !== "nao", modulos_layout: tv.modLayout, modulos_tamanho: tv.modTamanho }
+          : { presentes_titulo: (tv.presTitulo || "").trim() || "Presentes", presentes_titulo_estilo: tv.presTitEstilo, presentes_layout: tv.presLayout, presentes_estilo: tv.presEstilo };
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update(linha).not("id", "is", null).select("id"));
+          await registrar(null, "Mudou as configurações de " + (mod ? "Módulos" : "Presentes") + " da área de membros");
+          return "Configurações de " + (mod ? "Módulos" : "Presentes") + " salvas.";
         });
         return;
       }
@@ -5491,7 +5643,7 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
-    if (t.closest?.("#cfgInicio")) atualizarPreviaCfg();
+    if (t.closest?.("#cfgInicio, #cfgTelas")) atualizarPreviaCfg();
     if (t.hasAttribute("data-perf-cor")) {
       // Cor livre: mexe na prévia sem redesenhar, para o quadro de cores continuar aberto.
       const [a1, a2] = (ui.perfCor || "#e9d9b8").split(","), n = t.dataset.perfCor;
@@ -5558,7 +5710,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
-    if (t.closest?.("#cfgInicio")) { atualizarPreviaCfg(); }
+    if (t.closest?.("#cfgInicio, #cfgTelas")) { atualizarPreviaCfg(); }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
     }
