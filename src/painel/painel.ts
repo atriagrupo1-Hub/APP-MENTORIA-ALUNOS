@@ -3425,9 +3425,9 @@ export function montar(app: HTMLElement) {
       <form data-f="confirmar">
         <h2 class="titulo">${h(m.titulo)}</h2>
         <p class="explica">${h(m.texto)}</p>
-        <label class="grupo"><span class="rotulo">Para confirmar, escreva ${h(m.palavra)}</span><input id="confirmaPalavra" class="campo" autocomplete="off" data-palavra="${h(m.palavra)}" /></label>
+        ${m.palavra ? `<label class="grupo"><span class="rotulo">Para confirmar, escreva ${h(m.palavra)}</span><input id="confirmaPalavra" class="campo" autocomplete="off" data-palavra="${h(m.palavra)}" /></label>` : ""}
         <div class="rodape-modal">
-          <button id="confirmaBotao" class="botao perigo" disabled>${h(m.rotulo || "Confirmar")}</button>
+          <button id="confirmaBotao" class="botao${m.palavra ? " perigo" : ""}" ${m.palavra ? "disabled" : ""}>${h(m.rotulo || "Confirmar")}</button>
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>
       </form>`;
@@ -4266,12 +4266,15 @@ export function montar(app: HTMLElement) {
         const k = S.comentarios.find((x) => x.id === d.id)!;
         const novo = a === "com-publicar" ? "publicado" : "oculto";
         const antes = k.estado === "moderar" ? "pendente" : k.estado;
-        void executar(async () => {
+        const trecho = k.texto.length > 120 ? k.texto.slice(0, 120) + "…" : k.texto;
+        confirmar(novo === "publicado"
+          ? { titulo: "Aprovar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele passa a aparecer para todas as alunas e vai para a aba Publicados. Dá para ocultar depois.", rotulo: "Aprovar comentário" }
+          : { titulo: "Ocultar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele deixa de aparecer para as alunas e vai para a aba Ocultos. Lá dá para aprovar de novo ou responder.", rotulo: "Ocultar comentário" }, async () => {
           await rpc("moderar_comentario", { p_comentario: k.id, p_status: novo });
           await registrar(k.autoraId || null, (novo === "publicado" ? "Publicou" : "Ocultou") + " um comentário de " + k.autora);
-          return { msg: novo === "publicado" ? "Comentário publicado." : "Comentário ocultado.", texto: "moderação de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: antes }); } };
+          return { msg: novo === "publicado" ? "Comentário aprovado. Está na aba Publicados." : "Comentário ocultado. Está na aba Ocultos.", texto: "moderação de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: antes }); } };
         });
-        return;
+        break;
       }
       case "com-responder": ui.respondendo = d.id; ui.focar = "respostaCampo"; break;
       case "com-responder-cancelar": ui.respondendo = null; break;
@@ -4386,8 +4389,8 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "confirmar": {
-        const inp = document.getElementById("confirmaPalavra") as HTMLInputElement;
-        if (inp.value.trim().toUpperCase() !== inp.dataset.palavra) return;
+        const inp = document.getElementById("confirmaPalavra") as HTMLInputElement | null;
+        if (inp && inp.value.trim().toUpperCase() !== inp.dataset.palavra) return;
         const fn = pend; pend = null; ui.modal = null;
         if (fn) void executar(fn); else render();
         return;
