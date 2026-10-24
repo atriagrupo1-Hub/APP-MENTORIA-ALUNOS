@@ -67,6 +67,8 @@ type Destaque = {
   id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
   destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
 };
+/** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
+type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; visivel: boolean };
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
@@ -120,7 +122,8 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string> };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[] };
+
   versiculos: Versiculo[];
   destaques: Destaque[];
 };
@@ -257,7 +260,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -416,7 +419,9 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
-      telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao" } },
+      telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao",
+        perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao" },
+      perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [] },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -471,7 +476,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {} }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [] }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -2275,6 +2280,66 @@ export function montar(app: HTMLElement) {
       </div>
       ${ui.catxEditar ? editarCatAba() : ""}`;
   }
+  const BT_PERFIL: Record<string, [string, string]> = {
+    configurar: ["Configurar", `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`],
+    onde_parei: ["Onde parei", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`],
+    sair: ["Sair da área de membros", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7V4.5H4.5v15H14V17"/><path d="M20 12H10M16.5 8.5L20 12l-3.5 3.5"/></svg>`],
+    link: ["Link", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`],
+  };
+  const tipoBt = (b: BotaoPerfil) => (b.url ? "link" : BT_PERFIL[b.id] ? b.id : "link");
+  function cfgPerfil() {
+    const t = S.config.telas, bts = S.config.perfBotoes;
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="perfil">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.perfil}</span><div><h2>Perfil</h2><p>Configure as informações e opções que aparecem no perfil da aluna.</p></div></div>
+          <div class="cfg-bloco">
+            <h3>Nome e apresentação</h3><p class="cfg-sub">Personalize como o nome da aluna será exibido.</p>
+            <div class="cfg-2">
+              <label class="cfg-c"><span>Título da seção</span><input class="campo" name="perfTitulo" value="${h(t.perfTitulo)}" maxlength="40" required /></label>
+              <label class="cfg-c"><span>Saudação</span><input class="campo" name="perfSaud" value="${h(t.perfSaud)}" maxlength="60" required /><small>Use {nome} para o primeiro nome da aluna ou {nome_completo} para o nome inteiro.</small></label>
+            </div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Imagem de perfil</h3><p class="cfg-sub">Defina como será exibida a foto da aluna.</p>
+            <div class="cfg-radios cfg-r3">${[["foto", "Foto da aluna", "Usa a foto enviada pela aluna"], ["icone", "Ícone padrão", "Mostra um ícone fixo"], ["nenhum", "Não exibir", "Oculta a foto no perfil"]].map(([k, tt, d]) => `<label class="cfg-radio dupla"><input type="radio" name="perfImagem" value="${k}" ${t.perfImagem === k ? "checked" : ""} /><span><b>${tt}</b><em>${d}</em></span></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Botões de ações</h3><p class="cfg-sub">Configure os botões que aparecem no perfil da aluna.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="pbt-editar" data-id="novo">${IC_EQ.mais}Adicionar botão</button></div>
+            <div class="cfg-ordem">${bts.map((b, i) => { const tp = tipoBt(b); return `
+              <div class="cfg-orl" draggable="true" data-arrasta="pbt:${i}">
+                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
+                <span class="cfg-icbt cfg-icfix">${BT_PERFIL[tp][1]}</span>
+                <span class="cfg-pbtxt"><b>${h(b.rotulo)}</b><small>${h(b.desc || (b.url ? b.url : ""))}</small></span>
+                <button type="button" class="cfg-vis${b.visivel !== false ? " on" : ""}" data-a="pbt-vis" data-v="${i}" aria-pressed="${b.visivel !== false}"><i></i>${b.visivel !== false ? "Visível" : "Oculto"}</button>
+                <button type="button" class="al-botao pequeno" data-a="pbt-editar" data-id="${i}">${IC_EQ.lapis}Editar</button>
+                <button type="button" class="cfg-lixo" data-a="pbt-remover" data-v="${i}" aria-label="Excluir ${h(b.rotulo)}">${IC_MOD.lixo}</button>
+              </div>`; }).join("") || `<p class="cfg-sub">Nenhum botão. Use Adicionar botão.</p>`}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Texto complementar</h3><p class="cfg-sub">Adicione uma mensagem adicional que aparece abaixo dos botões.</p>
+            <label class="cfg-c"><textarea class="campo" name="perfTexto" rows="2" maxlength="240" placeholder="Opcional">${h(t.perfTexto)}</textarea></label>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Layout das informações</h3><p class="cfg-sub">Escolha como os elementos serão exibidos no perfil.</p>
+            ${opcoesCfg("perfLayout", t.perfLayout, EST_TIT)}
+          </div>
+        </form>
+        ${previaCfgBox(previaPerfil(t))}
+      </div>`;
+  }
+  function previaPerfil(t: Record<string, string>) {
+    const nome = "Nome da Aluna", saud = (t.perfSaud || "").replace(/\{nome_completo\}/g, nome).replace(/\{nome\}/g, "Nome");
+    const foto = t.perfImagem === "foto" ? `<div class="pv-pfoto"><span class="pv-pcirc pv-pic pv-pfo" title="Foto da aluna">${IC_CFG.perfil}</span><i>${IC_PF.cam}</i></div>` : t.perfImagem === "icone" ? `<div class="pv-pfoto"><span class="pv-pcirc pv-pic">${IC_CFG.perfil}</span></div>` : "";
+    return pvTela("perfil", `<div class="pv-perfil pv-pl-${h(t.perfLayout)}"><small class="pv-ptit">${h(t.perfTitulo)}</small><h4>${h(saud)}</h4>${foto}
+      <div class="pv-pbts">${S.config.perfBotoes.filter((b) => b.visivel !== false).map((b) => `<span>${BT_PERFIL[tipoBt(b)][1]}<em>${h(b.rotulo)}</em><b>›</b></span>`).join("")}</div>
+      ${t.perfTexto ? `<p class="pv-ptxt">${h(t.perfTexto)}</p>` : ""}</div>`);
+  }
+  async function salvarBotoesPerfil(lista: BotaoPerfil[], msg: string) {
+    falhou(await supabase.from("configuracoes").update({ perfil_botoes: lista }).not("id", "is", null).select("id"));
+    await registrar(null, "Mudou os botões do Perfil da área de membros");
+    return msg;
+  }
   const previaCfgBox = (miolo: string) => `
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
@@ -2338,6 +2403,8 @@ export function montar(app: HTMLElement) {
       </div>`;
     } else if (aba === "modulos" || aba === "presentes") {
       corpo = aba === "modulos" ? cfgModulos() : cfgPresentes();
+    } else if (aba === "perfil") {
+      corpo = cfgPerfil();
     } else if (aba === "versiculos") {
       const vh = versiculoDeHoje();
       corpo = `
@@ -3829,7 +3896,7 @@ export function montar(app: HTMLElement) {
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {
     const ft = document.querySelector<HTMLFormElement>("#cfgTelas"), pvt = document.getElementById("cfgPrevia");
-    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : previaPresentes(t); return; }
+    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : ft.dataset.tela === "perfil" ? previaPerfil(t) : previaPresentes(t); return; }
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"), pv = document.getElementById("cfgPrevia");
     if (!f || !pv) return;
     const v = valoresInicio(f);
@@ -4073,6 +4140,18 @@ export function montar(app: HTMLElement) {
             ${cardPapel("Suporte", "Suporte")}
           </div>
         </div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
+      </form>`;
+    } else if (m.tipo === "pbt") {
+      const novo = m.id === "novo", b: BotaoPerfil = novo ? { id: "link", rotulo: "", desc: "", url: "", visivel: true } : S.config.perfBotoes[Number(m.id)];
+      const tp = tipoBt(b);
+      corpo = `
+      <form data-f="pbt-salvar" data-id="${h(m.id)}" class="eq-form pbt-form">
+        ${cabModal(novo ? IC_EQ.mais : IC_EQ.lapis, novo ? "Adicionar botão" : "Editar botão", "Botão do Perfil da aluna.")}
+        <label class="eq-campo"><span>O que o botão faz</span><select class="campo" name="tipo">${Object.entries(BT_PERFIL).map(([k, [nm]]) => `<option value="${k}" ${tp === k ? "selected" : ""}>${k === "link" ? "Abrir um link" : nm}</option>`).join("")}</select></label>
+        <label class="eq-campo"><span>Texto do botão</span><input class="campo" name="rotulo" value="${h(b.rotulo)}" maxlength="40" required /></label>
+        <label class="eq-campo"><span>Descrição (só no painel)</span><input class="campo" name="desc" value="${h(b.desc || "")}" maxlength="80" /></label>
+        <label class="eq-campo pbt-url"><span>Link</span><input class="campo" name="url" type="url" value="${h(b.url || "")}" placeholder="https://" /><small>Abre numa nova aba.</small></label>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "perfil") {
@@ -4954,6 +5033,14 @@ export function montar(app: HTMLElement) {
         void executar(async () => { falhou(await supabase.from("categorias_aba").update({ [campo]: d.v }).eq("id", x.id).select("id").single()); await registrar(null, (campo === "icone" ? "Mudou o ícone" : "Mudou a cor") + " da categoria " + x.nome, ["catx", x.id]); return (campo === "icone" ? "Ícone" : "Cor") + " de " + x.nome + " salvo."; });
         return;
       }
+      case "pbt-vis": case "pbt-remover": {
+        const i = Number(d.v), lista = S.config.perfBotoes.slice(); const b = lista[i]; if (!b) break;
+        if (a === "pbt-remover") { confirmar({ titulo: "Excluir o botão " + b.rotulo + "?", texto: "Ele sai do Perfil da aluna. Dá para adicionar de novo depois.", rotulo: "Excluir botão" }, async () => { lista.splice(i, 1); return salvarBotoesPerfil(lista, "Botão excluído."); }); break; }
+        lista[i] = { ...b, visivel: b.visivel === false };
+        void executar(() => salvarBotoesPerfil(lista, b.rotulo + (lista[i].visivel ? " visível." : " oculto.")));
+        return;
+      }
+      case "pbt-editar": ui.modal = { tipo: "pbt", id: d.id }; break;
       case "pcat-vis": {
         const x = S.catsAba.find((y) => y.id === d.id); if (!x) break; const pub = !x.pub;
         void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub }).eq("id", x.id).select("id").single()); await registrar(null, (pub ? "Mostrou" : "Ocultou") + " a categoria " + x.nome, ["catx", x.id]); return x.nome + (pub ? " visível." : " oculta."); });
@@ -5191,8 +5278,26 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "pbt-salvar": {
+        const tipo = v("tipo"), rotulo = v("rotulo").trim(), desc = v("desc").trim(), url = v("url").trim();
+        if (!rotulo) { toast("Escreva o texto do botão."); return; }
+        if (tipo === "link" && !/^https?:\/\/\S+$/.test(url)) { toast("Coloque um link começando com https://"); return; }
+        const lista = S.config.perfBotoes.slice(), novo = form.dataset.id === "novo";
+        const b: BotaoPerfil = { id: tipo === "link" ? "link-" + Date.now().toString(36) : tipo, rotulo, desc, visivel: true, ...(tipo === "link" ? { url } : {}) };
+        if (novo) lista.push(b); else { const i = Number(form.dataset.id); b.visivel = lista[i]?.visivel !== false; lista[i] = b; }
+        void executar(async () => { ui.modal = null; return salvarBotoesPerfil(lista, "Botão salvo."); });
+        return;
+      }
       case "cfg-telas": {
         const tv = valoresTelas(form), mod = form.dataset.tela === "modulos";
+        if (form.dataset.tela === "perfil") {
+          void executar(async () => {
+            falhou(await supabase.from("configuracoes").update({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout }).not("id", "is", null).select("id"));
+            await registrar(null, "Mudou as configurações do Perfil da área de membros");
+            return "Configurações do Perfil salvas.";
+          });
+          return;
+        }
         const linha = mod
           ? { modulos_titulo: (tv.modTitulo || "").trim() || "Todos os módulos", modulos_titulo_estilo: tv.modTitEstilo, modulos_progresso: tv.modProgresso !== "nao", modulos_layout: tv.modLayout, modulos_tamanho: tv.modTamanho }
           : { presentes_titulo: (tv.presTitulo || "").trim() || "Presentes", presentes_titulo_estilo: tv.presTitEstilo, presentes_layout: tv.presLayout, presentes_estilo: tv.presEstilo };
@@ -5950,6 +6055,11 @@ export function montar(app: HTMLElement) {
         const velha = mx.c.modulos.map((x) => x.id);
         void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + mx.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
       } else render();
+      return;
+    }
+    if (ui.arrasto.startsWith("pbt:") && t.dataset.arrasta?.startsWith("pbt:")) {
+      const de = Number(ui.arrasto.slice(4)), para = Number(t.dataset.arrasta.slice(4)); ui.arrasto = null;
+      if (de !== para) { const lista = S.config.perfBotoes.slice(); const [k] = lista.splice(de, 1); lista.splice(para, 0, k); void executar(() => salvarBotoesPerfil(lista, "Ordem dos botões salva.")); } else render();
       return;
     }
     const qx = S.catsAba.findIndex((k) => k.id === ui.arrasto);

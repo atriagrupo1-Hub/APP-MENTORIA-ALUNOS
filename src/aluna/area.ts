@@ -1465,14 +1465,39 @@ export function montar(raiz: HTMLElement) {
       </div>
     </div>`;
   }
+  /** Ícones e ações dos botões do Perfil (Configurações → Perfil no painel). */
+  const IC_PERFIL = {
+    configurar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+    onde_parei: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
+    sair: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 7V4.5H4.5v15H14V17"/><path d="M20 12H10M16.5 8.5L20 12l-3.5 3.5"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>',
+  };
+  const ACAO_PERFIL = { configurar: "abrir-config", onde_parei: "jornada", sair: "sair" };
+  function perfilConfigurado() {
+    const P = (D && D.inicio && D.inicio.perfil) || { titulo: "Seu perfil", saudacao: "{nome_completo}", imagem: "nenhum", texto: "", layout: "padrao", botoes: [] };
+    const primeiro = (S.nome || "").trim().split(/\s+/)[0] || "";
+    const saud = (P.saudacao || "{nome_completo}").replace(/\{nome_completo\}/g, S.nome || "").replace(/\{nome\}/g, primeiro);
+    const bts = (P.botoes && P.botoes.length ? P.botoes : [{ id: "configurar", rotulo: "Configurar", visivel: true }, { id: "onde_parei", rotulo: "Onde parei", visivel: true }, { id: "sair", rotulo: "Sair da área de membros", visivel: true }]).filter((b) => b.visivel !== false);
+    const foto = P.imagem === "foto" ? `<div class="pf-foto-al"><button class="pf-foto-circ" data-a="escolher-foto" aria-label="Trocar sua foto">${S.foto ? `<img src="${h(S.foto)}" alt="" />` : `<span>${h((S.nome || "?").trim()[0] || "?")}</span>`}<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></i></button></div>`
+      : P.imagem === "icone" ? `<div class="pf-foto-al"><span class="pf-foto-circ pf-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg></span></div>` : "";
+    return `
+      <div class="pf-al pf-al-${h(P.layout || "padrao")}">
+        <div class="ola"><p>${h(P.titulo || "Seu perfil")}</p><h1 class="serif">${h(saud)}</h1></div>
+        ${foto}
+        <div class="pf-al-bts">${bts.map((b) => {
+          const ic = IC_PERFIL[b.id] || IC_PERFIL.link;
+          const dentro = `${ic}<span>${h(b.rotulo)}</span><b aria-hidden="true">›</b>`;
+          return b.url ? `<a class="pf-al-bt" href="${h(b.url)}" target="_blank" rel="noopener">${dentro}</a>` : ACAO_PERFIL[b.id] ? `<button class="pf-al-bt${b.id === "sair" ? " sair" : ""}" data-a="${ACAO_PERFIL[b.id]}">${dentro}</button>` : "";
+        }).join("")}</div>
+        ${P.texto ? `<p class="pf-al-txt">${h(P.texto)}</p>` : ""}
+      </div>`;
+  }
   function telaPerfil() {
     document.documentElement.classList.toggle("trava-rolagem", !!S.config);
     return `
     <div class="pagina">
       ${S.perfilDe ? `<div class="barra-aula"><button class="voltar" data-a="voltar-perfil" aria-label="Voltar para onde você estava">‹ Voltar</button></div>` : ""}
-      <div class="ola"><p>Seu perfil</p><h1 class="serif">${h(S.nome)}</h1></div>
-      <div class="perfil-acoes"><button class="botao-2 btn-config" data-a="abrir-config"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Configurar</button><button class="botao-2 btn-config" data-a="jornada"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Onde parei</button></div>
-      <button class="botao-2" data-a="sair" style="width:100%;margin-top:32px;color:var(--perigo)">Sair da área de membros</button>
+      ${perfilConfigurado()}
     </div>
     ${S.config ? painelConfig() : ""}`;
   }
