@@ -120,7 +120,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string };
   versiculos: Versiculo[];
   destaques: Destaque[];
 };
@@ -257,7 +257,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -415,7 +415,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "" },
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao" },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -470,14 +470,14 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -505,6 +505,7 @@ export function montar(app: HTMLElement) {
   let fotoNova: { foto: string; original: string; ajuste: Ajuste } | null = null;
   // Imagem para um campo de formulário: envia ao depósito "capas", guarda o caminho no campo escondido e mostra a prévia.
   const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
+  const arquivoBanner = Object.assign(document.createElement("input"), { type: "file", id: "arquivoBanner", accept: "image/*", hidden: true });
   let imgPara: { form: string; campo: string; previa: string; pasta: string; prop?: number } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
   const arquivoAula = Object.assign(document.createElement("input"), { type: "file", id: "arquivoAula", hidden: true });
@@ -521,7 +522,7 @@ export function montar(app: HTMLElement) {
     })();
   });
   document.body.append(arquivoOp);
-  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg);
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg, arquivoBanner);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -645,13 +646,14 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
   };
   ACAO_ABA.layout = `<button class="al-botao cl-ver" data-a="cs-ver-aluna">Ver na área da aluna <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg></button><button class="al-botao-ouro" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova categoria</button>`;
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
+  ACAO_ABA.config = `<button type="button" class="al-botao-ouro cfg-salvar-topo" data-a="cfg-salvar">Salvar alterações</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
@@ -2125,28 +2127,96 @@ export function montar(app: HTMLElement) {
    * e a lista de versículos do Início — um por dia, em sequência.
    */
   const versiculoDeHoje = () => { const n = S.versiculos.length; if (!n) return -1; const hj = new Date(); return Math.floor((hj.getTime() - new Date(hj.getFullYear(), 0, 0).getTime()) / 864e5) % n; };
-  function telaConfig() {
-    const vh = versiculoDeHoje();
+  const FRASE_MODELO = "Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.";
+  const IC_CFG: Record<string, string> = {
+    inicio: ICONE_MENU.inicio,
+    modulos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>`,
+    presentes: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-6-4-6-1.5S10 9 12 9zm0 0c1.5-3 6-4 6-1.5S14 9 12 9z"/></svg>`,
+    perfil: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>`,
+    menu: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>`,
+    versiculos: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c3-1 6-1 8.5 1 2.5-2 5.5-2 8.5-1v13c-3-1-6-1-8.5 1-2.5-2-5.5-2-8.5-1z"/><path d="M12 6.5v13"/></svg>`,
+    aparencia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 1.8-1 1.3-2-.6-1.2.2-2.5 1.5-2.5H17a3.5 3.5 0 0 0 3.5-3.5c0-5-3.8-9-8.5-9z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg>`,
+    modelo: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>`,
+    celular: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>`,
+    computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
+    img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
+  };
+  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Versículos"], ["aparencia", "Aparência"]];
+  /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
+  function valoresInicio(f?: HTMLFormElement | null) {
+    const c = S.config;
+    if (!f) return { titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo };
+    const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+    const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
+    return { titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" };
+  }
+  /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
+  function previaInicio(v: ReturnType<typeof valoresInicio>) {
+    const vh = versiculoDeHoje(), vs = vh >= 0 ? S.versiculos[vh] : null;
+    const jor = curso(S.config.jornada);
+    const uid = api.uidStream(v.video);
+    const banner = v.banner === "imagem" ? (v.img ? `<div class="pv-banner"><img src="${h(previas["cfg-banner"] || urlDaCapa(v.img))}" alt="" /></div>` : `<div class="pv-banner pv-vazio">${IC_CFG.img}<span>Envie a imagem</span></div>`)
+      : v.banner === "video" ? (uid ? `<div class="pv-banner pv-video"><iframe src="https://iframe.videodelivery.net/${h(uid)}" title="Vídeo de boas-vindas" loading="lazy" allowfullscreen></iframe></div>` : `<div class="pv-banner pv-vazio">${ICONE_MENU.cursos}<span>Coloque o link do vídeo</span></div>`)
+      : v.banner === "card" ? S.destaques.filter((d) => d.visivel).slice(0, 1).map((d) => `<div class="pv-dest">${d.imagem ? `<img src="${h(capaSite(d.imagem))}" alt="" />` : ""}<span><small>${h(d.rotulo)}</small><b>${h(d.titulo)}</b></span></div>`).join("") : "";
+    const abasApp = [["inicio", "Início"], ["modulos", "Módulos"], ...S.cats.filter((k) => k.pub && !S.cursos.some((c) => c.id === S.config.jornada && c.cat === k.id)).map((k) => [k.icone === "presentes" ? "presentes" : "modulos", k.nome]), ["perfil", "Perfil"]].slice(0, 5);
     return `
-    <section class="tela ativa cfg">
-      <form data-f="cfg-marca" class="cfg-cartao">
-        <h3>Nome no cabeçalho</h3>
-        <p class="cfg-sub">O que aparece no alto de todas as telas da área de membros, à esquerda.</p>
-        <div class="campos">
-          <label class="grupo" style="flex:1 1 240px"><span class="rotulo">Título</span><input class="campo" name="marcaTitulo" value="${h(S.config.marcaTitulo)}" maxlength="30" required /></label>
-          <label class="grupo" style="flex:1 1 240px"><span class="rotulo">Embaixo, pequeno</span><input class="campo" name="marcaSub" value="${h(S.config.marcaSub)}" maxlength="40" /></label>
+      <div class="pv-tela">
+        <div class="pv-topo"><span><b>${h(v.titulo)}</b><small>${h(v.sub)}</small></span><i></i></div>
+        <div class="pv-rolo">
+          <section class="pv-ola pv-${h(v.estilo)}">
+            <h4>Bem-vindo(a), <span>aluna</span></h4>
+            ${v.frase.trim() ? `<p>${h(v.frase)}</p>` : ""}
+            ${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}
+          </section>
+          ${banner}
+          ${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}
         </div>
-        <div style="margin-top:14px"><button class="al-botao-ouro">Salvar</button></div>
-      </form>
-      <form data-f="cfg-retorno" class="cfg-cartao">
-        <h3>Frase de retorno do Início</h3>
-        <p class="cfg-sub">Aparece no Início para a aluna que já começou as aulas, acima de "Continue de onde parou".</p>
-        <label class="grupo"><span class="rotulo">Frase</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200" required>${h(S.config.fraseRetorno)}</textarea></label>
-        <div style="margin-top:14px"><button class="al-botao-ouro">Salvar</button></div>
-      </form>
-      <div class="cfg-cartao">
-        <h3>Versículos</h3>
-        <p class="cfg-sub">Aparece um por dia no Início, em sequência, e volta ao primeiro depois do último. ${vh >= 0 ? "Hoje aparece o nº " + (vh + 1) + "." : ""}</p>
+        <nav class="pv-nav">${abasApp.map(([ic, nm], i) => `<span${i === 0 ? ' class="on"' : ""}>${IC_CFG[ic] || IC_CFG.modulos}<em>${h(nm)}</em></span>`).join("")}</nav>
+      </div>`;
+  }
+  function telaConfig() {
+    const aba = ui.cfgAba;
+    let corpo = "";
+    if (aba === "inicio") {
+      const v = valoresInicio(), est: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
+      corpo = `
+      <div class="cfg-grade">
+        <form data-f="cfg-inicio" class="cfg-painel" id="cfgInicio">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
+          <div class="cfg-bloco">
+            <h3>Nome no cabeçalho</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros.</p>
+            <div class="cfg-2">
+              <label class="cfg-c"><span>Título</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" required /></label>
+              <label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" /></label>
+            </div>
+          </div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
+            <label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Banners ou destaques</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
+            <div class="cfg-radios">${[["nenhum", "Nenhum"], ["imagem", "Imagem"], ["video", "Vídeo"], ["card", "Card especial"]].map(([k, t]) => `<label class="cfg-radio"><input type="radio" name="banner" value="${k}" ${v.banner === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
+            <div class="cfg-op" data-op="imagem"${v.banner === "imagem" ? "" : " hidden"}><input type="hidden" name="bannerImg" value="${h(v.img)}" /><button type="button" class="al-botao pequeno" data-a="cfg-banner-img">${IC_PF.up}${v.img ? "Trocar imagem" : "Enviar imagem"}</button>${v.img ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-banner-tirar">${IC_MOD.lixo}Remover</button>` : ""}<small>Formato 16:9, recortada no editor.</small></div>
+            <div class="cfg-op" data-op="video"${v.banner === "video" ? "" : " hidden"}><label class="cfg-c"><span>Link do vídeo (Cloudflare Stream)</span><input class="campo" name="bannerVideo" value="${h(v.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label><small>O vídeo precisa estar liberado para tocar sem assinatura no Cloudflare Stream.</small></div>
+            <div class="cfg-op" data-op="card"${v.banner === "card" ? "" : " hidden"}><small>Mostra os cartões de Destaques do Início (editados em Categorias).</small></div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Estilo da seção</h3><p class="cfg-sub">Escolha o estilo visual da mensagem.</p>
+            <div class="cfg-estilos">${est.map(([k, t]) => `<label class="cfg-est"><input type="radio" name="estilo" value="${k}" ${v.estilo === k ? "checked" : ""} /><span class="cfg-est-cx est-${k}"><i>${IC_CFG.img}</i><span><b></b><b></b><b></b></span></span><em>${t}</em></label>`).join("")}</div>
+          </div>
+        </form>
+        <aside class="cfg-previa">
+          <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
+            <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
+          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${previaInicio(v)}</div></div>
+        </aside>
+      </div>`;
+    } else if (aba === "versiculos") {
+      const vh = versiculoDeHoje();
+      corpo = `
+      <div class="cfg-painel">
+        <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Versículos</h2><p>Aparece um por dia no Início, em sequência, e volta ao primeiro depois do último. ${vh >= 0 ? "Hoje aparece o nº " + (vh + 1) + "." : ""}</p></div></div>
         ${S.versiculos.map((x, i) => editando("vers", x.id) ? `
           <form data-f="vers-salvar" data-id="${x.id}" class="cfg-vers editando">
             <textarea id="editarCampo" class="campo" name="texto" rows="3" required>${h(x.texto)}</textarea>
@@ -2168,7 +2238,15 @@ export function montar(app: HTMLElement) {
           <input class="campo" name="ref" placeholder="Referência (ex.: Salmos 23:1)" required />
           <button class="al-botao-ouro">+ Adicionar versículo</button>
         </form>
-      </div>
+      </div>`;
+    } else {
+      const nm = (ABAS_CFG.find(([k]) => k === aba) || ABAS_CFG[0])[1];
+      corpo = `<div class="cfg-painel"><div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG[aba]}</span><div><h2>${h(nm)}</h2><p>As opções desta aba chegam em breve.</p></div></div></div>`;
+    }
+    return `
+    <section class="tela ativa cfg2">
+      <div class="cfg-abas" role="tablist">${ABAS_CFG.map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}</div>
+      ${corpo}
     </section>`;
   }
 
@@ -3622,6 +3700,15 @@ export function montar(app: HTMLElement) {
     return { adicionar: !!c("adicionar")!.checked, remover: !!c("remover")!.checked, codigo: !!c("codigo")!.checked, nome: !!c("nome")!.checked, abas };
   }
 
+  /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
+  function atualizarPreviaCfg() {
+    const f = document.querySelector<HTMLFormElement>("#cfgInicio"), pv = document.getElementById("cfgPrevia");
+    if (!f || !pv) return;
+    const v = valoresInicio(f);
+    f.querySelectorAll<HTMLElement>(".cfg-op").forEach((o) => { o.hidden = o.dataset.op !== v.banner; });
+    pv.innerHTML = previaInicio(v);
+  }
+
   /* ---------- JANELAS ---------- */
   function modal() {
     const m = ui.modal;
@@ -4379,7 +4466,7 @@ export function montar(app: HTMLElement) {
       case "dest-editar": ui.destEditar = d.id; break;
       case "dest-exibir": {
         const on = !S.config.exibirDestaques;
-        void executar(async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: on }).not("id", "is", null).select("id")); await registrar(null, (on ? "Exibiu" : "Escondeu") + " os destaques do Início"); return { msg: on ? "Os destaques aparecem no Início." : "Os destaques foram escondidos do Início.", texto: "exibição dos destaques", desfazer: async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: !on }).not("id", "is", null).select("id")); } }; });
+        void executar(async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: on, inicio_banner: on ? "card" : "nenhum" }).not("id", "is", null).select("id")); await registrar(null, (on ? "Exibiu" : "Escondeu") + " os destaques do Início"); return { msg: on ? "Os destaques aparecem no Início." : "Os destaques foram escondidos do Início.", texto: "exibição dos destaques", desfazer: async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: !on }).not("id", "is", null).select("id")); } }; });
         return;
       }
       case "dest-duplicar": {
@@ -4723,6 +4810,17 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
+      case "cfg-aba": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
+      case "cfg-previa": {
+        ui.cfgPrevia = d.v === "computador" ? "computador" : "celular";
+        const pv = document.getElementById("cfgPrevia"); if (pv) pv.className = "pv-" + ui.cfgPrevia;
+        document.querySelectorAll<HTMLElement>('[data-a="cfg-previa"]').forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === ui.cfgPrevia)));
+        return;
+      }
+      case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
+      case "cfg-salvar": { if (ui.cfgAba !== "inicio") { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } document.querySelector<HTMLFormElement>("#cfgInicio")?.requestSubmit(); return; }
+      case "cfg-banner-img": arquivoBanner.click(); return;
+      case "cfg-banner-tirar": { const f = document.querySelector<HTMLFormElement>("#cfgInicio"); const x = f?.querySelector<HTMLInputElement>('input[name="bannerImg"]'); if (x) { x.value = ""; delete previas["cfg-banner"]; ui.sujo = { f: "cfg-inicio", id: "" }; atualizarPreviaCfg(); el.remove(); } return; }
       case "perfil-abrir": {
         ui.estMenu = ""; ui.perfCor = eu!.cor || ""; ui.perfVerCod = false; ui.perfCod = ""; ui.modal = { tipo: "perfil" };
         void supabase.from("credenciais").select("codigo").eq("aluna_id", eu!.id).maybeSingle().then((r) => { ui.perfCod = r.data?.codigo ?? ""; });
@@ -4950,6 +5048,19 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           falhou(await supabase.from("configuracoes").update({ frase_retorno: v("fraseRetorno") }).not("id", "is", null).select("id"));
           await registrar(null, "Mudou a frase de retorno do Início"); return "Frase de retorno salva.";
+        });
+        return;
+      }
+      case "cfg-inicio": {
+        const vv = valoresInicio(form);
+        if (!vv.titulo.trim()) { toast("Preencha o título do cabeçalho."); return; }
+        if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
+        if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update({ marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
+          delete previas["cfg-banner"];
+          await registrar(null, "Mudou as configurações do Início da área de membros");
+          return "Configurações do Início salvas.";
         });
         return;
       }
@@ -5300,7 +5411,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -5380,6 +5491,7 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.closest?.("#cfgInicio")) atualizarPreviaCfg();
     if (t.hasAttribute("data-perf-cor")) {
       // Cor livre: mexe na prévia sem redesenhar, para o quadro de cores continuar aberto.
       const [a1, a2] = (ui.perfCor || "#e9d9b8").split(","), n = t.dataset.perfCor;
@@ -5446,6 +5558,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
+    if (t.closest?.("#cfgInicio")) { atualizarPreviaCfg(); }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
     }
@@ -5550,6 +5663,24 @@ export function montar(app: HTMLElement) {
   arquivoImg.addEventListener("change", () => {
     const file = arquivoImg.files?.[0]; arquivoImg.value = ""; const alvo = imgPara; if (!file || !alvo) return;
     void editarCapa(file, alvo.prop || 16 / 9, file.name).then((f) => { if (f) enviarCapa(alvo, f); });
+  });
+  // Banner do Início (Configurações): recorta em 16:9, envia e mostra na prévia; grava ao salvar.
+  arquivoBanner.addEventListener("change", () => {
+    const file = arquivoBanner.files?.[0]; arquivoBanner.value = ""; if (!file) return;
+    void (async () => {
+      const recorte = await editarCapa(file, 16 / 9, file.name); if (!recorte) return;
+      toast("Enviando a imagem…");
+      try {
+        const caminho = await enviarArquivo("capas", "inicio", recorte);
+        previas["cfg-banner"] = URL.createObjectURL(recorte);
+        const f = document.querySelector<HTMLFormElement>("#cfgInicio"); const x = f?.querySelector<HTMLInputElement>('input[name="bannerImg"]');
+        if (x) x.value = caminho;
+        const bt = f?.querySelector('[data-a="cfg-banner-img"]'); if (bt) bt.innerHTML = IC_PF.up + "Trocar imagem";
+        ui.sujo = { f: "cfg-inicio", id: "" };
+        atualizarPreviaCfg();
+        toast("Imagem enviada. Clique em Salvar alterações para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
   });
   arquivoFoto.addEventListener("change", () => {
     const file = arquivoFoto.files?.[0]; arquivoFoto.value = "";
