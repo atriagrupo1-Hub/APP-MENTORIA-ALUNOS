@@ -108,7 +108,7 @@ type Pessoa = {
   /** Última vez que entrou no painel (ISO), quando o banco tem. */
   ultimo: string; criado: string;
   /** Dono principal (o original) e o que um dono secundário pode fazer na equipe (0080). */
-  cor: string;
+  cor: string; abasBloq: string[];
   principal: boolean; pode: { adicionar: boolean; remover: boolean; codigo: boolean; nome: boolean };
 };
 type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string };
@@ -406,7 +406,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
       bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "", criado: e.criada_em ? String(e.criada_em) : "",
-      cor: e.cor_perfil ? String(e.cor_perfil) : "", principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
+      cor: e.cor_perfil ? String(e.cor_perfil) : "", abasBloq: Array.isArray(e.abas_bloqueadas) ? (e.abas_bloqueadas as string[]) : [], principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
     }));
   }
 
@@ -564,6 +564,10 @@ export function montar(app: HTMLElement) {
   /** Quem a pessoa logada pode bloquear, remover e trocar o código. */
   /** Eu na lista da equipe (traz se sou o dono principal e o que posso). */
   const euEq = () => S.equipe.find((x) => x.souEu);
+  /** Aba que o dono principal tirou deste dono secundário (aparece no menu com cadeado). */
+  const abaBloq = (id: string) => eu?.papel === "Dono" && !souPrincipal() && !!euEq()?.abasBloq.includes(id);
+  /** A aba do menu a que cada tela pertence. */
+  const abaDaTela = (t: string) => t === "ficha" ? "alunas" : t === "curso" || t === "aula" ? "cursos" : t === "catAba" ? "layout" : t;
   const souPrincipal = () => eu?.papel === "Dono" && !!euEq()?.principal;
   /** Posso fazer isto na equipe? Dono principal: tudo; dono secundário: o que o principal marcou; administrador: o de sempre. */
   const euPode = (o: "adicionar" | "remover" | "codigo" | "nome") => eu?.papel !== "Dono" ? o !== "remover" : souPrincipal() || !!euEq()?.pode[o];
@@ -762,12 +766,13 @@ export function montar(app: HTMLElement) {
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
     const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
+    if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
     <div class="casca">
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Sem acesso a esta aba">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
       </aside>
       <div class="principal">
@@ -3613,7 +3618,8 @@ export function montar(app: HTMLElement) {
   function permsDoForm(form: HTMLFormElement) {
     const c = (k: string) => form.querySelector<HTMLInputElement>(`input[name="perm-${k}"]`);
     if (!c("adicionar")) return null;
-    return { adicionar: !!c("adicionar")!.checked, remover: !!c("remover")!.checked, codigo: !!c("codigo")!.checked, nome: !!c("nome")!.checked };
+    const abas = [...form.querySelectorAll<HTMLInputElement>('input[name^="aba-"]:not([name="aba-tudo"])')].filter((x) => !x.checked).map((x) => x.name.slice(4));
+    return { adicionar: !!c("adicionar")!.checked, remover: !!c("remover")!.checked, codigo: !!c("codigo")!.checked, nome: !!c("nome")!.checked, abas };
   }
 
   /* ---------- JANELAS ---------- */
@@ -3814,13 +3820,20 @@ export function montar(app: HTMLElement) {
       const comPapel = !!(nova || (e && gere(e)));
       const papelAtual = e ? e.papel : papeis[0];
       const ICP: Record<string, string> = { Dono: IC_EQ.coroa, Administrador: IC_EQ.grupo, Suporte: IC_EQ.fone };
+      const abasB = e && e.papel === "Dono" ? e.abasBloq : [];
       const permDono = souPrincipal() && !(e && e.principal) ? `<section class="eqn-card" data-papel="Dono">
           <div class="eqn-ccab"><span class="eqn-cic">${IC_EQ.coroa}</span><div><h3>Dono <span class="eqn-q" tabindex="0" role="note" data-dica="O dono controla o painel inteiro. Aqui você escolhe o que ele pode fazer na equipe.">?</span></h3><p>Selecione o que este colaborador poderá fazer no painel.</p></div></div>
           <div class="eqn-lista">
             <label class="eqn-op tudo"><input type="checkbox" name="perm-tudo" ${Object.values(pd).every(Boolean) ? "checked" : ""} /><span><b>Controle total</b><em>Tudo liberado, como você.</em></span></label>
             ${([["adicionar", "Adicionar membro na equipe", "Pode adicionar novos colaboradores."], ["remover", "Remover membro da equipe", "Pode remover colaboradores da equipe."], ["codigo", "Mudar e renovar código", "Pode alterar e renovar o código de acesso."], ["nome", "Mudar nome e login", "Pode alterar o nome e o login."]] as const).map(([k, t, d]) => `<label class="eqn-op"><input type="checkbox" name="perm-${k}" ${pd[k] ? "checked" : ""} /><span><b>${t}</b><em>${d}</em></span></label>`).join("")}
           </div>
-          <small class="eqn-nota">Desmarcado, ele não consegue fazer. O resto do painel ele controla por completo.</small>
+          <small class="eqn-nota">Desmarcado, ele não consegue fazer.</small>
+          <div class="eqn-abas">
+            <h4>Abas do painel</h4>
+            <label class="eqn-op tudo"><input type="checkbox" name="aba-tudo" ${abasB.length ? "" : "checked"} /><span><b>Todas as abas</b><em>Acessa o painel inteiro.</em></span></label>
+            <div class="eqn-abas-g">${[...ABAS, ...ABAS_EXTRA].map(([id, nome]) => `<label class="eqn-aba"><input type="checkbox" name="aba-${id}" ${abasB.includes(id) ? "" : "checked"} />${ICONE_MENU[id] || ""}<span>${nome}</span></label>`).join("")}</div>
+            <small class="eqn-nota">Aba desmarcada aparece no menu dele com cadeado, sem abrir.</small>
+          </div>
         </section>` : "";
       const cardPapel = (pp: Papel, nomeP: string) => `<section class="eqn-card" data-papel="${pp}">
           <div class="eqn-ccab"><span class="eqn-cic">${ICP[pp]}</span><div><h3>${nomeP}</h3><p>As opções desta função vão ser escolhidas em breve.</p></div></div>
@@ -3908,7 +3921,9 @@ export function montar(app: HTMLElement) {
       case "aa-aluna": ui.acessoAluna = d.id; ui.acessoAba = d.v || "geral"; ui.aaAnima = "aluna"; break;
       case "aa-fechar-aluna": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.acessoAluna = null; break;
       case "aa-aba": ui.acessoAba = d.v; break;
+      case "aba-bloqueada": toast("O dono principal não liberou esta aba para você."); return;
       case "aba":
+        if (abaBloq(abaDaTela(d.v))) { toast("O dono principal não liberou esta aba para você."); return; }
         ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
@@ -5200,7 +5215,7 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
           if (fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: e.id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[e.id] = fp.foto; }
-          if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome });
+          if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome, p_abas_bloqueadas: perms.abas });
           await registrar(null, "Editou " + nome + " na equipe", ["equipe", e.id]);
           ui.modal = null;
           return { msg: "Dados de " + nome + " salvos.", texto: "edição de " + nome + " na equipe", desfazer: async () => { await rpc("editar_colaborador", { p_id: e.id, p_nome: antes.nome, p_login: antes.login, p_papel: antes.papel, p_codigo: antes.codigo }); } };
@@ -5433,6 +5448,12 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
+    }
+    if (t instanceof HTMLInputElement && t.name.startsWith("aba-")) {
+      const f = t.form!, todas = [...f.querySelectorAll<HTMLInputElement>('input[name^="aba-"]:not([name="aba-tudo"])')];
+      if (t.name === "aba-tudo") todas.forEach((x) => { x.checked = t.checked; });
+      else f.querySelector<HTMLInputElement>('input[name="aba-tudo"]')!.checked = todas.every((x) => x.checked);
+      return;
     }
     if (t instanceof HTMLInputElement && t.name.startsWith("perm-")) {
       const f = t.form!, todos = [...f.querySelectorAll<HTMLInputElement>('input[name^="perm-"]:not([name="perm-tudo"])')];
