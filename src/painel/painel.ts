@@ -108,9 +108,10 @@ type Pessoa = {
   /** Última vez que entrou no painel (ISO), quando o banco tem. */
   ultimo: string; criado: string;
   /** Dono principal (o original) e o que um dono secundário pode fazer na equipe (0080). */
+  cor: string;
   principal: boolean; pode: { adicionar: boolean; remover: boolean; codigo: boolean; nome: boolean };
 };
-type Eu = { id: string; nome: string; papel: Papel };
+type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string };
 
 type Dados = {
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
@@ -405,7 +406,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
       bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "", criado: e.criada_em ? String(e.criada_em) : "",
-      principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
+      cor: e.cor_perfil ? String(e.cor_perfil) : "", principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
     }));
   }
 
@@ -431,7 +432,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
 async function quemSouEu(): Promise<Eu | null> {
   const perfil = await api.meuPerfil();
   if (!perfil || perfil.status !== "ativa" || !PAPEL[perfil.papel]) return null;
-  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel] };
+  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel], login: perfil.login ?? "", cor: "" };
 }
 
 /** Chama uma Edge Function com a sessão de quem está no painel. */
@@ -476,7 +477,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -759,7 +760,6 @@ export function montar(app: HTMLElement) {
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
     const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
-    const papel: Record<string, string> = { dono: "Dono", admin: "Administrador", suporte: "Suporte" };
     return `
     <div class="casca">
       <aside class="lado" aria-label="Menu do painel">
@@ -767,10 +767,6 @@ export function montar(app: HTMLElement) {
         <nav class="lado-menu">
           ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
-        <div class="lado-pe">
-          <div class="lado-quem"><span class="lado-av">${h(iniciais(eu!.nome))}</span><span><b>${h(eu!.nome)}</b><span>${h(papel[eu!.papel] || eu!.papel)}</span></span></div>
-          <button class="lado-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
-        </div>
       </aside>
       <div class="principal">
         <div class="topo">
@@ -780,7 +776,12 @@ export function montar(app: HTMLElement) {
           </div>
           <button class="al-botao topo-sug" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
           ${botaoTema()}
-          <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
+          <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
+            <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
+            <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
+            <span class="pf-sep"></span>
+            <button type="button" role="menuitem" class="pf-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
+          </span>` : ""}</span>
         </div>
         <div class="conteudo">
           ${ui.tab === "curso" || ui.tab === "aula" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div>${ui.tab === "layout" ? "" : `<p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p>`}</div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
@@ -801,6 +802,16 @@ export function montar(app: HTMLElement) {
   const dataHora = (s: string) => {
     const d = new Date(s);
     return d.toLocaleDateString("pt-BR", { timeZone: FUSO }) + " · " + d.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+  };
+  /** Fundo do círculo da foto: uma cor, ou degradê de duas ("#a,#b"). */
+  const corFundo = (c: string) => { const [a, b] = c.split(","); return b ? `linear-gradient(135deg, ${a}, ${b})` : a; };
+  /** Letra escura em cor clara, branca em cor escura. */
+  const corLetra = (c: string) => { const x = c.split(",")[0].replace("#", ""); const [r, g, b] = [0, 2, 4].map((i) => parseInt(x.slice(i, i + 2), 16)); return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.62 ? "#3d2c12" : "#ffffff"; };
+  /** Círculo da pessoa da equipe: a foto, ou as iniciais na cor escolhida. */
+  const avatarEq = (id: string, nome: string, cor: string, cls: string, extra = "") => {
+    const foto = S.fotos[id];
+    if (foto) return `<span class="${cls} com-foto"><img src="${foto}" alt="" />${extra}</span>`;
+    return `<span class="${cls}"${cor ? ` style="background:${corFundo(cor)};color:${corLetra(cor)}"` : ""}>${h(iniciais(nome))}${extra}</span>`;
   };
   const iniciais = (n: string) => String(n || "?").trim().split(/\s+/).filter((w) => w.length > 2 || /^[A-ZÁ-Ú]/.test(w)).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
   const haQuanto = (s: string) => { if (!s) return "nunca"; const n = diasEntre(s, hoje()); return n <= 0 ? "hoje" : n === 1 ? "ontem" : "há " + n + " dias"; };
@@ -1828,7 +1839,7 @@ export function montar(app: HTMLElement) {
           return `
           <article class="reg-card${y.id === ui.regSel ? " sel" : ""}">
             <div class="reg-topo">
-              <span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : ""}</span>
+              ${avatarEq(y.id, y.nome, y.pes?.cor || "", "eq-av " + c, y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : "")}
               <div class="reg-dados">
                 <div class="eq-col"><small>Nome</small><b>${h(y.nome)}</b></div>
                 <div class="eq-col"><small>Função</small><span>${y.papel ? h(y.papel === "Administrador" ? "Administração" : y.papel) : "Fora da equipe"}</span></div>
@@ -1889,7 +1900,7 @@ export function montar(app: HTMLElement) {
     }
     return `
         <aside class="reg-painel" aria-label="Histórico de ${h(y.nome)}">
-          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b></div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div>${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}" aria-label="Apagar registros de ${h(y.nome)}" title="Apagar registros de ${h(primeiroNome(y.nome))}${ui.regData === "todas" ? "" : " neste período"}">${IC_REG.lixo}</button>` : ""}</div>
+          <div class="reg-pcab">${avatarEq(y.id, y.nome, y.pes?.cor || "", "eq-av " + c, y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : "")}<div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b></div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div>${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}" aria-label="Apagar registros de ${h(y.nome)}" title="Apagar registros de ${h(primeiroNome(y.nome))}${ui.regData === "todas" ? "" : " neste período"}">${IC_REG.lixo}</button>` : ""}</div>
           <div class="reg-abas" role="tablist">${[["hist", "Histórico"], ["resumo", "Resumo"], ["acessos", "Acessos"]].map(([v, t]) => `<button type="button" role="tab" data-a="reg-aba" data-v="${v}" aria-selected="${aba === v}">${t}</button>`).join("")}</div>
           ${corpo}
         </aside>`;
@@ -3539,6 +3550,11 @@ export function montar(app: HTMLElement) {
     info: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`,
   };
   const ultimoAcesso = (iso: string) => { if (!iso) return "Nunca entrou"; const d = new Date(iso); if (isNaN(+d)) return "—"; const hj = new Date(), on = new Date(hj.getTime() - 864e5), z = (n: number) => String(n).padStart(2, "0"), hm = z(d.getHours()) + ":" + z(d.getMinutes()); return d.toDateString() === hj.toDateString() ? "hoje, " + hm : d.toDateString() === on.toDateString() ? "ontem, " + hm : z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + ", " + hm; };
+  const IC_PF = {
+    cam: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
+    up: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>`,
+    troca: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5"/></svg>`,
+  };
   /** Cabeçalho dos modais da equipe: ícone, título, explicação e o X. */
   const cabModal = (ic: string, titulo: string, sub: string, perigo = false) => `<div class="eq-mcab${perigo ? " perigo" : ""}"><span class="eq-mic">${ic}</span><h2>${h(titulo)}</h2><button type="button" class="eq-x" data-a="fechar" aria-label="Fechar">${xis}</button></div>${sub ? `<p class="eq-msub">${h(sub)}</p>` : ""}`;
   function telaEquipe() {
@@ -3562,7 +3578,7 @@ export function montar(app: HTMLElement) {
         const pode = gere(e), papelCls = e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
         return `
         <article class="eq-card${e.bloqueada ? " bloq" : ""}">
-          <span class="eq-av ${papelCls}">${h(iniciais(e.nome))}<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i></span>
+          ${avatarEq(e.id, e.nome, e.cor, "eq-av " + papelCls, `<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i>`)}
           <div class="eq-quem">
             <div class="eq-l1"><b>${h(e.nome)}</b></div>
             <span>Login: <b>${h(e.login)}</b></span>
@@ -3805,6 +3821,33 @@ export function montar(app: HTMLElement) {
         ${perm}
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}${nova ? "Adicionar membro" : "Salvar alterações"}</button></div>
       </form>`;
+    } else if (m.tipo === "perfil") {
+      const cor = ui.perfCor, [c1, c2] = (cor || "#e9d9b8").split(","), temFoto = !!S.fotos[eu!.id];
+      const CORES = ["#e9d9b8", "#c9a25c", "#13284a", "#2f7a3a", "#7a2f3f", "#5b3f8a", "#1d6a7a", "#3a3833", "#c9a25c,#13284a", "#7a2f3f,#c9a25c"];
+      corpo = `
+        ${cabModal(IC_EQ.pessoa, "Meu perfil", "")}
+        <div class="pf-topo">
+          ${avatarEq(eu!.id, eu!.nome, cor, "pf-grande", `<button type="button" class="pf-cam" data-a="perfil-foto-escolher" aria-label="${temFoto ? "Trocar" : "Adicionar"} foto">${IC_PF.cam}</button>`)}
+          <div class="pf-lado">
+            <small>Foto do perfil</small>
+            <div class="pf-fbts">${temFoto
+              ? `<button type="button" class="al-botao" data-a="perfil-foto-escolher">${IC_PF.troca}Trocar</button><button type="button" class="al-botao" data-a="perfil-foto-editar">${IC_EQ.lapis}Editar</button><button type="button" class="al-botao pf-rm" data-a="perfil-foto-remover">${IC_MOD.lixo}Remover</button>`
+              : `<button type="button" class="al-botao" data-a="perfil-foto-escolher">${IC_PF.up}Adicionar foto</button>`}</div>
+            <small>Cor do círculo${temFoto ? " (aparece sem foto)" : ""}</small>
+            <div class="pf-cores">
+              ${CORES.map((x) => `<button type="button" class="pf-cor${x === cor ? " sel" : ""}" data-a="perfil-cor" data-v="${x}" style="background:${corFundo(x)}" aria-label="Cor ${x}"></button>`).join("")}
+              <label class="pf-cor pf-livre" title="Escolher qualquer cor"><input type="color" data-perf-cor="1" value="${c1}" aria-label="Escolher qualquer cor" /></label>
+            </div>
+            <div class="pf-deg"><label class="eq-chk"><input type="checkbox" data-perf-deg ${c2 ? "checked" : ""} /><span>Degradê</span></label>${c2 ? `<span class="pf-deg-cores"><input type="color" data-perf-cor="1" value="${c1}" aria-label="Primeira cor" /><span>→</span><input type="color" data-perf-cor="2" value="${c2}" aria-label="Segunda cor" /></span>` : ""}</div>
+          </div>
+        </div>
+        <div class="pf-dados">
+          <div class="eq-campo"><span>Nome</span><div class="pf-val">${h(eu!.nome)}</div></div>
+          <div class="eq-campo"><span>Função</span><div class="pf-val">${h(eu!.papel)}</div></div>
+          <div class="eq-campo"><span>Login</span><div class="pf-val">${h(eu!.login || "—")}</div></div>
+          <div class="eq-campo"><span>Código</span><div class="pf-val"><b class="${ui.perfVerCod ? "" : "eq-pontos"}">${ui.perfVerCod ? h(ui.perfCod || "—") : "••••"}</b><button type="button" class="pf-mostrar" data-a="perfil-ver-codigo">${ui.perfVerCod ? "Esconder" : "Mostrar"}</button></div></div>
+        </div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button type="button" class="al-botao-ouro" data-a="perfil-salvar"${(cor || "") === (eu!.cor || "") ? " disabled" : ""}>Salvar</button></div>`;
     } else if (m.tipo === "codigo") {
       corpo = `
         ${cabModal(IC_EQ.chave, m.titulo || "Código de acesso", m.texto)}
@@ -4631,6 +4674,31 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": if (!euPode("adicionar")) { toast("O dono principal não liberou adicionar membros."); break; } ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
+      case "perfil-abrir": {
+        ui.estMenu = ""; ui.perfCor = eu!.cor || ""; ui.perfVerCod = false; ui.perfCod = ""; ui.modal = { tipo: "perfil" };
+        void supabase.from("credenciais").select("codigo").eq("aluna_id", eu!.id).maybeSingle().then((r) => { ui.perfCod = r.data?.codigo ?? ""; });
+        break;
+      }
+      case "perfil-ver-codigo": ui.perfVerCod = !ui.perfVerCod; break;
+      case "perfil-cor": ui.perfCor = d.v; break;
+      case "perfil-salvar": {
+        const cor = ui.perfCor || null;
+        void executar(async () => { await rpc("salvar_minha_cor", { p_cor: cor }); eu!.cor = cor || ""; ui.modal = null; return "Cor do perfil salva."; });
+        return;
+      }
+      case "perfil-foto-escolher": fotoPara = eu!.id; arquivoFoto.click(); return;
+      case "perfil-foto-editar": {
+        void (async () => {
+          const r = await supabase.from("fotos_aluna").select("original, ajuste").eq("aluna_id", eu!.id).maybeSingle();
+          if (!r.data?.original || !r.data.ajuste) { fotoPara = eu!.id; arquivoFoto.click(); return; }
+          await abrirEditorMinhaFoto(r.data.original, r.data.ajuste as Ajuste);
+        })();
+        return;
+      }
+      case "perfil-foto-remover": {
+        void executar(async () => { await rpc("salvar_foto_aluna", { p_aluna: eu!.id, p_foto: null, p_original: null, p_ajuste: null }); delete fotosCache[eu!.id]; delete S.fotos[eu!.id]; return "Foto removida."; });
+        return;
+      }
       case "reg-filtro": ui.regFiltro = d.v; break;
       case "reg-sel": ui.regSel = d.id; break;
       case "reg-aba": ui.regAba = d.v; break;
@@ -5256,6 +5324,16 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.hasAttribute("data-perf-cor")) {
+      // Cor livre: mexe na prévia sem redesenhar, para o quadro de cores continuar aberto.
+      const [a1, a2] = (ui.perfCor || "#e9d9b8").split(","), n = t.dataset.perfCor;
+      const nova = n === "2" ? a1 + "," + t.value : a2 ? t.value + "," + a2 : t.value;
+      ui.perfCor = nova.toLowerCase();
+      const g = document.querySelector<HTMLElement>(".pf-grande:not(.com-foto)"); if (g) { g.style.background = corFundo(nova); g.style.color = corLetra(nova); }
+      const sv = document.querySelector<HTMLButtonElement>('[data-a="perfil-salvar"]'); if (sv) sv.disabled = (ui.perfCor || "") === (eu?.cor || "");
+      document.querySelectorAll(".pf-cor.sel").forEach((x) => x.classList.remove("sel"));
+      return;
+    }
     if (t.hasAttribute("data-eb-nome") || t.hasAttribute("data-eb-cor")) {
       const eb = t.closest<HTMLElement>("[data-eb]"); const bt = eb?.querySelector<HTMLElement>(".eb-botao");
       if (eb && bt) {
@@ -5312,6 +5390,9 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
+    if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
+      const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
+    }
     if (t instanceof HTMLInputElement && t.name.startsWith("perm-")) {
       const f = t.form!, todos = [...f.querySelectorAll<HTMLInputElement>('input[name^="perm-"]:not([name="perm-tudo"])')];
       if (t.name === "perm-tudo") todos.forEach((x) => { x.checked = t.checked; });
@@ -5344,6 +5425,15 @@ export function montar(app: HTMLElement) {
       });
     }
   });
+  async function abrirEditorMinhaFoto(src: string, aj: Ajuste) {
+    const pronta = await editarFoto(src, aj, eu!.nome, () => { fotoPara = eu!.id; arquivoFoto.click(); });
+    if (!pronta) return;
+    void executar(async () => {
+      await rpc("salvar_foto_aluna", { p_aluna: eu!.id, p_foto: pronta.foto, p_original: pronta.original, p_ajuste: pronta.ajuste });
+      fotosCache[eu!.id] = pronta.foto; S.fotos[eu!.id] = pronta.foto;
+      return "Foto do perfil salva.";
+    });
+  }
   async function abrirEditorFoto(al: Aluna, src: string, aj: Ajuste) {
     const pronta = await editarFoto(src, aj, al.nome, () => { fotoPara = al.id; arquivoFoto.click(); });
     if (!pronta) return;
@@ -5400,7 +5490,9 @@ export function montar(app: HTMLElement) {
     void editarCapa(file, alvo.prop || 16 / 9, file.name).then((f) => { if (f) enviarCapa(alvo, f); });
   });
   arquivoFoto.addEventListener("change", () => {
-    const file = arquivoFoto.files?.[0]; arquivoFoto.value = ""; const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
+    const file = arquivoFoto.files?.[0]; arquivoFoto.value = "";
+    if (file && eu && fotoPara === eu.id) { void lerImagem(file).then((im) => abrirEditorMinhaFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e))); return; }
+    const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
     void lerImagem(file).then((im) => abrirEditorFoto(al, im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e)));
   });
   arquivoCat.addEventListener("change", () => {
@@ -5571,6 +5663,7 @@ export function montar(app: HTMLElement) {
         return;
       }
       S = await dadosP;
+      void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
