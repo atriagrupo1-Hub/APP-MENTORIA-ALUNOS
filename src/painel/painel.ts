@@ -87,7 +87,7 @@ type Aluna = {
 };
 type Nota = { id: string; texto: string; quem: string; quando: string };
 type Contato = { id: string; resultado: string; obs: string; quem: string; quando: string };
-type Hist = { id: string; aluna: string | null; quem: string; quando: string; texto: string };
+type Hist = { id: string; aluna: string | null; quem: string; autorId: string; quando: string; texto: string };
 type Sugestao = { id: string; texto: string; quem: string; autorId: string; quando: string };
 type Estado = "moderar" | "publicado" | "oculto" | "removido";
 type Comentario = {
@@ -249,7 +249,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
     supabase.from("contatos_aluna").select("id, aluna_id, resultado, observacao, autor_nome, quando").order("quando"),
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
-    supabase.from("historico_acoes").select("id, aluna_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
+    supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
     supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada").maybeSingle(),
@@ -416,7 +416,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       icone: x.icone ?? "estrela", cor: x.cor ?? "dourado", visivel: !!x.visivel,
     })),
     fotos: fotosCache,
-    historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, quando: x.quando, texto: x.texto })),
+    historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando, texto: x.texto })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
 }
@@ -469,7 +469,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", eqBusca: "", eqOrdem: "recentes", eqVista: "lista", comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -621,7 +621,7 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
@@ -766,7 +766,7 @@ export function montar(app: HTMLElement) {
           <span class="topo-av" title="${h(eu!.nome)}">${h(iniciais(eu!.nome))}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div>${ui.tab === "layout" ? "" : `<p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p>`}</div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div>${ui.tab === "layout" ? "" : `<p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p>`}</div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1707,16 +1707,141 @@ export function montar(app: HTMLElement) {
   function atualizarBusca() { const el = document.getElementById("buscaResultados"); if (el) el.innerHTML = resultadosBusca(); }
 
   /* ---------- REGISTRO ---------- */
+  /** Dia (AAAA-MM-DD) no fuso do painel. */
+  const diaFuso = (d: Date | string) => new Date(d).toLocaleDateString("en-CA", { timeZone: FUSO });
+  const REG_DATAS: [string, string][] = [["todas", "Todas as datas"], ["hoje", "Hoje"], ["ontem", "Ontem"], ["7dias", "Últimos 7 dias"], ["mes", "Este mês"], ["mesant", "Mês anterior"]];
+  const IC_REG = {
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>`,
+    rel: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`,
+    pasta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
+    doc: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M9 11h6M9 14.5h6M9 18h4"/></svg>`,
+    seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>`,
+    baixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>`,
+    ver: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`,
+  };
+  /** O registro passa pelo período escolhido em "Todas as datas"? */
+  function noPeriodo(iso: string) {
+    const k = diaFuso(iso), hj = diaFuso(new Date()), menos = (n: number) => diaFuso(new Date(Date.now() - n * 864e5));
+    switch (ui.regData) {
+      case "hoje": return k === hj;
+      case "ontem": return k === menos(1);
+      case "7dias": return k >= menos(6) && k <= hj;
+      case "mes": return k.slice(0, 7) === hj.slice(0, 7);
+      case "mesant": { const [y, m] = hj.split("-").map(Number); const ant = m === 1 ? (y - 1) + "-12" : y + "-" + String(m - 1).padStart(2, "0"); return k.slice(0, 7) === ant; }
+      case "periodo": return (!ui.regDe || k >= ui.regDe) && (!ui.regAte || k <= ui.regAte);
+      default: return true;
+    }
+  }
+  const diaBR = (k: string) => k.split("-").reverse().join("/");
+  function rotuloDatas() {
+    if (ui.regData === "periodo") return (ui.regDe ? diaBR(ui.regDe) : "…") + " – " + (ui.regAte ? diaBR(ui.regAte) : "…");
+    return (REG_DATAS.find(([v]) => v === ui.regData) || REG_DATAS[0])[1];
+  }
+  function cabRegistro() {
+    const aberto = ui.estMenu === "reg-datas";
+    return `<span class="reg-cab">
+      <span class="eq-ordem">${IC_EQ.ordem}<select class="campo cm-sel" data-reg-ordem aria-label="Ordem das pessoas">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["acoes", "Mais ações"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${v === ui.regOrdem ? "selected" : ""}>${t}</option>`).join("")}</select></span>
+      <span class="est3 reg-datas"><button type="button" class="reg-datas-bt" data-a="estado-menu" data-v="reg-datas" aria-haspopup="menu" aria-expanded="${aberto}">${IC_REG.cal}<span>${h(rotuloDatas())}</span>${IC_REG.baixo}</button>${aberto ? `<span class="reg-datas-menu" role="menu">
+        ${REG_DATAS.map(([v, t]) => `<button type="button" role="menuitemradio" aria-checked="${ui.regData === v}" data-a="reg-data" data-v="${v}">${v === "todas" ? IC_REG.cal : v === "mes" || v === "mesant" ? IC_REG.pasta : IC_REG.rel}${t}</button>`).join("")}
+        <span class="kb-sep"></span>
+        <b class="reg-per">${IC_REG.cal}Escolher período</b>
+        <label><span>Data inicial</span><input type="date" class="campo" id="regDe" value="${h(ui.regDe)}" /></label>
+        <label><span>Data final</span><input type="date" class="campo" id="regAte" value="${h(ui.regAte)}" /></label>
+        <button type="button" class="al-botao-ouro" data-a="reg-periodo">Aplicar</button>
+      </span>` : ""}</span>
+    </span>`;
+  }
+  type PessoaReg = { id: string; nome: string; login: string; papel: Papel | ""; ultimo: string; criado: string; acts: Hist[] };
+  function pessoasRegistro(): PessoaReg[] {
+    const hist = S.historico.filter((x) => noPeriodo(x.quando));
+    const ps: PessoaReg[] = S.equipe.map((e) => ({ id: e.id, nome: e.nome, login: e.login, papel: e.papel, ultimo: e.ultimo, criado: e.criado, acts: [] }));
+    hist.forEach((x) => {
+      let p0 = ps.find((y) => y.id === x.autorId);
+      if (!p0) { p0 = { id: x.autorId || "sem:" + x.quem, nome: x.quem || "Sem nome", login: "", papel: "", ultimo: "", criado: "", acts: [] }; ps.push(p0); }
+      p0.acts.push(x);
+    });
+    ps.forEach((y) => y.acts.sort((a, b) => b.quando.localeCompare(a.quando)));
+    return ps;
+  }
+  const clsPapel = (p0: Papel | "") => p0 === "Dono" ? "dono" : p0 === "Administrador" ? "admin" : p0 === "Suporte" ? "sup" : "fora";
+  /** Linha do registro: data/hora, texto e o botão Ver quando há uma aluna ligada. */
+  function itemReg(x: Hist, comData: boolean) {
+    const al = x.aluna ? S.alunas.find((y) => y.id === x.aluna) : undefined;
+    const d = new Date(x.quando), hr = d.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+    return `<li><span class="reg-q">${comData ? d.toLocaleDateString("pt-BR", { timeZone: FUSO }) + `<i>·</i>` : ""}${hr}</span><span class="reg-t">${h(x.texto)}${al && !x.texto.includes(al.nome) ? `<small>${h(al.nome)}</small>` : ""}</span>${al && !comData ? `<button type="button" class="reg-ver" data-a="ficha" data-id="${al.id}">${IC_REG.ver}Ver</button>` : ""}</li>`;
+  }
   function telaRegistro() {
-    const lista = S.historico;
+    const ps = pessoasRegistro();
+    const filtros: [string, string, string][] = [["todos", "Todos", IC_EQ.coroa], ["dono", "Donos", IC_EQ.coroa], ["admin", "Administração", IC_EQ.grupo], ["sup", "Suporte", IC_EQ.fone]];
+    const lista = ps.filter((y) => ui.regFiltro === "todos" || clsPapel(y.papel) === ui.regFiltro);
+    const ult = (y: PessoaReg) => y.acts[0]?.quando || "";
+    const o = ui.regOrdem;
+    lista.sort((a, b) => o === "nome" ? a.nome.localeCompare(b.nome, "pt-BR") : o === "acoes" ? b.acts.length - a.acts.length : o === "antigos" ? (ult(a) || "9").localeCompare(ult(b) || "9") : ult(b).localeCompare(ult(a)));
+    if (!lista.some((y) => y.id === ui.regSel)) ui.regSel = lista[0]?.id || "";
+    const sel = lista.find((y) => y.id === ui.regSel);
     return `
-    <section class="tela ativa">
-      <p style="margin:0 0 16px;font-size:14px;color:var(--texto-2)">Tudo o que a equipe fez no painel, do mais recente ao mais antigo.</p>
-      ${lista.length ? `<div class="painel-bloco"><ul class="tempo">${lista.map((x) => {
-        const al = x.aluna ? S.alunas.find((y) => y.id === x.aluna) : undefined;
-        return `<li><span class="quando">${dataHora(x.quando)} · ${h(x.quem)}</span><p>${h(x.texto)}${al ? ` · <button class="link" data-a="ficha" data-id="${al.id}">${h(al.nome)}</button>` : ""}</p></li>`;
-      }).join("")}</ul></div>` : `<div class="vazio">Nenhuma ação registrada ainda.</div>`}
+    <section class="tela ativa reg">
+      <div class="eq-filtros" role="group" aria-label="Filtrar por papel">${filtros.map(([v, t, ic]) => `<button type="button" class="eq-filtro" data-a="reg-filtro" data-v="${v}" aria-pressed="${ui.regFiltro === v}">${ic}<span>${t}</span><b>${v === "todos" ? ps.length : ps.filter((y) => clsPapel(y.papel) === v).length}</b></button>`).join("")}</div>
+      <div class="reg-grade">
+        <div class="reg-lista">${lista.map((y) => {
+          const c = clsPapel(y.papel), n = ui.regMais[y.id] || 3, ver = y.acts.slice(0, n), resto = y.acts.length - ver.length;
+          return `
+          <article class="reg-card${y.id === ui.regSel ? " sel" : ""}">
+            <div class="reg-topo">
+              <span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span>
+              <div class="eq-quem">
+                <div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : `<span class="eq-pil fora">Fora da equipe</span>`}${y.papel === "Dono" ? `<span class="reg-coroa">${IC_EQ.coroa}</span>` : ""}</div>
+                ${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>` : ""}
+              </div>
+              <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${y.papel ? h(ultimoAcesso(y.ultimo)) : "—"}</span></div>
+              <div class="eq-col"><small>Ações realizadas</small><span class="eq-ult">${IC_REG.doc}${y.acts.length}</span></div>
+              <button type="button" class="reg-abrir" data-a="reg-sel" data-id="${h(y.id)}" aria-label="Ver o histórico de ${h(y.nome)}" aria-pressed="${y.id === ui.regSel}">${IC_REG.seta}</button>
+            </div>
+            <div class="reg-ult"><small>Últimas atividades</small>
+              ${ver.length ? `<ul class="reg-itens">${ver.map((x) => itemReg(x, true)).join("")}</ul>` : `<p class="reg-nada">Nenhuma atividade neste período.</p>`}
+              ${resto > 0 ? `<button type="button" class="reg-mais" data-a="reg-mais" data-id="${h(y.id)}">Ver mais ${Math.min(10, resto)} ${Math.min(10, resto) === 1 ? "atividade" : "atividades"}${IC_REG.baixo}</button>` : ""}
+            </div>
+          </article>`; }).join("") || `<div class="vazio">Ninguém com esse papel.</div>`}</div>
+        ${sel ? painelReg(sel) : ""}
+      </div>
     </section>`;
+  }
+  function painelReg(y: PessoaReg) {
+    const c = clsPapel(y.papel), aba = ui.regAba;
+    let corpo = "";
+    if (aba === "hist") {
+      const acts = y.acts.slice().sort((a, b) => ui.regHistOrdem === "antigos" ? a.quando.localeCompare(b.quando) : b.quando.localeCompare(a.quando));
+      const dias: [string, Hist[]][] = [];
+      acts.forEach((x) => { const k = diaFuso(x.quando), u = dias[dias.length - 1]; if (u && u[0] === k) u[1].push(x); else dias.push([k, [x]]); });
+      corpo = `
+        <span class="eq-ordem reg-ord2">${IC_EQ.ordem}<select class="campo cm-sel" data-reg-hist-ordem aria-label="Ordem do histórico"><option value="recentes" ${ui.regHistOrdem !== "antigos" ? "selected" : ""}>Mais recentes</option><option value="antigos" ${ui.regHistOrdem === "antigos" ? "selected" : ""}>Mais antigos</option></select></span>
+        ${dias.map(([k, xs]) => {
+          const chave = y.id + ":" + k, todos = ui.regDias.has(chave), ver = todos ? xs : xs.slice(0, 3);
+          const d = new Date(k + "T12:00:00Z").toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+          return `<div class="reg-dia"><h3>${h(d)}<span>${p(xs.length, "ação", "ações")}</span></h3><ul class="reg-itens">${ver.map((x) => itemReg(x, false)).join("")}</ul>${xs.length > 3 && !todos ? `<button type="button" class="reg-mais" data-a="reg-dia" data-v="${h(chave)}">Ver mais ${xs.length - 3} ${xs.length - 3 === 1 ? "atividade" : "atividades"}${IC_REG.baixo}</button>` : ""}</div>`;
+        }).join("") || `<p class="reg-nada">Nenhuma atividade neste período.</p>`}`;
+    } else if (aba === "resumo") {
+      const dias = new Set(y.acts.map((x) => diaFuso(x.quando))).size, alunas = new Set(y.acts.map((x) => x.aluna).filter(Boolean)).size;
+      const prim = y.acts[y.acts.length - 1], ul = y.acts[0];
+      corpo = `<dl class="reg-res">
+        <div><dt>Ações realizadas</dt><dd>${y.acts.length}</dd></div>
+        <div><dt>Dias com atividade</dt><dd>${dias}</dd></div>
+        <div><dt>Alunas envolvidas</dt><dd>${alunas}</dd></div>
+        <div><dt>Primeira ação no período</dt><dd>${prim ? h(dataHora(prim.quando)) : "—"}</dd></div>
+        <div><dt>Última ação no período</dt><dd>${ul ? h(dataHora(ul.quando)) : "—"}</dd></div>
+      </dl><p class="reg-nota">${IC_EQ.info}Contagem feita com os registros do período escolhido em “${h(rotuloDatas())}”.</p>`;
+    } else {
+      corpo = `<dl class="reg-res">
+        <div><dt>Último acesso ao painel</dt><dd>${y.papel ? h(ultimoAcesso(y.ultimo)) : "—"}</dd></div>
+        <div><dt>Na equipe desde</dt><dd>${y.criado ? h(dataHora(y.criado)) : "—"}</dd></div>
+      </dl><p class="reg-nota">${IC_EQ.info}O painel guarda apenas o último acesso de cada pessoa. Entradas anteriores e tempo de uso não são registrados.</p>`;
+    }
+    return `
+        <aside class="reg-painel" aria-label="Histórico de ${h(y.nome)}">
+          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : ""}</div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div></div>
+          <div class="reg-abas" role="tablist">${[["hist", "Histórico"], ["resumo", "Resumo"], ["acessos", "Acessos"]].map(([v, t]) => `<button type="button" role="tab" data-a="reg-aba" data-v="${v}" aria-selected="${aba === v}">${t}</button>`).join("")}</div>
+          ${corpo}
+        </aside>`;
   }
 
   /* ---------- seleção e menu ---------- */
@@ -4440,6 +4565,18 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
+      case "reg-filtro": ui.regFiltro = d.v; break;
+      case "reg-sel": ui.regSel = d.id; break;
+      case "reg-aba": ui.regAba = d.v; break;
+      case "reg-mais": ui.regMais[d.id] = (ui.regMais[d.id] || 3) + 10; break;
+      case "reg-dia": ui.regDias.add(d.v); break;
+      case "reg-data": ui.regData = d.v; ui.estMenu = ""; ui.regMais = {}; ui.regDias.clear(); break;
+      case "reg-periodo": {
+        let de = (document.getElementById("regDe") as HTMLInputElement | null)?.value || "", ate = (document.getElementById("regAte") as HTMLInputElement | null)?.value || "";
+        if (!de && !ate) { toast("Escolha a data inicial, a final ou as duas."); return; }
+        if (de && ate && de > ate) [de, ate] = [ate, de];
+        ui.regDe = de; ui.regAte = ate; ui.regData = "periodo"; ui.estMenu = ""; ui.regMais = {}; ui.regDias.clear(); break;
+      }
       case "eq-vista": ui.eqVista = d.v === "grade" ? "grade" : "lista"; break;
       case "trocar-codigo": { ui.estMenu = "";
         const e = pessoa(d.id);
@@ -5079,6 +5216,8 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
+    if (t.hasAttribute("data-reg-ordem")) { ui.regOrdem = t.value; render(); return; }
+    if (t.hasAttribute("data-reg-hist-ordem")) { ui.regHistOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-eq-ordem")) { ui.eqOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-com-ordem")) { ui.comOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-com-curso")) { ui.comCurso = t.value; ui.comMod = ""; ui.comAula = ""; ui.comPag = 1; render(); return; }
