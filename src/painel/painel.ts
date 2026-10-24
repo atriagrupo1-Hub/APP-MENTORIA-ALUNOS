@@ -501,6 +501,8 @@ export function montar(app: HTMLElement) {
   const arquivoCat = Object.assign(document.createElement("input"), { type: "file", id: "arquivoCat", accept: "image/*", hidden: true });
   const arquivoFoto = Object.assign(document.createElement("input"), { type: "file", id: "arquivoFoto", accept: "image/*", hidden: true });
   let fotoPara: string | null = null;
+  /** Foto escolhida na janela de adicionar/editar membro, guardada só quando salvar. */
+  let fotoNova: { foto: string; original: string; ajuste: Ajuste } | null = null;
   // Imagem para um campo de formulário: envia ao depósito "capas", guarda o caminho no campo escondido e mostra a prévia.
   const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
   let imgPara: { form: string; campo: string; previa: string; pasta: string; prop?: number } | null = null;
@@ -3552,6 +3554,8 @@ export function montar(app: HTMLElement) {
   };
   const ultimoAcesso = (iso: string) => { if (!iso) return "Nunca entrou"; const d = new Date(iso); if (isNaN(+d)) return "—"; const hj = new Date(), on = new Date(hj.getTime() - 864e5), z = (n: number) => String(n).padStart(2, "0"), hm = z(d.getHours()) + ":" + z(d.getMinutes()); return d.toDateString() === hj.toDateString() ? "hoje, " + hm : d.toDateString() === on.toDateString() ? "ontem, " + hm : z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + ", " + hm; };
   const IC_PF = {
+    add: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="8" r="3.8"/><path d="M3 20c.9-4 3.9-6 7-6 1.6 0 3.1.5 4.3 1.5M18 13v6M15 16h6"/></svg>`,
+    dado: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/><circle cx="8" cy="12" r=".9"/><circle cx="16" cy="9.5" r=".9"/><circle cx="16" cy="15" r=".9"/></svg>`,
     cam: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>`,
     up: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>`,
     troca: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5"/></svg>`,
@@ -3807,20 +3811,41 @@ export function montar(app: HTMLElement) {
       const papeis: Papel[] = souPrincipal() ? ["Suporte", "Administrador", "Dono"] : eu?.papel === "Dono" ? ["Suporte", "Administrador"] : ["Suporte"];
       const semNome = !nova && !euPode("nome"), semCodigo = !nova && !euPode("codigo");
       const pd = e && e.papel === "Dono" ? e.pode : { adicionar: true, remover: true, codigo: true, nome: true };
-      const perm = souPrincipal() && !(e && e.principal) ? `<fieldset class="eq-perm"${e && e.papel === "Dono" ? " data-dono" : ""}><legend>O que este dono pode fazer</legend>
-          <label class="eq-chk tudo"><input type="checkbox" name="perm-tudo" ${Object.values(pd).every(Boolean) ? "checked" : ""} /><span><b>Controle total</b><em>Tudo liberado, como você.</em></span></label>
-          ${([["adicionar", "Adicionar membro na equipe"], ["remover", "Remover membro da equipe"], ["codigo", "Mudar e renovar código"], ["nome", "Mudar nome e login"]] as const).map(([k, t]) => `<label class="eq-chk"><input type="checkbox" name="perm-${k}" ${pd[k] ? "checked" : ""} /><span>${t}</span></label>`).join("")}
-          <small>Desmarcado, ele não consegue fazer. O resto do painel ele controla por completo.</small>
-        </fieldset>` : "";
+      const comPapel = !!(nova || (e && gere(e)));
+      const papelAtual = e ? e.papel : papeis[0];
+      const ICP: Record<string, string> = { Dono: IC_EQ.coroa, Administrador: IC_EQ.grupo, Suporte: IC_EQ.fone };
+      const permDono = souPrincipal() && !(e && e.principal) ? `<section class="eqn-card" data-papel="Dono">
+          <div class="eqn-ccab"><span class="eqn-cic">${IC_EQ.coroa}</span><div><h3>Dono <span class="eqn-q" tabindex="0" role="note" data-dica="O dono controla o painel inteiro. Aqui você escolhe o que ele pode fazer na equipe.">?</span></h3><p>Selecione o que este colaborador poderá fazer no painel.</p></div></div>
+          <div class="eqn-lista">
+            <label class="eqn-op tudo"><input type="checkbox" name="perm-tudo" ${Object.values(pd).every(Boolean) ? "checked" : ""} /><span><b>Controle total</b><em>Tudo liberado, como você.</em></span></label>
+            ${([["adicionar", "Adicionar membro na equipe", "Pode adicionar novos colaboradores."], ["remover", "Remover membro da equipe", "Pode remover colaboradores da equipe."], ["codigo", "Mudar e renovar código", "Pode alterar e renovar o código de acesso."], ["nome", "Mudar nome e login", "Pode alterar o nome e o login."]] as const).map(([k, t, d]) => `<label class="eqn-op"><input type="checkbox" name="perm-${k}" ${pd[k] ? "checked" : ""} /><span><b>${t}</b><em>${d}</em></span></label>`).join("")}
+          </div>
+          <small class="eqn-nota">Desmarcado, ele não consegue fazer. O resto do painel ele controla por completo.</small>
+        </section>` : "";
+      const cardPapel = (pp: Papel, nomeP: string) => `<section class="eqn-card" data-papel="${pp}">
+          <div class="eqn-ccab"><span class="eqn-cic">${ICP[pp]}</span><div><h3>${nomeP}</h3><p>As opções desta função vão ser escolhidas em breve.</p></div></div>
+        </section>`;
+      const fotoAtual = e ? S.fotos[e.id] : "";
       corpo = `
-      <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form">
-        ${cabModal(nova ? IC_EQ.grupo : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha os dados do novo colaborador." : "Atualize as informações do membro da equipe.")}
-        <label class="eq-campo"><span>Nome</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>O dono principal não liberou mudar nome.</small>` : ""}</label>
-        <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar.</small></label>
-        ${semCodigo ? "" : `<label class="eq-campo"><span>Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} /><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></label>`}
-        ${nova || (e && gere(e)) ? `<label class="eq-campo"><span>Papel</span><span class="eq-sel">${IC_EQ.pessoa}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
-        ${perm}
-        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}${nova ? "Adicionar membro" : "Salvar alterações"}</button></div>
+      <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}">
+        ${cabModal(nova ? IC_PF.add : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha os dados do novo colaborador para dar acesso ao painel." : "Atualize as informações do membro da equipe.")}
+        <div class="eqn-corpo">
+          <div class="eqn-esq">
+            <div class="eq-campo"><span>Foto do perfil <i class="eqn-opc">(opcional)</i></span>
+              <div class="eqn-foto"><span class="eqn-circ" id="eqnFoto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span>
+                <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2MB.</small></div></div></div>
+            <label class="eq-campo"><span>Nome completo</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>O dono principal não liberou mudar nome.</small>` : ""}</label>
+            <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar no painel.</small></label>
+            ${semCodigo ? "" : `<div class="eq-campo"><span>Código de acesso</span><span class="eqn-cod"><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} aria-label="Código de acesso" /><button type="button" class="eqn-dado" data-a="eqn-sortear" title="Gerar um código" aria-label="Gerar um código">${IC_PF.dado}</button></span><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></div>`}
+            ${comPapel ? `<label class="eq-campo"><span>Função</span><span class="eq-sel eqn-sel">${papeis.map((x) => `<i data-ic="${x}">${ICP[x]}</i>`).join("")}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
+          </div>
+          <div class="eqn-dir">
+            ${permDono}
+            ${papeis.includes("Administrador") || papelAtual === "Administrador" ? cardPapel("Administrador", "Administração") : ""}
+            ${cardPapel("Suporte", "Suporte")}
+          </div>
+        </div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "perfil") {
       const cor = ui.perfCor, [c1, c2] = (cor || "#e9d9b8").split(","), temFoto = !!S.fotos[eu!.id];
@@ -3962,7 +3987,7 @@ export function montar(app: HTMLElement) {
         window.scrollTo(0, 0);
         break;
       }
-      case "equipe-editar": ui.modal = { tipo: "equipe-editar", id: d.id }; break;
+      case "equipe-editar": fotoNova = null; ui.modal = { tipo: "equipe-editar", id: d.id }; break;
       case "copiar-acesso-equipe": {
         const e = pessoa(d.id);
         const txt = "Nome: " + e.nome + "\nLogin: " + e.login + "\nCódigo: " + (e.codigo ?? "");
@@ -4680,13 +4705,18 @@ export function montar(app: HTMLElement) {
         break;
 
       case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "codigo", titulo: "Código de acesso", texto: "Este é o código que " + e.nome + " usa para entrar no painel (login " + e.login + ").", codigo: e.codigo ?? "" }; break; }
-      case "equipe-nova": if (!euPode("adicionar")) { toast("O dono principal não liberou adicionar membros."); break; } ui.modal = { tipo: "equipe-nova" }; break;
+      case "equipe-nova": if (!euPode("adicionar")) { toast("O dono principal não liberou adicionar membros."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
       case "perfil-abrir": {
         ui.estMenu = ""; ui.perfCor = eu!.cor || ""; ui.perfVerCod = false; ui.perfCod = ""; ui.modal = { tipo: "perfil" };
         void supabase.from("credenciais").select("codigo").eq("aluna_id", eu!.id).maybeSingle().then((r) => { ui.perfCod = r.data?.codigo ?? ""; });
         break;
+      }
+      case "eqn-foto": fotoPara = "eqn"; arquivoFoto.click(); return;
+      case "eqn-sortear": {
+        const inp = el.closest("form")?.querySelector<HTMLInputElement>('input[name="codigo"]'); if (!inp) return;
+        const n = new Uint32Array(1); crypto.getRandomValues(n); inp.value = String(1000 + (n[0] % 9000)); return;
       }
       case "perfil-ver-codigo": ui.perfVerCod = !ui.perfVerCod; break;
       case "perfil-cor": ui.perfCor = d.v; break;
@@ -5169,6 +5199,7 @@ export function montar(app: HTMLElement) {
         const antes = { nome: e.nome, login: e.login, papel: e.papel === "Administrador" ? "admin" : e.papel === "Dono" ? "dono" : "suporte", codigo: e.codigo ?? "" };
         void executar(async () => {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
+          if (fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: e.id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[e.id] = fp.foto; }
           if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome });
           await registrar(null, "Editou " + nome + " na equipe", ["equipe", e.id]);
           ui.modal = null;
@@ -5187,6 +5218,7 @@ export function montar(app: HTMLElement) {
         const permissoes = papel === "dono" ? permsDoForm(form) : undefined;
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo, permissoes });
+          if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
           await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para a pessoa entrar no painel.", codigo: String(r.codigo ?? "") };
@@ -5500,6 +5532,16 @@ export function montar(app: HTMLElement) {
   });
   arquivoFoto.addEventListener("change", () => {
     const file = arquivoFoto.files?.[0]; arquivoFoto.value = "";
+    if (file && fotoPara === "eqn") {
+      if (file.size > 2 * 1024 * 1024) { toast("A foto pode ter no máximo 2MB."); return; }
+      void lerImagem(file).then(async (im) => {
+        const pronta = await editarFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 }, "nova foto", () => { fotoPara = "eqn"; arquivoFoto.click(); });
+        if (!pronta) return;
+        fotoNova = pronta;
+        const c = document.getElementById("eqnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const bt = document.querySelector('[data-a="eqn-foto"]'); if (bt) bt.innerHTML = IC_PF.up + "Trocar foto";
+      }).catch((e) => toast(motivo(e)));
+      return;
+    }
     if (file && eu && fotoPara === eu.id) { void lerImagem(file).then((im) => abrirEditorMinhaFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e))); return; }
     const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
     void lerImagem(file).then((im) => abrirEditorFoto(al, im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 })).catch((e) => toast(motivo(e)));
