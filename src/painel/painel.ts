@@ -104,7 +104,7 @@ type Pessoa = {
   id: string; nome: string; login: string; codigo: string | null;
   papel: Papel; bloqueada: boolean; souEu: boolean;
   /** Última vez que entrou no painel (ISO), quando o banco tem. */
-  ultimo: string;
+  ultimo: string; criado: string;
 };
 type Eu = { id: string; nome: string; papel: Papel };
 
@@ -399,7 +399,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     equipe = ((r.data ?? []) as Record<string, unknown>[]).map((e) => ({
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
-      bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "",
+      bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "", criado: e.criada_em ? String(e.criada_em) : "",
     }));
   }
 
@@ -469,7 +469,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", eqBusca: "", eqOrdem: "recentes", eqVista: "lista", comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -3354,6 +3354,7 @@ export function montar(app: HTMLElement) {
     cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`,
     aberto: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 7.8-1.2"/></svg>`,
     cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>`,
+    ordem: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 19V5M4.5 8.5L8 5l3.5 3.5M16 5v14M12.5 15.5L16 19l3.5-3.5"/></svg>`,
     fone: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6" rx="1.5"/></svg>`,
     coroa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/></svg>`,
     pontos: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>`,
@@ -3367,11 +3368,21 @@ export function montar(app: HTMLElement) {
   function telaEquipe() {
     const cls = (e: Pessoa) => e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
     const filtros: [string, string, string][] = [["todos", "Todos", IC_EQ.grupo], ["dono", "Donos", IC_EQ.coroa], ["admin", "Administração", IC_EQ.grupo], ["sup", "Suporte", IC_EQ.fone]];
-    const lista = S.equipe.filter((e) => ui.filtroEq === "todos" || cls(e) === ui.filtroEq);
+    const q = norm(ui.eqBusca || "").trim();
+    const lista = S.equipe.filter((e) => (ui.filtroEq === "todos" || cls(e) === ui.filtroEq) && (!q || norm(e.nome + " " + e.login).includes(q)));
+    const o = ui.eqOrdem;
+    lista.sort((a, b) => o === "nome" ? a.nome.localeCompare(b.nome, "pt-BR") : o === "acesso" ? (b.ultimo || "").localeCompare(a.ultimo || "") : o === "antigos" ? a.criado.localeCompare(b.criado) : b.criado.localeCompare(a.criado));
+    const grade = ui.eqVista === "grade";
     return `
     <section class="tela ativa eq">
-      <div class="eq-filtros" role="group" aria-label="Filtrar por papel">${filtros.map(([v, t, ic]) => `<button type="button" class="eq-filtro" data-a="eq-filtro" data-v="${v}" aria-pressed="${ui.filtroEq === v}">${ic}<span>${t}</span><b>${v === "todos" ? S.equipe.length : S.equipe.filter((e) => cls(e) === v).length}</b></button>`).join("")}</div>
-      <div class="eq-lista">${lista.map((e) => {
+      <div class="eq-filtros" role="group" aria-label="Filtrar por papel">${filtros.map(([v, t, ic]) => `<button type="button" class="eq-filtro" data-a="eq-filtro" data-v="${v}" aria-pressed="${ui.filtroEq === v}">${ic}<span>${t}</span><b>${v === "todos" ? S.equipe.length : S.equipe.filter((e) => cls(e) === v).length}</b></button>`).join("")}
+        <span class="cm-dir">
+          <label class="cur-busca eq-busca">${IC_CUR.lupa}<input class="campo" type="search" id="eqBusca" data-eq-busca value="${h(ui.eqBusca || "")}" placeholder="Buscar membro..." aria-label="Buscar membro" /></label>
+          <span class="eq-ordem">${IC_EQ.ordem}<select class="campo cm-sel" data-eq-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["acesso", "Último acesso"]].map(([v, t]) => `<option value="${v}" ${v === o ? "selected" : ""}>${t}</option>`).join("")}</select></span>
+          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="eq-vista" data-v="grade" aria-pressed="${grade}" aria-label="Em cartões">${IC_CUR.grade}</button><button type="button" data-a="eq-vista" data-v="lista" aria-pressed="${!grade}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        </span>
+      </div>
+      <div class="eq-lista${grade ? " grade" : ""}">${lista.map((e) => {
         const pode = gere(e), papelCls = e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
         return `
         <article class="eq-card${e.bloqueada ? " bloq" : ""}">
@@ -3396,7 +3407,7 @@ export function montar(app: HTMLElement) {
                 <button type="button" role="menuitem" class="perigo" data-a="equipe-remover" data-id="${e.id}">Remover da equipe</button>
               </span>` : ""}</span>` : `<span class="eq-pts-vazio"></span>`}
           </div>
-        </article>`; }).join("") || `<div class="vazio">${S.equipe.length ? "Ninguém com esse papel." : "Ninguém na equipe ainda."}</div>`}</div>
+        </article>`; }).join("") || `<div class="vazio">${!S.equipe.length ? "Ninguém na equipe ainda." : q ? "Ninguém encontrado." : "Ninguém com esse papel."}</div>`}</div>
     </section>`;
   }
 
@@ -4429,6 +4440,7 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
+      case "eq-vista": ui.eqVista = d.v === "grade" ? "grade" : "lista"; break;
       case "trocar-codigo": { ui.estMenu = "";
         const e = pessoa(d.id);
         void executar(async () => {
@@ -5025,6 +5037,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cat-busca")) { ui.catBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-eq-busca")) { ui.eqBusca = t.value; render(); return; }
     if (t.hasAttribute("data-com-busca")) { ui.comBusca = t.value; ui.comPag = 1; render(); return; }
     if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; ui.csPag = 1; render(); return; }
     if (t.dataset.contaMax) { const em = t.parentElement?.querySelector(".cs-conta"); if (em) em.textContent = t.value.length + "/" + t.dataset.contaMax; }
@@ -5066,6 +5079,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-chave-status")) { const b = t.parentElement?.querySelector("b"); if (b) b.textContent = t.checked ? "Ativa" : "Bloqueada"; return; }
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
+    if (t.hasAttribute("data-eq-ordem")) { ui.eqOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-com-ordem")) { ui.comOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-com-curso")) { ui.comCurso = t.value; ui.comMod = ""; ui.comAula = ""; ui.comPag = 1; render(); return; }
     if (t.hasAttribute("data-com-mod")) { ui.comMod = t.value; ui.comAula = ""; ui.comPag = 1; render(); return; }
