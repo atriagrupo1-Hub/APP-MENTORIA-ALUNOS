@@ -1773,10 +1773,17 @@ export function montar(app: HTMLElement) {
       </span>` : ""}</span>
     </span>`;
   }
-  type PessoaReg = { id: string; nome: string; login: string; papel: Papel | ""; ultimo: string; criado: string; acts: Hist[]; ses: Sessao[] };
+  type PessoaReg = { id: string; nome: string; login: string; papel: Papel | ""; ultimo: string; criado: string; acts: Hist[]; ses: Sessao[]; pes?: Pessoa };
+  /** Status na equipe; quem pode gerir a pessoa bloqueia ou desbloqueia por aqui. */
+  function statusReg(y: PessoaReg) {
+    const e = y.pes; if (!e) return `<span class="eq-st off"><i></i>Fora da equipe</span>`;
+    const st = `<i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}`, m = "reg-st:" + e.id;
+    if (!gere(e)) return `<span class="eq-st ${e.bloqueada ? "off" : "on"}">${st}</span>`;
+    return `<span class="est3 reg-st"><button type="button" class="eq-st ${e.bloqueada ? "off" : "on"}" data-a="estado-menu" data-v="${m}" aria-haspopup="menu" aria-expanded="${ui.estMenu === m}">${st}${IC_REG.baixo}</button>${ui.estMenu === m ? `<span class="est3-menu kb-menu" role="menu">${e.bloqueada ? `<button type="button" role="menuitem" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>` : `<button type="button" role="menuitem" class="perigo" data-a="equipe-bloquear" data-id="${e.id}">Bloquear</button>`}</span>` : ""}</span>`;
+  }
   function pessoasRegistro(): PessoaReg[] {
     const hist = S.historico.filter((x) => noPeriodo(x.quando));
-    const ps: PessoaReg[] = S.equipe.map((e) => ({ id: e.id, nome: e.nome, login: e.login, papel: e.papel, ultimo: e.ultimo, criado: e.criado, acts: [], ses: S.sessoes.filter((x) => x.perfil === e.id && noPeriodo(x.inicio)) }));
+    const ps: PessoaReg[] = S.equipe.map((e) => ({ id: e.id, nome: e.nome, login: e.login, papel: e.papel, ultimo: e.ultimo, criado: e.criado, pes: e, acts: [], ses: S.sessoes.filter((x) => x.perfil === e.id && noPeriodo(x.inicio)) }));
     hist.forEach((x) => {
       let p0 = ps.find((y) => y.id === x.autorId);
       if (!p0) { p0 = { id: x.autorId || "sem:" + x.quem, nome: x.quem || "Sem nome", login: "", papel: "", ultimo: "", criado: "", acts: [], ses: [] }; ps.push(p0); }
@@ -1821,15 +1828,20 @@ export function montar(app: HTMLElement) {
           return `
           <article class="reg-card${y.id === ui.regSel ? " sel" : ""}">
             <div class="reg-topo">
-              <span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span>
-              <div class="eq-quem">
-                <div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : `<span class="eq-pil fora">Fora da equipe</span>`}${y.papel === "Dono" ? `<span class="reg-coroa">${IC_EQ.coroa}</span>` : ""}</div>
-                ${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>` : ""}
+              <span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : ""}</span>
+              <div class="reg-dados">
+                <div class="eq-col"><small>Nome</small><b>${h(y.nome)}</b></div>
+                <div class="eq-col"><small>Função</small><span>${y.papel ? h(y.papel === "Administrador" ? "Administração" : y.papel) : "Fora da equipe"}</span></div>
+                <div class="eq-col"><small>Login</small><b>${y.login ? h(y.login) : "—"}</b></div>
+                <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">${y.login ? "••••" : "—"}</b></div>
+                <div class="eq-col"><small>Status</small>${statusReg(y)}</div>
               </div>
+              <button type="button" class="reg-abrir" data-a="reg-sel" data-id="${h(y.id)}" aria-label="Ver o histórico de ${h(y.nome)}" aria-pressed="${y.id === ui.regSel}">${IC_REG.seta}</button>
+            </div>
+            <div class="reg-num">
               <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${y.papel ? h(ultimoAcesso(y.ultimo)) : "—"}</span></div>
               <div class="eq-col"><small>Tempo total</small><span class="eq-ult">${IC_REG.rel}${y.ses.length ? duracao(y.ses.reduce((t, x) => t + msSessao(x), 0)) : "—"}</span></div>
               <div class="eq-col"><small>Ações realizadas</small><span class="eq-ult">${IC_REG.doc}${y.acts.length}</span></div>
-              <button type="button" class="reg-abrir" data-a="reg-sel" data-id="${h(y.id)}" aria-label="Ver o histórico de ${h(y.nome)}" aria-pressed="${y.id === ui.regSel}">${IC_REG.seta}</button>
             </div>
             <div class="reg-ult"><small>Últimas atividades</small>
               ${ver.length ? `<ul class="reg-itens">${ver.map((x) => itemReg(x, true)).join("")}</ul>` : `<p class="reg-nada">Nenhuma atividade neste período.</p>`}
@@ -1877,7 +1889,7 @@ export function montar(app: HTMLElement) {
     }
     return `
         <aside class="reg-painel" aria-label="Histórico de ${h(y.nome)}">
-          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : ""}</div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div>${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}" aria-label="Apagar registros de ${h(y.nome)}" title="Apagar registros de ${h(primeiroNome(y.nome))}${ui.regData === "todas" ? "" : " neste período"}">${IC_REG.lixo}</button>` : ""}</div>
+          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b></div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div>${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}" aria-label="Apagar registros de ${h(y.nome)}" title="Apagar registros de ${h(primeiroNome(y.nome))}${ui.regData === "todas" ? "" : " neste período"}">${IC_REG.lixo}</button>` : ""}</div>
           <div class="reg-abas" role="tablist">${[["hist", "Histórico"], ["resumo", "Resumo"], ["acessos", "Acessos"]].map(([v, t]) => `<button type="button" role="tab" data-a="reg-aba" data-v="${v}" aria-selected="${aba === v}">${t}</button>`).join("")}</div>
           ${corpo}
         </aside>`;
@@ -4670,8 +4682,8 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
-      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear membro", texto: e.nome + " deixará de ter acesso ao painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear", caixa: "Confirme para bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
-      case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
+      case "equipe-bloquear": { ui.estMenu = ""; const e = pessoa(d.id); confirmar({ titulo: "Bloquear membro", texto: e.nome + " deixará de ter acesso ao painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear", caixa: "Confirme para bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
+      case "equipe-desbloquear": { ui.estMenu = ""; const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
       case "equipe-remover": { ui.estMenu = ""; const e = pessoa(d.id); confirmar({ titulo: "Remover membro", texto: e.nome + " sai da equipe e perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover", caixa: "Confirme para remover", icone: "remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); await registrar(null, "Removeu " + e.nome + " da equipe"); return e.nome + " saiu da equipe."; }); break; }
       default: return;
     }
