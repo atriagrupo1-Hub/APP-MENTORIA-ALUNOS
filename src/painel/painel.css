@@ -2839,3 +2839,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .pf-mostrar { padding: 0; font: inherit; font-size: 12px; font-weight: 700; color: var(--eq-azul-txt); background: none; border: 0; cursor: pointer; }
 .al-botao-ouro:disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 560px) { .pf-topo { flex-direction: column; align-items: center; } .pf-dados { grid-template-columns: 1fr; } }
+.com-foto.com-anel { padding: 3px; }
+.topo-av.com-anel, .eq-av.com-anel, .pf-av.com-anel { padding: 2px; }
+.pf-grande.com-anel { padding: 5px; box-shadow: none; }
+.com-anel > img { border: 2px solid var(--aa-cartao); }
