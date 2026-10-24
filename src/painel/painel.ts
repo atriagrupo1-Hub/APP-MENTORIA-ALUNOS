@@ -469,7 +469,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -3354,6 +3354,7 @@ export function montar(app: HTMLElement) {
     cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`,
     aberto: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 7.8-1.2"/></svg>`,
     cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>`,
+    fone: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6" rx="1.5"/></svg>`,
     coroa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/></svg>`,
     pontos: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>`,
     mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -3364,21 +3365,23 @@ export function montar(app: HTMLElement) {
   /** Cabeçalho dos modais da equipe: ícone, título, explicação e o X. */
   const cabModal = (ic: string, titulo: string, sub: string, perigo = false) => `<div class="eq-mcab${perigo ? " perigo" : ""}"><span class="eq-mic">${ic}</span><h2>${h(titulo)}</h2><button type="button" class="eq-x" data-a="fechar" aria-label="Fechar">${xis}</button></div>${sub ? `<p class="eq-msub">${h(sub)}</p>` : ""}`;
   function telaEquipe() {
-    const n = S.equipe.length;
+    const cls = (e: Pessoa) => e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
+    const filtros: [string, string, string][] = [["todos", "Todos", IC_EQ.grupo], ["dono", "Donos", IC_EQ.coroa], ["admin", "Administração", IC_EQ.grupo], ["sup", "Suporte", IC_EQ.fone]];
+    const lista = S.equipe.filter((e) => ui.filtroEq === "todos" || cls(e) === ui.filtroEq);
     return `
     <section class="tela ativa eq">
-      <div class="eq-banner"><span class="eq-banner-ic">${IC_EQ.grupo}</span><div><b>${p(n, "membro na equipe", "membros na equipe")}</b><span>Gerencie acessos, permissões e segurança da sua equipe.</span></div></div>
-      <div class="eq-lista">${S.equipe.map((e) => {
+      <div class="eq-filtros" role="group" aria-label="Filtrar por papel">${filtros.map(([v, t, ic]) => `<button type="button" class="eq-filtro" data-a="eq-filtro" data-v="${v}" aria-pressed="${ui.filtroEq === v}">${ic}<span>${t}</span><b>${v === "todos" ? S.equipe.length : S.equipe.filter((e) => cls(e) === v).length}</b></button>`).join("")}</div>
+      <div class="eq-lista">${lista.map((e) => {
         const pode = gere(e), papelCls = e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
         return `
         <article class="eq-card${e.bloqueada ? " bloq" : ""}">
           <span class="eq-av ${papelCls}">${h(iniciais(e.nome))}<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i></span>
           <div class="eq-quem">
-            <div class="eq-l1"><b>${h(e.nome)}</b><span class="eq-tag ${papelCls}">${h(e.papel)}</span>${e.papel === "Dono" ? `<span class="eq-coroa" title="Dono">${IC_EQ.coroa}</span>` : ""}${e.souEu ? `<span class="eq-voce">Você</span>` : ""}</div>
+            <div class="eq-l1"><b>${h(e.nome)}</b></div>
             <span>Login: <b>${h(e.login)}</b></span>
             <span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>
           </div>
-          <div class="eq-col"><small>Papel</small><span class="eq-pil ${papelCls}">${h(e.papel === "Dono" ? "Dono" : e.papel)}</span></div>
+          <div class="eq-col"><small>Papel</small><span class="eq-pil ${papelCls}">${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span></div>
           <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
           <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           <div class="eq-acoes">
@@ -3393,7 +3396,7 @@ export function montar(app: HTMLElement) {
                 <button type="button" role="menuitem" class="perigo" data-a="equipe-remover" data-id="${e.id}">Remover da equipe</button>
               </span>` : ""}</span>` : `<span class="eq-pts-vazio"></span>`}
           </div>
-        </article>`; }).join("") || `<div class="vazio">Ninguém na equipe ainda.</div>`}</div>
+        </article>`; }).join("") || `<div class="vazio">${S.equipe.length ? "Ninguém com esse papel." : "Ninguém na equipe ainda."}</div>`}</div>
     </section>`;
   }
 
@@ -4425,6 +4428,7 @@ export function montar(app: HTMLElement) {
       case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "codigo", titulo: "Código de acesso", texto: "Este é o código que " + e.nome + " usa para entrar no painel (login " + e.login + ").", codigo: e.codigo ?? "" }; break; }
       case "equipe-nova": ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
+      case "eq-filtro": ui.filtroEq = d.v; break;
       case "trocar-codigo": { ui.estMenu = "";
         const e = pessoa(d.id);
         void executar(async () => {
