@@ -87,7 +87,9 @@ type Aluna = {
 };
 type Nota = { id: string; texto: string; quem: string; quando: string };
 type Contato = { id: string; resultado: string; obs: string; quem: string; quando: string };
-type Hist = { id: string; aluna: string | null; quem: string; autorId: string; quando: string; texto: string };
+type Hist = { id: string; aluna: string | null; quem: string; autorId: string; quando: string; texto: string; refTipo: string; refId: string; ctx: string };
+/** Uma entrada no painel: do primeiro ao último sinal do navegador. */
+type Sessao = { id: string; perfil: string; inicio: string; fim: string };
 type Sugestao = { id: string; texto: string; quem: string; autorId: string; quando: string };
 type Estado = "moderar" | "publicado" | "oculto" | "removido";
 type Comentario = {
@@ -111,7 +113,7 @@ type Eu = { id: string; nome: string; papel: Papel };
 type Dados = {
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; removidos: Comentario[]; equipe: Pessoa[];
-  historico: Hist[]; sugestoes: Sugestao[];
+  historico: Hist[]; sessoes: Sessao[]; sugestoes: Sugestao[];
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
@@ -249,7 +251,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("anotacoes_aluna").select("id, aluna_id, texto, autor_nome, quando").order("quando"),
     supabase.from("contatos_aluna").select("id, aluna_id, resultado, observacao, autor_nome, quando").order("quando"),
     supabase.from("sugestoes").select("id, texto, autor_id, autor_nome, quando").order("quando", { ascending: false }),
-    supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto").order("quando", { ascending: false }).limit(1000),
+    supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
     supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada").maybeSingle(),
@@ -258,10 +260,11 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
     supabase.from("categorias_aba").select("*").order("ordem").order("criada_em"),
     supabase.from("categoria_itens").select("id, categoria_aba_id, tipo, item_id").order("ordem").order("criado_em"),
+    euP.then((e) => (e && e.papel === "Dono" ? supabase.from("sessoes_painel").select("id, perfil_id, inicio, ultimo_sinal").order("inicio", { ascending: false }).limit(3000) : null)),
   ]);
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await ondaA;
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR, catItensR] = await ondaB;
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR, catItensR, sessR] = await ondaB;
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -416,7 +419,8 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       icone: x.icone ?? "estrela", cor: x.cor ?? "dourado", visivel: !!x.visivel,
     })),
     fotos: fotosCache,
-    historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando, texto: x.texto })),
+    historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando, texto: x.texto, refTipo: x.ref_tipo ?? "", refId: x.ref_id ?? "", ctx: x.contexto ?? "" })),
+    sessoes: ((sessR?.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, perfil: x.perfil_id, inicio: x.inicio, fim: x.ultimo_sinal })),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
 }
@@ -462,7 +466,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -577,9 +581,12 @@ export function montar(app: HTMLElement) {
   const LIMITE_DESFAZER = 5;
   let pilha: { texto: string; quando: string; fn: () => Promise<void> }[] = [];
   /** Uma linha no histórico. Se o banco recusar, a ação em si já valeu — não desfaz nada. */
-  async function registrar(alunaId: string | null, texto: string) {
-    await supabase.from("historico_acoes").insert({ aluna_id: alunaId, texto: texto.slice(0, 500) });
+  /** Grava no Registro. `ref` diz de onde veio a ação ([tipo, id, contexto]) para o botão Ver. */
+  async function registrar(alunaId: string | null, texto: string, ref?: [string, string, string?]) {
+    await supabase.from("historico_acoes").insert({ aluna_id: alunaId, texto: texto.slice(0, 500), ref_tipo: ref?.[0] ?? null, ref_id: ref?.[1] ?? null, contexto: ref?.[2] ?? null });
   }
+  /** "Módulo 1 · Aula 2 · Curso" da aula, para o Registro. */
+  const ctxAula = (aid: string) => { const x = acharAula(aid); return x ? localAula(aid) + " · " + x.c.nome : ""; };
   type Resultado = string | void | { msg: string; desfazer?: () => Promise<void>; texto: string };
   function confirmar(opts: Record<string, string>, fn: () => Promise<Resultado>) {
     pend = fn; ui.modal = Object.assign({ tipo: "confirmar" }, opts); ui.focar = "confirmaPalavra";
@@ -738,7 +745,7 @@ export function montar(app: HTMLElement) {
 
   function painel() {
     const [t, cont] = titulo();
-    const restrita = (id: string) => (id === "equipe" || id === "registro") && !podeEquipe();
+    const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
     const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
@@ -1718,7 +1725,12 @@ export function montar(app: HTMLElement) {
     seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg>`,
     baixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>`,
     ver: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`,
+    lixo: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg>`,
+    entrar: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 7V4.5h9.5v15H10V17"/><path d="M4 12h10M10.5 8.5L14 12l-3.5 3.5"/></svg>`,
   };
+  /** Duração de uma entrada (ou da soma delas). */
+  const duracao = (ms: number) => { const m = Math.round(ms / 60000); return m < 1 ? "menos de 1 min" : m < 60 ? m + " min" : Math.floor(m / 60) + "h " + String(m % 60).padStart(2, "0") + "min"; };
+  const msSessao = (x: Sessao) => Math.max(0, new Date(x.fim).getTime() - new Date(x.inicio).getTime());
   /** O registro passa pelo período escolhido em "Todas as datas"? */
   function noPeriodo(iso: string) {
     const k = diaFuso(iso), hj = diaFuso(new Date()), menos = (n: number) => diaFuso(new Date(Date.now() - n * 864e5));
@@ -1751,13 +1763,13 @@ export function montar(app: HTMLElement) {
       </span>` : ""}</span>
     </span>`;
   }
-  type PessoaReg = { id: string; nome: string; login: string; papel: Papel | ""; ultimo: string; criado: string; acts: Hist[] };
+  type PessoaReg = { id: string; nome: string; login: string; papel: Papel | ""; ultimo: string; criado: string; acts: Hist[]; ses: Sessao[] };
   function pessoasRegistro(): PessoaReg[] {
     const hist = S.historico.filter((x) => noPeriodo(x.quando));
-    const ps: PessoaReg[] = S.equipe.map((e) => ({ id: e.id, nome: e.nome, login: e.login, papel: e.papel, ultimo: e.ultimo, criado: e.criado, acts: [] }));
+    const ps: PessoaReg[] = S.equipe.map((e) => ({ id: e.id, nome: e.nome, login: e.login, papel: e.papel, ultimo: e.ultimo, criado: e.criado, acts: [], ses: S.sessoes.filter((x) => x.perfil === e.id && noPeriodo(x.inicio)) }));
     hist.forEach((x) => {
       let p0 = ps.find((y) => y.id === x.autorId);
-      if (!p0) { p0 = { id: x.autorId || "sem:" + x.quem, nome: x.quem || "Sem nome", login: "", papel: "", ultimo: "", criado: "", acts: [] }; ps.push(p0); }
+      if (!p0) { p0 = { id: x.autorId || "sem:" + x.quem, nome: x.quem || "Sem nome", login: "", papel: "", ultimo: "", criado: "", acts: [], ses: [] }; ps.push(p0); }
       p0.acts.push(x);
     });
     ps.forEach((y) => y.acts.sort((a, b) => b.quando.localeCompare(a.quando)));
@@ -1765,10 +1777,21 @@ export function montar(app: HTMLElement) {
   }
   const clsPapel = (p0: Papel | "") => p0 === "Dono" ? "dono" : p0 === "Administrador" ? "admin" : p0 === "Suporte" ? "sup" : "fora";
   /** Linha do registro: data/hora, texto e o botão Ver quando há uma aluna ligada. */
+  /** Para onde o Ver leva: a origem gravada na ação, ou a ficha da aluna. */
+  function destinoReg(x: Hist): [string, string] | null {
+    const t = x.refTipo, id = x.refId;
+    if (t === "comentario" && (S.comentarios.some((k) => k.id === id) || S.removidos.some((k) => k.id === id))) return ["comentario", id];
+    if (t === "catx" && catAba(id)) return ["catx", id];
+    if (t === "botao" && cat(id)) return ["botao", id];
+    if (t === "equipe" && S.equipe.some((e) => e.id === id)) return ["equipe", id];
+    if (x.aluna && S.alunas.some((y) => y.id === x.aluna)) return ["aluna", x.aluna];
+    return null;
+  }
   function itemReg(x: Hist, comData: boolean) {
     const al = x.aluna ? S.alunas.find((y) => y.id === x.aluna) : undefined;
     const d = new Date(x.quando), hr = d.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
-    return `<li><span class="reg-q">${comData ? d.toLocaleDateString("pt-BR", { timeZone: FUSO }) + `<i>·</i>` : ""}${hr}</span><span class="reg-t">${h(x.texto)}${al && !x.texto.includes(al.nome) ? `<small>${h(al.nome)}</small>` : ""}</span>${al && !comData ? `<button type="button" class="reg-ver" data-a="ficha" data-id="${al.id}">${IC_REG.ver}Ver</button>` : ""}</li>`;
+    const sub = [al && !x.texto.includes(al.nome) ? al.nome : "", x.ctx].filter(Boolean).join(" · "), ir = comData ? null : destinoReg(x);
+    return `<li><span class="reg-q">${comData ? d.toLocaleDateString("pt-BR", { timeZone: FUSO }) + `<i>·</i>` : ""}${hr}</span><span class="reg-t">${h(x.texto)}${sub ? `<small>${h(sub)}</small>` : ""}</span>${ir ? `<button type="button" class="reg-ver" data-a="reg-ir" data-k="${ir[0]}" data-id="${h(ir[1])}">${IC_REG.ver}Ver</button>` : ""}${comData ? "" : `<button type="button" class="reg-apagar" data-a="reg-apagar" data-id="${x.id}" aria-label="Apagar este registro" title="Apagar este registro">${IC_REG.lixo}</button>`}</li>`;
   }
   function telaRegistro() {
     const ps = pessoasRegistro();
@@ -1794,6 +1817,7 @@ export function montar(app: HTMLElement) {
                 ${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>` : ""}
               </div>
               <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${y.papel ? h(ultimoAcesso(y.ultimo)) : "—"}</span></div>
+              <div class="eq-col"><small>Tempo total</small><span class="eq-ult">${IC_REG.rel}${y.ses.length ? duracao(y.ses.reduce((t, x) => t + msSessao(x), 0)) : "—"}</span></div>
               <div class="eq-col"><small>Ações realizadas</small><span class="eq-ult">${IC_REG.doc}${y.acts.length}</span></div>
               <button type="button" class="reg-abrir" data-a="reg-sel" data-id="${h(y.id)}" aria-label="Ver o histórico de ${h(y.nome)}" aria-pressed="${y.id === ui.regSel}">${IC_REG.seta}</button>
             </div>
@@ -1827,20 +1851,26 @@ export function montar(app: HTMLElement) {
         <div><dt>Ações realizadas</dt><dd>${y.acts.length}</dd></div>
         <div><dt>Dias com atividade</dt><dd>${dias}</dd></div>
         <div><dt>Alunas envolvidas</dt><dd>${alunas}</dd></div>
+        <div><dt>Entradas no painel</dt><dd>${y.ses.length}</dd></div>
+        <div><dt>Tempo no painel</dt><dd>${duracao(y.ses.reduce((t, x) => t + msSessao(x), 0))}</dd></div>
         <div><dt>Primeira ação no período</dt><dd>${prim ? h(dataHora(prim.quando)) : "—"}</dd></div>
         <div><dt>Última ação no período</dt><dd>${ul ? h(dataHora(ul.quando)) : "—"}</dd></div>
       </dl><p class="reg-nota">${IC_EQ.info}Contagem feita com os registros do período escolhido em “${h(rotuloDatas())}”.</p>`;
     } else {
+      const hm = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
       corpo = `<dl class="reg-res">
         <div><dt>Último acesso ao painel</dt><dd>${y.papel ? h(ultimoAcesso(y.ultimo)) : "—"}</dd></div>
-        <div><dt>Na equipe desde</dt><dd>${y.criado ? h(dataHora(y.criado)) : "—"}</dd></div>
-      </dl><p class="reg-nota">${IC_EQ.info}O painel guarda apenas o último acesso de cada pessoa. Entradas anteriores e tempo de uso não são registrados.</p>`;
+        <div><dt>Tempo no período</dt><dd>${duracao(y.ses.reduce((t, x) => t + msSessao(x), 0))}</dd></div>
+      </dl>
+      ${y.ses.length ? `<ul class="reg-itens reg-ses">${y.ses.map((x) => `<li><span class="reg-q">${new Date(x.inicio).toLocaleDateString("pt-BR", { timeZone: FUSO })}</span><span class="reg-t">${IC_REG.entrar}${hm(x.inicio)} – ${hm(x.fim)}</span><b>${duracao(msSessao(x))}</b></li>`).join("")}</ul>` : `<p class="reg-nada">Nenhuma entrada no painel neste período.</p>`}
+      <p class="reg-nota">${IC_EQ.info}Cada entrada vai de quando o painel foi aberto até o último minuto em que ficou aberto na tela.</p>`;
     }
     return `
         <aside class="reg-painel" aria-label="Histórico de ${h(y.nome)}">
           <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : ""}</div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div></div>
           <div class="reg-abas" role="tablist">${[["hist", "Histórico"], ["resumo", "Resumo"], ["acessos", "Acessos"]].map(([v, t]) => `<button type="button" role="tab" data-a="reg-aba" data-v="${v}" aria-selected="${aba === v}">${t}</button>`).join("")}</div>
           ${corpo}
+          ${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}">${IC_REG.lixo}Apagar registros de ${h(primeiroNome(y.nome))} ${ui.regData === "todas" ? "" : "neste período"}</button>` : ""}
         </aside>`;
   }
 
@@ -4122,7 +4152,7 @@ export function montar(app: HTMLElement) {
         const nome = nomeItem(tipo, item);
         void executar(async () => {
           const r = falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: x.id, tipo, item_id: item, ordem: itensDe(x.id).length }).select("id").single());
-          await registrar(null, "Colocou " + nome + " na categoria " + x.nome);
+          await registrar(null, "Colocou " + nome + " na categoria " + x.nome, ["catx", x.id]);
           return { msg: nome + " agora está na categoria " + x.nome + ".", texto: "item da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categoria_itens").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
@@ -4131,7 +4161,7 @@ export function montar(app: HTMLElement) {
         const it = S.catItens.find((y) => y.id === d.id)!; const x = catAba(it.cat); const nome = nomeItem(it.tipo, it.item);
         void executar(async () => {
           falhou(await supabase.from("categoria_itens").delete().eq("id", it.id).select("id").single());
-          await registrar(null, "Tirou " + nome + " da categoria " + (x?.nome || ""));
+          await registrar(null, "Tirou " + nome + " da categoria " + (x?.nome || ""), x ? ["catx", x.id] : undefined);
           return { msg: nome + " saiu da categoria " + (x?.nome || "") + ". Nas outras categorias, continua.", texto: "item da categoria " + (x?.nome || ""), desfazer: async () => { falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: it.cat, tipo: it.tipo, item_id: it.item }).select("id").single()); } };
         });
         return;
@@ -4160,7 +4190,7 @@ export function montar(app: HTMLElement) {
           const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: x.aba, titulo: x.nome + " (cópia)", descricao: x.descricao || null, capa_path: x.capa || null, ordem: irmas.length, publicado: false }).select("id").single());
           const ids = irmas.map((y) => y.id); ids.splice(irmas.indexOf(x) + 1, 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "categorias_aba", p_ids: ids });
-          await registrar(null, "Duplicou a categoria " + x.nome);
+          await registrar(null, "Duplicou a categoria " + x.nome, ["catx", r.data!.id]);
           return { msg: "Categoria duplicada. A cópia está oculta, sem cursos.", texto: "cópia da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
@@ -4230,7 +4260,7 @@ export function montar(app: HTMLElement) {
           const r = falhou(await supabase.from("destaques_inicio").insert({ imagem_path: x.imagem || null, rotulo: x.rotulo, titulo: x.titulo + " (cópia)", descricao: x.descricao || null, botao: x.botao, destino: x.destino, categoria_id: x.destino === "categoria" && x.categoriaId ? x.categoriaId : null, categoria_nome: x.categoriaNome || null, icone: x.icone, cor: x.cor, visivel: false, ordem: S.destaques.length + 1 }).select("id").single());
           const ids = S.destaques.map((k) => k.id); ids.splice(pos + 1, 0, r.data!.id);
           for (let k = 0; k < ids.length; k++) falhou(await supabase.from("destaques_inicio").update({ ordem: k + 1 }).eq("id", ids[k]).select("id").single());
-          await registrar(null, "Duplicou o destaque " + x.titulo);
+          await registrar(null, "Duplicou o destaque " + x.titulo, ["destaque", r.data!.id]);
           return { msg: "Destaque duplicado. A cópia está oculta.", texto: "cópia do destaque " + x.titulo, desfazer: async () => { falhou(await supabase.from("destaques_inicio").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
@@ -4293,7 +4323,7 @@ export function montar(app: HTMLElement) {
           const r = falhou(await supabase.from("categorias").insert({ titulo: k.nome + " (cópia)", descricao: k.descricao || null, capa_path: k.capa || null, ordem: S.cats.length, publicado: false }).select("id").single());
           const ids = S.cats.map((x) => x.id); ids.splice(pos + 1, 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: ids });
-          await registrar(null, "Duplicou o botão " + k.nome);
+          await registrar(null, "Duplicou o botão " + k.nome, ["botao", r.data!.id]);
           return { msg: "Botão duplicado. A cópia está oculta, sem categorias.", texto: "cópia da aba " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
@@ -4304,7 +4334,7 @@ export function montar(app: HTMLElement) {
         const k = cat(d.id)!; const mostrar = !k.visivel;
         const trabalho = async () => {
           falhou(await supabase.from("categorias").update({ bloqueada_geral: !mostrar }).eq("id", k.id).select("id").single());
-          await registrar(null, (mostrar ? "Mostrou" : "Ocultou") + " a categoria " + k.nome);
+          await registrar(null, (mostrar ? "Mostrou" : "Ocultou") + " a categoria " + k.nome, ["botao", k.id]);
           return { msg: mostrar ? k.nome + " está visível na área de membros." : k.nome + " foi ocultada da área de membros.", texto: "visibilidade da categoria " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update({ bloqueada_geral: mostrar }).eq("id", k.id).select("id").single()); } };
         };
         if (mostrar) { void executar(trabalho); return; }
@@ -4428,14 +4458,14 @@ export function montar(app: HTMLElement) {
           const x = catAba(id); if (!x) break; const antes = { publicado: x.pub, bloqueada_geral: x.bloq };
           if (estado3(antes.publicado, antes.bloqueada_geral) === novo) break;
           const nome = novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "oculta";
-          void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou a categoria " + x.nome + " " + nome); return { msg: x.nome + ": " + nome + ".", texto: "estado da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(antes).eq("id", id).select("id").single()); } }; });
+          void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou a categoria " + x.nome + " " + nome, ["catx", x.id]); return { msg: x.nome + ": " + nome + ".", texto: "estado da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(antes).eq("id", id).select("id").single()); } }; });
           return;
         }
         if (tipo === "cat") {
           const k = cat(id); if (!k) break; const antes = { publicado: k.pub, bloqueada_geral: !k.visivel };
           if (estado3(antes.publicado, antes.bloqueada_geral) === novo) break;
           const nome = novo === "ativo" ? "ativa" : novo === "bloqueado" ? "bloqueada" : "oculta";
-          void executar(async () => { falhou(await supabase.from("categorias").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou o botão " + k.nome + " " + nome); return { msg: k.nome + ": " + nome + ".", texto: "estado da aba " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(antes).eq("id", id).select("id").single()); } }; });
+          void executar(async () => { falhou(await supabase.from("categorias").update({ publicado: pub, bloqueada_geral: bloq }).eq("id", id).select("id").single()); await registrar(null, "Deixou o botão " + k.nome + " " + nome, ["botao", k.id]); return { msg: k.nome + ": " + nome + ".", texto: "estado da aba " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(antes).eq("id", id).select("id").single()); } }; });
           return;
         }
         if (tipo === "curso") {
@@ -4543,7 +4573,7 @@ export function montar(app: HTMLElement) {
           ? { titulo: "Aprovar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele passa a aparecer para todas as alunas e vai para a aba Publicados. Dá para ocultar depois.", rotulo: "Aprovar comentário" }
           : { titulo: "Ocultar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele deixa de aparecer para as alunas e vai para a aba Ocultos. Lá dá para aprovar de novo ou responder.", rotulo: "Ocultar comentário" }, async () => {
           await rpc("moderar_comentario", { p_comentario: k.id, p_status: novo });
-          await registrar(k.autoraId || null, (novo === "publicado" ? "Publicou" : "Ocultou") + " um comentário de " + k.autora);
+          await registrar(k.autoraId || null, (novo === "publicado" ? "Publicou" : "Ocultou") + " um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]);
           return { msg: novo === "publicado" ? "Comentário aprovado. Está na aba Publicados." : "Comentário ocultado. Está na aba Ocultos.", texto: "moderação de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: antes }); } };
         });
         break;
@@ -4556,7 +4586,7 @@ export function montar(app: HTMLElement) {
           const k = S.comentarios.find((x) => x.id === d.id);
           await rpc("moderar_comentario", { p_comentario: d.id, p_status: "removido" });
           for (const rid of k?.respIds ?? []) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });
-          await registrar(k?.autoraId || null, "Removeu um comentário de " + (k?.autora ?? "uma aluna"));
+          await registrar(k?.autoraId || null, "Removeu um comentário de " + (k?.autora ?? "uma aluna"), ["comentario", d.id, k ? ctxAula(k.aula) : ""]);
           return "Comentário apagado. Está na aba Apagados, de onde pode ser restaurado.";
         });
         break;
@@ -4570,6 +4600,33 @@ export function montar(app: HTMLElement) {
       case "reg-aba": ui.regAba = d.v; break;
       case "reg-mais": ui.regMais[d.id] = (ui.regMais[d.id] || 3) + 10; break;
       case "reg-dia": ui.regDias.add(d.v); break;
+      case "reg-ir": {
+        if (d.k === "comentario") { const k = S.comentarios.find((x) => x.id === d.id); ui.tab = "comentarios"; ui.filtroCom = k ? k.estado : "removido"; ui.comAlvo = d.id; ui.respondendo = null; render(); document.getElementById("com-" + d.id)?.scrollIntoView({ block: "center" }); return; }
+        if (d.k === "catx") { ui.catxSel = d.id; ui.tab = "catAba"; }
+        else if (d.k === "botao") ui.tab = "layout";
+        else if (d.k === "equipe") ui.tab = "equipe";
+        else if (d.k === "aluna") { ui.tab = "ficha"; ui.ficha = d.id; ui.verCodigo = null; }
+        window.scrollTo(0, 0); break;
+      }
+      case "reg-apagar": {
+        const x = S.historico.find((y) => y.id === d.id); if (!x) return;
+        confirmar({ titulo: "Apagar este registro?", texto: "“" + x.texto + "” sai do Registro para sempre.", rotulo: "Apagar registro" }, async () => {
+          falhou(await supabase.from("historico_acoes").delete().eq("id", x.id).select("id"));
+          return "Registro apagado.";
+        });
+        break;
+      }
+      case "reg-apagar-pessoa": {
+        const y = pessoasRegistro().find((z) => z.id === d.id); if (!y) return;
+        const per = ui.regData === "todas" ? "" : " de " + rotuloDatas();
+        confirmar({ titulo: "Apagar os registros de " + y.nome + "?", texto: p(y.acts.length, "ação", "ações") + " e " + p(y.ses.length, "entrada no painel", "entradas no painel") + per + " saem do Registro para sempre.", palavra: "APAGAR", rotulo: "Apagar registros" }, async () => {
+          const ids = y.acts.map((x) => x.id), sids = y.ses.map((x) => x.id);
+          for (let i = 0; i < ids.length; i += 200) falhou(await supabase.from("historico_acoes").delete().in("id", ids.slice(i, i + 200)).select("id"));
+          for (let i = 0; i < sids.length; i += 200) falhou(await supabase.from("sessoes_painel").delete().in("id", sids.slice(i, i + 200)).select("id"));
+          return "Registros de " + y.nome + " apagados.";
+        });
+        break;
+      }
       case "reg-data": ui.regData = d.v; ui.estMenu = ""; ui.regMais = {}; ui.regDias.clear(); break;
       case "reg-periodo": {
         let de = (document.getElementById("regDe") as HTMLInputElement | null)?.value || "", ate = (document.getElementById("regAte") as HTMLInputElement | null)?.value || "";
@@ -4583,14 +4640,14 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           const velho = e.codigo;
           const codigo = String(await rpc("trocar_codigo", { p_id: e.id }));
-          await registrar(null, "Trocou o código de " + e.nome);
+          await registrar(null, "Trocou o código de " + e.nome, ["equipe", e.id]);
           if (velho) pilha = [{ texto: "troca do código de " + e.nome, quando: new Date().toISOString(), fn: async () => { await rpc("mudar_codigo", { p_id: e.id, p_codigo: velho }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "codigo", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para a pessoa.", codigo };
         });
         return;
       }
-      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear membro", texto: e.nome + " deixará de ter acesso ao painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear", caixa: "Confirme para bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
-      case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
+      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear membro", texto: e.nome + " deixará de ter acesso ao painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear", caixa: "Confirme para bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
+      case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe", ["equipe", e.id]); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
       case "equipe-remover": { ui.estMenu = ""; const e = pessoa(d.id); confirmar({ titulo: "Remover membro", texto: e.nome + " sai da equipe e perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover", caixa: "Confirme para remover", icone: "remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); await registrar(null, "Removeu " + e.nome + " da equipe"); return e.nome + " saiu da equipe."; }); break; }
       default: return;
     }
@@ -4702,7 +4759,7 @@ export function montar(app: HTMLElement) {
         const aba = form.dataset.id || ""; const irmas = S.catsAba.filter((y) => y.aba === aba);
         void executar(async () => {
           const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), ordem: irmas.length }).select("id").single());
-          await registrar(null, "Criou a categoria " + v("nome")); ui.modal = null; ui.catxEditar = r.data!.id;
+          await registrar(null, "Criou a categoria " + v("nome"), ["catx", r.data!.id]); ui.modal = null; ui.catxEditar = r.data!.id;
           return { msg: "Categoria criada. Coloque a capa e salve.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
@@ -4712,21 +4769,21 @@ export function montar(app: HTMLElement) {
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
         void executar(async () => {
           falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null }).eq("id", id).select("id").single());
-          await registrar(null, "Editou a categoria " + v("nome")); ui.catxEditar = ""; delete previas["catx-" + id];
+          await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); ui.catxEditar = ""; delete previas["catx-" + id];
           return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
         return;
       }
       case "aba-renomear": {
         const k = cat(id)!; const velho = k.nome;
-        void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); await registrar(null, "Renomeou o botão " + velho + " para " + v("nome")); ui.abaRen = ""; return { msg: "Botão renomeado.", texto: "nome da aba " + velho, desfazer: async () => { falhou(await supabase.from("categorias").update({ titulo: velho }).eq("id", id).select("id").single()); } }; });
+        void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); await registrar(null, "Renomeou o botão " + velho + " para " + v("nome"), ["botao", id]); ui.abaRen = ""; return { msg: "Botão renomeado.", texto: "nome da aba " + velho, desfazer: async () => { falhou(await supabase.from("categorias").update({ titulo: velho }).eq("id", id).select("id").single()); } }; });
         return;
       }
       case "cat-add":
         void executar(async () => {
           const r = falhou(await supabase.from("categorias").insert({ titulo: v("nome"), ordem: S.cats.length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "categorias", p_ids: [...S.cats.map((k) => k.id), r.data!.id] });
-          await registrar(null, "Criou o botão " + v("nome"));
+          await registrar(null, "Criou o botão " + v("nome"), ["botao", r.data!.id]);
           ui.abaNova = false; ui.layAba = r.data!.id;
           return { msg: "Botão criado. Ele já aparece no menu do app.", texto: "criação da aba " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias").delete().eq("id", r.data!.id).select("id").single()); } };
         });
@@ -4772,7 +4829,7 @@ export function montar(app: HTMLElement) {
           if (id === "novo") falhou(await supabase.from("destaques_inicio").insert({ ...linha, ordem: S.destaques.length + 1 }).select("id").single());
           else falhou(await supabase.from("destaques_inicio").update(linha).eq("id", id).select("id").single());
           delete previas["dest-" + id]; ui.destEditar = null;
-          await registrar(null, (id === "novo" ? "Criou" : "Editou") + " o destaque " + v("titulo")); return "Destaque salvo.";
+          await registrar(null, (id === "novo" ? "Criou" : "Editou") + " o destaque " + v("titulo"), id === "novo" ? undefined : ["destaque", id]); return "Destaque salvo.";
         });
         return;
       }
@@ -4785,7 +4842,7 @@ export function montar(app: HTMLElement) {
           const nova = ui.catNova === id;
           falhou(await supabase.from("categorias").update({ titulo: v("nome"), descricao: desc || null, capa_path: novaCapa, ...(icSel ? { icone: icSel.value } : {}), ...(nova ? { publicado: true } : {}) }).eq("id", id).select("id").single());
           if (nova) ui.catNova = "";
-          await registrar(null, "Editou o botão " + v("nome"));
+          await registrar(null, "Editou o botão " + v("nome"), ["botao", id]);
           ui.catEditar = null; delete previas["cat-" + id];
           return { msg: "Botão salvo.", texto: "edição da aba " + k.nome, desfazer: async () => { falhou(await supabase.from("categorias").update(velho).eq("id", id).select("id").single()); } };
         });
@@ -4961,7 +5018,7 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           await rpc("moderar_comentario", { p_comentario: k.id, p_status: status });
           if (comResp) for (const rid of k.respIds) await rpc("moderar_comentario", { p_comentario: rid, p_status: "publicado" });
-          await registrar(k.autoraId || null, "Restaurou um comentário de " + k.autora);
+          await registrar(k.autoraId || null, "Restaurou um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]);
           ui.modal = null; ui.filtroCom = destino === "publicar" ? "publicado" : destino === "ocultar" ? "oculto" : "moderar"; ui.comAlvo = k.id;
           if (destino === "responder" && !(comResp && k.respIds.length)) { ui.respondendo = k.id; ui.focar = "respostaCampo"; }
           return { msg: "Comentário restaurado. Está na aba " + (destino === "publicar" ? "Publicados" : destino === "ocultar" ? "Ocultos" : "Para moderar") + ".", texto: "restauração de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: "removido" }); if (comResp) for (const rid of k.respIds) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" }); } };
@@ -4974,7 +5031,7 @@ export function montar(app: HTMLElement) {
           const antes = k?.resposta ?? ""; const estadoAntes = k?.estado === "moderar" ? "pendente" : k?.estado;
           const aprovarCb = form.querySelector<HTMLInputElement>('input[name="aprovar"]');
           const rid = String(await rpc("responder_comentario", { p_comentario: id, p_texto: v("resposta"), p_publicar: aprovarCb ? aprovarCb.checked : true }));
-          await registrar(k?.autoraId || null, "Respondeu um comentário de " + (k?.autora ?? "uma aluna"));
+          await registrar(k?.autoraId || null, "Respondeu um comentário de " + (k?.autora ?? "uma aluna"), ["comentario", id, k ? ctxAula(k.aula) : ""]);
           ui.respondendo = null;
           return {
             msg: aprovarCb && !aprovarCb.checked ? "Resposta guardada. Ela aparece para a aluna quando o comentário for aprovado." : "Resposta enviada e publicada.", texto: "resposta a " + (k?.autora ?? "uma aluna"),
@@ -4998,7 +5055,7 @@ export function montar(app: HTMLElement) {
         const antes = { nome: e.nome, login: e.login, papel: e.papel === "Administrador" ? "admin" : e.papel === "Dono" ? "dono" : "suporte", codigo: e.codigo ?? "" };
         void executar(async () => {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
-          await registrar(null, "Editou " + nome + " na equipe");
+          await registrar(null, "Editou " + nome + " na equipe", ["equipe", e.id]);
           ui.modal = null;
           return { msg: "Dados de " + nome + " salvos.", texto: "edição de " + nome + " na equipe", desfazer: async () => { await rpc("editar_colaborador", { p_id: e.id, p_nome: antes.nome, p_login: antes.login, p_papel: antes.papel, p_codigo: antes.codigo }); } };
         });
@@ -5014,7 +5071,7 @@ export function montar(app: HTMLElement) {
         const papel = v("papel") === "Administrador" ? "admin" : "suporte";
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo });
-          await registrar(null, "Adicionou " + v("nome") + " à equipe");
+          await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para a pessoa entrar no painel.", codigo: String(r.codigo ?? "") };
         });
@@ -5442,6 +5499,20 @@ export function montar(app: HTMLElement) {
   app.addEventListener("dragend", () => { ui.arrasto = null; soltarTexto(); document.querySelectorAll("[data-arrasta].arrastando, [data-arrasta].alvo").forEach((x) => x.classList.remove("arrastando", "alvo")); });
 
   /* ---------- sessão ---------- */
+  // Sinal de vida enquanto o painel está aberto e visível: o banco junta os
+  // sinais numa entrada (sessoes_painel) e daí sai o tempo de uso no Registro.
+  let sessaoId: string | null = null, sinalLigado = false;
+  async function sinal() {
+    if (!eu || document.hidden) return;
+    try { const r = await supabase.rpc("sinal_painel", { p_sessao: sessaoId }); if (!r.error && r.data) sessaoId = String(r.data); } catch { /* sem rede: tenta no próximo */ }
+  }
+  function ligarSinal() {
+    void sinal();
+    if (sinalLigado) return;
+    sinalLigado = true;
+    setInterval(() => void sinal(), 60_000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) void sinal(); });
+  }
   async function abrirSessao(acabouDeEntrar: boolean) {
     try {
       // Quem é e os dados saem juntos; se não for da equipe, os dados são descartados.
@@ -5455,6 +5526,7 @@ export function montar(app: HTMLElement) {
         return;
       }
       S = await dadosP;
+      ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
