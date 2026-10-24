@@ -1377,3 +1377,23 @@ html[data-tema="claro"] .pb-lista .pb-item { background: #fff; }
 html[data-tema="claro"] .pb-lista .pb-nome { color: #2a2218; }
 .cat-grade.pg-est-minimalista .ex-card { box-shadow: none; }
 .cat-grade.pg-est-borda .ex-card { border-width: 2px; }
+
+/* Perfil configurável no painel (Configurações → Perfil) */
+.pf-al-moldura { margin-top: 14px; padding: 18px 16px; border: 1px solid rgba(212,177,112,.55); border-radius: 10px; }
+.pf-foto-al { display: grid; place-items: center; margin: 14px 0 18px; }
+.pf-foto-circ { position: relative; display: grid; place-items: center; width: 132px; height: 132px; padding: 0; font: inherit; font-size: 46px; color: #1a1206; background: #e9d9b8; border: 3px solid #c9a25c; border-radius: 50%; box-shadow: 0 0 26px -8px rgba(230,184,90,.8); cursor: pointer; }
+.pf-foto-circ img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pf-foto-circ i { position: absolute; right: 2px; bottom: 6px; display: grid; place-items: center; width: 34px; height: 34px; color: #fff; background: #1b1714; border: 2px solid #c9a25c; border-radius: 50%; }
+.pf-foto-circ i svg { width: 16px; height: 16px; }
+.pf-icone { color: #8a6424; cursor: default; }
+.pf-icone svg { width: 58px; height: 58px; }
+.pf-al-bts { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.pf-al-bt { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; font: inherit; font-size: 15px; font-weight: 600; color: #1a1206; text-align: left; text-decoration: none; background: linear-gradient(180deg, #e3bd6e, #b8955a); border: 0; border-radius: 10px; cursor: pointer; }
+.pf-al-bt svg { width: 20px; height: 20px; flex: none; }
+.pf-al-bt span { flex: 1; }
+.pf-al-bt b { display: grid; place-items: center; width: 24px; height: 24px; font-size: 16px; color: #e3bd6e; background: #1b1714; border-radius: 50%; }
+.pf-al-minimalista .pf-al-bt { color: var(--texto, #f3ead8); background: none; border: 1px solid rgba(212,177,112,.45); }
+.pf-al-minimalista .pf-al-bt b { background: none; border: 1px solid rgba(212,177,112,.6); }
+.pf-al-txt { margin: 18px 0 0; font-size: 14px; line-height: 1.5; color: var(--texto-2, #cfc4b0); text-align: center; }
+html[data-tema="claro"] .pf-al-minimalista .pf-al-bt { color: #2a2218; }
+.pf-foto-al .pf-foto-circ { border-radius: 50% !important; padding: 0 !important; -webkit-appearance: none; appearance: none; }

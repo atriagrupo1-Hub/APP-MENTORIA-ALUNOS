@@ -3095,3 +3095,36 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .pv-pe-minimalista .pv-pb { border-color: transparent; }
 .pv-pb.fech img { filter: blur(1.5px) brightness(.6); }
 @media (max-width: 900px) { .cfg-2l { grid-template-columns: 1fr; } .cfg-catl { flex-wrap: wrap; } }
+
+/* Configurações → Perfil */
+.cfg-r3 { grid-template-columns: repeat(3, 1fr); }
+.cfg-radio.dupla { align-items: flex-start; min-height: 58px; padding: 10px 14px; }
+.cfg-radio.dupla input { margin-top: 3px; }
+.cfg-radio.dupla span { display: flex; flex-direction: column; }
+.cfg-radio.dupla b { font-size: 14px; font-weight: 500; }
+.cfg-radio.dupla em { font-style: normal; font-size: 12px; color: var(--texto-3); }
+.cfg-icfix { cursor: default; }
+.cfg-pbtxt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cfg-pbtxt b { font-size: 14px; font-weight: 500; }
+.cfg-pbtxt small { font-size: 12px; color: var(--texto-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbt-form:not(:has(option[value="link"]:checked)) .pbt-url { display: none; }
+.modal:has(.pbt-form) { max-width: 520px; }
+.pv-perfil { padding: 14px 0 0; }
+.pv-pl-moldura { margin-top: 10px; padding: 12px 10px; border: 1px solid rgba(212, 177, 112, .55); border-radius: 6px; }
+.pv-ptit { font-family: "Cormorant Garamond", Georgia, serif; font-size: 12px; color: #e3bd6e; }
+.pv-perfil h4 { margin: 2px 0 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 19px; font-weight: 600; }
+.pv-pfoto { position: relative; display: grid; place-items: center; margin: 10px 0; }
+.pv-pcirc { display: grid; place-items: center; width: 84px; height: 84px; font-size: 26px; color: #5a4320; background: #e9d9b8; border: 2px solid #c9a25c; border-radius: 50%; }
+.pv-pcirc.com-foto img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.pv-pic svg { width: 38px; height: 38px; fill: none; stroke: #8a6424; stroke-width: 1.5; }
+.pv-pfoto i { position: absolute; left: calc(50% + 22px); bottom: 0; display: grid; place-items: center; width: 22px; height: 22px; color: #fff; background: #1b1714; border: 1.5px solid #c9a25c; border-radius: 50%; }
+.pv-pfoto i svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.pv-pbts { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+.pv-pbts span { display: flex; align-items: center; gap: 7px; min-height: 30px; padding: 0 8px; font-size: 10px; font-weight: 700; color: #1a1206; background: linear-gradient(180deg, #e3bd6e, #b8955a); border-radius: 6px; }
+.pv-pl-minimalista .pv-pbts span { color: #f3ead8; background: none; border: 1px solid rgba(212, 177, 112, .45); }
+.pv-pbts svg { width: 13px; height: 13px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pv-pbts em { flex: 1; font-style: normal; }
+.pv-pbts b { display: grid; place-items: center; width: 15px; height: 15px; font-size: 10px; color: #e3bd6e; background: #1b1714; border-radius: 50%; }
+.pv-ptxt { margin: 10px 0 0; font-size: 9px; color: #cfc4b0; text-align: center; }
+@media (max-width: 700px) { .cfg-r3 { grid-template-columns: 1fr; } }
+.pv-pfo { background: radial-gradient(circle at 50% 35%, #f5ead2, #c9a25c); }
