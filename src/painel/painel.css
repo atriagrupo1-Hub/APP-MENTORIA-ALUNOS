@@ -2741,7 +2741,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .reg-card { padding: 16px 18px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
 .reg-card.sel { border-color: var(--eq-ouro); box-shadow: var(--aa-sombra), 0 0 0 1px var(--eq-ouro); }
 .reg-topo { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; }
-.reg-dados { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto auto; gap: 14px; align-items: start; }
+.reg-dados { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto minmax(0, 1fr) auto; gap: 14px; align-items: start; }
 .reg-dados .eq-col { padding: 0; border: 0; min-width: 0; }
 .reg-dados .eq-col > b, .reg-dados .eq-col > span { overflow-wrap: anywhere; }
 .reg-num { display: flex; flex-wrap: wrap; gap: 0; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha-suave); }
@@ -2906,7 +2906,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .lado-bloq { opacity: .55; cursor: not-allowed; }
 .lado-cad { display: grid; margin-left: auto; color: #e5645c; }
 .lado-cad svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.eq-info { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, .8fr) minmax(0, 1.1fr); gap: 14px; align-items: start; }
+.eq-info { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .7fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.1fr); gap: 14px; align-items: start; }
 .eq-info .eq-col { min-width: 0; padding-right: 0; }
 .eq-info .eq-col > b, .eq-info .eq-col > span { overflow-wrap: anywhere; }
 .eq-lista.grade { display: grid; }
