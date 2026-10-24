@@ -103,6 +103,8 @@ type Comentario = {
 type Pessoa = {
   id: string; nome: string; login: string; codigo: string | null;
   papel: Papel; bloqueada: boolean; souEu: boolean;
+  /** Última vez que entrou no painel (ISO), quando o banco tem. */
+  ultimo: string;
 };
 type Eu = { id: string; nome: string; papel: Papel };
 
@@ -397,7 +399,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     equipe = ((r.data ?? []) as Record<string, unknown>[]).map((e) => ({
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
-      bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu,
+      bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "",
     }));
   }
 
@@ -619,13 +621,14 @@ export function montar(app: HTMLElement) {
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
   };
   ACAO_ABA.layout = `<button class="al-botao cl-ver" data-a="cs-ver-aluna">Ver na área da aluna <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg></button><button class="al-botao-ouro" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova categoria</button>`;
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
+  ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
@@ -3343,36 +3346,57 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- EQUIPE ---------- */
+  const IC_EQ = {
+    grupo: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/></svg>`,
+    lapis: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4.5L15.5 5a2 2 0 0 1 3 3L8 18.5z"/><path d="M13.5 7l3 3"/></svg>`,
+    copia: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>`,
+    chave: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2.5 2.5M14 9l2 2"/></svg>`,
+    cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>`,
+    aberto: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 7.8-1.2"/></svg>`,
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>`,
+    coroa: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/></svg>`,
+    pontos: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></svg>`,
+    mais: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+    pessoa: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>`,
+    info: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>`,
+  };
+  const ultimoAcesso = (iso: string) => { if (!iso) return "Nunca entrou"; const d = new Date(iso); if (isNaN(+d)) return "—"; const hj = new Date(), on = new Date(hj.getTime() - 864e5), z = (n: number) => String(n).padStart(2, "0"), hm = z(d.getHours()) + ":" + z(d.getMinutes()); return d.toDateString() === hj.toDateString() ? "hoje, " + hm : d.toDateString() === on.toDateString() ? "ontem, " + hm : z(d.getDate()) + "/" + z(d.getMonth() + 1) + "/" + d.getFullYear() + ", " + hm; };
+  /** Cabeçalho dos modais da equipe: ícone, título, explicação e o X. */
+  const cabModal = (ic: string, titulo: string, sub: string, perigo = false) => `<div class="eq-mcab${perigo ? " perigo" : ""}"><span class="eq-mic">${ic}</span><h2>${h(titulo)}</h2><button type="button" class="eq-x" data-a="fechar" aria-label="Fechar">${xis}</button></div>${sub ? `<p class="eq-msub">${h(sub)}</p>` : ""}`;
   function telaEquipe() {
+    const n = S.equipe.length;
     return `
-    <section class="tela ativa">
-      ${S.equipe.map((e) => `
-      <div class="linha">
-        <span class="nome"><b>${h(e.nome)}</b><span>${h(e.login)} · ${h(e.papel.toLowerCase())}</span></span>
-        ${e.bloqueada ? etiqueta("Bloqueada", VERMELHO) : ""}
-        <span class="acoes">
-          ${gere(e) || e.souEu ? `<button class="botao-neutro" data-a="equipe-editar" data-id="${e.id}">Editar</button>` : ""}
-          ${e.codigo ? `<button class="botao-neutro" data-a="copiar-acesso-equipe" data-id="${e.id}">Copiar acesso</button><button class="botao-neutro" data-a="ver-codigo" data-id="${e.id}">Ver código</button>` : ""}
-          ${!gere(e) ? "" : e.bloqueada
-            ? `<button class="botao-neutro" data-a="equipe-desbloquear" data-id="${e.id}">Desbloquear</button>`
-            : `<button class="botao-neutro botao-remover" data-a="equipe-bloquear" data-id="${e.id}">Bloquear</button>`}
-          ${!gere(e) ? "" : `<button class="botao-neutro botao-remover" data-a="equipe-remover" data-id="${e.id}">Remover</button>`}
-        </span>
-      </div>`).join("")}
-      <form data-f="equipe-add" class="cartao" style="padding:16px;margin-top:20px;max-width:780px">
-        <p class="rotulo" style="margin:0 0 12px">Adicionar alguém à equipe</p>
-        <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" placeholder="ex.: joana" autocomplete="off" required /></label>
-          <label class="grupo" style="flex:0 0 150px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" placeholder="4 a 6 números" autocomplete="off" required /></label>
-          <label class="grupo" style="flex:0 0 150px"><span class="rotulo">Papel</span>
-            <select class="campo" name="papel"><option>Suporte</option>${eu?.papel === "Dono" ? "<option>Administrador</option>" : ""}</select>
-          </label>
-        </div>
-        <div style="margin-top:16px"><button class="botao">Adicionar</button></div>
-      </form>
+    <section class="tela ativa eq">
+      <div class="eq-banner"><span class="eq-banner-ic">${IC_EQ.grupo}</span><div><b>${p(n, "membro na equipe", "membros na equipe")}</b><span>Gerencie acessos, permissões e segurança da sua equipe.</span></div></div>
+      <div class="eq-lista">${S.equipe.map((e) => {
+        const pode = gere(e), papelCls = e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
+        return `
+        <article class="eq-card${e.bloqueada ? " bloq" : ""}">
+          <span class="eq-av ${papelCls}">${h(iniciais(e.nome))}<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i></span>
+          <div class="eq-quem">
+            <div class="eq-l1"><b>${h(e.nome)}</b><span class="eq-tag ${papelCls}">${h(e.papel)}</span>${e.papel === "Dono" ? `<span class="eq-coroa" title="Dono">${IC_EQ.coroa}</span>` : ""}${e.souEu ? `<span class="eq-voce">Você</span>` : ""}</div>
+            <span>Login: <b>${h(e.login)}</b></span>
+            <span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>
+          </div>
+          <div class="eq-col"><small>Papel</small><span class="eq-pil ${papelCls}">${h(e.papel === "Dono" ? "Dono" : e.papel)}</span></div>
+          <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
+          <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
+          <div class="eq-acoes">
+            ${pode || e.souEu ? `<button type="button" class="al-botao" data-a="equipe-editar" data-id="${e.id}">${IC_EQ.lapis}Editar</button>` : ""}
+            ${e.codigo ? `<button type="button" class="al-botao" data-a="copiar-acesso-equipe" data-id="${e.id}">${IC_EQ.copia}Copiar acesso</button><button type="button" class="al-botao" data-a="ver-codigo" data-id="${e.id}">${IC_EQ.chave}Ver código</button>` : ""}
+            ${!pode ? "" : e.bloqueada
+              ? `<button type="button" class="al-botao eq-desb" data-a="equipe-desbloquear" data-id="${e.id}">${IC_EQ.aberto}Desbloquear</button>`
+              : `<button type="button" class="al-botao eq-bloq" data-a="equipe-bloquear" data-id="${e.id}">${IC_EQ.cad}Bloquear</button>`}
+            ${pode ? `<span class="est3 kb"><button type="button" class="eq-pts" data-a="estado-menu" data-v="kb-eq:${e.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-eq:" + e.id}" aria-label="Mais opções de ${h(e.nome)}">${IC_EQ.pontos}</button>${ui.estMenu === "kb-eq:" + e.id ? `<span class="est3-menu kb-menu" role="menu">
+                <button type="button" role="menuitem" data-a="trocar-codigo" data-id="${e.id}">Gerar código novo</button>
+                <span class="kb-sep"></span>
+                <button type="button" role="menuitem" class="perigo" data-a="equipe-remover" data-id="${e.id}">Remover da equipe</button>
+              </span>` : ""}</span>` : `<span class="eq-pts-vazio"></span>`}
+          </div>
+        </article>`; }).join("") || `<div class="vazio">Ninguém na equipe ainda.</div>`}</div>
     </section>`;
   }
+
 
   /* ---------- JANELAS ---------- */
   function modal() {
@@ -3511,6 +3535,14 @@ export function montar(app: HTMLElement) {
         </fieldset>` : ""}
         <div class="rodape-modal"><button class="botao">Restaurar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
       </form>`;
+    } else if (m.tipo === "confirmar" && m.caixa) {
+      corpo = `
+      <form data-f="confirmar" class="eq-form">
+        ${cabModal(m.icone === "remover" ? IC_MOD.lixo : IC_EQ.cad, m.titulo, m.texto, true)}
+        <div class="eq-perigo"><span class="eq-perigo-ic">!</span><div><b>${h(m.caixa)}</b><span>Digite <b>${h(m.palavra)}</b> no campo abaixo para confirmar esta ação.</span></div>
+          <input id="confirmaPalavra" class="campo" autocomplete="off" placeholder="${h(m.palavra)}" data-palavra="${h(m.palavra)}" /></div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button id="confirmaBotao" class="eq-btn-perigo" disabled>${m.icone === "remover" ? IC_MOD.lixo : IC_EQ.cad}${h(m.rotulo || "Confirmar")}</button></div>
+      </form>`;
     } else if (m.tipo === "confirmar") {
       corpo = `
       <form data-f="confirmar">
@@ -3556,24 +3588,24 @@ export function montar(app: HTMLElement) {
         ${ant.length ? `<p class="rotulo" style="margin:18px 0 2px">Contatos anteriores</p>${ant.slice(0, 4).map((c) => `<div class="mini"><span class="nome"><b class="leve">${h(c.resultado)}${c.obs ? " — " + h(c.obs) : ""}</b><span>${h(c.quem)} · ${dataHora(c.quando)}</span></span></div>`).join("")}` : ""}
         <div class="rodape-modal"><button class="botao">Salvar contato</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
       </form>`;
-    } else if (m.tipo === "equipe-editar") {
-      const e = pessoa(m.id);
+    } else if (m.tipo === "equipe-editar" || m.tipo === "equipe-nova") {
+      const nova = m.tipo === "equipe-nova", e = nova ? null : pessoa(m.id);
       const papeis: Papel[] = eu?.papel === "Dono" ? ["Suporte", "Administrador"] : ["Suporte"];
       corpo = `
-      <form data-f="equipe-editar" data-id="${e.id}">
-        <h2 class="titulo">Editar ${h(e.nome)}</h2>
-        <p class="explica">O login e o código são o que ${h(primeiroNome(e.nome))} digita para entrar no painel. Código vazio continua o mesmo.</p>
-        <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome</span><input class="campo" name="nome" value="${h(e.nome)}" autocomplete="off" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(e.login)}" autocomplete="off" required /></label>
-          ${gere(e) ? `<label class="grupo" style="flex:1 1 200px"><span class="rotulo">Papel</span><select class="campo" name="papel">${papeis.map((x) => `<option ${x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></label>` : ""}
-          <label class="grupo" style="flex:1 1 160px"><span class="rotulo">Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e.codigo ?? "")}" placeholder="${e.codigo != null ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" /></label>
-        </div>
-        <div class="rodape-modal">
-          <button class="botao">Salvar</button>
-          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
-        </div>
+      <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form">
+        ${cabModal(nova ? IC_EQ.grupo : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha os dados do novo colaborador." : "Atualize as informações do membro da equipe.")}
+        <label class="eq-campo"><span>Nome</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required /></label>
+        <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required /><small>Será o que a pessoa digita para entrar.</small></label>
+        <label class="eq-campo"><span>Código</span><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} /><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></label>
+        ${nova || (e && gere(e)) ? `<label class="eq-campo"><span>Papel</span><span class="eq-sel">${IC_EQ.pessoa}<select class="campo" name="papel">${papeis.map((x) => `<option ${e && x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}${nova ? "Adicionar membro" : "Salvar alterações"}</button></div>
       </form>`;
+    } else if (m.tipo === "codigo") {
+      corpo = `
+        ${cabModal(IC_EQ.chave, m.titulo || "Código de acesso", m.texto)}
+        <div class="eq-cod"><small>Código</small><b>${h(String(m.codigo || "").split("").join(" "))}</b><button type="button" class="eq-cod-copiar" data-a="copiar-codigo" data-v="${h(m.codigo)}">${IC_EQ.copia}Copiar código</button></div>
+        <p class="eq-nota">${IC_EQ.info}Este código continua o mesmo enquanto não for alterado.</p>
+        <div class="eq-mbts"><span></span><button type="button" class="al-botao-ouro" data-a="fechar">Fechar</button></div>`;
     } else if (m.tipo === "info") {
       corpo = `
         <h2 class="titulo">${h(m.titulo)}</h2>
@@ -4390,21 +4422,23 @@ export function montar(app: HTMLElement) {
         });
         break;
 
-      case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "info", titulo: "Código de " + e.nome, texto: "Login " + e.login + ". É o que ela digita para entrar no painel.", destaque: e.codigo ?? "" }; break; }
-      case "trocar-codigo": {
+      case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "codigo", titulo: "Código de acesso", texto: "Este é o código que " + e.nome + " usa para entrar no painel (login " + e.login + ").", codigo: e.codigo ?? "" }; break; }
+      case "equipe-nova": ui.modal = { tipo: "equipe-nova" }; break;
+      case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
+      case "trocar-codigo": { ui.estMenu = "";
         const e = pessoa(d.id);
         void executar(async () => {
           const velho = e.codigo;
           const codigo = String(await rpc("trocar_codigo", { p_id: e.id }));
           await registrar(null, "Trocou o código de " + e.nome);
           if (velho) pilha = [{ texto: "troca do código de " + e.nome, quando: new Date().toISOString(), fn: async () => { await rpc("mudar_codigo", { p_id: e.id, p_codigo: velho }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
-          ui.modal = { tipo: "info", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para ela.", destaque: codigo };
+          ui.modal = { tipo: "codigo", titulo: "Novo código de " + e.nome, texto: "O código antigo deixou de funcionar. Passe este para a pessoa.", codigo };
         });
         return;
       }
-      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear " + e.nome + "?", texto: "Ela deixa de entrar no painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
+      case "equipe-bloquear": { const e = pessoa(d.id); confirmar({ titulo: "Bloquear membro", texto: e.nome + " deixará de ter acesso ao painel até você desbloquear.", palavra: "BLOQUEAR", rotulo: "Bloquear", caixa: "Confirme para bloquear" }, async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); await registrar(null, "Bloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi bloqueada.", texto: "bloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); } }; }); break; }
       case "equipe-desbloquear": { const e = pessoa(d.id); void executar(async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "ativa" }); await registrar(null, "Desbloqueou " + e.nome + " na equipe"); return { msg: e.nome + " foi desbloqueada.", texto: "desbloqueio de " + e.nome, desfazer: async () => { await rpc("bloquear_colaborador", { p_id: e.id, p_status: "bloqueada" }); } }; }); return; }
-      case "equipe-remover": { const e = pessoa(d.id); confirmar({ titulo: "Remover " + e.nome + " da equipe?", texto: "Ela perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); await registrar(null, "Removeu " + e.nome + " da equipe"); return e.nome + " saiu da equipe."; }); break; }
+      case "equipe-remover": { ui.estMenu = ""; const e = pessoa(d.id); confirmar({ titulo: "Remover membro", texto: e.nome + " sai da equipe e perde o acesso ao painel. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover", caixa: "Confirme para remover", icone: "remover" }, async () => { await rpc("remover_colaborador", { p_id: e.id }); await registrar(null, "Removeu " + e.nome + " da equipe"); return e.nome + " saiu da equipe."; }); break; }
       default: return;
     }
     render();
@@ -4829,7 +4863,7 @@ export function montar(app: HTMLElement) {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo });
           await registrar(null, "Adicionou " + v("nome") + " à equipe");
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
-          ui.modal = { tipo: "info", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para ela entrar no painel.", destaque: String(r.codigo ?? "") };
+          ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para a pessoa entrar no painel.", codigo: String(r.codigo ?? "") };
         });
         return;
       }
