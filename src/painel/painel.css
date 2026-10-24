@@ -2773,8 +2773,8 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 @media (max-width: 760px) { .reg-topo { grid-template-columns: auto minmax(0, 1fr) auto; } .reg-topo .eq-col { grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 0; border: 0; } .reg-topo .reg-abrir { grid-row: 1; grid-column: 3; } .reg-cab { flex-wrap: wrap; } .reg-datas-menu { right: auto; left: 0; } }
 .reg-apagar { display: grid; place-items: center; flex: none; width: 30px; height: 30px; color: var(--texto-3); background: none; border: 0; border-radius: 6px; cursor: pointer; }
 .reg-apagar:hover { color: var(--aa-verm); background: var(--aa-verm-fundo); }
-.reg-apagar svg, .reg-apagar-tudo svg, .reg-ses svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.reg-apagar-tudo { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; margin-top: 4px; font: inherit; font-size: 13px; font-weight: 600; color: var(--aa-verm); background: var(--aa-verm-fundo); border: 1px solid color-mix(in srgb, var(--aa-verm) 35%, transparent); border-radius: 8px; cursor: pointer; }
+.reg-apagar svg, .reg-ses svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.reg-apagar-tudo { align-self: flex-start; margin-left: auto; }
 .reg-ses li { align-items: center; }
 .reg-ses .reg-q { min-width: 86px; }
 .reg-ses .reg-t { display: inline-flex; align-items: center; gap: 8px; }

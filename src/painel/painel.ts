@@ -1877,10 +1877,9 @@ export function montar(app: HTMLElement) {
     }
     return `
         <aside class="reg-painel" aria-label="Histórico de ${h(y.nome)}">
-          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : ""}</div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div></div>
+          <div class="reg-pcab"><span class="eq-av ${c}">${h(iniciais(y.nome))}${y.papel ? `<i class="on"></i>` : ""}</span><div class="eq-quem"><div class="eq-l1"><b>${h(y.nome)}</b>${y.papel ? `<span class="eq-pil ${c}">${h(y.papel === "Administrador" ? "Administração" : y.papel)}</span>` : ""}</div>${y.login ? `<span>Login: <b>${h(y.login)}</b></span><span>Código: <b class="eq-pontos">••••</b></span>` : ""}</div>${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}" aria-label="Apagar registros de ${h(y.nome)}" title="Apagar registros de ${h(primeiroNome(y.nome))}${ui.regData === "todas" ? "" : " neste período"}">${IC_REG.lixo}</button>` : ""}</div>
           <div class="reg-abas" role="tablist">${[["hist", "Histórico"], ["resumo", "Resumo"], ["acessos", "Acessos"]].map(([v, t]) => `<button type="button" role="tab" data-a="reg-aba" data-v="${v}" aria-selected="${aba === v}">${t}</button>`).join("")}</div>
           ${corpo}
-          ${y.acts.length || y.ses.length ? `<button type="button" class="reg-apagar-tudo" data-a="reg-apagar-pessoa" data-id="${h(y.id)}">${IC_REG.lixo}Apagar registros de ${h(primeiroNome(y.nome))} ${ui.regData === "todas" ? "" : "neste período"}</button>` : ""}
         </aside>`;
   }
 
