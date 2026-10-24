@@ -302,7 +302,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
-      supabase.from("categorias_aba").select("id, publicado, bloqueada_geral"),
+      supabase.from("categorias_aba").select("id, publicado, bloqueada_geral, icone, cor, ordem"),
     ]);
 
   for (const r of [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos]) {
@@ -436,7 +436,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
    * esta função —, então admin e aluna nunca divergem.
    */
   // Categoria dentro da aba (0076): Oculta esconde o curso; Bloqueada o deixa à vista, sem acesso.
-  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; publicado: boolean; bloqueada_geral: boolean }>).map((x) => [x.id, x]));
+  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; publicado: boolean; bloqueada_geral: boolean; icone: string | null; cor: string | null; ordem: number | null }>).map((x) => [x.id, x]));
   const listaProdutos: Produto[] = ((produtos.data ?? []) as LinhaProduto[]).map(
     (p): Produto => ({
       id: p.id,
@@ -449,6 +449,9 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       ordem: p.ordem,
       publicado: p.publicado && estadoCatAba.get(p.categoria_aba_id ?? "")?.publicado !== false,
       bloqueadoGeral: p.bloqueado_geral || !!estadoCatAba.get(p.categoria_aba_id ?? "")?.bloqueada_geral,
+      catIcone: estadoCatAba.get(p.categoria_aba_id ?? "")?.icone ?? null,
+      catCor: estadoCatAba.get(p.categoria_aba_id ?? "")?.cor ?? null,
+      catOrdem: estadoCatAba.get(p.categoria_aba_id ?? "")?.ordem ?? null,
       modulos: listaModulos
         .filter((m) => m.produtoId === p.id)
         .sort((x, y) => x.ordem - y.ordem),
@@ -774,9 +777,9 @@ export function uidStream(ref: string): string {
   return m ? m[1] : "";
 }
 
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string }> {
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean> }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
@@ -790,6 +793,12 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
       video: uidStream(cfg.data?.inicio_banner_video ?? ""),
     },
     estilo: cfg.data?.inicio_estilo ?? "padrao",
+    telas: {
+      modTitulo: cfg.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfg.data?.modulos_titulo_estilo ?? "padrao",
+      modProgresso: cfg.data?.modulos_progresso !== false, modLayout: cfg.data?.modulos_layout ?? "padrao", modTamanho: cfg.data?.modulos_tamanho ?? "medio",
+      presTitulo: cfg.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfg.data?.presentes_titulo_estilo ?? "padrao",
+      presLayout: cfg.data?.presentes_layout ?? "grandes", presEstilo: cfg.data?.presentes_estilo ?? "padrao",
+    },
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
     destaques: (cfg.data?.exibir_destaques === false || (cfg.data?.inicio_banner ?? "card") !== "card" ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",

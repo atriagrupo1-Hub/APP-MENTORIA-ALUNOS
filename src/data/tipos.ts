@@ -158,6 +158,10 @@ export type Produto = {
   ordem: number;
   publicado: boolean;
   bloqueadoGeral: boolean;
+  /** Ícone, cor e posição da categoria principal (Configurações → Presentes, 0085). */
+  catIcone?: string | null;
+  catCor?: string | null;
+  catOrdem?: number | null;
   modulos: Modulo[];
   presentes: Presente[];
   /** Conteúdo pendurado direto no produto, sem módulo nem item. */
