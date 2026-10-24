@@ -3889,7 +3889,15 @@ export function montar(app: HTMLElement) {
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
         window.scrollTo(0, 0);
         break;
-      case "tema": tema = tema === "claro" ? "escuro" : "claro"; try { localStorage.setItem(KT, tema); } catch { /* sem armazenamento */ } aplicarTema(); break;
+      case "tema": {
+        tema = tema === "claro" ? "escuro" : "claro"; try { localStorage.setItem(KT, tema); } catch { /* sem armazenamento */ }
+        // A tela inteira passa de um tema para o outro de uma vez, num esmaecer suave.
+        const trocar = () => { aplicarTema(); render(); };
+        const doc = document as Document & { startViewTransition?: (f: () => void) => unknown };
+        if (doc.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) doc.startViewTransition(trocar);
+        else trocar();
+        return;
+      }
       case "sair":
         void api.sair().finally(() => { eu = null; ui.focar = loginSalvo() ? "codigoCampo" : "loginCampo"; render(); });
         return;
