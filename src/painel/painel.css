@@ -2912,3 +2912,96 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .eq-lista.grade { display: grid; }
 .eq-lista.grade .eq-info { grid-template-columns: 1fr 1fr; width: 100%; }
 .eq-lista.grade .eq-info .eq-col { flex-direction: column; align-items: flex-start; }
+
+/* ---------- Configurações (Início com prévia no app) ---------- */
+.cfg-abas { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; padding: 10px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
+.cfg-abas button { display: inline-flex; align-items: center; gap: 10px; min-height: 46px; padding: 0 18px; font: inherit; font-size: 15px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.cfg-abas button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.cfg-abas button[aria-selected="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); border-color: #c9a25c; }
+.cfg-abas button[aria-selected="true"] svg { color: #e3bd6e; }
+.cfg-grade { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(330px, 1fr); gap: 18px; align-items: start; }
+.cfg-painel, .cfg-previa { padding: 20px 22px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: var(--aa-sombra); }
+.cfg-ptopo { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
+.cfg-pic { display: grid; place-items: center; flex: none; width: 76px; height: 76px; color: #a5732a; background: var(--aa-ouro-fundo); border-radius: 10px; }
+.cfg-pic svg { width: 34px; height: 34px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.cfg-ptopo h2, .cfg-pvcab h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; }
+.cfg-ptopo p, .cfg-pvcab p { margin: 2px 0 0; font-size: 14px; color: var(--texto-2); }
+.cfg-bloco { padding: 18px 0; border-top: 1px solid var(--linha-suave); }
+.cfg-bloco:first-of-type { border-top: 0; }
+.cfg-bloco h3 { margin: 0; font-size: 16px; font-weight: 700; }
+.cfg2 .cfg-sub { margin: 2px 0 10px; font-size: 13px; color: var(--texto-3); }
+.cfg-blcab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cfg-blcab .al-botao svg, .cfg-op .al-botao svg { width: 16px; height: 16px; }
+.cfg-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cfg-c { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--texto-2); }
+.cfg-c .campo { width: 100%; border-radius: 8px; }
+.cfg-c textarea.campo { min-height: 82px; padding-top: 10px; resize: vertical; }
+.cfg-radios { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.cfg-radio { display: flex; align-items: center; gap: 12px; min-height: 46px; padding: 0 16px; font-size: 15px; border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.cfg-radio input { width: 18px; height: 18px; accent-color: #a5732a; }
+.cfg-radio:has(input:checked) { background: var(--aa-ouro-fundo); border-color: #c9a25c; }
+.cfg-op { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.cfg-op[hidden] { display: none; }
+.cfg-op .cfg-c { flex: 1 1 100%; }
+.cfg-op small { font-size: 12px; color: var(--texto-3); }
+.cfg-estilos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.cfg-est { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.cfg-est input { position: absolute; opacity: 0; pointer-events: none; }
+.cfg-est em { font-style: normal; }
+.cfg-est-cx { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; height: 86px; padding: 0 16px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 8px; }
+.cfg-est-cx i { display: grid; place-items: center; flex: none; width: 60px; height: 50px; color: #fff; background: #4d5768; border-radius: 6px; }
+.cfg-est-cx i svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.cfg-est-cx > span { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.cfg-est-cx b { height: 6px; background: var(--aa-cinza); border-radius: 3px; } .cfg-est-cx b:nth-child(2) { width: 75%; } .cfg-est-cx b:nth-child(3) { width: 55%; }
+.cfg-est-cx.est-moldura { box-shadow: inset 0 0 0 4px var(--aa-cartao), inset 0 0 0 5px var(--linha); }
+.cfg-est-cx.est-minimalista i { background: #a3aab6; }
+.cfg-est:has(input:checked) .cfg-est-cx { background: var(--aa-ouro-fundo); border: 2px solid #c9a25c; }
+.cfg-est:has(input:checked) .cfg-est-cx::after { content: "✓"; position: absolute; top: -9px; right: -9px; display: grid; place-items: center; width: 22px; height: 22px; font-size: 13px; font-weight: 700; color: #fff; background: #a5732a; border-radius: 50%; }
+.cfg-est:has(input:focus-visible) .cfg-est-cx { outline: 2px solid #c9a25c; outline-offset: 2px; }
+.cfg-previa { position: sticky; top: 16px; }
+.cfg-pvcab { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.cfg-pvbts { display: flex; gap: 6px; }
+.cfg-pvbts button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px; font: inherit; font-size: 13px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha); border-radius: 8px; cursor: pointer; }
+.cfg-pvbts button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.cfg-pvbts button[aria-pressed="true"] { color: #e3bd6e; background: #120f0b; border-color: #c9a25c; }
+.cfg-pvfundo { display: grid; place-items: center; padding: 18px 10px; background: var(--al-cab, #f3efe7); border-radius: 12px; }
+.pv-celular { width: 270px; height: 560px; padding: 10px; background: #1b1714; border-radius: 40px; box-shadow: 0 0 0 2px #3b3128, 0 20px 40px rgba(0, 0, 0, .3); }
+.pv-computador { width: 100%; height: 420px; padding: 10px 10px 18px; background: #1b1714; border-radius: 14px; box-shadow: 0 20px 40px rgba(0, 0, 0, .3); }
+.pv-tela { display: flex; flex-direction: column; height: 100%; overflow: hidden; color: #f3ead8; background: #0b0a08; border-radius: 30px; font-family: Lato, sans-serif; }
+.pv-computador .pv-tela { border-radius: 6px; }
+.pv-topo { display: flex; align-items: center; justify-content: space-between; padding: 26px 16px 10px; border-bottom: 1px solid rgba(212, 177, 112, .2); }
+.pv-computador .pv-topo { padding-top: 12px; }
+.pv-topo b { display: block; font-family: "Cormorant Garamond", Georgia, serif; font-size: 18px; font-weight: 600; }
+.pv-topo small { font-size: 8px; letter-spacing: .14em; text-transform: uppercase; color: #c9a25c; }
+.pv-topo i { width: 26px; height: 26px; border: 1.5px solid #c9a25c; border-radius: 50%; }
+.pv-rolo { flex: 1; overflow: hidden; padding: 0 12px; }
+.pv-computador .pv-rolo { padding: 0 40px; }
+.pv-ola { margin: 0 -12px; padding: 16px 12px 14px; background: radial-gradient(120% 90% at 92% 0%, rgba(212, 177, 112, .22), transparent 60%); }
+.pv-ola.pv-moldura { margin: 12px 0 0; border: 1px solid rgba(212, 177, 112, .55); border-radius: 8px; }
+.pv-ola.pv-minimalista { background: none; }
+.pv-ola h4 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
+.pv-ola p { margin: 6px 0 0; font-size: 11px; line-height: 1.45; color: #d9cfbd; }
+.pv-vers { margin: 10px 0 0; padding: 10px; text-align: center; border: 1px solid rgba(212, 177, 112, .6); border-radius: 4px; }
+.pv-minimalista .pv-vers { border: 0; border-top: 1px solid rgba(212, 177, 112, .35); border-radius: 0; }
+.pv-vers small { font-size: 7px; letter-spacing: .16em; text-transform: uppercase; color: #c9a25c; }
+.pv-vers blockquote { margin: 6px 0 4px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 11px; font-style: italic; line-height: 1.4; }
+.pv-vers figcaption { font-size: 8px; font-weight: 700; color: #c9a25c; }
+.pv-banner { margin: 10px 0 0; overflow: hidden; aspect-ratio: 16 / 9; border: 1px solid rgba(212, 177, 112, .35); border-radius: 6px; }
+.pv-banner img, .pv-banner iframe { display: block; width: 100%; height: 100%; object-fit: cover; border: 0; }
+.pv-vazio { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 10px; color: #9b8f7b; border-style: dashed; }
+.pv-vazio svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.pv-dest { position: relative; display: flex; align-items: flex-end; margin: 10px 0 0; overflow: hidden; height: 96px; border: 1px solid rgba(212, 177, 112, .35); border-radius: 6px; }
+.pv-dest img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; }
+.pv-dest span { position: relative; display: flex; flex-direction: column; padding: 8px; font-size: 10px; }
+.pv-dest small { font-size: 7px; letter-spacing: .14em; text-transform: uppercase; color: #c9a25c; }
+.pv-mentoria { display: flex; flex-direction: column; align-items: center; gap: 3px; margin: 12px 0 0; padding: 10px; text-align: center; border: 1px solid rgba(212, 177, 112, .45); border-radius: 6px; }
+.pv-mentoria small, .pv-mentoria span { font-size: 7px; letter-spacing: .16em; text-transform: uppercase; color: #c9a25c; }
+.pv-mentoria b { font-family: "Cormorant Garamond", Georgia, serif; font-size: 14px; font-weight: 600; }
+.pv-nav { display: flex; justify-content: space-around; padding: 8px 6px 14px; background: #110f0c; border-top: 1px solid rgba(212, 177, 112, .2); }
+.pv-computador .pv-nav { padding-bottom: 8px; }
+.pv-nav span { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; color: #a99d88; }
+.pv-nav span.on { color: #e3bd6e; }
+.pv-nav svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.pv-nav em { font-style: normal; max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1280px) { .cfg-grade { grid-template-columns: 1fr; } .cfg-previa { position: static; } }
+@media (max-width: 700px) { .cfg-2, .cfg-radios { grid-template-columns: 1fr 1fr; } .cfg-estilos { grid-template-columns: 1fr; } .cfg-abas button { flex: 1 1 140px; } }

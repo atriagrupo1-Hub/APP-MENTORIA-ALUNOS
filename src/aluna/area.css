@@ -1331,3 +1331,11 @@
   .mv-acao.tranc, .mv-entre button.tranc, .nav-prox.trancado { color: #ff6b6b !important; border-color: rgba(229, 72, 77, .6) !important; background: rgba(229, 72, 77, .08) !important; }
   .mv-acao.tranc svg, .mv-entre button.tranc svg, .nav-prox.trancado svg { color: #ff5a5f !important; }
   html[data-tema="claro"] .mp-fechado, html[data-tema="claro"] .eb-fech, html[data-tema="claro"] .mv-acao.tranc, html[data-tema="claro"] .mv-entre button.tranc, html[data-tema="claro"] .nav-prox.trancado { color: #c0262d !important; }
+
+/* Início configurável no painel (Configurações → Início) */
+.pa-banner { margin: 18px 0 0; overflow: hidden; aspect-ratio: 16 / 9; background: #0b0a08; border: 1px solid rgba(212,177,112,.35); border-radius: 10px; }
+.pa-banner img, .pa-banner iframe { display: block; width: 100%; height: 100%; object-fit: cover; border: 0; }
+.pa-ola-moldura { margin: 0; padding: 22px 18px 20px; border: 1px solid rgba(212,177,112,.55); border-radius: 10px; box-shadow: inset 0 0 0 4px transparent, inset 0 0 0 5px rgba(212,177,112,.18); }
+.pa-ola-minimalista { background: none; }
+.pa-ola-minimalista .vers { background: none; border: 0; border-top: 1px solid rgba(212,177,112,.35); border-radius: 0; box-shadow: none; padding: 14px 0 0; }
+html[data-tema="claro"] .pa-ola-minimalista .vers { background: none; box-shadow: none; }

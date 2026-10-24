@@ -387,6 +387,14 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
 
+  /** Banner do Início escolhido no painel (Configurações → Início): imagem ou vídeo. */
+  function bannerInicio() {
+    const b = (D && D.inicio && D.inicio.banner) || {};
+    if (b.tipo === "imagem" && b.imagem) return `<figure class="pa-banner">${img(b.imagem, "")}</figure>`;
+    if (b.tipo === "video" && b.video) return `<figure class="pa-banner pa-banner-video"><iframe src="https://iframe.videodelivery.net/${h(b.video)}" title="Vídeo de boas-vindas" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></figure>`;
+    return "";
+  }
+  const estiloOla = () => { const e = D && D.inicio && D.inicio.estilo; return e === "moldura" || e === "minimalista" ? " pa-ola-" + e : ""; };
   function versiculoHoje() {
     // A lista vem do painel (Configurações gerais → Versículos); um por dia, em sequência.
     const vs = (D && D.inicio && D.inicio.versiculos) || [];
@@ -486,10 +494,11 @@ export function montar(raiz: HTMLElement) {
       const m0 = MODS()[0];
       return `
       <div class="pa">
-        <section class="pa-ola">
+        <section class="pa-ola${estiloOla()}">
           <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
           ${versiculoHoje()}
         </section>
+        ${bannerInicio()}
         <section class="mt-bloco" aria-labelledby="h-comece">
           ${cabMentoria}
           <p class="pa-rot mt-passo" id="h-comece">Comece por aqui</p>
@@ -509,11 +518,12 @@ export function montar(raiz: HTMLElement) {
     }
     return `
     <div class="pa">
-      <section class="pa-ola">
+      <section class="pa-ola${estiloOla()}">
         <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
         ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
         ${versiculoHoje()}
       </section>
+      ${bannerInicio()}
       <section class="mt-bloco" aria-labelledby="h-cont-rot">
         ${cabMentoria}
         <p class="pa-rot mt-passo" id="h-cont-rot">Continue de onde parou</p>

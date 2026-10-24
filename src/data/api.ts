@@ -767,9 +767,16 @@ export type Destaque = {
  * O que o Início mostra e o painel edita (0052): o nome no cabeçalho, os
  * versículos (um por dia, em sequência) e os destaques visíveis, na ordem.
  */
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[] }> {
+/** Uid do Cloudflare Stream a partir do link ou do próprio uid. */
+export function uidStream(ref: string): string {
+  const t = (ref || "").trim();
+  const m = t.match(/videodelivery\.net\/([a-f0-9]{32})/i) || t.match(/cloudflarestream\.com\/([a-f0-9]{32})/i) || t.match(/^([a-f0-9]{32})$/i);
+  return m ? m[1] : "";
+}
+
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
@@ -777,8 +784,14 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
   return {
     marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
     fraseRetorno: cfg.data?.frase_retorno ?? "",
+    banner: {
+      tipo: cfg.data?.inicio_banner ?? "card",
+      imagem: urlDaCapa(cfg.data?.inicio_banner_imagem ?? null) ?? "",
+      video: uidStream(cfg.data?.inicio_banner_video ?? ""),
+    },
+    estilo: cfg.data?.inicio_estilo ?? "padrao",
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
-    destaques: (cfg.data?.exibir_destaques === false ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
+    destaques: (cfg.data?.exibir_destaques === false || (cfg.data?.inicio_banner ?? "card") !== "card" ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",
       botao: d.botao ?? "", destino: d.destino === "categoria" ? "categoria" : "presentes", categoriaId: d.categoria_id ?? null,
       categoriaNome: d.categoria_nome ?? "", icone: d.icone ?? "estrela", cor: d.cor ?? "dourado",
