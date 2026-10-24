@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   }
   if (perfil.papel === "dono" && !perfil.dono_principal && (!perfil.pode_adicionar || (perfil.abas_bloqueadas ?? []).includes("equipe"))) {
     return resposta(
-      { erro: "sem_permissao", mensagem: "O dono principal não liberou adicionar membros para você." },
+      { erro: "sem_permissao", mensagem: "Acesso bloqueado." },
       403,
       origem,
     );

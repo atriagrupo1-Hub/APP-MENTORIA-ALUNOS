@@ -772,7 +772,7 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Sem acesso a esta aba">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
       </aside>
       <div class="principal">
@@ -3847,7 +3847,7 @@ export function montar(app: HTMLElement) {
             <div class="eq-campo"><span>Foto do perfil <i class="eqn-opc">(opcional)</i></span>
               <div class="eqn-foto"><span class="eqn-circ" id="eqnFoto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span>
                 <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2MB.</small></div></div></div>
-            <label class="eq-campo"><span>Nome completo</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>O dono principal não liberou mudar nome.</small>` : ""}</label>
+            <label class="eq-campo"><span>Nome completo</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>Acesso bloqueado.</small>` : ""}</label>
             <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar no painel.</small></label>
             ${semCodigo ? "" : `<div class="eq-campo"><span>Código de acesso</span><span class="eqn-cod"><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} aria-label="Código de acesso" /><button type="button" class="eqn-dado" data-a="eqn-sortear" title="Gerar um código" aria-label="Gerar um código">${IC_PF.dado}</button></span><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></div>`}
             ${comPapel ? `<label class="eq-campo"><span>Função</span><span class="eq-sel eqn-sel">${papeis.map((x) => `<i data-ic="${x}">${ICP[x]}</i>`).join("")}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
@@ -3921,9 +3921,9 @@ export function montar(app: HTMLElement) {
       case "aa-aluna": ui.acessoAluna = d.id; ui.acessoAba = d.v || "geral"; ui.aaAnima = "aluna"; break;
       case "aa-fechar-aluna": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.acessoAluna = null; break;
       case "aa-aba": ui.acessoAba = d.v; break;
-      case "aba-bloqueada": toast("O dono principal não liberou esta aba para você."); return;
+      case "aba-bloqueada": toast("Acesso bloqueado."); return;
       case "aba":
-        if (abaBloq(abaDaTela(d.v))) { toast("O dono principal não liberou esta aba para você."); return; }
+        if (abaBloq(abaDaTela(d.v))) { toast("Acesso bloqueado."); return; }
         ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
@@ -4720,7 +4720,7 @@ export function montar(app: HTMLElement) {
         break;
 
       case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "codigo", titulo: "Código de acesso", texto: "Este é o código que " + e.nome + " usa para entrar no painel (login " + e.login + ").", codigo: e.codigo ?? "" }; break; }
-      case "equipe-nova": if (!euPode("adicionar")) { toast("O dono principal não liberou adicionar membros."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
+      case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
       case "perfil-abrir": {
@@ -4793,7 +4793,7 @@ export function montar(app: HTMLElement) {
         ui.regDe = de; ui.regAte = ate; ui.regData = "periodo"; ui.estMenu = ""; ui.regMais = {}; ui.regDias.clear(); break;
       }
       case "eq-vista": ui.eqVista = d.v === "grade" ? "grade" : "lista"; break;
-      case "trocar-codigo": { ui.estMenu = ""; if (!euPode("codigo")) { toast("O dono principal não liberou mudar código."); break; }
+      case "trocar-codigo": { ui.estMenu = ""; if (!euPode("codigo")) { toast("Acesso bloqueado."); break; }
         const e = pessoa(d.id);
         void executar(async () => {
           const velho = e.codigo;
