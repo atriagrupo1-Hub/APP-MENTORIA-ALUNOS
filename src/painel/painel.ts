@@ -89,12 +89,14 @@ type Nota = { id: string; texto: string; quem: string; quando: string };
 type Contato = { id: string; resultado: string; obs: string; quem: string; quando: string };
 type Hist = { id: string; aluna: string | null; quem: string; quando: string; texto: string };
 type Sugestao = { id: string; texto: string; quem: string; autorId: string; quando: string };
-type Estado = "moderar" | "publicado" | "oculto";
+type Estado = "moderar" | "publicado" | "oculto" | "removido";
 type Comentario = {
   id: string; autora: string; autoraId: string; aula: string; quando: string;
   texto: string; estado: Estado; resposta: string;
   /** Data e hora em que foi escrito (ISO). */
   criado: string;
+  /** As respostas da equipe a este comentário (ids), para remover e restaurar junto. */
+  respIds: string[];
 };
 type Pessoa = {
   id: string; nome: string; login: string; codigo: string | null;
@@ -104,7 +106,7 @@ type Eu = { id: string; nome: string; papel: Papel };
 
 type Dados = {
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
-  comentarios: Comentario[]; equipe: Pessoa[];
+  comentarios: Comentario[]; removidos: Comentario[]; equipe: Pessoa[];
   historico: Hist[]; sugestoes: Sugestao[];
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
@@ -371,13 +373,19 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resposta.set(c.resposta_a, c.texto);
     }
   }
-  const comentarios: Comentario[] = linhas
-    .filter((c) => !c.eh_instrutor && c.status !== "removido")
-    .map((c) => ({
+  // Respostas da equipe de cada comentário; as removidas contam para o comentário removido (restaurar junto).
+  const respDe = (id: string, removidas: boolean) => linhas.filter((x) => x.eh_instrutor && x.resposta_a === id && (removidas ? x.status === "removido" : x.status !== "removido"));
+  const comoComentario = (c: Linha, removido: boolean): Comentario => {
+    const rs = respDe(c.id, removido);
+    return {
       id: c.id, autora: c.autora_nome, autoraId: c.autora_id ?? "", aula: c.aula_id, quando: quando(c.criado_em), criado: c.criado_em, texto: c.texto,
       estado: c.status === "pendente" ? "moderar" : (c.status as Estado),
-      resposta: resposta.get(c.id) ?? "",
-    }));
+      resposta: removido ? (rs[0]?.texto ?? "") : resposta.get(c.id) ?? "", respIds: rs.map((x) => x.id),
+    };
+  };
+  const comentarios: Comentario[] = linhas.filter((c) => !c.eh_instrutor && c.status !== "removido").map((c) => comoComentario(c, false));
+  // A aba Removidos: o comentário apagado continua guardado e pode voltar.
+  const removidos: Comentario[] = linhas.filter((c) => !c.eh_instrutor && c.status === "removido").map((c) => comoComentario(c, true));
 
   let equipe: Pessoa[] = [];
   const eqR = await equipeP;
@@ -394,7 +402,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
-    cursos, alunas: listaAlunas, comentarios, equipe,
+    cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "" },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -449,7 +457,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -1191,7 +1199,7 @@ export function montar(app: HTMLElement) {
       : pilula(sitInfo(sit)[0], sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho");
     const hist = S.historico.filter((x) => x.aluna === a.id);
     const coms = comentariosDe(a);
-    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto" };
+    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto", removido: "removido" };
     const verCod = ui.verCodigo === a.id;
     const libs = new Set(aulasDaLiberacao(a));
     const produtos = S.cursos.map((c) => {
@@ -1322,7 +1330,7 @@ export function montar(app: HTMLElement) {
     const ult = a.ultimaAula ? acharAula(a.ultimaAula) : null;
     const hist = S.historico.filter((x) => x.aluna === a.id);
     const coms = comentariosDe(a);
-    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto" };
+    const estCom: Record<Estado, string> = { moderar: "para moderar", publicado: "publicado", oculto: "oculto", removido: "removido" };
     const verCod = ui.verCodigo === a.id;
     return `
     <section class="tela ativa">
@@ -2498,9 +2506,9 @@ export function montar(app: HTMLElement) {
     const lista = todos.filter((k) => k.estado === f);
     return `
       <div class="cs-filtros">
-        ${(["moderar", "publicado", "oculto"] as Estado[]).map((e) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-filtro" data-v="${e}" aria-pressed="${f === e}">${{ moderar: "Para moderar", publicado: "Publicados", oculto: "Ocultos" }[e]} (${n(e)})</button>`).join("")}
+        ${(["moderar", "publicado", "oculto"] as Estado[]).map((e) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-filtro" data-v="${e}" aria-pressed="${f === e}">${{ removido: "Removidos", moderar: "Para moderar", publicado: "Publicados", oculto: "Ocultos" }[e]} (${n(e)})</button>`).join("")}
       </div>
-      ${lista.map(cartaoComentario).join("") || `<div class="vazio">${{ moderar: "Nada esperando moderação neste curso.", publicado: "Nenhum comentário publicado neste curso.", oculto: "Nenhum comentário oculto neste curso." }[f]}</div>`}`;
+      ${lista.map(cartaoComentario).join("") || `<div class="vazio">${{ moderar: "Nada esperando moderação neste curso.", publicado: "Nenhum comentário publicado neste curso.", oculto: "Nenhum comentário oculto neste curso.", removido: "" }[f]}</div>`}`;
   }
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
@@ -3234,14 +3242,15 @@ export function montar(app: HTMLElement) {
   /* ---------- COMENTÁRIOS ---------- */
   // Um comentário com as ações de moderação (aba Comentários e página do curso).
   const cartaoComentario = (k: Comentario) => `
-      <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}${k.estado !== "oculto" && !k.resposta ? " a-responder" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
+      <div class="cartao${ui.comAlvo === k.id ? " com-alvo" : ""}${k.estado !== "oculto" && k.estado !== "removido" && !k.resposta ? " a-responder" : ""}" id="com-${k.id}" style="padding:16px;margin-bottom:12px">
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline">
-          <b style="flex:1 1 220px">${h(k.autora)}${k.estado !== "oculto" && !k.resposta ? ` <span class="tag-responder">Aguardando resposta</span>` : ""}</b>
+          <b style="flex:1 1 220px">${h(k.autora)}${k.estado === "removido" ? ` <span class="tag-removido">Removido</span>` : ""}${k.estado !== "oculto" && k.estado !== "removido" && !k.resposta ? ` <span class="tag-responder">Aguardando resposta</span>` : ""}</b>
           <span style="font-size:13px;color:var(--texto-3)">${localAula(k.aula)} · ${h(k.quando)}</span>
         </div>
         <p style="margin:10px 0 14px;color:var(--comentario)">${h(k.texto)}</p>
         ${k.resposta ? `<div class="resposta"><span class="rotulo">Resposta da equipe</span><p style="margin:4px 0 0">${h(k.resposta)}</p></div>` : ""}
-        ${ui.respondendo === k.id ? `
+        ${k.estado === "removido" ? `
+          <div class="acoes"><button class="botao-neutro" data-a="com-restaurar" data-id="${k.id}">Restaurar…</button></div>` : ui.respondendo === k.id ? `
           <form data-f="com-resposta" data-id="${k.id}" style="display:flex;flex-direction:column;gap:10px">
             <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta" required>${h(k.resposta)}</textarea>
             <div class="acoes"><button class="botao">Enviar resposta</button><button type="button" class="botao-neutro grande" data-a="com-responder-cancelar">Cancelar</button></div>
@@ -3255,8 +3264,8 @@ export function montar(app: HTMLElement) {
       </div>`;
   function telaComentarios() {
     const n = (e: Estado) => S.comentarios.filter((k) => k.estado === e).length;
-    const lista = ui.filtroCom === "responder" ? paraResponder() : S.comentarios.filter((k) => k.estado === ui.filtroCom);
-    const vazio = { responder: "Tudo respondido. Nenhum comentário esperando resposta.", moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto." }[ui.filtroCom];
+    const lista = ui.filtroCom === "responder" ? paraResponder() : ui.filtroCom === "removido" ? S.removidos.map((k) => ({ ...k, estado: "removido" as Estado })) : S.comentarios.filter((k) => k.estado === ui.filtroCom);
+    const vazio = { responder: "Tudo respondido. Nenhum comentário esperando resposta.", moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", oculto: "Nenhum comentário oculto.", removido: "Nenhum comentário removido." }[ui.filtroCom];
     return `
     <section class="tela ativa">
       <div class="chips" style="margin-bottom:20px">
@@ -3264,6 +3273,7 @@ export function montar(app: HTMLElement) {
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="moderar" aria-pressed="${ui.filtroCom === "moderar"}">Para moderar (${n("moderar")})</button>
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="publicado" aria-pressed="${ui.filtroCom === "publicado"}">Publicados (${n("publicado")})</button>
         <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="oculto" aria-pressed="${ui.filtroCom === "oculto"}">Ocultos (${n("oculto")})</button>
+        <button class="chip" style="cursor:pointer" data-a="com-filtro" data-v="removido" aria-pressed="${ui.filtroCom === "removido"}">Removidos (${S.removidos.length})</button>
       </div>
       ${lista.map(cartaoComentario).join("") || `<div class="vazio">${vazio}</div>`}
     </section>`;
@@ -3420,6 +3430,24 @@ export function montar(app: HTMLElement) {
         <div class="rodape-modal"><button class="botao">Criar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
       </form>`;
       if (!ui.focar) ui.focar = "cursoNome";
+    } else if (m.tipo === "restaurar") {
+      const k = S.removidos.find((x) => x.id === m.id);
+      const trecho = k ? (k.texto.length > 140 ? k.texto.slice(0, 140) + "…" : k.texto) : "";
+      corpo = `
+      <form data-f="com-restaurar" data-id="${h(m.id)}">
+        <h2 class="titulo">Restaurar o comentário${k ? " de " + h(k.autora) : ""}</h2>
+        <p class="explica">“${h(trecho)}”</p>
+        <fieldset class="rest-opcoes"><legend class="rotulo">Para onde ele vai?</legend>
+          <label><input type="radio" name="destino" value="responder" checked /><span><b>Restaurar e responder</b><em>Vai para a aba Para responder.</em></span></label>
+          <label><input type="radio" name="destino" value="publicar" /><span><b>Restaurar e publicar</b><em>Volta a aparecer para as alunas, na aba Publicados.</em></span></label>
+          <label><input type="radio" name="destino" value="ocultar" /><span><b>Restaurar e ocultar</b><em>Fica guardado na aba Ocultos, sem aparecer para as alunas.</em></span></label>
+        </fieldset>
+        ${k && k.respIds.length ? `<fieldset class="rest-opcoes"><legend class="rotulo">E as respostas da equipe?</legend>
+          <label><input type="radio" name="respostas" value="com" checked /><span><b>Restaurar com as respostas</b><em>${p(k.respIds.length, "resposta volta", "respostas voltam")} junto.</em></span></label>
+          <label><input type="radio" name="respostas" value="sem" /><span><b>Só o comentário principal</b><em>As respostas continuam removidas.</em></span></label>
+        </fieldset>` : ""}
+        <div class="rodape-modal"><button class="botao">Restaurar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
+      </form>`;
     } else if (m.tipo === "confirmar") {
       corpo = `
       <form data-f="confirmar">
@@ -4277,13 +4305,15 @@ export function montar(app: HTMLElement) {
         break;
       }
       case "com-responder": ui.respondendo = d.id; ui.focar = "respostaCampo"; break;
+      case "com-restaurar": ui.modal = { tipo: "restaurar", id: d.id }; break;
       case "com-responder-cancelar": ui.respondendo = null; break;
       case "com-remover":
-        confirmar({ titulo: "Remover este comentário?", texto: "Ele some para todas as alunas. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover comentário" }, async () => {
+        confirmar({ titulo: "Remover este comentário?", texto: "Ele some para todas as alunas, junto com as respostas da equipe, e vai para a aba Removidos. De lá dá para restaurar.", palavra: "REMOVER", rotulo: "Remover comentário" }, async () => {
           const k = S.comentarios.find((x) => x.id === d.id);
           await rpc("moderar_comentario", { p_comentario: d.id, p_status: "removido" });
+          for (const rid of k?.respIds ?? []) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });
           await registrar(k?.autoraId || null, "Removeu um comentário de " + (k?.autora ?? "uma aluna"));
-          return "Comentário removido.";
+          return "Comentário removido. Está na aba Removidos, de onde pode ser restaurado.";
         });
         break;
 
@@ -4660,6 +4690,21 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           const r = falhou(await supabase.from("conteudos").insert(linha).select("id").single());
           return { msg: "Conteúdo adicionado à aula.", texto: "conteúdo extra " + v("nome"), desfazer: async () => { falhou(await supabase.from("conteudos").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
+      case "com-restaurar": {
+        const k = S.removidos.find((x) => x.id === id); if (!k) return;
+        const destino = (form.querySelector<HTMLInputElement>('input[name="destino"]:checked')?.value || "responder");
+        const comResp = form.querySelector<HTMLInputElement>('input[name="respostas"]:checked')?.value !== "sem";
+        const status = destino === "publicar" ? "publicado" : destino === "ocultar" ? "oculto" : "pendente";
+        void executar(async () => {
+          await rpc("moderar_comentario", { p_comentario: k.id, p_status: status });
+          if (comResp) for (const rid of k.respIds) await rpc("moderar_comentario", { p_comentario: rid, p_status: "publicado" });
+          await registrar(k.autoraId || null, "Restaurou um comentário de " + k.autora);
+          ui.modal = null; ui.filtroCom = destino === "publicar" ? "publicado" : destino === "ocultar" ? "oculto" : "responder"; ui.comAlvo = k.id;
+          if (destino === "responder" && !(comResp && k.respIds.length)) { ui.respondendo = k.id; ui.focar = "respostaCampo"; }
+          return { msg: "Comentário restaurado. Está na aba " + (destino === "publicar" ? "Publicados" : destino === "ocultar" ? "Ocultos" : "Para responder") + ".", texto: "restauração de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: "removido" }); if (comResp) for (const rid of k.respIds) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" }); } };
         });
         return;
       }
