@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
   // administrador e suporte; o administrador, só suporte (0040).
   const { data: perfil, error: erroPerfil } = await admin
     .from("profiles")
-    .select("papel, status, dono_principal, pode_adicionar")
+    .select("papel, status, dono_principal, pode_adicionar, abas_bloqueadas")
     .eq("id", quem.user.id)
     .single();
 
@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
   ) {
     return resposta({ erro: "sem_permissao" }, 403, origem);
   }
-  if (perfil.papel === "dono" && !perfil.dono_principal && !perfil.pode_adicionar) {
+  if (perfil.papel === "dono" && !perfil.dono_principal && (!perfil.pode_adicionar || (perfil.abas_bloqueadas ?? []).includes("equipe"))) {
     return resposta(
       { erro: "sem_permissao", mensagem: "O dono principal não liberou adicionar membros para você." },
       403,
@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
   let codigo = "";
   let papel = "";
   let pode = { adicionar: true, remover: true, codigo: true, nome: true };
+  let abasBloqueadas: string[] = [];
   try {
     const corpo = await req.json();
     nome = String(corpo?.nome ?? "").trim();
@@ -119,6 +120,7 @@ Deno.serve(async (req) => {
       codigo: p.codigo !== false,
       nome: p.nome !== false,
     };
+    abasBloqueadas = Array.isArray(p.abas) ? p.abas.map((x: unknown) => String(x)).filter((x: string) => /^[a-z]{2,20}$/.test(x)).slice(0, 20) : [];
   } catch {
     return resposta({ erro: "corpo_invalido" }, 400, origem);
   }
@@ -210,7 +212,7 @@ Deno.serve(async (req) => {
     .insert({
       id: conta.user.id, nome, login, papel, status: "ativa",
       ...(papel === "dono"
-        ? { pode_adicionar: pode.adicionar, pode_remover: pode.remover, pode_codigo: pode.codigo, pode_nome: pode.nome }
+        ? { pode_adicionar: pode.adicionar, pode_remover: pode.remover, pode_codigo: pode.codigo, pode_nome: pode.nome, abas_bloqueadas: abasBloqueadas }
         : {}),
     });
 

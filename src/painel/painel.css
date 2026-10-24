@@ -2890,3 +2890,16 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .eqn-op em { font-style: normal; font-size: 13px; color: var(--texto-2); }
 .eqn-nota { display: block; margin-top: 14px; font-size: 13px; color: var(--texto-3); }
 @media (max-width: 860px) { .eqn-corpo { grid-template-columns: 1fr; } .eqn-esq { padding-right: 0; border-right: 0; } .eqn-dir { padding: 16px 0 0; } }
+
+.eqn-abas { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--linha-suave); }
+.eqn-abas h4 { margin: 0 0 10px; font-size: 15px; font-weight: 700; }
+.eqn-abas > .eqn-op { margin-bottom: 8px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 12px; }
+.eqn-abas-g { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.eqn-aba { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 12px; font-size: 14px; background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 10px; cursor: pointer; }
+.eqn-aba input { width: 18px; height: 18px; flex: none; accent-color: #4b4e57; }
+.eqn-aba svg { width: 18px; height: 18px; flex: none; fill: none; stroke: var(--eq-ouro); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.eqn-aba:has(input:not(:checked)) { color: var(--texto-3); }
+.eqn-aba:has(input:not(:checked)) svg { stroke: var(--texto-3); }
+.lado-bloq { opacity: .55; cursor: not-allowed; }
+.lado-cad { display: grid; margin-left: auto; color: #e5645c; }
+.lado-cad svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
