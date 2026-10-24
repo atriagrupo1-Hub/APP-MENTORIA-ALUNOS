@@ -2507,3 +2507,23 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .kc-card .est3-menu > button, .ax-card .est3-menu > button, .kc-linha .est3-menu > button { padding: 6px 8px; gap: 1px; }
 .kc-card .est3-menu em, .ax-card .est3-menu em, .kc-linha .est3-menu em { font-size: 11.5px; }
 .kc-card .est3-menu .est3-pil, .ax-card .est3-menu .est3-pil { min-height: 26px; }
+/* Mesmo padrão em todas as capas com status (telas de edição, listas de aulas e módulos) */
+.e3-caixa { position: relative; display: block; }
+.e3-caixa .ax-selo, .ea-capa-img .ax-selo { z-index: 2; }
+.ea-capa-img { position: relative; }
+.e3-oculto.ea-capa-img, .e3-caixa.e3-oculto > span:first-child, .e3-caixa.e3-oculto img { filter: grayscale(.85); }
+.e3-oculto.ea-capa-img, .e3-caixa.e3-oculto > span:first-child { opacity: .6; }
+.e3-bloq.ea-capa-img, .e3-caixa.e3-bloq img { filter: brightness(.55); }
+.e3-bloq .ax-selo { color: #f1d391; border-color: #c9a25c; }
+.mp-aula-capa .ax-selo { padding: 5px 8px; border-radius: 10px !important; }
+.mp-aula-capa .ax-selo b { display: block; font-size: 9px; }
+.mp-aula-capa .ax-selo svg { width: 16px; height: 16px; }
+/* Menu de status compacto em todo o painel */
+.est3-menu { min-width: 230px; padding: 4px; }
+.est3-menu > button { padding: 6px 8px; gap: 1px; }
+.est3-menu em { font-size: 11.5px; }
+.est3-menu .est3-pil { min-height: 26px; }
+.e3-caixa { display: inline-block; max-width: 100%; vertical-align: top; } .e3-caixa > span:first-child { display: block; }
+button.est3-pil[data-a="estado-menu"]::after { content: ""; width: 6px; height: 6px; margin: -3px 0 0 2px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg); }
+.kc-status .est3-pil::after { display: none; }
+.kc-status button.est3-pil[data-a="estado-menu"]::after { display: block; }
