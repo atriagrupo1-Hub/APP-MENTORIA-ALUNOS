@@ -1064,7 +1064,7 @@ export function montar(app: HTMLElement) {
   const IC_OLHO_X = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-3.2 3.8M6.6 7.6C4 9.4 2.5 12 2.5 12S6 18 12 18c1.5 0 2.9-.4 4.1-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>`;
   /** Em todo item com os três estados: Oculto enfraquece e ganha o olho fechado; Bloqueado ganha o cadeado. */
   const cls3 = (e: Estado3) => (e === "desativado" ? " e3-oculto" : e === "bloqueado" ? " e3-bloq" : "");
-  const selo3 = (e: Estado3) => (e === "desativado" ? `<span class="ax-selo" title="Oculto: não aparece na área da aluna">${IC_OLHO_X}</span>` : e === "bloqueado" ? `<span class="ax-selo" title="Bloqueado: a aluna vê, mas não acessa">${IC_CAD}</span>` : "");
+  const selo3 = (e: Estado3, fem = false) => (e === "desativado" ? `<span class="ax-selo" title="Não aparece na área da aluna">${IC_OLHO_X}<b>${fem ? "Oculta" : "Oculto"}</b></span>` : e === "bloqueado" ? `<span class="ax-selo" title="A aluna vê, mas não acessa">${IC_CAD}<b>${fem ? "Bloqueada" : "Bloqueado"}</b></span>` : "");
   /*
    * Liberação da aula: "Liberada para todas · data" (clica para tirar);
    * "Libera em N dias · data" quando há data marcada (da aula ou das
@@ -1108,9 +1108,9 @@ export function montar(app: HTMLElement) {
     const chave = tipo + ":" + id, [nome, cor, txt] = EST3[e];
     const rot = (x: Estado3) => (fem && x !== "desativado" ? EST3[x][0].replace(/o$/, "a") : fem ? "Oculta" : EST3[x][0]);
     return `<span class="est3${sub ? " com-sub" : ""}">
-      <button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${chave}" aria-haspopup="menu" aria-expanded="${ui.estMenu === chave}" title="Mudar o estado">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : tipo === "cat" ? IC_OLHO : "<i></i>"}${h(fem ? rot(e) : nome)}</button>
+      <button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${chave}" aria-haspopup="menu" aria-expanded="${ui.estMenu === chave}" title="Mudar o estado">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${h(fem ? rot(e) : nome)}</button>
       ${sub ? `<em>${txt}</em>` : ""}
-      ${ui.estMenu === chave ? `<span class="est3-menu" role="menu">${(["ativo", "bloqueado", "desativado"] as Estado3[]).map((x) => `<button type="button" role="menuitemradio" aria-checked="${x === e}" data-a="estado-set" data-v="${chave}:${x}"><span class="est3-pil ${EST3[x][1]}">${x === "bloqueado" ? IC_CAD : x === "desativado" ? IC_OLHO_X : "<i></i>"}${h(fem ? rot(x) : EST3[x][0])}</span><em>${EST3[x][2]}</em></button>`).join("")}</span>` : ""}
+      ${ui.estMenu === chave ? `<span class="est3-menu" role="menu">${(["ativo", "bloqueado", "desativado"] as Estado3[]).map((x) => `<button type="button" role="menuitemradio" aria-checked="${x === e}" data-a="estado-set" data-v="${chave}:${x}"><span class="est3-pil ${EST3[x][1]}">${x === "bloqueado" ? IC_CAD : x === "desativado" ? IC_OLHO_X : IC_OLHO}${h(fem ? rot(x) : EST3[x][0])}</span><em>${EST3[x][2]}</em></button>`).join("")}</span>` : ""}
     </span>`;
   }
   const seta = `<svg class="aa-seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>`;
@@ -2051,7 +2051,7 @@ export function montar(app: HTMLElement) {
       const corpo = !xs.length ? `<div class="ax-vazio">Nenhuma categoria neste botão ainda. Use Nova categoria.</div>`
         : `<div class="ax-grade" style="--n:${Math.min(xs.length, 3)}">${xs.map((x) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), n = resumoItens(x.id); return `
           <article class="ax-card${cls3(e)}" draggable="true" data-arrasta="${x.id}">
-            <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="ax-sem-capa">Sem capa</span>`}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${selo3(e)}</div>
+            <div class="ax-card-img"><button type="button" class="ax-card-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="ax-sem-capa">Sem capa</span>`}</button><span class="ax-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${selo3(e, true)}</div>
             <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${ic.seta}</button>
             <span class="ax-info">${ic.camadas}${n}</span>
             ${seletorEstado("catx", x.id, e, false, true)}
@@ -2081,7 +2081,7 @@ export function montar(app: HTMLElement) {
       <article class="ax-res${cls3(e)}">
         <div class="ax-res-cab"><span class="ax-navapp">${icDaAba(k)}<b>${h(k.nome)}</b></span><div class="ax-res-tit"><h3>Botão: ${h(k.nome)}</h3><span>${p(xs.length, "categoria", "categorias")}</span></div>${seletorEstado("cat", k.id, e)}</div>
         <ul class="ax-res-cats">${xs.map((x) => { const img = capaSite(x.capa), e2 = estado3(x.pub, x.bloq); return `<li class="ax-res-item${cls3(e2)}">
-          <button type="button" class="ax-res-img" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e2)}</button>
+          <button type="button" class="ax-res-img" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e2, true)}</button>
           <div class="ax-res-info">
             <button type="button" class="ax-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
             <div class="ax-res-l2"><span class="ax-info"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></svg>${resumoItens(x.id)}</span>${seletorEstado("catx", x.id, e2, false, true)}</div>
@@ -2150,7 +2150,7 @@ export function montar(app: HTMLElement) {
       const aulas = cs.reduce((t, c) => t + totalAulas(c), 0) + its.filter((i) => i.tipo === "aula").length + its.filter((i) => i.tipo === "modulo").reduce((t, i) => t + (todosModulos().find((y) => y.m.id === i.item)?.m.aulas.length || 0), 0);
       return `<span>${IC_CUR.camadas}${p(cs.length, "curso", "cursos")}</span><span>${livro}${p(mods, "módulo", "módulos")}</span><span>${IC_CURSO.play}${p(aulas, "aula", "aulas")}</span>`;
     };
-    const status = (x: CatAba, e: Estado3) => `<span class="kc-status">${seletorEstado("catx", x.id, e, false, true)}<button type="button" class="kc-chave" role="switch" aria-checked="${e !== "desativado"}" data-a="estado-set" data-v="catx:${x.id}:${e === "desativado" ? "ativo" : "desativado"}" title="${e === "desativado" ? "Mostrar a categoria" : "Ocultar a categoria"}" aria-label="${e === "desativado" ? "Mostrar" : "Ocultar"} ${h(x.nome)}"><i></i></button></span>`;
+    const status = (x: CatAba, e: Estado3) => `<span class="kc-status">${seletorEstado("catx", x.id, e, false, true)}</span>`;
     const kb = (x: CatAba) => `<span class="est3 kb kc-kb"><button type="button" class="kc-pontos" data-a="estado-menu" data-v="kb-kc:${x.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-kc:" + x.id}" aria-label="Mais opções de ${h(x.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === "kb-kc:" + x.id ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="catx-entrar" data-id="${x.id}">Entrar na categoria</button>
         <button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}">Editar</button>
@@ -2166,7 +2166,7 @@ export function montar(app: HTMLElement) {
             <button type="button" class="ax-ic" data-a="catx-entrar" data-id="${x.id}" title="Entrar na categoria" aria-label="Entrar na categoria ${h(x.nome)}">${seta}</button>`;
     const cartao = (x: CatAba) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq); return `
       <article class="kc-card${cls3(e)}" draggable="true" data-arrasta="${x.id}">
-        <div class="kc-capa"><button type="button" class="kc-capa-btn" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>${selo3(e)}<span class="kc-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${kb(x)}</div>
+        <div class="kc-capa"><button type="button" class="kc-capa-btn" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>${selo3(e, true)}<span class="kc-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>${kb(x)}</div>
         <button type="button" class="kc-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${seta}</button>
         <div class="kc-nums">${numeros(x)}</div>
         <div class="kc-pe">${status(x, e)}<span class="kc-bts">${acoes(x)}</span></div>
@@ -2174,7 +2174,7 @@ export function montar(app: HTMLElement) {
     const linha = (x: CatAba) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq); return `
       <article class="kc-linha${cls3(e)}" draggable="true" data-arrasta="${x.id}">
         <span class="kc-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
-        <button type="button" class="kc-mini" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e)}</button>
+        <button type="button" class="kc-mini" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e, true)}</button>
         <div class="kc-linha-txt"><button type="button" class="kc-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${seta}</button><div class="kc-nums">${numeros(x)}</div></div>
         ${status(x, e)}<span class="kc-bts">${acoes(x)}</span>
       </article>`; };
@@ -2238,7 +2238,7 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa ax">
       <nav class="ax-trilha"><button type="button" data-a="aba" data-v="layout">Categorias</button><span>›</span><b>${h(x.nome)}</b></nav>
       <div class="ax-catcab${cls3(e)}">
-        <span class="ax-catcab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="ax-sem-capa">Sem capa</span>`}${selo3(e)}</span>
+        <span class="ax-catcab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="ax-sem-capa">Sem capa</span>`}${selo3(e, true)}</span>
         <div class="ax-catcab-txt"><small class="ax-seq">Botão: ${h(k?.nome || "")}<i>›</i>Categoria: ${h(x.nome)}</small><h2>${h(x.nome)}</h2>${x.descricao ? `<p>${h(x.descricao)}</p>` : ""}${seletorEstado("catx", x.id, e, false, true)}</div>
         <div class="ax-catcab-acoes"><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></div>
       </div>
@@ -2606,7 +2606,7 @@ export function montar(app: HTMLElement) {
         <div class="mp-aula${mais ? " aberta" : ""}${a.pub ? "" : " desativada"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" draggable="true" data-arrasta="${a.id}">
           <div class="mp-aula-linha">
             <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
-            <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"))}<i>${IC_PLAY_C}</i></button>
+            <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}<i>${IC_PLAY_C}</i></button>
             <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.tipo === "audio" ? (a.arquivo ? "Áudio" : "Sem áudio") : a.tipo === "pdf" ? (a.arquivo ? "PDF (e-book)" : "Sem PDF") : a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
             <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
             ${seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), false, true)}

@@ -2490,3 +2490,14 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .kc-busca .campo { width: 230px; }
 @media (max-width: 1200px) { .kc-barra, .kc-dir { flex-wrap: wrap; } }
 .kc-ordem select { min-width: 230px; }
+/* Selo de Bloqueado/Oculto: ícone e o nome do estado na frente da capa */
+.ax-selo { flex-direction: column; gap: 2px; width: auto !important; height: auto !important; min-width: 52px; padding: 8px 12px; border-radius: 12px !important; }
+.ax-selo b { font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; line-height: 1; }
+.mp-aula-capa .ax-selo, .cs-mod-capa .ax-selo, .kc-mini .ax-selo { min-width: 0; padding: 5px; border-radius: 50% !important; }
+.mp-aula-capa .ax-selo b, .cs-mod-capa .ax-selo b, .kc-mini .ax-selo b { display: none; }
+.est3-pil svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.est3-pil:not(.verde):not(.amarelo):not(.vermelho) svg { display: none; }
+.kc-status { padding: 3px 4px; }
+.kc-status .est3-pil::after { content: ""; width: 6px; height: 6px; margin: -3px 0 0 2px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor; transform: rotate(45deg); }
+.kc-status .est3-menu .est3-pil::after { display: none; }
+.kc-status .est3-menu { left: 0; right: auto; }
