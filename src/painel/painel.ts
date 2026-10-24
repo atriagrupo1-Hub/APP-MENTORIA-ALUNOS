@@ -16,6 +16,7 @@ import { supabase } from "@/data/supabase";
 import * as api from "@/data/api";
 import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
+import { editarCapa } from "./editorCapa";
 
 /* ---------- tipos ---------- */
 
@@ -481,7 +482,7 @@ export function montar(app: HTMLElement) {
   let fotoPara: string | null = null;
   // Imagem para um campo de formulário: envia ao depósito "capas", guarda o caminho no campo escondido e mostra a prévia.
   const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
-  let imgPara: { form: string; campo: string; previa: string; pasta: string } | null = null;
+  let imgPara: { form: string; campo: string; previa: string; pasta: string; prop?: number } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
   const arquivoAula = Object.assign(document.createElement("input"), { type: "file", id: "arquivoAula", hidden: true });
   // Arquivos das opções do e-book: um seletor só, e quem pediu diz para onde vai.
@@ -2018,7 +2019,7 @@ export function montar(app: HTMLElement) {
         <form data-f="dest-salvar" data-id="${d.id}" class="aa-corpo cat-form" data-rolagem="dest-${d.id}">
           <div class="cat-capa" data-previa="dest-${d.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}</div>
           <input type="hidden" name="imagem" value="${h(d.imagem)}" />
-          <button type="button" class="al-botao pequeno" data-a="dest-imagem" data-id="${d.id}" style="align-self:flex-start">Alterar imagem</button>
+          <div class="capa-bts"><button type="button" class="al-botao" data-a="dest-imagem" data-id="${d.id}">${IC_IMG}${img ? "Alterar" : "Adicionar imagem"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="dest" data-id="${d.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="dest" data-id="${d.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
           <label class="cat-campo"><span>Rótulo (pequeno, com ícone)</span><input class="campo" name="rotulo" value="${h(d.rotulo)}" maxlength="40" required /></label>
           <label class="cat-campo"><span>Título</span><input class="campo" name="titulo" value="${h(d.titulo)}" maxlength="70" required /></label>
           <label class="cat-campo"><span>Descrição</span><textarea class="campo" name="descricao" rows="3" maxlength="200" data-conta="destConta">${h(d.descricao)}</textarea><small id="destConta" class="cat-conta">${d.descricao.length}/200</small></label>
@@ -2209,7 +2210,7 @@ export function montar(app: HTMLElement) {
         <form data-f="catx-salvar" data-id="${x.id}" class="aa-corpo cat-form" data-rolagem="catx-${x.id}">
           <div class="cat-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}</div>
           <input type="hidden" name="capa" value="${h(x.capa)}" />
-          <button type="button" class="al-botao pequeno" data-a="catx-imagem" data-id="${x.id}" style="align-self:flex-start">${img ? "Alterar capa" : "Adicionar capa"}</button>
+          <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
           <label class="cat-campo"><span>Nome da categoria</span><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" /></label>
           <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea></label>
           <div class="cat-vis-linha"><span>Status</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
@@ -2647,13 +2648,13 @@ export function montar(app: HTMLElement) {
             <span class="rotulo-ajuda mp-rot">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
             <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}">${capaH ? `<img src="${h(capaH)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
             <input type="hidden" name="capaH" value="${h(m.capaH)}" />
-            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Tirar capa</button></span>
+            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modh" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
             <span class="rotulo-ajuda mp-rot">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
             <span class="mp-pe">
               <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-v" data-previa="modv-${m.id}">${capaV ? `<img src="${h(capaV)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
               <input type="hidden" name="capa" value="${h(m.capa)}" />
-              <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Tirar capa</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
+              <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modv" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
             </span>
           </div>
           <div class="mp-campos">
@@ -2843,7 +2844,7 @@ export function montar(app: HTMLElement) {
           <section class="cs-cartao">
             <h3>Capa do curso ${dicaCampo(AJ.capaCurso)}</h3>
             <span class="e3-caixa${cls3(estado3(c.visivel, c.bloq))}"><span class="cs-capa-ed" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>${selo3(estado3(c.visivel, c.bloq))}</span>
-            <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_CURSO.lapis}Alterar imagem</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
+            <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
             <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
           </section>
           <section class="cs-cartao ea-config cs-config-est">
@@ -3118,7 +3119,7 @@ export function montar(app: HTMLElement) {
                     <div class="ea-op-caixa">
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_IMG}Capa ${dicaCampo(AJ.capa)}</span>
                       <span class="ea-op-capa" data-op-capa-previa${capa ? ` style="background:url('${h(capa)}') center/cover no-repeat"` : ""}></span>
-                      <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="op-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="op-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
+                      <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="op-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="op-capa-tirar">${IC_MOD.lixo}Remover</button></span>
                       <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
                     </div>
                     <div class="ea-op-caixa">
@@ -3191,7 +3192,7 @@ export function montar(app: HTMLElement) {
           <section class="cs-cartao ea-capa${tipoA === "pdf" ? " em-pe" : ""}" data-capa-aula>
             <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
             <div id="previaCapa" class="ea-capa-img${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
-            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Tirar capa</button></span>
+            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
           </section>
 
@@ -3788,7 +3789,7 @@ export function montar(app: HTMLElement) {
       case "cs-com-ver": { const k = S.comentarios.find((x) => x.id === d.id); if (!k) return; ui.cursoAba = "comentarios"; ui.csComFiltro = k.estado; ui.comAlvo = k.id; render(); document.getElementById("com-" + k.id)?.scrollIntoView({ block: "center" }); return; }
       case "cs-capa-direto": {
         const cid = d.id; const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
-        inp.onchange = () => { const f = inp.files?.[0]; if (!f) return; toast("Enviando a capa…");
+        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0) return; const f = await editarCapa(f0, 16 / 9, f0.name); if (!f) return; toast("Enviando a capa…");
           void executar(async () => { const caminho = await enviarArquivo("capas", "cursos", f); const c = curso(cid)!; const velha = c.capa || null; falhou(await supabase.from("produtos").update({ capa_path: caminho }).eq("id", cid).select("id").single()); return { msg: "Capa do curso trocada.", texto: "capa de " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update({ capa_path: velha }).eq("id", cid).select("id").single()); } }; }); };
         inp.click(); return;
       }
@@ -3874,7 +3875,22 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "catx-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["catx-" + ui.catxEditar]; ui.catxEditar = ""; ui.sujo = null; break;
-      case "catx-imagem": imgPara = { form: 'form[data-f="catx-salvar"]', campo: "capa", previa: "catx-" + d.id, pasta: "categorias" }; arquivoImg.click(); return;
+      case "catx-imagem": imgPara = alvoCapa("catx", d.id); arquivoImg.click(); return;
+      case "capa-editar": {
+        // Editar a capa atual: arrastar, aproximar e salvar o recorte.
+        if (d.v === "aula") { const x = ui.aula ? acharAula(ui.aula) : null; if (!x) return; const src = previas[x.a.id] || capaSite(x.a.capa); if (!src) { toast("Ainda não há capa. Use Alterar imagem."); return; } void (async () => { const pdf = document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf"; const f = await editarCapa(src, pdf ? 2 / 3 : 16 / 9, "capa-aula"); if (f) enviarCapaAula(f); })(); return; }
+        const alvoE = alvoCapa(d.v, d.id); if (!alvoE) return;
+        const src = previas[alvoE.previa] || document.querySelector<HTMLImageElement>('[data-previa="' + alvoE.previa + '"] img')?.src || "";
+        if (!src) { toast("Ainda não há capa. Use Alterar imagem."); return; }
+        void (async () => { const f = await editarCapa(src, alvoE.prop || 16 / 9, alvoE.previa); if (f) enviarCapa(alvoE, f); })();
+        return;
+      }
+      case "capa-tirar": {
+        const alvoT = alvoCapa(d.v, d.id); if (!alvoT) return;
+        const c = document.querySelector<HTMLInputElement>(alvoT.form + ' input[name="' + alvoT.campo + '"]'); if (c) c.value = "";
+        delete previas[alvoT.previa]; const pv = document.querySelector<HTMLElement>('[data-previa="' + alvoT.previa + '"]'); if (pv) pv.innerHTML = "";
+        toast("Capa tirada. Clique em Salvar para guardar."); return;
+      }
       case "curso-novo-cat": ui.modal = { tipo: "curso", catAba: d.id }; ui.focar = "cursoNome"; break;
       case "catx-duplicar": {
         const x = catAba(d.id)!; const irmas = S.catsAba.filter((y) => y.aba === x.aba);
@@ -3958,7 +3974,7 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "dest-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["dest-" + ui.destEditar]; ui.destEditar = null; ui.sujo = null; break;
-      case "dest-imagem": imgPara = { form: 'form[data-f="dest-salvar"]', campo: "imagem", previa: "dest-" + d.id, pasta: "destaques" }; arquivoImg.click(); return;
+      case "dest-imagem": imgPara = alvoCapa("dest", d.id); arquivoImg.click(); return;
       case "dest-estado": case "dest-visivel": {
         if (a === "dest-estado") { ui.estMenu = ""; const [id2, est] = d.v.split(":"); d.id = id2; if (S.destaques.find((k) => k.id === id2)?.visivel === (est === "ativa")) break; }
         const x = S.destaques.find((k) => k.id === d.id)!; const on = !x.visivel;
@@ -3978,10 +3994,10 @@ export function montar(app: HTMLElement) {
         });
         break;
       }
-      case "curso-capa": imgPara = { form: 'form[data-f="curso-config"]', campo: "capa", previa: "cur-" + d.id, pasta: "cursos" }; arquivoImg.click(); return;
+      case "curso-capa": imgPara = alvoCapa("curso", d.id); arquivoImg.click(); return;
       case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="cur-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar para guardar."); return; }
-      case "mod-capa-v": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capa", previa: "modv-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
-      case "mod-capa-h": imgPara = { form: 'form[data-f="mod-renomear"][data-id="' + d.id + '"]', campo: "capaH", previa: "modh-" + d.id, pasta: "modulos" }; arquivoImg.click(); return;
+      case "mod-capa-v": imgPara = alvoCapa("modv", d.id); arquivoImg.click(); return;
+      case "mod-capa-h": imgPara = alvoCapa("modh", d.id); arquivoImg.click(); return;
       case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modv-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
@@ -4917,8 +4933,18 @@ export function montar(app: HTMLElement) {
       return { msg: "Foto salva. Ela já aparece na área de membros de " + primeiroNome(al.nome) + ".", texto: "foto de " + al.nome };
     });
   }
-  arquivoImg.addEventListener("change", () => {
-    const file = arquivoImg.files?.[0]; arquivoImg.value = ""; const alvo = imgPara; if (!file || !alvo) return;
+  /** Onde cada capa fica (formulário, campo, prévia, pasta) e o formato dela. */
+  function alvoCapa(tipo: string, id: string): { form: string; campo: string; previa: string; pasta: string; prop: number } | null {
+    switch (tipo) {
+      case "catx": return { form: 'form[data-f="catx-salvar"]', campo: "capa", previa: "catx-" + id, pasta: "categorias", prop: 16 / 9 };
+      case "dest": return { form: 'form[data-f="dest-salvar"]', campo: "imagem", previa: "dest-" + id, pasta: "destaques", prop: 16 / 9 };
+      case "curso": return { form: 'form[data-f="curso-config"]', campo: "capa", previa: "cur-" + id, pasta: "cursos", prop: 16 / 9 };
+      case "modv": return { form: 'form[data-f="mod-renomear"][data-id="' + id + '"]', campo: "capa", previa: "modv-" + id, pasta: "modulos", prop: 2 / 3 };
+      case "modh": return { form: 'form[data-f="mod-renomear"][data-id="' + id + '"]', campo: "capaH", previa: "modh-" + id, pasta: "modulos", prop: 16 / 9 };
+    }
+    return null;
+  }
+  function enviarCapa(alvo: { form: string; campo: string; previa: string; pasta: string }, file: File) {
     toast("Enviando a imagem…");
     void (async () => {
       try {
@@ -4928,9 +4954,29 @@ export function montar(app: HTMLElement) {
         if (campo) campo.value = caminho;
         const pv = document.querySelector<HTMLElement>('[data-previa="' + alvo.previa + '"]');
         if (pv) pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />';
-        toast("Imagem enviada. Clique em Salvar para guardar.");
+        toast("Imagem pronta. Clique em Salvar para guardar.");
       } catch (e) { toast(motivo(e)); }
     })();
+  }
+  function enviarCapaAula(file: File) {
+    if (!ui.aula) return; const x = acharAula(ui.aula); if (!x) return; const aulaId = ui.aula;
+    toast("Enviando a imagem…");
+    void (async () => {
+      try {
+        const caminho = await enviarArquivo("capas", x.c.id, file);
+        const campo = document.getElementById("campoCapa") as HTMLInputElement | null; if (campo) campo.value = caminho;
+        ui.sujo = { f: "aula", id: aulaId };
+        previas[aulaId] = URL.createObjectURL(file);
+        const pv = document.getElementById("previaCapa");
+        if (pv) pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
+        toast("Imagem pronta. Clique em Salvar aula para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
+  }
+  // Escolheu a imagem: abre o editor (arrastar e aproximar) antes de enviar.
+  arquivoImg.addEventListener("change", () => {
+    const file = arquivoImg.files?.[0]; arquivoImg.value = ""; const alvo = imgPara; if (!file || !alvo) return;
+    void editarCapa(file, alvo.prop || 16 / 9, file.name).then((f) => { if (f) enviarCapa(alvo, f); });
   });
   arquivoFoto.addEventListener("change", () => {
     const file = arquivoFoto.files?.[0]; arquivoFoto.value = ""; const al = S.alunas.find((x) => x.id === fotoPara); if (!file || !al) return;
@@ -4953,20 +4999,8 @@ export function montar(app: HTMLElement) {
   });
   arquivoCapa.addEventListener("change", () => {
     const file = arquivoCapa.files?.[0]; arquivoCapa.value = ""; if (!file || !ui.aula) return;
-    const x = acharAula(ui.aula); if (!x) return;
-    const aulaId = ui.aula;
-    toast("Enviando a imagem…");
-    void (async () => {
-      try {
-        const caminho = await enviarArquivo("capas", x.c.id, file);
-        const campo = document.getElementById("campoCapa") as HTMLInputElement | null; if (campo) campo.value = caminho;
-        ui.sujo = { f: "aula", id: aulaId };
-        previas[aulaId] = URL.createObjectURL(file);
-        const pv = document.getElementById("previaCapa");
-        if (pv) pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
-        toast("Imagem enviada. Clique em Salvar aula para guardar.");
-      } catch (e) { toast(motivo(e)); }
-    })();
+    const pdf = document.querySelector<HTMLSelectElement>('select[name="tipo"]')?.value === "pdf";
+    void editarCapa(file, pdf ? 2 / 3 : 16 / 9, file.name).then((f) => { if (f) enviarCapaAula(f); });
   });
   arquivoAula.addEventListener("change", () => {
     const file = arquivoAula.files?.[0]; arquivoAula.value = ""; if (!file || !ui.aula) return;
