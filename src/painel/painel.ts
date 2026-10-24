@@ -3589,14 +3589,14 @@ export function montar(app: HTMLElement) {
         return `
         <article class="eq-card${e.bloqueada ? " bloq" : ""}">
           ${avatarEq(e.id, e.nome, e.cor, "eq-av " + papelCls, `<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i>`)}
-          <div class="eq-quem">
-            <div class="eq-l1"><b>${h(e.nome)}</b></div>
-            <span>Login: <b>${h(e.login)}</b></span>
-            <span>Código: <b class="eq-pontos" aria-label="Código escondido">••••</b></span>
+          <div class="eq-info">
+            <div class="eq-col"><small>Nome</small><b>${h(e.nome)}</b></div>
+            <div class="eq-col"><small>Função</small><span>${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
+            <div class="eq-col"><small>Login</small><b>${h(e.login)}</b></div>
+            <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">••••</b></div>
+            <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
+            <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           </div>
-          <div class="eq-col"><small>Papel</small><span class="eq-pil ${papelCls}">${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
-          <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
-          <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           <div class="eq-acoes">
             ${pode || (e.souEu && souPrincipal()) ? `<button type="button" class="al-botao" data-a="equipe-editar" data-id="${e.id}">${IC_EQ.lapis}Editar</button>` : ""}
             ${e.codigo ? `<button type="button" class="al-botao" data-a="copiar-acesso-equipe" data-id="${e.id}">${IC_EQ.copia}Copiar acesso</button><button type="button" class="al-botao" data-a="ver-codigo" data-id="${e.id}">${IC_EQ.chave}Ver código</button>` : ""}
