@@ -128,7 +128,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -266,7 +266,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -425,7 +425,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
+    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", saudacao: cfgIni.data?.inicio_saudacao ?? "Bem-vindo(a), {nome}", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
       telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao",
         perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao",
         vExibir: cfgIni.data?.vers_exibir === false ? "nao" : "sim", vEstilo: cfgIni.data?.vers_estilo ?? "caixa", vPosicao: cfgIni.data?.vers_posicao ?? "mensagem", vRef: cfgIni.data?.vers_referencia === false ? "nao" : "sim", vFundo: cfgIni.data?.vers_fundo ?? "escuro", vFonte: cfgIni.data?.vers_fonte ?? "serifa", vTamanho: cfgIni.data?.vers_tamanho ?? "medio",
@@ -488,7 +488,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -2233,10 +2233,10 @@ export function montar(app: HTMLElement) {
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
   function valoresInicio(f?: HTMLFormElement | null) {
     const c = S.config;
-    if (!f) return { titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo };
+    if (!f) return { saudacao: c.saudacao, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo };
     const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
     const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
-    return { titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" };
+    return { saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" };
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
@@ -2252,7 +2252,7 @@ export function montar(app: HTMLElement) {
         <div class="pv-topo"><span><b>${h(v.titulo)}</b><small>${h(v.sub)}</small></span><i></i></div>
         <div class="pv-rolo">
           <section class="pv-ola pv-${h(v.estilo)}">
-            <h4>Bem-vindo(a), <span>aluna</span></h4>
+            <h4>${h((S.config.saudacao || "Bem-vindo(a), {nome}").replace("{nome}", "aluna"))}</h4>
             ${v.frase.trim() ? `<p>${h(v.frase)}</p>` : ""}
             ${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}
           </section>
@@ -2423,7 +2423,7 @@ export function montar(app: HTMLElement) {
     const cores = [["texto", t.vCorTexto], ["borda", t.vCorBorda], ["fundo", t.vCorFundo]].filter(([, c]) => /^#[0-9a-f]{6}$/i.test(c || "")).map(([k, c]) => "--v-" + k + ":" + c).join(";");
     const caixa = t.vExibir !== "nao" && vs ? `<figure class="pv-vers pvv-${h(t.vEstilo)} pvv-${h(t.vFundo)} pvv-${h(t.vFonte)} pvv-${h(t.vTamanho)}" style="${cores}"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote>${t.vRef !== "nao" ? `<figcaption>${h(vs.ref)}</figcaption>` : ""}</figure>` : "";
     const ment = jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : "";
-    return pvTela("inicio", `<section class="pv-ola">${t.vPosicao === "topo" ? caixa : ""}<h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${t.vPosicao === "mensagem" ? caixa : ""}</section>${ment}${t.vPosicao === "depois" ? caixa : ""}`);
+    return pvTela("inicio", `<section class="pv-ola">${t.vPosicao === "topo" ? caixa : ""}<h4>${h((S.config.saudacao || "Bem-vindo(a), {nome}").replace("{nome}", "aluna"))}</h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${t.vPosicao === "mensagem" ? caixa : ""}</section>${ment}${t.vPosicao === "depois" ? caixa : ""}`);
   }
   /** Rascunho da aparência (o salvo, ou o padrão escuro). */
   function aparRascunho(): Aparencia {
@@ -2608,7 +2608,7 @@ export function montar(app: HTMLElement) {
     const M = menuRascunho(), vis = M.botoes.filter((b) => b.visivel !== false), c = M.cores;
     const vs = versHoje(), jor = curso(S.config.jornada);
     return `<div class="pv-tela"><div class="pv-topo"><span><b>${h(S.config.marcaTitulo)}</b><small>${h(S.config.marcaSub)}</small></span><i></i></div>
-      <div class="pv-rolo"><section class="pv-ola"><h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}</section>${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}</div>
+      <div class="pv-rolo"><section class="pv-ola"><h4>${h((S.config.saudacao || "Bem-vindo(a), {nome}").replace("{nome}", "aluna"))}</h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}</section>${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}</div>
       <nav class="pv-nav pvn-${h(M.estilo)} pvn-${h(M.tamanho)}" style="--nb-fundo:${h(c.fundo)};--nb-inativo:${h(c.inativo)};--nb-ativo:${h(c.ativo)};--nb-texto:${h(c.texto)}">${vis.map((b, i) => `<span${i === 0 ? ' class="on"' : ""}${i === 0 && b.cor ? ` style="--nb-ativo:${h(b.cor)}"` : ""}>${IC_APP[b.icone || "inicio"] || IC_APP.inicio}<em>${h(b.rotulo)}</em></span>`).join("")}</nav></div>`;
   }
   function redesenharMenuCfg() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaMenu(); }
@@ -2650,6 +2650,10 @@ export function montar(app: HTMLElement) {
               <label class="cfg-c"><span>Título</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" required /></label>
               <label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" /></label>
             </div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Saudação ${dicaCampo(`A frase grande do topo do Início, com o nome da aluna. Escreva {nome} onde deve entrar o primeiro nome dela. Ex.: "Bem-vinda, {nome}!" ou "Que bom te ver, {nome}".`, "cfg.saudacao")}</h3><p class="cfg-sub">A frase grande do topo do Início. {nome} vira o primeiro nome da aluna.</p>
+            <label class="cfg-c"><span>Texto</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" required placeholder="Bem-vindo(a), {nome}" /></label>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas ${dicaCampo(`Frase que aparece no Início, logo abaixo de "Bem-vindo(a)", para a aluna que já começou as aulas. Quem ainda não começou vê "Comece por aqui". "Usar modelo" coloca um texto pronto para você ajustar.`, "cfg.mensagem-de-boas-vindas")}</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
@@ -4156,7 +4160,7 @@ export function montar(app: HTMLElement) {
   function mandarPreviaInicio(v = valoresInicio(document.querySelector<HTMLFormElement>("#cfgInicio"))) {
     const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
-    fr.contentWindow?.postMessage({ tipo: "previa-inicio", titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo }, location.origin);
+    fr.contentWindow?.postMessage({ tipo: "previa-inicio", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo }, location.origin);
   }
   function posicionarCel() {
     const alvo = document.getElementById("cfgCel");
@@ -5693,7 +5697,7 @@ export function montar(app: HTMLElement) {
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
+          falhou(await supabase.from("configuracoes").update({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
           delete previas["cfg-banner"];
           setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");
