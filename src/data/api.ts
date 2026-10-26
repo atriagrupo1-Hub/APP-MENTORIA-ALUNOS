@@ -1,3 +1,4 @@
+import { notifDe, type NotifCfg } from "./notif";
 import {
   chavePublica,
   enderecoEntrar,
@@ -738,6 +739,21 @@ export async function marcarConcluida(aulaId: string, concluida: boolean): Promi
 }
 
 /** A cor que a aluna escolheu no Perfil (0055). `undefined` = não deu para ler. */
+/* ---------- notificações (0092) ---------- */
+/** Chave pública VAPID do projeto (a privada vive só na Edge Function enviar-avisos). */
+export const VAPID_PUBLICA = "BAJfH-y9zUGlfGc0DliczrEzDE2ac9zVGp8iMDgo05-Il4jWoDyyHUVDeYgWFepYEmrgaERgERQBt47VFrl0c5M";
+export async function salvarInscricaoPush(sub: PushSubscription): Promise<void> {
+  const j = sub.toJSON();
+  const { error } = await supabase.rpc("salvar_inscricao_push", { p_endpoint: j.endpoint, p_p256dh: j.keys?.p256dh, p_auth: j.keys?.auth });
+  if (error) throw new Error(`notificações: ${error.message}`);
+}
+export async function adiarAvisoNotificacao(): Promise<void> { await supabase.rpc("adiar_aviso_notificacao"); }
+export async function meuAvisoNotificacao(): Promise<string | null> {
+  const { data, error } = await supabase.rpc("meu_aviso_notificacao");
+  if (error) throw new Error(`notificações: ${error.message}`);
+  return (data as string | null) ?? null;
+}
+
 export async function minhaCor(): Promise<string | null | undefined> {
   const { data, error } = await supabase.rpc("minha_cor");
   if (error) return undefined;
@@ -782,9 +798,9 @@ export function uidStream(ref: string): string {
   return m ? m[1] : "";
 }
 
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; saudacao: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; visivel: boolean }> } }> {
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; saudacao: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean }> }; notif: NotifCfg }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, notif").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").eq("visivel", true).order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
@@ -819,6 +835,7 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
       imagem: cfg.data?.perfil_imagem ?? "nenhum", texto: cfg.data?.perfil_texto ?? "", layout: cfg.data?.perfil_layout ?? "padrao",
       botoes: Array.isArray(cfg.data?.perfil_botoes) ? cfg.data.perfil_botoes : [],
     },
+    notif: notifDe(cfg.data?.notif),
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
     destaques: (cfg.data?.exibir_destaques === false || (cfg.data?.inicio_banner ?? "card") !== "card" ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",

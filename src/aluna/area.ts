@@ -13,6 +13,7 @@ import "./area.css";
 import { supabase } from "../data/supabase";
 import * as api from "../data/api";
 import { aplicarAparencia } from "../data/aparencia";
+import { popNotif, SINO } from "../data/notif";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
@@ -1554,7 +1555,9 @@ export function montar(raiz: HTMLElement) {
         <div class="pf-al-bts">${bts.map((b) => {
           const ic = IC_PERFIL[b.id] || IC_PERFIL.link;
           const dentro = `${ic}<span>${h(b.rotulo)}</span><b aria-hidden="true">›</b>`;
-          return b.url ? `<a class="pf-al-bt" href="${h(b.url)}" target="_blank" rel="noopener">${dentro}</a>` : ACAO_PERFIL[b.id] ? `<button class="pf-al-bt${b.id === "sair" ? " sair" : ""}" data-a="${ACAO_PERFIL[b.id]}">${dentro}</button>` : "";
+          const cor = (b.cor ? "background:" + h(b.cor) + ";" : "") + (b.corTexto ? "color:" + h(b.corTexto) + ";" : ""), st = cor ? ` style="${cor}"` : "";
+          if (b.id === "notificacoes") return S.notifOn ? "" : `<div class="np-card"${st}><span class="np-csino">${SINO}</span><span class="np-ctxt"><b>${h(b.rotulo)}</b><em>Desativados. Ative para saber quando liberar.</em></span><button class="np-cbt" data-a="notif-ativar">Ativar</button></div>`;
+          return b.url ? `<a class="pf-al-bt" href="${h(b.url)}" target="_blank" rel="noopener"${st}>${dentro}</a>` : ACAO_PERFIL[b.id] ? `<button class="pf-al-bt${b.id === "sair" ? " sair" : ""}" data-a="${ACAO_PERFIL[b.id]}"${st}>${dentro}</button>` : "";
         }).join("")}</div>
         ${P.texto ? `<p class="pf-al-txt">${h(P.texto)}</p>` : ""}
       </div>`;
@@ -1964,6 +1967,8 @@ export function montar(raiz: HTMLElement) {
         return;
       }
       case "entrar-de-novo": S.saiu = false; break;
+      case "notif-ativar": ativarNotif(); return;
+      case "notif-depois": camada.innerHTML = ""; void api.adiarAvisoNotificacao().catch(() => {}); return;
       default: return;
     }
     render();
@@ -2010,7 +2015,72 @@ export function montar(raiz: HTMLElement) {
     void api.marcarPresenca().catch(() => {});
     const nomeTela = S.nome; S.entrou = true; S.carregando = false; S.entrando = false; S.erroEntrada = ""; S.nome = nomeTela;
     render(); marcarHistorico();
+    void depoisDeEntrar();
   }
+
+  /* ---------- notificações (0092) ---------- */
+  // O celular é inscrito no banco; o "Agora não" também fica no banco. Aqui só se pergunta ao aparelho se o aviso está ligado.
+  const NOTIF = () => (D && D.inicio && D.inicio.notif) || null;
+  const pushOk = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const chaveVapid = () => { const b = api.VAPID_PUBLICA.replace(/-/g, "+").replace(/_/g, "/"); const r = atob(b + "=".repeat((4 - (b.length % 4)) % 4)); return Uint8Array.from(r, (c) => c.charCodeAt(0)); };
+  const regSW = async () => (await navigator.serviceWorker.getRegistration()) || navigator.serviceWorker.register("/sw.js");
+  async function inscrever() {
+    const reg = await regSW(); await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveVapid() }));
+    await api.salvarInscricaoPush(sub); S.notifOn = true;
+  }
+  async function depoisDeEntrar() {
+    try { navigator.clearAppBadge && navigator.clearAppBadge(); } catch { /* */ }
+    if (S.abrirPend) { const v = S.abrirPend; S.abrirPend = null; abrirAlvo(v); }
+    if (pushOk() && Notification.permission === "granted") { try { await inscrever(); } catch { S.notifOn = false; } }
+    if (S.tela === "perfil") render();
+    const n = NOTIF(); if (!n || !n.ativo || S.notifOn || S.notifVisto || S.tela !== "inicio") return;
+    S.notifVisto = true;
+    let adiado = null; try { adiado = await api.meuAvisoNotificacao(); } catch { return; }
+    if (adiado && n.intervalo > 0 && Date.now() - new Date(adiado).getTime() < n.intervalo * 864e5) return;
+    if (camada.innerHTML) return;
+    camada.innerHTML = popNotif(n);
+  }
+  function ativarNotif() {
+    if (!pushOk()) {
+      camada.innerHTML = "";
+      folha(`<h2 class="serif">Ativar os avisos</h2><div style="margin-top:14px;font-size:1.0625rem;line-height:1.7;color:var(--texto-2)"><p><b style="color:var(--texto)">No iPhone:</b> primeiro coloque o app na tela de início — toque em Compartilhar e depois em “Adicionar à Tela de Início”. Abra o app pelo ícone e toque em ativar de novo.</p><p style="margin-top:12px"><b style="color:var(--texto)">No Android:</b> abra pelo Chrome e toque em ativar de novo.</p></div><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Entendi</button>`); return;
+    }
+    const pedido = Notification.requestPermission();
+    void pedido.then(async (r) => {
+      camada.innerHTML = "";
+      if (r !== "granted") {
+        folha(`<h2 class="serif">Avisos bloqueados</h2><p class="apoio" style="margin-top:8px">O celular está bloqueando os avisos deste app. Para liberar: abra os Ajustes do celular, procure o app (ou o navegador), toque em Notificações e ative. Depois toque em ativar de novo.</p><button class="botao largo" data-a="fechar-folha" style="margin-top:20px">Entendi</button>`); return;
+      }
+      try { await inscrever(); render(); aviso("Pronto! Você vai receber os avisos das novas aulas."); }
+      catch { aviso("Não conseguimos ativar agora. Tente de novo."); }
+    });
+  }
+  // Tocar no aviso abre direto no que foi avisado; lá vale a regra de sempre.
+  function abrirAlvo(v) {
+    if (!D || !v) return;
+    const [tipo, id] = String(v).split(":");
+    if (tipo === "modulos" || tipo === "presentes") { acao("ir", { v: tipo }); render(); return; }
+    if (tipo === "modulo") { const m = MODS().findIndex((x) => x.id === id); if (m >= 0) acao("modulo", { m }); else acao("ir", { v: "modulos" }); render(); return; }
+    if (tipo === "aula") {
+      let m = -1, i = -1; MODS().forEach((md, k) => { const j = md.aulas.findIndex((x) => x.id === id); if (j >= 0) { m = k; i = j; } });
+      if (m < 0) { acao("ir", { v: "modulos" }); render(); aviso("Esta aula ainda não foi liberada para você."); return; }
+      const ea = estadoAula(m, i);
+      if (!ea.fech) { acao("aula", { m, i }); render(); return; }
+      acao("modulo", { m }); render();
+      if (ea.seq) {
+        let k = i - 1; while (k > 0 && MODS()[m].aulas[k].bloq) k--;
+        folha(`<h2 class="serif">Aula bloqueada</h2><p class="apoio" style="margin-top:8px">Para assistir a ${h(lA(MODS()[m], i))}, conclua antes a ${h(lA(MODS()[m], k))}.</p><div style="display:grid;gap:10px;margin-top:18px"><button class="botao" data-a="aula" data-m="${m}" data-i="${k}">Ir para a ${h(lA(MODS()[m], k))}</button><button class="botao-2" data-a="fechar-folha">Agora não</button></div>`);
+      } else aviso("Esta aula será liberada em breve.");
+      return;
+    }
+    if (tipo === "presente") {
+      let alvo = null; CATS().forEach((c, ci) => c.cursos.forEach((cu, i) => cu.itens.forEach((t, j) => { if (t.id === id) alvo = ci + "-" + i + "-" + j; })));
+      if (alvo) { acao("presente", { v: alvo }); render(); } else { acao("ir", { v: "presentes" }); render(); }
+    }
+  }
+  if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.abrir) { if (S.entrou) abrirAlvo(e.data.abrir); else S.abrirPend = e.data.abrir; } });
+  try { const q = new URLSearchParams(location.search); if (q.get("abrir")) { S.abrirPend = q.get("abrir"); q.delete("abrir"); history.replaceState(history.state, "", location.pathname + (q.toString() ? "?" + q : "")); } } catch { /* */ }
 
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-a]"); if (!b || b.disabled || !raiz.contains(b)) return;

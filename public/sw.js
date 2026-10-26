@@ -66,3 +66,33 @@ self.addEventListener("fetch", (evento) => {
       .catch(() => fetch(pedido)),
   );
 });
+
+/**
+ * Avisos (push): aula, módulo ou presente liberado. O texto vem da Edge
+ * Function `enviar-avisos`; o som é o de notificação do próprio celular.
+ * Tocar no aviso abre o app direto no que foi avisado (?abrir=...).
+ */
+self.addEventListener("push", (evento) => {
+  let av = {};
+  try { av = evento.data ? evento.data.json() : {}; } catch { av = { body: evento.data ? evento.data.text() : "" }; }
+  evento.waitUntil((async () => {
+    await self.registration.showNotification(av.title || "AION", {
+      body: av.body || "", tag: av.tag || "aviso", renotify: true, silent: false,
+      icon: "/icone-192.png", badge: "/favicon-32.png", vibrate: [200, 100, 200],
+      data: { url: av.url || "/" },
+    });
+    // O número no ícone do app instalado: quantos avisos estão na bandeja.
+    try { const n = (await self.registration.getNotifications()).length; if (self.navigator.setAppBadge) await self.navigator.setAppBadge(n); } catch { /* sem suporte */ }
+  })());
+});
+
+self.addEventListener("notificationclick", (evento) => {
+  evento.notification.close();
+  const alvo = new URL((evento.notification.data && evento.notification.data.url) || "/", self.location.origin).href;
+  evento.waitUntil((async () => {
+    const abertas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const app = abertas.find((c) => new URL(c.url).origin === self.location.origin && !new URL(c.url).pathname.startsWith("/admin"));
+    if (app) { app.postMessage({ abrir: new URL(alvo).searchParams.get("abrir") }); return app.focus(); }
+    return self.clients.openWindow(alvo);
+  })());
+});
