@@ -708,6 +708,7 @@ export function montar(app: HTMLElement) {
     ajustarArvore();
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
+    posicionarCel();
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
       const el = document.getElementById(alvo) as HTMLInputElement | null;
@@ -2600,7 +2601,8 @@ export function montar(app: HTMLElement) {
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
             <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
-          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${previaInicio(v)}</div></div>
+          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia"><div class="pv-real-alvo" id="cfgCel"></div></div></div>
+          <p class="cfg-pvnota">É o app de verdade, com o que está publicado agora e o que você mudou aqui. Role com o mouse dentro do celular. Mostra a sua conta da equipe, então tudo aparece liberado.</p>
         </aside>
       </div>`;
     } else if (aba === "modulos" || aba === "presentes") {
@@ -4074,6 +4076,38 @@ export function montar(app: HTMLElement) {
     return { adicionar: !!c("adicionar")!.checked, remover: !!c("remover")!.checked, codigo: !!c("codigo")!.checked, nome: !!c("nome")!.checked, abas };
   }
 
+  /*
+   * O celular da prévia do Início é o app da aluna de verdade, num iframe
+   * (/?previa). Fica fora do painel e é posto por cima do lugar dele a cada
+   * desenho, para não recarregar quando o painel redesenha.
+   */
+  let celReal: HTMLDivElement | null = null, celPronto = false;
+  function mandarPreviaInicio(v = valoresInicio(document.querySelector<HTMLFormElement>("#cfgInicio"))) {
+    const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
+    const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
+    fr.contentWindow?.postMessage({ tipo: "previa-inicio", titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo }, location.origin);
+  }
+  function posicionarCel() {
+    const alvo = document.getElementById("cfgCel");
+    if (!alvo) { if (celReal) celReal.style.display = "none"; return; }
+    // Voltou para a aba: recarrega, para mostrar o app com o que mudou em outras telas.
+    if (celReal && celReal.style.display === "none") recarregarCel();
+    if (!celReal) {
+      celReal = document.createElement("div"); celReal.className = "cel-real";
+      const fr = document.createElement("iframe"); fr.title = "Prévia do app da aluna"; fr.src = "/?previa=1";
+      fr.addEventListener("load", () => { celPronto = false; setTimeout(() => { celPronto = true; mandarPreviaInicio(); }, 2500); });
+      celReal.append(fr); document.body.append(celReal);
+    }
+    const r = alvo.getBoundingClientRect(), comp = ui.cfgPrevia === "computador";
+    const W = comp ? 1280 : 390, k = r.width / W;
+    Object.assign(celReal.style, { display: "block", left: r.left + window.scrollX + "px", top: r.top + window.scrollY + "px", width: r.width + "px", height: r.height + "px" });
+    const fr = celReal.querySelector("iframe")!;
+    Object.assign(fr.style, { width: W + "px", height: r.height / k + "px", transform: `scale(${k})` });
+  }
+  /** Recarrega o app da prévia (depois de salvar). */
+  function recarregarCel() { const fr = celReal?.querySelector("iframe"); if (fr) { celPronto = false; fr.contentWindow?.location.reload(); } }
+  window.addEventListener("resize", () => posicionarCel());
+
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {
     const ft = document.querySelector<HTMLFormElement>("#cfgTelas"), pvt = document.getElementById("cfgPrevia");
@@ -4082,6 +4116,7 @@ export function montar(app: HTMLElement) {
     if (!f || !pv) return;
     const v = valoresInicio(f);
     f.querySelectorAll<HTMLElement>(".cfg-op").forEach((o) => { o.hidden = o.dataset.op !== v.banner; });
+    if (pv.classList.contains("pv-real")) { mandarPreviaInicio(v); return; }
     pv.innerHTML = previaInicio(v);
   }
 
@@ -5233,7 +5268,8 @@ export function montar(app: HTMLElement) {
         if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
       case "cfg-previa": {
         ui.cfgPrevia = d.v === "computador" ? "computador" : "celular";
-        const pv = document.getElementById("cfgPrevia"); if (pv) pv.className = "pv-" + ui.cfgPrevia;
+        const pv = document.getElementById("cfgPrevia"); if (pv) pv.className = "pv-" + ui.cfgPrevia + (pv.classList.contains("pv-real") ? " pv-real" : "");
+        posicionarCel();
         document.querySelectorAll<HTMLElement>('[data-a="cfg-previa"]').forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === ui.cfgPrevia)));
         return;
       }
@@ -5581,6 +5617,7 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           falhou(await supabase.from("configuracoes").update({ marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
           delete previas["cfg-banner"];
+          setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");
           return "Configurações do Início salvas.";
         });

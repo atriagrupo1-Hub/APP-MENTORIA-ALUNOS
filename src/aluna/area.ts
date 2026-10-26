@@ -16,6 +16,25 @@ import { aplicarAparencia } from "../data/aparencia";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
+  // Prévia dentro do painel (Configurações): só para olhar e rolar, sem clicar.
+  // O painel manda o que está sendo editado (ainda sem salvar) e a tela redesenha.
+  const PREVIA = new URLSearchParams(location.search).has("previa");
+  if (PREVIA) {
+    document.documentElement.classList.add("modo-previa");
+    window.addEventListener("message", (ev) => {
+      if (ev.origin !== location.origin || !D || !D.inicio) return;
+      const m = ev.data || {};
+      if (m.tipo !== "previa-inicio") return;
+      const I = D.inicio;
+      if (!I._destOrig) I._destOrig = I.destaques || [];
+      I.marca = { titulo: m.titulo || "", sub: m.sub || "" };
+      I.fraseRetorno = m.frase || "";
+      I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
+      I.estilo = m.estilo || "padrao";
+      I.destaques = m.banner === "card" ? I._destOrig : [];
+      render();
+    });
+  }
   // Aparência do painel (tema, cores, fontes, imagens) — vale também na tela de entrada.
   let APAR = null;
   void api.aparenciaDoApp().then((a) => {
