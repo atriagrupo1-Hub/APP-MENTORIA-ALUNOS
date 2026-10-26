@@ -3263,3 +3263,16 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .pv-real .pv-real-alvo { width: 100%; height: 100%; border-radius: 30px; background: #000; }
 .pv-computador.pv-real .pv-real-alvo { border-radius: 6px; }
 .cfg-pvnota { margin: 10px 2px 0; font-size: 12px; color: var(--texto-3); }
+
+/* Interrogações: o dono edita e remove o texto (0090) */
+.aj-dono { display: flex; justify-content: flex-end; gap: 6px; margin-top: 8px; }
+.aj-dono button, .aj-conf button { padding: 2px 8px; font: inherit; font-size: 11px; font-weight: 600; color: var(--texto-2); background: transparent; border: 1px solid var(--linha); border-radius: 6px; cursor: pointer; }
+.aj-dono button:hover { color: var(--texto); border-color: var(--texto-2); }
+.aj-dono button.ok { color: #fff; background: #a5732a; border-color: #a5732a; }
+.aj-conf { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 12px; font-weight: 600; }
+.aj-conf button.perigo { color: #fff; background: #b8352d; border-color: #b8352d; }
+.aj-area { display: block; width: 100%; min-height: 96px; margin-top: 6px; padding: 8px; font: inherit; font-size: 13px; line-height: 1.45; resize: vertical; }
+.ajuda-amarela-txt .aj-txt, .ajuda-pop .aj-txt { display: block; white-space: pre-line; }
+.cfg-aj-rest { margin-left: auto; align-self: center; font-size: 12px; }
+.cfg-bloco h3 .ajuda-amarela, .cfg-l .ajuda-amarela { margin-left: 6px; }
+.cfg-bloco h3 .ajuda-amarela-txt, .cfg-l .ajuda-amarela-txt { font-size: 13px; font-weight: 400; color: var(--texto); }

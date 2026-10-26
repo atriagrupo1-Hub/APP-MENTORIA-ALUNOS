@@ -123,6 +123,8 @@ type Dados = {
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; removidos: Comentario[]; equipe: Pessoa[];
   historico: Hist[]; sessoes: Sessao[]; sugestoes: Sugestao[];
+  /** Interrogações que o dono editou ou removeu (0090). */
+  ajudas: Record<string, { texto: string | null; removida: boolean }>;
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
@@ -270,11 +272,12 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
     supabase.from("categorias_aba").select("*").order("ordem").order("criada_em"),
     supabase.from("categoria_itens").select("id, categoria_aba_id, tipo, item_id").order("ordem").order("criado_em"),
+    supabase.from("ajudas").select("chave, texto, removida"),
     euP.then((e) => (e && e.papel === "Dono" ? supabase.from("sessoes_painel").select("id, perfil_id, inicio, ultimo_sinal").order("inicio", { ascending: false }).limit(3000) : null)),
   ]);
   const [cats, prods, mods, aulas, midias, extras, alunas, acessos, crono, coms, contatos] = await ondaA;
   // Rodada 2 (0043). Se alguma leitura destas falhar, o painel abre do mesmo jeito, sem ela.
-  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR, catItensR, sessR] = await ondaB;
+  const [eng, feitas, notas, contatosAl, sugs, hist, cadastro, , cfgIni, versos, dests, vivos, catsAbaR, catItensR, ajudasR, sessR] = await ondaB;
   const criadaEm = new Map<string, string>(((cadastro.data ?? []) as Array<{ id: string; criada_em: string }>).map((x) => [x.id, x.criada_em]));
   for (const r of [cats, prods, mods, aulas, extras, alunas, acessos, crono, coms]) falhou(r);
 
@@ -439,6 +442,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     fotos: fotosCache,
     historico: ((hist.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, aluna: x.aluna_id ?? null, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando, texto: x.texto, refTipo: x.ref_tipo ?? "", refId: x.ref_id ?? "", ctx: x.contexto ?? "" })),
     sessoes: ((sessR?.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, perfil: x.perfil_id, inicio: x.inicio, fim: x.ultimo_sinal })),
+    ajudas: Object.fromEntries(((ajudasR.data ?? []) as Array<{ chave: string; texto: string | null; removida: boolean }>).map((x) => [x.chave, { texto: x.texto, removida: !!x.removida }])),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
 }
@@ -484,7 +488,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -695,6 +699,69 @@ export function montar(app: HTMLElement) {
     return ["", ""];
   }
 
+  /*
+   * Interrogações: o texto salvo pelo dono troca o do painel, as removidas
+   * somem, e para o dono cada balão ganha "Editar" e "Remover" (0090).
+   */
+  const ehDono = () => eu?.papel === "Dono";
+  function aplicarAjudas(raiz: HTMLElement) {
+    const A = S.ajudas || {};
+    const ctrl = (k: string) => (ehDono() ? `<span class="aj-dono"><button type="button" data-dica-acao="editar" data-k="${h(k)}">Editar</button><button type="button" data-dica-acao="remover" data-k="${h(k)}">Remover</button></span>` : "");
+    raiz.querySelectorAll<HTMLElement>(".ajuda-btn[data-v]").forEach((b) => { if (A["pop." + b.dataset.v]?.removida) b.closest(".ajuda")?.remove(); });
+    raiz.querySelectorAll<HTMLElement>(".ajuda-pop").forEach((pop) => {
+      const b = pop.parentElement?.querySelector<HTMLElement>(".ajuda-btn[data-v]"); if (!b || pop.dataset.aj) return;
+      const k = "pop." + b.dataset.v; pop.dataset.aj = k;
+      const o = A[k];
+      if (o && o.texto != null) { const tit = pop.querySelector("b")?.outerHTML || ""; pop.innerHTML = tit + `<span class="aj-txt">${h(o.texto)}</span>`; }
+      pop.insertAdjacentHTML("beforeend", ctrl(k));
+    });
+    raiz.querySelectorAll<HTMLElement>(".ajuda-amarela[data-k]").forEach((d) => {
+      const k = d.dataset.k!, o = A[k];
+      if (o?.removida) { d.remove(); return; }
+      const t = d.querySelector<HTMLElement>(".ajuda-amarela-txt"); if (!t || t.dataset.aj) return; t.dataset.aj = k;
+      if (o && o.texto != null) t.innerHTML = `<span class="aj-txt">${h(o.texto)}</span>`;
+      t.insertAdjacentHTML("beforeend", ctrl(k));
+    });
+  }
+  // Editar e remover o texto da interrogação, direto no balão, sem redesenhar a tela.
+  document.addEventListener("click", (ev) => {
+    const alvo = ev.target as HTMLElement;
+    if (alvo.closest?.(".aj-editando")) { ev.stopPropagation(); }
+    const bt = alvo.closest?.<HTMLElement>("[data-dica-acao]"); if (!bt) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const k = bt.dataset.k!, caixa = bt.closest<HTMLElement>(".ajuda-pop, .ajuda-amarela-txt"); if (!caixa || !ehDono()) return;
+    const acao = bt.dataset.dicaAcao;
+    const textoAtual = () => { const c = caixa.cloneNode(true) as HTMLElement; c.querySelectorAll(".aj-dono, b:first-child").forEach((x) => { if (x.classList.contains("aj-dono") || caixa.classList.contains("ajuda-pop")) x.remove(); }); return (c.textContent || "").replace(/\s+/g, " ").trim(); };
+    if (acao === "editar") {
+      caixa.dataset.antes = caixa.innerHTML;
+      const tit = caixa.classList.contains("ajuda-pop") ? caixa.querySelector("b")?.outerHTML || "" : "";
+      caixa.classList.add("aj-editando");
+      caixa.innerHTML = `${tit}<textarea class="campo aj-area" rows="5" maxlength="1200">${h(textoAtual())}</textarea><span class="aj-dono"><button type="button" data-dica-acao="cancelar" data-k="${h(k)}">Cancelar</button><button type="button" class="ok" data-dica-acao="salvar" data-k="${h(k)}">Salvar</button></span>`;
+      caixa.querySelector<HTMLTextAreaElement>("textarea")?.focus();
+      return;
+    }
+    if (acao === "cancelar") { caixa.classList.remove("aj-editando"); caixa.innerHTML = caixa.dataset.antes || ""; return; }
+    if (acao === "remover") {
+      caixa.dataset.antes = caixa.innerHTML; caixa.classList.add("aj-editando");
+      caixa.insertAdjacentHTML("beforeend", `<span class="aj-conf">Remover esta interrogação? <button type="button" data-dica-acao="cancelar" data-k="${h(k)}">Não</button><button type="button" class="perigo" data-dica-acao="remover-sim" data-k="${h(k)}">Sim, remover</button></span>`);
+      return;
+    }
+    const gravar = async (linha: { texto?: string | null; removida: boolean }) => {
+      const r = await supabase.from("ajudas").upsert({ chave: k, texto: linha.texto ?? null, removida: linha.removida, atualizada_em: new Date().toISOString(), atualizada_por: eu!.id }).select("chave");
+      if (r.error) { toast(motivo(r.error)); return false; }
+      S.ajudas[k] = { texto: linha.texto ?? null, removida: linha.removida }; return true;
+    };
+    if (acao === "salvar") {
+      const t = caixa.querySelector<HTMLTextAreaElement>("textarea")?.value.trim() || "";
+      if (!t) { toast("Escreva a explicação, ou use Remover."); return; }
+      void gravar({ texto: t, removida: false }).then((ok) => { if (!ok) return; const tit = caixa.classList.contains("ajuda-pop") ? caixa.querySelector("b")?.outerHTML || "" : ""; caixa.classList.remove("aj-editando"); caixa.innerHTML = `${tit}<span class="aj-txt">${h(t)}</span><span class="aj-dono"><button type="button" data-dica-acao="editar" data-k="${h(k)}">Editar</button><button type="button" data-dica-acao="remover" data-k="${h(k)}">Remover</button></span>`; toast("Explicação salva."); });
+      return;
+    }
+    if (acao === "remover-sim") {
+      void gravar({ texto: S.ajudas[k]?.texto ?? null, removida: true }).then((ok) => { if (!ok) return; (caixa.closest(".ajuda, .ajuda-amarela") as HTMLElement | null)?.remove(); toast("Interrogação removida. Dá para restaurar em Configurações."); });
+    }
+  }, true);
+
   function render() {
     const ae = document.activeElement as HTMLInputElement | null;
     const fid = ae && ae.id;
@@ -709,6 +776,7 @@ export function montar(app: HTMLElement) {
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     posicionarCel();
+    aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
       const el = document.getElementById(alvo) as HTMLInputElement | null;
@@ -1468,7 +1536,7 @@ export function montar(app: HTMLElement) {
     recem: ["Recém-chegada", "Cadastrada nos últimos 7 dias e ainda sem o primeiro acesso. É normal.", "confira se ela recebeu o login e o código. Passando 7 dias sem entrar, ela vai para “Precisa de um empurrão”.", "var(--texto-2)"],
   };
   const AJUDA_ABAS: Record<string, [string, string, string]> = {
-    inicio: ["Início", "O resumo do dia: o que pede atenção agora.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
+    inicio: ["Início", "O resumo do dia: o que pede atenção agora. Os comentários só aparecem enquanto ninguém da equipe aprovou, ocultou, apagou ou respondeu.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
     alunas: ["Alunas", "Todas as alunas cadastradas, com a situação de cada uma.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
     ficha: ["Ficha da aluna", "Tudo sobre uma aluna: dados, aulas liberadas, progresso, anotações e histórico.", "confira o que ela já tem liberado antes de responder qualquer dúvida. Anote o que conversou para a equipe saber."],
     engajamento: ["Engajamento", "Quem está avançando e quem parou. Cada quadro tem um ? explicando o grupo.", "comece por “Precisam de um empurrão”; ligue ou mande o recado pelo WhatsApp (o botão já abre a conversa com a mensagem pronta); e clique em “Registrar contato” para anotar como foi — assim ninguém da equipe liga duas vezes para a mesma pessoa."],
@@ -1478,7 +1546,8 @@ export function montar(app: HTMLElement) {
     aula: ["Aula aberta", "O conteúdo de uma aula: vídeo, capa, texto e extras.", "cole o link do vídeo, escolha a capa, escreva o texto e clique em Salvar aula."],
     comentarios: ["Comentários", "O que as alunas escreveram nas aulas.", "publique o que estiver bom, oculte o que não for adequado e responda quando fizer sentido."],
     equipe: ["Equipe", "Quem tem acesso a este painel.", "adicione uma pessoa, passe o código para ela e bloqueie quando ela sair da equipe."],
-    registro: ["Registro", "Tudo o que a equipe fez no painel, com data e hora.", "consulte quando precisar saber quem mudou o quê."],
+    registro: ["Registro", "Tudo o que a equipe fez no painel, com data e hora, o tempo que cada pessoa ficou no painel e as entradas. Só os donos veem.", "escolha a pessoa à esquerda e o período em Todas as datas. A lixeira apaga um registro ou todos da pessoa no período."],
+    config: ["Configurações", "Como o app da aluna aparece: o Início, os Módulos, os Presentes, o Perfil, o menu de baixo, os versículos e a aparência (cores, fontes e imagens).", "escolha a aba, mude o que quiser olhando a prévia à direita e clique em Salvar alterações. Cada ? explica o que aquela parte faz."],
   };
   /*
    * O manual do cronograma, aberto pelo "?" da janela.
@@ -2209,7 +2278,7 @@ export function montar(app: HTMLElement) {
   const tituloCfg = (nomeT: string, nomeE: string, valor: string, est: string, ajuda: string) => `
           <div class="cfg-bloco">
             <div class="cfg-2">
-              <label class="cfg-c"><span><b class="cfg-l">Título da seção</b>${ajuda}</span><input class="campo" name="${nomeT}" value="${h(valor)}" maxlength="40" required /></label>
+              <label class="cfg-c"><span><b class="cfg-l">Título da seção ${dicaCampo(`O nome que aparece no alto desta tela no app da aluna. O estilo do título escolhe se ele fica numa caixa (Padrão), com moldura dupla ou sem caixa (Minimalista).`, "cfg.titulo-secao")}</b>${ajuda}</span><input class="campo" name="${nomeT}" value="${h(valor)}" maxlength="40" required /></label>
               <label class="cfg-c"><span>Estilo do título</span><span class="cfg-sel-aa"><i>Aa</i><select class="campo" name="${nomeE}">${EST_TIT.map(([k, t]) => `<option value="${k}" ${est === k ? "selected" : ""}>${t}</option>`).join("")}</select></span></label>
             </div>
           </div>`;
@@ -2234,15 +2303,15 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.modulos}</span><div><h2>Módulos</h2><p>Configure a exibição dos módulos e das aulas no aplicativo.</p></div></div>
           ${tituloCfg("modTitulo", "modTitEstilo", t.modTitulo, t.modTitEstilo, `<small>Nome que aparece no topo da tela de módulos.</small>`)}
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Cards dos módulos</h3><p class="cfg-sub">Personalize a aparência dos cards que aparecem para a aluna.</p></div><label class="cfg-chave"><input type="checkbox" name="modProgresso" ${t.modProgresso !== "nao" ? "checked" : ""} /><i></i>Exibir progresso</label></div>
+            <div class="cfg-blcab"><div><h3>Cards dos módulos ${dicaCampo(`Os cartões que a aluna vê em Módulos, um por módulo da mentoria. "Exibir progresso" mostra a barra com quantas aulas ela já fez em cada módulo.`, "cfg.cards-dos-m-dulos")}</h3><p class="cfg-sub">Personalize a aparência dos cards que aparecem para a aluna.</p></div><label class="cfg-chave"><input type="checkbox" name="modProgresso" ${t.modProgresso !== "nao" ? "checked" : ""} /><i></i>Exibir progresso</label></div>
             <div class="cfg-cards">${mods.map((m) => { const c = capaSite(m.capa); return `<span class="cfg-mcard">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}<small>${h(m.rot)} ${m.num}</small><b>${h(m.nome)}</b><em>${IC_CUR.camadas}${p(m.aulas.length, "aula", "aulas")}</em></span>`; }).join("") || `<p class="cfg-sub">A mentoria ainda não tem módulos.</p>`}</div>
           </div>
           <div class="cfg-bloco cfg-2l">
-            <div><h3>Layout dos cards</h3>${opcoesCfg("modLayout", t.modLayout, EST_TIT)}</div>
-            <div><h3>Tamanho</h3><div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modTamanho" value="${k}" ${t.modTamanho === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
+            <div><h3>Layout dos cards ${dicaCampo(`O visual dos cartões dos módulos: Padrão, Com moldura (borda dupla) ou Minimalista (sem fundo e com borda fina).`, "cfg.layout-dos-cards")}</h3>${opcoesCfg("modLayout", t.modLayout, EST_TIT)}</div>
+            <div><h3>Tamanho ${dicaCampo(`O tamanho da capa do módulo dentro do cartão: Pequeno, Médio ou Grande.`, "cfg.tamanho")}</h3><div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modTamanho" value="${k}" ${t.modTamanho === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
           </div>
           <div class="cfg-bloco">
-            <h3>Ordem dos módulos</h3><p class="cfg-sub">Arraste para mudar a ordem que aparece no app.</p>
+            <h3>Ordem dos módulos ${dicaCampo(`A ordem em que os módulos aparecem para a aluna. Arraste pela alça (⋮⋮) para mudar. O status define se o módulo está ativo, bloqueado (aparece com cadeado) ou oculto (não aparece). O ⋮ abre o curso para editar.`, "cfg.ordem-dos-m-dulos")}</h3><p class="cfg-sub">Arraste para mudar a ordem que aparece no app.</p>
             <div class="cfg-ordem">${mods.map((m, i) => { const c = capaSite(m.capa); return `
               <div class="cfg-orl" draggable="true" data-arrasta="${m.id}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2267,7 +2336,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.presentes}</span><div><h2>Presentes</h2><p>Configure os botões de categorias e o conteúdo que aparece na área de Presentes.</p></div></div>
           ${tituloCfg("presTitulo", "presTitEstilo", t.presTitulo, t.presTitEstilo, `<small>Nome que aparece no topo da tela de Presentes.</small>`)}
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Botões de categorias</h3><p class="cfg-sub">Personalize os botões que aparecem para a aluna na área de Presentes.</p></div>${pb ? `<button type="button" class="al-botao-ouro pequeno" data-a="catx-nova" data-id="${pb.id}">${IC_EQ.mais}Adicionar categoria</button>` : ""}</div>
+            <div class="cfg-blcab"><div><h3>Botões de categorias ${dicaCampo(`As categorias que aparecem dentro de Presentes no app. Para cada uma dá para escolher o ícone e a cor, deixar visível ou oculta, editar a capa e o conteúdo, excluir e arrastar para mudar a ordem.`, "cfg.bot-es-de-categorias")}</h3><p class="cfg-sub">Personalize os botões que aparecem para a aluna na área de Presentes.</p></div>${pb ? `<button type="button" class="al-botao-ouro pequeno" data-a="catx-nova" data-id="${pb.id}">${IC_EQ.mais}Adicionar categoria</button>` : ""}</div>
             <div class="cfg-ordem">${cats.map((x) => { const c = capaSite(x.capa), ic = x.icone || "estrela", cor = x.cor || "dourado", vis = x.pub; return `
               <div class="cfg-orl cfg-catl" draggable="true" data-arrasta="${x.id}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2281,11 +2350,11 @@ export function montar(app: HTMLElement) {
               </div>`; }).join("") || `<p class="cfg-sub">Nenhuma categoria em Presentes.</p>`}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Layout dos botões</h3><p class="cfg-sub">Escolha como os botões serão exibidos.</p>
+            <h3>Layout dos botões ${dicaCampo(`Como as categorias aparecem na tela Presentes: em grade de 2 ou 3 colunas, em lista ou como botões grandes (cartões com descrição, como é hoje).`, "cfg.layout-dos-bot-es")}</h3><p class="cfg-sub">Escolha como os botões serão exibidos.</p>
             <div class="cfg-radios cfg-lay">${[["grade2", "Grade 2 colunas", IC_CUR.grade], ["grade3", "Grade 3 colunas", IC_CUR.grade], ["lista", "Lista", IC_CUR.lista], ["grandes", "Botões grandes", IC_CFG.img]].map(([k, tt, ic]) => `<label class="cfg-radio"><input type="radio" name="presLayout" value="${k}" ${t.presLayout === k ? "checked" : ""} />${ic}<span>${tt}</span></label>`).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Estilo visual</h3><p class="cfg-sub">Escolha o estilo dos botões de categoria.</p>
+            <h3>Estilo visual ${dicaCampo(`O acabamento visual deste bloco no app: o padrão, uma versão com borda mais marcada ou uma versão minimalista, mais limpa.`, "cfg.estilo-visual")}</h3><p class="cfg-sub">Escolha o estilo dos botões de categoria.</p>
             ${opcoesCfg("presEstilo", t.presEstilo, [["padrao", "Padrão"], ["borda", "Com borda"], ["minimalista", "Minimalista"]])}
           </div>
         </form>
@@ -2310,7 +2379,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Versículos</h2><p>Gerencie os versículos exibidos no Início, em sequência, para as alunas.</p></div></div>
           <div class="cfg-info cfg-vexib"><span class="cfg-ok">✓</span><span><b>Exibir versículo do dia</b><em>Ativa ou desativa a exibição do versículo no aplicativo.</em></span><label class="cfg-chave"><input type="checkbox" name="vExibir" ${t.vExibir !== "nao" ? "checked" : ""} /><i></i><span class="cfg-chtxt">${t.vExibir !== "nao" ? "Ativado" : "Desativado"}</span></label></div>
           <div class="cfg-bloco">
-            <h3>Configurações de exibição</h3><p class="cfg-sub">Escolha como o versículo será exibido na tela inicial.</p>
+            <h3>Configurações de exibição ${dicaCampo(`Como o versículo do dia aparece no Início: em caixa ou só o texto, onde fica (no topo, abaixo da mensagem ou depois da mentoria), com ou sem a referência e a cor do fundo da caixa.`, "cfg.configura-es-de-exibi-o")}</h3><p class="cfg-sub">Escolha como o versículo será exibido na tela inicial.</p>
             <div class="cfg-4">
               <label class="cfg-c"><span>Estilo de exibição</span>${SEL("vEstilo", t.vEstilo, [["caixa", "Destaque (caixa)"], ["simples", "Simples (só o texto)"]])}</label>
               <label class="cfg-c"><span>Posição</span>${SEL("vPosicao", t.vPosicao, [["topo", "No topo do Início"], ["mensagem", "Abaixo da mensagem"], ["depois", "Depois da mentoria"]])}</label>
@@ -2319,7 +2388,7 @@ export function montar(app: HTMLElement) {
             </div>
           </div>
           <div class="cfg-bloco">
-            <h3>Estilo visual</h3><p class="cfg-sub">Personalize a aparência da caixa do versículo.</p>
+            <h3>Estilo visual ${dicaCampo(`O acabamento visual deste bloco no app: o padrão, uma versão com borda mais marcada ou uma versão minimalista, mais limpa.`, "cfg.estilo-visual")}</h3><p class="cfg-sub">Personalize a aparência da caixa do versículo.</p>
             <div class="cfg-5">
               <label class="cfg-c"><span>Fonte do texto</span>${SEL("vFonte", t.vFonte, [["serifa", "Serifada (Padrão)"], ["sem-serifa", "Sem serifa"]])}</label>
               <label class="cfg-c"><span>Tamanho do texto</span>${SEL("vTamanho", t.vTamanho, [["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]])}</label>
@@ -2330,7 +2399,7 @@ export function montar(app: HTMLElement) {
             <button type="button" class="link" data-a="v-cores-padrao">Voltar às cores padrão</button>
           </div>
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Lista de versículos</h3><p class="cfg-sub">Gerencie os versículos que aparecerão em sequência para as alunas. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar versículo</button></div>
+            <div class="cfg-blcab"><div><h3>Lista de versículos ${dicaCampo(`Os versículos que aparecem um por dia no Início, em sequência, voltando ao primeiro depois do último. Os ocultos ficam guardados e não entram na sequência. "Hoje" marca o que está aparecendo agora.`, "cfg.lista-de-vers-culos")}</h3><p class="cfg-sub">Gerencie os versículos que aparecerão em sequência para as alunas. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar versículo</button></div>
             <div class="cfg-vtab">
               <div class="cfg-vcab"><span></span><span>#</span><span>Texto do versículo</span><span>Referência</span><span>Ordem</span><span>Visível</span><span>Ações</span></div>
               ${S.versiculos.map((x, i) => `
@@ -2371,15 +2440,15 @@ export function montar(app: HTMLElement) {
         <form data-f="cfg-aparencia" class="cfg-painel cfg-form" id="cfgApar">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.aparencia}</span><div><h2>Aparência</h2><p>Personalize as cores, fontes, imagens e estilo visual do aplicativo da aluna.</p></div></div>
           <div class="cfg-bloco">
-            <h3>Tema geral</h3><p class="cfg-sub">Escolha o tema de cores principal do aplicativo.</p>
+            <h3>Tema geral ${dicaCampo(`A combinação de cores do app inteiro. O tema vale para a aluna que ainda não escolheu Claro ou Escuro no Perfil dela.`, "cfg.tema-geral")}</h3><p class="cfg-sub">Escolha o tema de cores principal do aplicativo.</p>
             <div class="cfg-temas">${Object.entries(TEMAS).map(([k, [nm, p0]]) => `<label class="cfg-tema"><input type="radio" name="aTema" value="${k}" ${A.tema === k ? "checked" : ""} /><span class="cfg-tema-cx" style="background:${p0.fundo}"><span class="cfg-tema-cel" style="border-color:${p0.primaria};background:${p0.cards}">${capa0 ? `<img src="${h(capa0)}" alt="" />` : ""}<i style="background:${p0.primaria}"></i></span></span><em>${nm}</em></label>`).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Cores principais</h3><p class="cfg-sub">Personalize as cores do aplicativo. <button type="button" class="link" data-a="apar-cores-tema">Usar as cores do tema</button></p>
+            <h3>Cores principais ${dicaCampo(`Troca cores do tema: a primária (botões e detalhes dourados), a secundária (destaques), os fundos e os textos. "Usar as cores do tema" desfaz as trocas.`, "cfg.cores-principais")}</h3><p class="cfg-sub">Personalize as cores do aplicativo. <button type="button" class="link" data-a="apar-cores-tema">Usar as cores do tema</button></p>
             <div class="cfg-cores6">${CORES_APAR.map(([k, t, d]) => `<label class="cfg-cor6"><span><b>${t}</b><em>${d}</em></span><span class="cfg-hex"><i style="background:${h(c[k])}"><input type="color" value="${h(c[k])}" data-apar-cor="${k}" aria-label="${t}" /></i><b>${h(c[k].toUpperCase())}</b></span></label>`).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Tipografia</h3><p class="cfg-sub">Escolha a fonte utilizada no aplicativo.</p>
+            <h3>Tipografia ${dicaCampo(`As fontes do app: a dos títulos e a dos textos. O exemplo mostra como fica.`, "cfg.tipografia")}</h3><p class="cfg-sub">Escolha a fonte utilizada no aplicativo.</p>
             <div class="cfg-2">
               <div class="cfg-c"><span>Fonte de títulos</span><select class="campo" data-apar-fonte="fonteTitulo">${Object.entries(FONTES_TITULO).map(([k, t]) => `<option value="${h(k)}" ${(A.fonteTitulo || "Cormorant Garamond") === k ? "selected" : ""}>${t}</option>`).join("")}</select>
                 <div class="cfg-fonte" style="font-family:'${h(A.fonteTitulo || "Cormorant Garamond")}',serif"><b>Aa</b><span><i>Título de exemplo</i><small>MENTORIA</small></span></div></div>
@@ -2388,11 +2457,11 @@ export function montar(app: HTMLElement) {
             </div>
           </div>
           <div class="cfg-bloco">
-            <h3>Imagens e fundos</h3><p class="cfg-sub">Personalize as imagens de fundo e elementos visuais.</p>
+            <h3>Imagens e fundos ${dicaCampo(`Logo no topo do app (no lugar do nome), imagem de fundo da tela de entrada, imagem de fundo das páginas e o ícone que aparece na aba do navegador.`, "cfg.imagens-e-fundos")}</h3><p class="cfg-sub">Personalize as imagens de fundo e elementos visuais.</p>
             <div class="cfg-imgs">${IMGS_APAR.map(([k, t, d]) => { const v = A[k] as string | undefined, u = v ? previas["apar-" + k] || urlDaCapa(v) : ""; return `<div class="cfg-img"><span><b>${t}</b><em>(${d})</em></span><span class="cfg-img-l"><span class="cfg-img-th">${u ? `<img src="${h(u)}" alt="" />` : IC_CFG.img}</span><button type="button" class="al-botao pequeno" data-a="apar-img" data-v="${k}">Alterar imagem</button>${v ? `<button type="button" class="cfg-lixo" data-a="apar-img-tirar" data-v="${k}" aria-label="Remover">${IC_MOD.lixo}</button>` : ""}</span></div>`; }).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Recursos visuais</h3>
+            <h3>Recursos visuais ${dicaCampo(`Liga ou desliga efeitos do app: o brilho nos botões, as bordas douradas dos cartões, as sombras e as animações quando a tela muda.`, "cfg.recursos-visuais")}</h3>
             <div class="cfg-recs">${([["brilho", "Efeitos de brilho nos botões"], ["bordas", "Bordas douradas"], ["sombras", "Sombras suaves"], ["animacoes", "Animações de transição"]] as const).map(([k, t]) => `<label class="cfg-chave"><input type="checkbox" data-apar-rec="${k}" ${A[k] !== false ? "checked" : ""} /><i></i>${t}</label>`).join("")}</div>
           </div>
         </form>
@@ -2418,18 +2487,18 @@ export function montar(app: HTMLElement) {
         <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="perfil">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.perfil}</span><div><h2>Perfil</h2><p>Configure as informações e opções que aparecem no perfil da aluna.</p></div></div>
           <div class="cfg-bloco">
-            <h3>Nome e apresentação</h3><p class="cfg-sub">Personalize como o nome da aluna será exibido.</p>
+            <h3>Nome e apresentação ${dicaCampo(`O título acima do nome na tela Perfil e a saudação. Na saudação, {nome} vira o primeiro nome da aluna e {nome_completo} o nome inteiro.`, "cfg.nome-e-apresenta-o")}</h3><p class="cfg-sub">Personalize como o nome da aluna será exibido.</p>
             <div class="cfg-2">
               <label class="cfg-c"><span>Título da seção</span><input class="campo" name="perfTitulo" value="${h(t.perfTitulo)}" maxlength="40" required /></label>
               <label class="cfg-c"><span>Saudação</span><input class="campo" name="perfSaud" value="${h(t.perfSaud)}" maxlength="60" required /><small>Use {nome} para o primeiro nome da aluna ou {nome_completo} para o nome inteiro.</small></label>
             </div>
           </div>
           <div class="cfg-bloco">
-            <h3>Imagem de perfil</h3><p class="cfg-sub">Defina como será exibida a foto da aluna.</p>
+            <h3>Imagem de perfil ${dicaCampo(`Se a tela Perfil mostra a foto da aluna (ela pode tocar para trocar), um ícone fixo ou nenhuma imagem.`, "cfg.imagem-de-perfil")}</h3><p class="cfg-sub">Defina como será exibida a foto da aluna.</p>
             <div class="cfg-radios cfg-r3">${[["foto", "Foto da aluna", "Usa a foto enviada pela aluna"], ["icone", "Ícone padrão", "Mostra um ícone fixo"], ["nenhum", "Não exibir", "Oculta a foto no perfil"]].map(([k, tt, d]) => `<label class="cfg-radio dupla"><input type="radio" name="perfImagem" value="${k}" ${t.perfImagem === k ? "checked" : ""} /><span><b>${tt}</b><em>${d}</em></span></label>`).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Botões de ações</h3><p class="cfg-sub">Configure os botões que aparecem no perfil da aluna.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="pbt-editar" data-id="novo">${IC_EQ.mais}Adicionar botão</button></div>
+            <div class="cfg-blcab"><div><h3>Botões de ações ${dicaCampo(`Os botões da tela Perfil da aluna: Configurar, Onde parei, Sair e outros que você criar com um link (por exemplo, o WhatsApp de suporte). Arraste para mudar a ordem; a chave esconde sem apagar.`, "cfg.bot-es-de-a-es")}</h3><p class="cfg-sub">Configure os botões que aparecem no perfil da aluna.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="pbt-editar" data-id="novo">${IC_EQ.mais}Adicionar botão</button></div>
             <div class="cfg-ordem">${bts.map((b, i) => { const tp = tipoBt(b); return `
               <div class="cfg-orl" draggable="true" data-arrasta="pbt:${i}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2441,11 +2510,11 @@ export function montar(app: HTMLElement) {
               </div>`; }).join("") || `<p class="cfg-sub">Nenhum botão. Use Adicionar botão.</p>`}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Texto complementar</h3><p class="cfg-sub">Adicione uma mensagem adicional que aparece abaixo dos botões.</p>
+            <h3>Texto complementar ${dicaCampo(`Uma mensagem opcional que aparece embaixo dos botões na tela Perfil da aluna.`, "cfg.texto-complementar")}</h3><p class="cfg-sub">Adicione uma mensagem adicional que aparece abaixo dos botões.</p>
             <label class="cfg-c"><textarea class="campo" name="perfTexto" rows="2" maxlength="240" placeholder="Opcional">${h(t.perfTexto)}</textarea></label>
           </div>
           <div class="cfg-bloco">
-            <h3>Layout das informações</h3><p class="cfg-sub">Escolha como os elementos serão exibidos no perfil.</p>
+            <h3>Layout das informações ${dicaCampo(`O visual da tela Perfil: Padrão, Com moldura (tudo dentro de uma borda dourada) ou Minimalista (botões sem fundo).`, "cfg.layout-das-informa-es")}</h3><p class="cfg-sub">Escolha como os elementos serão exibidos no perfil.</p>
             ${opcoesCfg("perfLayout", t.perfLayout, EST_TIT)}
           </div>
         </form>
@@ -2505,7 +2574,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.menu}</span><div><h2>Menu inferior</h2><p>Configure os botões que aparecem na barra inferior do aplicativo da aluna.</p></div></div>
           <div class="cfg-info">${IC_EQ.info}<span>Aqui você define quais botões aparecem no menu inferior, o nome, o ícone, a cor e a ordem. As alterações aparecem na área da aluna quando você clica em Salvar alterações.</span></div>
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Botões do menu</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
+            <div class="cfg-blcab"><div><h3>Botões do menu ${dicaCampo(`Os botões da barra de baixo do app (no computador, no alto). Dá para mudar o nome, o ícone, a cor quando está ativo, esconder e arrastar para mudar a ordem. Início e Perfil ficam sempre. "Adicionar botão" cria um botão que abre um link.`, "cfg.bot-es-do-menu")}</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
             <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id), cor = b.cor || M.cores.ativo; return `
               <div class="cfg-orl cfg-mbl" draggable="true" data-arrasta="mb:${i}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2520,14 +2589,14 @@ export function montar(app: HTMLElement) {
               </div>`; }).join("")}</div>
           </div>
           <div class="cfg-bloco">
-            <h3>Estilo do menu</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
+            <h3>Estilo do menu ${dicaCampo(`O visual da barra de baixo do app: escura, clara, com moldura (flutuando com borda) ou minimalista (transparente).`, "cfg.estilo-do-menu")}</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
             <div class="cfg-estilos cfg-e4">${[["padrao", "Padrão (escuro)"], ["claro", "Claro"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]].map(([k, t]) => `<label class="cfg-est"><input type="radio" name="mbEstilo" value="${k}" ${M.estilo === k ? "checked" : ""} /><span class="cfg-est-cx cfg-mbest mbe-${k}">${["inicio", "modulos", "presentes", "perfil"].map((x, j) => `<i class="${j === 0 ? "on" : ""}">${IC_APP[x]}</i>`).join("")}</span><em>${t}</em></label>`).join("")}</div>
           </div>
           <div class="cfg-bloco cfg-2l">
-            <div><h3>Cores</h3><p class="cfg-sub">Personalize as cores da barra inferior.</p>
+            <div><h3>Cores ${dicaCampo(`As cores da barra de baixo: o fundo, o ícone dos botões não selecionados, o do botão selecionado e o texto.`, "cfg.cores")}</h3><p class="cfg-sub">Personalize as cores da barra inferior.</p>
               <div class="cfg-cores4">${[["fundo", "Fundo"], ["inativo", "Ícone inativo"], ["ativo", "Ícone ativo"], ["texto", "Texto"]].map(([k, t]) => `<label class="cfg-c"><span>${t}</span><span class="cfg-hex"><i style="background:${h(M.cores[k])}"><input type="color" value="${h(M.cores[k])}" data-mb-cores="${k}" aria-label="${t}" /></i><b>${h(M.cores[k].toUpperCase())}</b></span></label>`).join("")}</div>
             </div>
-            <div><h3>Tamanho dos ícones</h3><p class="cfg-sub">Ajuste o tamanho dos ícones do menu.</p>
+            <div><h3>Tamanho dos ícones ${dicaCampo(`O tamanho dos ícones da barra de baixo do app.`, "cfg.tamanho-dos-cones")}</h3><p class="cfg-sub">Ajuste o tamanho dos ícones do menu.</p>
               <div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, t]) => `<label class="cfg-tam"><input type="radio" name="mbTamanho" value="${k}" ${M.tamanho === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
             </div>
           </div>
@@ -2576,25 +2645,25 @@ export function montar(app: HTMLElement) {
         <form data-f="cfg-inicio" class="cfg-painel cfg-form" id="cfgInicio">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
-            <h3>Nome no cabeçalho</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros.</p>
+            <h3>Nome no cabeçalho ${dicaCampo(`O nome que aparece no alto de todas as telas do app da aluna, à esquerda. O título é a linha grande; o subtítulo é a linha pequena embaixo. Se em Aparência houver um logo, o logo aparece no lugar.`, "cfg.nome-no-cabe-alho")}</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros.</p>
             <div class="cfg-2">
               <label class="cfg-c"><span>Título</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" required /></label>
               <label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" /></label>
             </div>
           </div>
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
+            <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas ${dicaCampo(`Frase que aparece no Início, logo abaixo de "Bem-vindo(a)", para a aluna que já começou as aulas. Quem ainda não começou vê "Comece por aqui". "Usar modelo" coloca um texto pronto para você ajustar.`, "cfg.mensagem-de-boas-vindas")}</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
             <label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>
           </div>
           <div class="cfg-bloco">
-            <h3>Banners ou destaques</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
+            <h3>Banners ou destaques ${dicaCampo(`O que aparece no Início abaixo da mensagem: nada, uma imagem, um vídeo de boas-vindas (link do Cloudflare Stream) ou os cartões de Destaques do Início, que são editados em Categorias.`, "cfg.banners-ou-destaques")}</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
             <div class="cfg-radios">${[["nenhum", "Nenhum"], ["imagem", "Imagem"], ["video", "Vídeo"], ["card", "Card especial"]].map(([k, t]) => `<label class="cfg-radio"><input type="radio" name="banner" value="${k}" ${v.banner === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
             <div class="cfg-op" data-op="imagem"${v.banner === "imagem" ? "" : " hidden"}><input type="hidden" name="bannerImg" value="${h(v.img)}" /><button type="button" class="al-botao pequeno" data-a="cfg-banner-img">${IC_PF.up}${v.img ? "Trocar imagem" : "Enviar imagem"}</button>${v.img ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-banner-tirar">${IC_MOD.lixo}Remover</button>` : ""}<small>Formato 16:9, recortada no editor.</small></div>
             <div class="cfg-op" data-op="video"${v.banner === "video" ? "" : " hidden"}><label class="cfg-c"><span>Link do vídeo (Cloudflare Stream)</span><input class="campo" name="bannerVideo" value="${h(v.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label><small>O vídeo precisa estar liberado para tocar sem assinatura no Cloudflare Stream.</small></div>
             <div class="cfg-op" data-op="card"${v.banner === "card" ? "" : " hidden"}><small>Mostra os cartões de Destaques do Início (editados em Categorias).</small></div>
           </div>
           <div class="cfg-bloco">
-            <h3>Estilo da seção</h3><p class="cfg-sub">Escolha o estilo visual da mensagem.</p>
+            <h3>Estilo da seção ${dicaCampo(`O visual do bloco de boas-vindas no Início: Padrão (como é hoje), Com moldura (uma borda dourada em volta) ou Minimalista (sem fundo, mais limpo).`, "cfg.estilo-da-se-o")}</h3><p class="cfg-sub">Escolha o estilo visual da mensagem.</p>
             <div class="cfg-estilos">${est.map(([k, t]) => `<label class="cfg-est"><input type="radio" name="estilo" value="${k}" ${v.estilo === k ? "checked" : ""} /><span class="cfg-est-cx est-${k}"><i>${IC_CFG.img}</i><span><b></b><b></b><b></b></span></span><em>${t}</em></label>`).join("")}</div>
           </div>
         </form>
@@ -2621,7 +2690,7 @@ export function montar(app: HTMLElement) {
     }
     return `
     <section class="tela ativa cfg2">
-      <div class="cfg-abas" role="tablist">${ABAS_CFG.map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}</div>
+      <div class="cfg-abas" role="tablist">${ABAS_CFG.map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}${ehDono() && Object.values(S.ajudas).some((x) => x.removida) ? `<button type="button" class="link cfg-aj-rest" data-a="ajudas-restaurar">Restaurar interrogações removidas (${Object.values(S.ajudas).filter((x) => x.removida).length})</button>` : ""}</div>
       ${corpo}
     </section>`;
   }
@@ -3123,7 +3192,9 @@ export function montar(app: HTMLElement) {
   };
   // Bolinha amarela com "?" preto; a frase abre ao tocar. <details> nativo:
   // abre e fecha sem redesenhar a tela, então nada digitado se perde.
-  const dicaCampo = (txt: string) => `<details class="ajuda-amarela" onclick="event.stopPropagation()"><summary aria-label="Ajuda">?</summary><span class="ajuda-amarela-txt">${txt}</span></details>`;
+  /** "?" amarelo: abre e fecha sem redesenhar. A chave sai do texto; o dono pode editar ou remover (aplicarAjudas). */
+  const chaveTxt = (t: string) => { let n = 5381; for (const c of t) n = ((n * 33) ^ c.charCodeAt(0)) >>> 0; return "t." + n.toString(36); };
+  const dicaCampo = (txt: string, chave = chaveTxt(txt)) => `<details class="ajuda-amarela" data-k="${chave}" onclick="event.stopPropagation()"><summary aria-label="Ajuda">?</summary><span class="ajuda-amarela-txt">${txt}</span></details>`;
 
   /* ---------- CURSO ABERTO ---------- */
   /*
@@ -5290,6 +5361,13 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "pbt-editar": ui.modal = { tipo: "pbt", id: d.id }; break;
+      case "ajudas-restaurar": {
+        confirmar({ titulo: "Restaurar as interrogações removidas?", texto: "Elas voltam a aparecer no painel, com o texto que tinham.", rotulo: "Restaurar" }, async () => {
+          falhou(await supabase.from("ajudas").update({ removida: false }).eq("removida", true).select("chave"));
+          return "Interrogações restauradas.";
+        });
+        break;
+      }
       case "apar-cores-tema": { aparRascunho().cores = {}; ui.sujo = { f: "cfg-aparencia", id: "" }; break; }
       case "apar-img": ui.aparAlvo = d.v; arquivoApar.click(); return;
       case "apar-img-tirar": { const A = aparRascunho(); delete (A as Record<string, unknown>)[d.v]; delete previas["apar-" + d.v]; ui.sujo = { f: "cfg-aparencia", id: "" }; break; }
