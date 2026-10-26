@@ -1414,3 +1414,17 @@ html[data-tema="claro"] .pf-al-minimalista .pf-al-bt { color: #2a2218; }
 .nav-base.nb-minimalista button[aria-current="page"]::before { display: none; }
 .nav-base.nb-pequeno button svg, .nav-base.nb-pequeno .nb-link svg { width: 21px; height: 21px; }
 .nav-base.nb-grande button svg, .nav-base.nb-grande .nb-link svg { width: 31px; height: 31px; }
+
+/* Versículo configurável (Configurações → Versículos) */
+.vers.v-simples { padding: 12px 4px 0; background: none !important; border: 0 !important; border-top: 1px solid rgba(212,177,112,.35) !important; border-radius: 0; box-shadow: none !important; }
+.vers.v-fundo-claro { background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%) !important; }
+.vers.v-fundo-claro .vers-txt { color: #2a2218; }
+.vers.v-fundo-transparente { background: transparent !important; box-shadow: none !important; }
+.vers.v-sem-serifa .vers-txt { font-family: Lato, Helvetica, Arial, sans-serif; font-style: normal; }
+.vers.v-pequeno .vers-txt { font-size: .92em; }
+.vers.v-grande .vers-txt { font-size: 1.18em; }
+.vers.v-cores { background: var(--v-fundo, inherit) !important; border-color: var(--v-borda, rgba(212,177,112,.6)) !important; }
+.vers.v-cores .vers-txt { color: var(--v-texto, inherit); }
+.vers.v-cores .vers-ref, .vers.v-cores .vers-rot { color: var(--v-borda, inherit); }
+.pa-ola > .vers:first-child { margin: 0 0 16px; }
+.pagina > .vers, .pa > .vers { margin: 18px 0 0; }

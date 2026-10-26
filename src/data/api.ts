@@ -777,10 +777,10 @@ export function uidStream(ref: string): string {
   return m ? m[1] : "";
 }
 
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; visivel: boolean }> } }> {
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; visivel: boolean }> } }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho").maybeSingle(),
-    supabase.from("versiculos").select("texto, referencia").order("ordem").order("criado_em"),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
+    supabase.from("versiculos").select("texto, referencia").eq("visivel", true).order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
   for (const r of [cfg, vs, ds]) if (r.error) throw new Error(`início: ${r.error.message}`);
@@ -798,6 +798,11 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
       modProgresso: cfg.data?.modulos_progresso !== false, modLayout: cfg.data?.modulos_layout ?? "padrao", modTamanho: cfg.data?.modulos_tamanho ?? "medio",
       presTitulo: cfg.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfg.data?.presentes_titulo_estilo ?? "padrao",
       presLayout: cfg.data?.presentes_layout ?? "grandes", presEstilo: cfg.data?.presentes_estilo ?? "padrao",
+    },
+    vers: {
+      exibir: cfg.data?.vers_exibir !== false, estilo: cfg.data?.vers_estilo ?? "caixa", posicao: cfg.data?.vers_posicao ?? "mensagem",
+      referencia: cfg.data?.vers_referencia !== false, fundo: cfg.data?.vers_fundo ?? "escuro", fonte: cfg.data?.vers_fonte ?? "serifa",
+      tamanho: cfg.data?.vers_tamanho ?? "medio", cores: cfg.data?.vers_cores ?? null,
     },
     menu: {
       botoes: Array.isArray(cfg.data?.menu_botoes) ? cfg.data.menu_botoes : null,

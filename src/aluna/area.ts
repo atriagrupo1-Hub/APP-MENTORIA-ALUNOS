@@ -417,17 +417,21 @@ export function montar(raiz: HTMLElement) {
     return "";
   }
   const estiloOla = () => { const e = D && D.inicio && D.inicio.estilo; return e === "moldura" || e === "minimalista" ? " pa-ola-" + e : ""; };
+  /** Versículo do dia no lugar escolhido no painel (Configurações → Versículos: topo, mensagem ou depois). */
+  const versNo = (onde) => { const V = (D && D.inicio && D.inicio.vers) || {}; return (V.posicao || "mensagem") === onde ? versiculoHoje() : ""; };
   function versiculoHoje() {
-    // A lista vem do painel (Configurações gerais → Versículos); um por dia, em sequência.
+    // A lista vem do painel (Configurações → Versículos); um por dia, em sequência.
+    const V = (D && D.inicio && D.inicio.vers) || {};
+    if (V.exibir === false) return "";
     const vs = (D && D.inicio && D.inicio.versiculos) || [];
     if (!vs.length) return "";
     const dia = Math.floor((HOJE - new Date(HOJE.getFullYear(), 0, 0)) / 864e5);
     const [txt, ref] = vs[dia % vs.length];
     return `
-          <figure class="vers" aria-label="Versículo de hoje">
+          <figure class="vers v-${h(V.estilo || "caixa")} v-fundo-${h(V.fundo || "escuro")} v-${h(V.fonte || "serifa")} v-${h(V.tamanho || "medio")}${V.cores ? " v-cores" : ""}" aria-label="Versículo de hoje"${V.cores ? ` style="${["texto", "borda", "fundo"].filter((k) => /^#[0-9a-f]{6}$/i.test(V.cores[k] || "")).map((k) => "--v-" + k + ":" + V.cores[k]).join(";")}"` : ""}>
             <p class="vers-rot"><span aria-hidden="true"></span>Versículo de hoje<span aria-hidden="true"></span></p>
             <blockquote class="vers-txt serif">“${h(txt)}”</blockquote>
-            <figcaption class="vers-ref">${h(ref)}</figcaption>
+            ${V.referencia === false ? "" : `<figcaption class="vers-ref">${h(ref)}</figcaption>`}
           </figure>`;
   }
 
@@ -517,8 +521,9 @@ export function montar(raiz: HTMLElement) {
       return `
       <div class="pa">
         <section class="pa-ola${estiloOla()}">
+          ${versNo("topo")}
           <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
-          ${versiculoHoje()}
+          ${versNo("mensagem")}
         </section>
         ${bannerInicio()}
         <section class="mt-bloco" aria-labelledby="h-comece">
@@ -534,6 +539,7 @@ export function montar(raiz: HTMLElement) {
             </div>
           </section>
         </section>
+        ${versNo("depois")}
         <div class="mt-divisor" role="separator"><span>Também para você</span></div>
         ${cardsExtra}
       </div>`;
@@ -541,9 +547,10 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="pa">
       <section class="pa-ola${estiloOla()}">
+        ${versNo("topo")}
         <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
         ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
-        ${versiculoHoje()}
+        ${versNo("mensagem")}
       </section>
       ${bannerInicio()}
       <section class="mt-bloco" aria-labelledby="h-cont-rot">
@@ -551,6 +558,7 @@ export function montar(raiz: HTMLElement) {
         <p class="pa-rot mt-passo" id="h-cont-rot">Continue de onde parou</p>
         ${heroi}
       </section>
+      ${versNo("depois")}
       <div class="mt-divisor" role="separator"><span>Também para você</span></div>
       ${cardsExtra}
     </div>`;
