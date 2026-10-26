@@ -249,8 +249,30 @@ export function montar(raiz: HTMLElement) {
    */
   const ABAS = () => (D && D.abas) || null;
   const abaAtual = () => { const l = ABAS(); if (!l || !l.length) return null; return l.find((a) => a.id === S.aba) || l.find((a) => /presente/i.test(a.titulo)) || l[0]; };
-  const NAVL = () => { const l = ABAS(); return [["inicio", "Início"], ["modulos", "Módulos"], ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
-  const icNav = (id, ic) => ICONES[id] || ICONES[ic] || ICONES.presentes;
+  const NAVL_BASE = () => { const l = ABAS(); return [["inicio", "Início"], ["modulos", "Módulos"], ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
+  /** Menu do app como o painel deixou (Configurações → Menu inferior): ordem, nome, ícone, cor, visível e links extras. */
+  const MENU = () => (D && D.inicio && D.inicio.menu) || { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" };
+  const NAVL = () => {
+    const base = NAVL_BASE(), cfg = MENU().botoes;
+    if (!cfg) return base;
+    const usados = new Set(), out = [];
+    for (const b of cfg) {
+      if (b.url) { if (b.visivel !== false) out.push(["link:" + b.url, b.rotulo, b.icone || "mais", b.cor]); continue; }
+      const x = base.find((y) => y[0] === b.id); if (!x) continue;
+      usados.add(b.id);
+      if (b.visivel !== false) out.push([x[0], b.rotulo || x[1], b.icone || x[2], b.cor]);
+    }
+    return out.concat(base.filter((x) => !usados.has(x[0])));
+  };
+  const icNav = (id, ic) => ICONES[ic] || ICONES[id] || ICONES.presentes;
+  function navBase(n) {
+    const M = MENU(), l = NAVL(), c = M.cores || {};
+    const vars = [["--nb-fundo", c.fundo], ["--nb-inativo", c.inativo], ["--nb-ativo", c.ativo], ["--nb-texto", c.texto]].filter(([, v]) => v && /^#[0-9a-f]{6}$/i.test(v)).map(([k, v]) => k + ":" + v).join(";");
+    return `<nav class="nav-base nb-${h(M.estilo || "padrao")} nb-${h(M.tamanho || "medio")}${M.cores ? " nb-cores" : ""}" aria-label="Principal" style="grid-template-columns:repeat(${l.length},1fr);${vars}">${l.map(([id, t, ic, cor]) => {
+      const estilo = cor && /^#[0-9a-f]{6}$/i.test(cor) ? ` style="--nb-ativo:${cor}"` : "";
+      return id.startsWith("link:") ? `<a class="nb-link" href="${h(id.slice(5))}" target="_blank" rel="noopener"${estilo}>${icNav(id, ic)}${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}${estilo}>${icNav(id, ic)}${h(t)}</button>`;
+    }).join("")}</nav>`;
+  }
   const navPres = () => { const a = abaAtual(); return a ? "aba:" + a.id : "presentes"; };
   const navAtual = () => { const t = ({ modulo: S.origemMod || "inicio", aula: S.origemMod || "inicio", presente: "presentes", opcao: "presentes", categoria: "presentes", cursoPres: "presentes", leitor: "presentes", jornada: (S.jornadaDe && S.jornadaDe.tela) || "perfil" })[S.tela] || S.tela; return t === "presentes" ? navPres() : t; };
   const NOME_ORIGEM = { inicio: "Início", modulos: "Módulos", perfil: "Perfil", presentes: "Presentes" };
@@ -291,11 +313,11 @@ export function montar(raiz: HTMLElement) {
     app.innerHTML = `
       ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
         <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
-        <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${t}</button>`).join("")}</nav>
+        <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
       </div></header>`}
       <main>${telas[S.tela]()}</main>
-      ${S.tela === "leitor" ? "" : `<nav class="nav-base" aria-label="Principal">${NAVL().map(([id, t, ic]) => `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${icNav(id, ic)}${h(t)}</button>`).join("")}</nav>`}`;
+      ${S.tela === "leitor" ? "" : navBase(n)}`;
   }
 
   function telaEntrada() {

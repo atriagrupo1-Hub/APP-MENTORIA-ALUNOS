@@ -67,6 +67,9 @@ type Destaque = {
   id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
   destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
 };
+/** Menu inferior da área da aluna (Configurações → Menu inferior, 0087). */
+type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean };
+type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; visivel: boolean };
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string };
@@ -122,7 +125,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[] };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -260,7 +263,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -421,7 +424,8 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
       telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao",
         perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao" },
-      perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [] },
+      perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
+      menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -476,14 +480,14 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [] }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" } }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -2340,6 +2344,85 @@ export function montar(app: HTMLElement) {
     await registrar(null, "Mudou os botões do Perfil da área de membros");
     return msg;
   }
+  const IC_APP: Record<string, string> = {
+    inicio: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>`,
+    modulos: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="18" height="6" rx="1.5"/></svg>`,
+    presentes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="8" width="18" height="5" rx="1"/><path d="M5 13v8h14v-8M12 8v13"/><path d="M12 8c-2-4-6-4-6-1.5S9 8 12 8zm0 0c2-4 6-4 6-1.5S15 8 12 8z"/></svg>`,
+    perfil: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>`,
+    play: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>`,
+    engrenagem: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7" stroke-linecap="round"/></svg>`,
+    livro: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 5.5c3-1.3 6-1.3 9 .5v13c-3-1.8-6-1.8-9-.5zM21 5.5c-3-1.3-6-1.3-9 .5v13c3-1.8 6-1.8 9-.5z"/></svg>`,
+    material: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>`,
+    balao: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-4 3.5V16H4z"/></svg>`,
+    trofeu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>`,
+    coroa: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>`,
+  };
+  const NOME_IC_APP: Record<string, string> = {"inicio": "Casa", "modulos": "Grade", "presentes": "Presente", "perfil": "Pessoa", "play": "Play", "engrenagem": "Engrenagem", "livro": "Livro", "material": "Documento", "balao": "Balão", "trofeu": "Troféu", "coroa": "Coroa"};
+  const CORES_MENU_PADRAO = { fundo: "#0b0b0d", inativo: "#a8a8a8", ativo: "#d4af37", texto: "#f1e6c9" };
+  /** Os botões que o app mostra hoje, na ordem (Início, Módulos, cada botão publicado, Perfil). */
+  function menuBase(): BotaoMenu[] {
+    const jorCat = S.cursos.find((c) => c.id === S.config.jornada)?.cat;
+    return [{ id: "inicio", rotulo: "Início", icone: "inicio", visivel: true }, { id: "modulos", rotulo: "Módulos", icone: "modulos", visivel: true },
+      ...S.cats.filter((k) => k.pub && k.id !== jorCat).map((k) => ({ id: "aba:" + k.id, rotulo: k.nome, icone: k.icone || "presentes", visivel: true })),
+      { id: "perfil", rotulo: "Perfil", icone: "perfil", visivel: true }];
+  }
+  /** Rascunho do menu: o salvo, completado com os botões novos do app. */
+  function menuRascunho() {
+    if (ui.menuCfg) return ui.menuCfg;
+    const m = S.config.menu, base = menuBase();
+    const botoes: BotaoMenu[] = [];
+    for (const b of m.botoes || []) { if (b.url) botoes.push({ ...b }); else { const x = base.find((y) => y.id === b.id); if (x) botoes.push({ ...x, ...b }); } }
+    for (const x of base) if (!botoes.some((b) => b.id === x.id)) botoes.push(x);
+    ui.menuCfg = { botoes, estilo: m.estilo, cores: { ...CORES_MENU_PADRAO, ...(m.cores || {}) }, tamanho: m.tamanho };
+    return ui.menuCfg;
+  }
+  const FIXOS_MENU = new Set(["inicio", "perfil"]);
+  function cfgMenu() {
+    const M = menuRascunho();
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-menu" class="cfg-painel cfg-form" id="cfgMenu">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.menu}</span><div><h2>Menu inferior</h2><p>Configure os botões que aparecem na barra inferior do aplicativo da aluna.</p></div></div>
+          <div class="cfg-info">${IC_EQ.info}<span>Aqui você define quais botões aparecem no menu inferior, o nome, o ícone, a cor e a ordem. As alterações aparecem na área da aluna quando você clica em Salvar alterações.</span></div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Botões do menu</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
+            <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id), cor = b.cor || M.cores.ativo; return `
+              <div class="cfg-orl cfg-mbl" draggable="true" data-arrasta="mb:${i}">
+                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
+                <span class="cfg-n">${i + 1}</span>
+                <span class="cfg-mbic">${IC_APP[b.icone || "inicio"] || IC_APP.inicio}</span>
+                <input class="campo cfg-mbrot" value="${h(b.rotulo)}" maxlength="18" data-mb-rot="${i}" aria-label="Nome do botão ${i + 1}" />
+                <span class="est3"><button type="button" class="cfg-icbt" data-a="estado-menu" data-v="mbic:${i}" title="Ícone" aria-label="Ícone do botão">${IC_APP[b.icone || "inicio"] || IC_APP.inicio}</button>${ui.estMenu === "mbic:" + i ? `<span class="est3-menu cfg-icmenu" role="menu">${Object.keys(IC_APP).map((k) => `<button type="button" role="menuitem" data-a="mb-icone" data-id="${i}" data-v="${k}" title="${NOME_IC_APP[k]}" aria-label="${NOME_IC_APP[k]}">${IC_APP[k]}</button>`).join("")}</span>` : ""}</span>
+                <label class="cfg-corbt cfg-corlivre" title="Cor quando o botão está ativo" style="background:${h(cor)}"><input type="color" value="${h(cor)}" data-mb-cor="${i}" aria-label="Cor do botão" /></label>
+                <button type="button" class="cfg-vis${b.visivel !== false ? " on" : ""}" data-a="mb-vis" data-v="${i}" aria-pressed="${b.visivel !== false}" ${fixo ? 'disabled title="Início e Perfil ficam sempre no menu"' : ""}><i></i>${b.visivel !== false ? "Visível" : "Oculto"}</button>
+                <button type="button" class="al-botao pequeno" data-a="mb-editar" data-v="${i}">${IC_EQ.lapis}Editar</button>
+                ${b.url ? `<button type="button" class="cfg-lixo" data-a="mb-remover" data-v="${i}" aria-label="Excluir ${h(b.rotulo)}">${IC_MOD.lixo}</button>` : `<span class="cfg-lixo vazio" title="Botão do app: use Visível para esconder"></span>`}
+              </div>`; }).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Estilo do menu</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
+            <div class="cfg-estilos cfg-e4">${[["padrao", "Padrão (escuro)"], ["claro", "Claro"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]].map(([k, t]) => `<label class="cfg-est"><input type="radio" name="mbEstilo" value="${k}" ${M.estilo === k ? "checked" : ""} /><span class="cfg-est-cx cfg-mbest mbe-${k}">${["inicio", "modulos", "presentes", "perfil"].map((x, j) => `<i class="${j === 0 ? "on" : ""}">${IC_APP[x]}</i>`).join("")}</span><em>${t}</em></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco cfg-2l">
+            <div><h3>Cores</h3><p class="cfg-sub">Personalize as cores da barra inferior.</p>
+              <div class="cfg-cores4">${[["fundo", "Fundo"], ["inativo", "Ícone inativo"], ["ativo", "Ícone ativo"], ["texto", "Texto"]].map(([k, t]) => `<label class="cfg-c"><span>${t}</span><span class="cfg-hex"><i style="background:${h(M.cores[k])}"><input type="color" value="${h(M.cores[k])}" data-mb-cores="${k}" aria-label="${t}" /></i><b>${h(M.cores[k].toUpperCase())}</b></span></label>`).join("")}</div>
+            </div>
+            <div><h3>Tamanho dos ícones</h3><p class="cfg-sub">Ajuste o tamanho dos ícones do menu.</p>
+              <div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, t]) => `<label class="cfg-tam"><input type="radio" name="mbTamanho" value="${k}" ${M.tamanho === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
+            </div>
+          </div>
+        </form>
+        ${previaCfgBox(previaMenu())}
+      </div>`;
+  }
+  function previaMenu() {
+    const M = menuRascunho(), vis = M.botoes.filter((b) => b.visivel !== false), c = M.cores;
+    const vh = versiculoDeHoje(), vs = vh >= 0 ? S.versiculos[vh] : null, jor = curso(S.config.jornada);
+    return `<div class="pv-tela"><div class="pv-topo"><span><b>${h(S.config.marcaTitulo)}</b><small>${h(S.config.marcaSub)}</small></span><i></i></div>
+      <div class="pv-rolo"><section class="pv-ola"><h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}</section>${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}</div>
+      <nav class="pv-nav pvn-${h(M.estilo)} pvn-${h(M.tamanho)}" style="--nb-fundo:${h(c.fundo)};--nb-inativo:${h(c.inativo)};--nb-ativo:${h(c.ativo)};--nb-texto:${h(c.texto)}">${vis.map((b, i) => `<span${i === 0 ? ' class="on"' : ""}${i === 0 && b.cor ? ` style="--nb-ativo:${h(b.cor)}"` : ""}>${IC_APP[b.icone || "inicio"] || IC_APP.inicio}<em>${h(b.rotulo)}</em></span>`).join("")}</nav></div>`;
+  }
+  function redesenharMenuCfg() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaMenu(); }
   const previaCfgBox = (miolo: string) => `
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
@@ -2405,6 +2488,8 @@ export function montar(app: HTMLElement) {
       corpo = aba === "modulos" ? cfgModulos() : cfgPresentes();
     } else if (aba === "perfil") {
       corpo = cfgPerfil();
+    } else if (aba === "menu") {
+      corpo = cfgMenu();
     } else if (aba === "versiculos") {
       const vh = versiculoDeHoje();
       corpo = `
@@ -4142,6 +4227,16 @@ export function montar(app: HTMLElement) {
         </div>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
+    } else if (m.tipo === "mb") {
+      const M = menuRascunho(), novo = m.id === "novo", b: BotaoMenu = novo ? { id: "", rotulo: "", icone: "balao", url: "", visivel: true } : M.botoes[Number(m.id)];
+      corpo = `
+      <form data-f="mb-salvar" data-id="${h(m.id)}" class="eq-form pbt-form">
+        ${cabModal(novo ? IC_EQ.mais : IC_EQ.lapis, novo ? "Adicionar botão" : "Editar botão", novo ? "Um botão extra no menu que abre um link." : "Botão do menu inferior da aluna.")}
+        <label class="eq-campo"><span>Nome do botão</span><input class="campo" name="rotulo" value="${h(b.rotulo)}" maxlength="18" required /></label>
+        <label class="eq-campo"><span>Ícone</span><select class="campo" name="icone">${Object.keys(IC_APP).map((k) => `<option value="${k}" ${b.icone === k ? "selected" : ""}>${NOME_IC_APP[k]}</option>`).join("")}</select></label>
+        ${novo || b.url ? `<label class="eq-campo"><span>Link</span><input class="campo" name="url" type="url" value="${h(b.url || "")}" placeholder="https://" required /><small>Abre numa nova aba.</small></label>` : ""}
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}${novo ? "Adicionar" : "Aplicar"}</button></div>
+      </form>`;
     } else if (m.tipo === "pbt") {
       const novo = m.id === "novo", b: BotaoPerfil = novo ? { id: "link", rotulo: "", desc: "", url: "", visivel: true } : S.config.perfBotoes[Number(m.id)];
       const tp = tipoBt(b);
@@ -5017,7 +5112,8 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
-      case "cfg-aba": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
+      case "cfg-aba": if (ui.sujo && ui.sujo.f === "cfg-menu") { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.cfgAba = d.v; render(); }); return; }
+        if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
       case "cfg-previa": {
         ui.cfgPrevia = d.v === "computador" ? "computador" : "celular";
         const pv = document.getElementById("cfgPrevia"); if (pv) pv.className = "pv-" + ui.cfgPrevia;
@@ -5041,6 +5137,10 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "pbt-editar": ui.modal = { tipo: "pbt", id: d.id }; break;
+      case "mb-icone": { ui.estMenu = ""; const M = menuRascunho(); const b = M.botoes[Number(d.id)]; if (b) b.icone = d.v; ui.sujo = { f: "cfg-menu", id: "" }; break; }
+      case "mb-vis": { const M = menuRascunho(); const b = M.botoes[Number(d.v)]; if (b && !FIXOS_MENU.has(b.id)) b.visivel = b.visivel === false; ui.sujo = { f: "cfg-menu", id: "" }; break; }
+      case "mb-remover": { const M = menuRascunho(); M.botoes.splice(Number(d.v), 1); ui.sujo = { f: "cfg-menu", id: "" }; break; }
+      case "mb-editar": ui.modal = { tipo: "mb", id: d.v }; break;
       case "pcat-vis": {
         const x = S.catsAba.find((y) => y.id === d.id); if (!x) break; const pub = !x.pub;
         void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub }).eq("id", x.id).select("id").single()); await registrar(null, (pub ? "Mostrou" : "Ocultou") + " a categoria " + x.nome, ["catx", x.id]); return x.nome + (pub ? " visível." : " oculta."); });
@@ -5275,6 +5375,28 @@ export function montar(app: HTMLElement) {
         void executar(async () => {
           falhou(await supabase.from("configuracoes").update({ frase_retorno: v("fraseRetorno") }).not("id", "is", null).select("id"));
           await registrar(null, "Mudou a frase de retorno do Início"); return "Frase de retorno salva.";
+        });
+        return;
+      }
+      case "mb-salvar": {
+        const M = menuRascunho(), rotulo = v("rotulo").trim(), icone = v("icone"), url = form.elements.namedItem("url") ? v("url").trim() : "";
+        if (!rotulo) { toast("Escreva o nome do botão."); return; }
+        if (form.elements.namedItem("url") && !/^https?:\/\/\S+$/.test(url)) { toast("Coloque um link começando com https://"); return; }
+        if (form.dataset.id === "novo") M.botoes.push({ id: "link-" + Date.now().toString(36), rotulo, icone, url, visivel: true });
+        else { const b = M.botoes[Number(form.dataset.id)]; if (b) { b.rotulo = rotulo; b.icone = icone; if (url) b.url = url; } }
+        ui.modal = null; ui.sujo = { f: "cfg-menu", id: "" }; render(); toast("Clique em Salvar alterações para publicar no app.");
+        return;
+      }
+      case "cfg-menu": {
+        const M = menuRascunho();
+        if (M.botoes.filter((b) => b.visivel !== false).length > 6) { toast("O menu cabe até 6 botões visíveis."); return; }
+        const botoes = M.botoes.map((b) => ({ id: b.id, rotulo: b.rotulo.trim() || "Botão", icone: b.icone, ...(b.cor ? { cor: b.cor } : {}), ...(b.url ? { url: b.url } : {}), visivel: b.visivel !== false }));
+        const cores = JSON.stringify(M.cores) === JSON.stringify(CORES_MENU_PADRAO) ? null : M.cores;
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update({ menu_botoes: botoes, menu_estilo: M.estilo, menu_cores: cores, menu_tamanho: M.tamanho }).not("id", "is", null).select("id"));
+          await registrar(null, "Mudou o menu inferior da área de membros");
+          ui.menuCfg = null; ui.sujo = null;
+          return "Menu inferior salvo.";
         });
         return;
       }
@@ -5668,7 +5790,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -5748,6 +5870,15 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.closest?.("#cfgMenu")) {
+      const M = menuRascunho();
+      if (t.dataset.mbRot !== undefined) { const b = M.botoes[Number(t.dataset.mbRot)]; if (b) b.rotulo = t.value; }
+      else if (t.dataset.mbCor !== undefined) { const b = M.botoes[Number(t.dataset.mbCor)]; if (b) b.cor = t.value; (t.parentElement as HTMLElement).style.background = t.value; }
+      else if (t.dataset.mbCores) { M.cores[t.dataset.mbCores] = t.value; const i = t.parentElement as HTMLElement; i.style.background = t.value; const bb = i.nextElementSibling; if (bb) bb.textContent = t.value.toUpperCase(); }
+      else if (t.name === "mbEstilo" && t.checked) M.estilo = t.value;
+      else if (t.name === "mbTamanho" && t.checked) M.tamanho = t.value;
+      redesenharMenuCfg();
+    }
     if (t.closest?.("#cfgInicio, #cfgTelas")) atualizarPreviaCfg();
     if (t.hasAttribute("data-perf-cor")) {
       // Cor livre: mexe na prévia sem redesenhar, para o quadro de cores continuar aberto.
@@ -5816,6 +5947,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.closest?.("#cfgInicio, #cfgTelas")) { atualizarPreviaCfg(); }
+    if (t instanceof HTMLInputElement && t.closest("#cfgMenu") && t.type === "radio" && t.checked) { const M = menuRascunho(); if (t.name === "mbEstilo") M.estilo = t.value; if (t.name === "mbTamanho") M.tamanho = t.value; redesenharMenuCfg(); }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
     }
@@ -6056,6 +6188,11 @@ export function montar(app: HTMLElement) {
         void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + mx.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
       } else render();
       return;
+    }
+    if (ui.arrasto.startsWith("mb:") && t.dataset.arrasta?.startsWith("mb:")) {
+      const de = Number(ui.arrasto.slice(3)), para = Number(t.dataset.arrasta.slice(3)); ui.arrasto = null;
+      if (de !== para) { const M = menuRascunho(); const [k] = M.botoes.splice(de, 1); M.botoes.splice(para, 0, k); ui.sujo = { f: "cfg-menu", id: "" }; }
+      render(); return;
     }
     if (ui.arrasto.startsWith("pbt:") && t.dataset.arrasta?.startsWith("pbt:")) {
       const de = Number(ui.arrasto.slice(4)), para = Number(t.dataset.arrasta.slice(4)); ui.arrasto = null;

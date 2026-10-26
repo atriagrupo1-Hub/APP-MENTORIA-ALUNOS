@@ -1397,3 +1397,20 @@ html[data-tema="claro"] .pb-lista .pb-nome { color: #2a2218; }
 .pf-al-txt { margin: 18px 0 0; font-size: 14px; line-height: 1.5; color: var(--texto-2, #cfc4b0); text-align: center; }
 html[data-tema="claro"] .pf-al-minimalista .pf-al-bt { color: #2a2218; }
 .pf-foto-al .pf-foto-circ { border-radius: 50% !important; padding: 0 !important; -webkit-appearance: none; appearance: none; }
+
+/* Menu inferior configurável (Configurações → Menu inferior) */
+.nav-base .nb-link { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 66px; font-size: .9375rem; color: var(--texto-3); text-decoration: none; }
+.nav-base .nb-link svg { width: 26px; height: 26px; }
+.nav-base.nb-cores { background: var(--nb-fundo, rgba(10,10,12,.97)); }
+.nav-base.nb-cores button, .nav-base.nb-cores .nb-link { color: var(--nb-texto, var(--texto-3)); }
+.nav-base.nb-cores button svg, .nav-base.nb-cores .nb-link svg { stroke: var(--nb-inativo, currentColor); }
+.nav-base button[aria-current="page"][style], .nav-base.nb-cores button[aria-current="page"] { color: var(--nb-ativo, var(--ouro-claro)); }
+.nav-base button[aria-current="page"][style] svg, .nav-base.nb-cores button[aria-current="page"] svg { stroke: var(--nb-ativo, var(--ouro-claro)); }
+.nav-base button[aria-current="page"][style]::before, .nav-base.nb-cores button[aria-current="page"]::before { background: var(--nb-ativo, var(--ouro)); }
+.nav-base.nb-claro:not(.nb-cores) { background: rgba(255,255,255,.97); border-top-color: rgba(169,124,47,.3); }
+.nav-base.nb-claro:not(.nb-cores) button, .nav-base.nb-claro:not(.nb-cores) .nb-link { color: rgba(28,23,16,.72); }
+.nav-base.nb-moldura { left: 10px; right: 10px; bottom: calc(8px + env(safe-area-inset-bottom)); padding-bottom: 6px; border: 1px solid rgba(212,177,112,.5); border-radius: 18px; }
+.nav-base.nb-minimalista { background: transparent; border-top: 0; box-shadow: none; backdrop-filter: blur(8px); }
+.nav-base.nb-minimalista button[aria-current="page"]::before { display: none; }
+.nav-base.nb-pequeno button svg, .nav-base.nb-pequeno .nb-link svg { width: 21px; height: 21px; }
+.nav-base.nb-grande button svg, .nav-base.nb-grande .nb-link svg { width: 31px; height: 31px; }
