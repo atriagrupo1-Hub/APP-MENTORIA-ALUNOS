@@ -935,3 +935,9 @@ export function urlDaCapa(caminho: string | null): string | null {
   const { data } = supabase.storage.from("capas").getPublicUrl(caminho);
   return data.publicUrl;
 }
+
+/** Aparência da área da aluna (0089); pode ser lida antes do login. */
+export async function aparenciaDoApp(): Promise<import("./aparencia").Aparencia | null> {
+  const { data } = await supabase.from("configuracoes").select("aparencia").maybeSingle();
+  return (data?.aparencia as import("./aparencia").Aparencia | null) ?? null;
+}

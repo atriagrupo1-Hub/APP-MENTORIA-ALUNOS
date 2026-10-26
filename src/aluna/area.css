@@ -1428,3 +1428,11 @@ html[data-tema="claro"] .pf-al-minimalista .pf-al-bt { color: #2a2218; }
 .vers.v-cores .vers-ref, .vers.v-cores .vers-rot { color: var(--v-borda, inherit); }
 .pa-ola > .vers:first-child { margin: 0 0 16px; }
 .pagina > .vers, .pa > .vers { margin: 18px 0 0; }
+
+/* Aparência (Configurações → Aparência) */
+.marca-logo { display: block; max-height: 40px; max-width: 170px; object-fit: contain; }
+html.sem-animacao *, html.sem-animacao *::before, html.sem-animacao *::after { animation: none !important; transition: none !important; }
+html.sem-sombras * { box-shadow: none !important; }
+html.sem-brilho * { text-shadow: none !important; }
+html.sem-brilho .botao, html.sem-brilho .ex-botao, html.sem-brilho button, html.sem-brilho .mod-bloco, html.sem-brilho .ex-card { box-shadow: none !important; filter: none; }
+html.sem-bordas .mod-bloco, html.sem-bordas .ex-card, html.sem-bordas .vers, html.sem-bordas .todos-mod, html.sem-bordas .mt-bloco, html.sem-bordas .pb-item, html.sem-bordas .pa-banner, html.sem-bordas .pf-al-moldura { border-color: var(--linha) !important; }

@@ -12,9 +12,18 @@
 import "./area.css";
 import { supabase } from "../data/supabase";
 import * as api from "../data/api";
+import { aplicarAparencia } from "../data/aparencia";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
+  // Aparência do painel (tema, cores, fontes, imagens) — vale também na tela de entrada.
+  let APAR = null;
+  void api.aparenciaDoApp().then((a) => {
+    APAR = a;
+    if (a && a.tema === "claro" && !ler("aion-tema", "")) { S.tema = "claro"; }
+    aplicarAparencia(a, (c) => api.urlDaCapa(c) || "");
+    render();
+  }).catch(() => {});
   const app = raiz.querySelector("#app") as HTMLElement;
   const camada = raiz.querySelector("#camada") as HTMLElement;
 
@@ -487,7 +496,7 @@ export function montar(raiz: HTMLElement) {
     }).join("");
   }
   // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
-  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return `<b>${h(m.titulo || "")}</b><span>${h(m.sub || "")}</span>`; };
+  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `<b>${h(m.titulo || "")}</b><span>${h(m.sub || "")}</span>`; };
   function telaInicio() {
     // Primeiro acesso: nenhuma aula concluída nem começada (o progresso vem do banco).
     // Uma linha de progresso existe quando a aula foi começada (tem data de atualização).
