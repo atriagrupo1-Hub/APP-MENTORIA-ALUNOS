@@ -62,7 +62,7 @@ type Curso = {
   /** Início da área da aluna (0052): rótulo e nome curto do bloco da mentoria. */
   rotuloInicio: string; nomeCurto: string;
 };
-type Versiculo = { id: string; texto: string; ref: string };
+type Versiculo = { id: string; texto: string; ref: string; visivel: boolean };
 type Destaque = {
   id: string; imagem: string; rotulo: string; titulo: string; descricao: string; botao: string;
   destino: "presentes" | "categoria"; categoriaId: string; categoriaNome: string; icone: string; cor: string; visivel: boolean;
@@ -263,8 +263,8 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho").maybeSingle(),
-    supabase.from("versiculos").select("id, texto, referencia").order("ordem").order("criado_em"),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
+    supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
     supabase.from("categorias_aba").select("*").order("ordem").order("criada_em"),
@@ -423,10 +423,12 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
       telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao",
-        perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao" },
+        perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao",
+        vExibir: cfgIni.data?.vers_exibir === false ? "nao" : "sim", vEstilo: cfgIni.data?.vers_estilo ?? "caixa", vPosicao: cfgIni.data?.vers_posicao ?? "mensagem", vRef: cfgIni.data?.vers_referencia === false ? "nao" : "sim", vFundo: cfgIni.data?.vers_fundo ?? "escuro", vFonte: cfgIni.data?.vers_fonte ?? "serifa", vTamanho: cfgIni.data?.vers_tamanho ?? "medio",
+        vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
-    versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia })),
+    versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
       destino: x.destino === "categoria" ? "categoria" : "presentes", categoriaId: x.categoria_id ?? "", categoriaNome: x.categoria_nome ?? "",
@@ -2136,7 +2138,10 @@ export function montar(app: HTMLElement) {
    * Configurações gerais (0052): o nome do cabeçalho da área de membros
    * e a lista de versículos do Início — um por dia, em sequência.
    */
-  const versiculoDeHoje = () => { const n = S.versiculos.length; if (!n) return -1; const hj = new Date(); return Math.floor((hj.getTime() - new Date(hj.getFullYear(), 0, 0).getTime()) / 864e5) % n; };
+  /** Índice (na lista visível) do versículo que aparece hoje. */
+  const versVisiveis = () => S.versiculos.filter((x) => x.visivel);
+  const versiculoDeHoje = () => { const n = versVisiveis().length; if (!n) return -1; const hj = new Date(); return Math.floor((hj.getTime() - new Date(hj.getFullYear(), 0, 0).getTime()) / 864e5) % n; };
+  const versHoje = () => { const i = versiculoDeHoje(); return i >= 0 ? versVisiveis()[i] : null; };
   const FRASE_MODELO = "Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.";
   const IC_CFG: Record<string, string> = {
     inicio: ICONE_MENU.inicio,
@@ -2162,7 +2167,7 @@ export function montar(app: HTMLElement) {
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
-    const vh = versiculoDeHoje(), vs = vh >= 0 ? S.versiculos[vh] : null;
+    const vs = versHoje();
     const jor = curso(S.config.jornada);
     const uid = api.uidStream(v.video);
     const banner = v.banner === "imagem" ? (v.img ? `<div class="pv-banner"><img src="${h(previas["cfg-banner"] || urlDaCapa(v.img))}" alt="" /></div>` : `<div class="pv-banner pv-vazio">${IC_CFG.img}<span>Envie a imagem</span></div>`)
@@ -2291,6 +2296,62 @@ export function montar(app: HTMLElement) {
     link: ["Link", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`],
   };
   const tipoBt = (b: BotaoPerfil) => (b.url ? "link" : BT_PERFIL[b.id] ? b.id : "link");
+  const SEL = (nome: string, atual: string, ops: [string, string][]) => `<select class="campo" name="${nome}">${ops.map(([k, t]) => `<option value="${k}" ${atual === k ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+  const corCampo = (nome: string, valor: string, padrao: string, rot: string) => `<label class="cfg-c"><span>${rot}</span><span class="cfg-hex"><i style="background:${h(valor || padrao)}"><input type="color" value="${h(valor || padrao)}" data-hex="${nome}" aria-label="${rot}" /></i><input class="cfg-hexin" name="${nome}" value="${h((valor || padrao).toUpperCase())}" maxlength="7" aria-label="${rot} (código)" /></span></label>`;
+  function cfgVersiculos() {
+    const t = S.config.telas, hoje = versHoje();
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="versiculos">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Versículos</h2><p>Gerencie os versículos exibidos no Início, em sequência, para as alunas.</p></div></div>
+          <div class="cfg-info cfg-vexib"><span class="cfg-ok">✓</span><span><b>Exibir versículo do dia</b><em>Ativa ou desativa a exibição do versículo no aplicativo.</em></span><label class="cfg-chave"><input type="checkbox" name="vExibir" ${t.vExibir !== "nao" ? "checked" : ""} /><i></i><span class="cfg-chtxt">${t.vExibir !== "nao" ? "Ativado" : "Desativado"}</span></label></div>
+          <div class="cfg-bloco">
+            <h3>Configurações de exibição</h3><p class="cfg-sub">Escolha como o versículo será exibido na tela inicial.</p>
+            <div class="cfg-4">
+              <label class="cfg-c"><span>Estilo de exibição</span>${SEL("vEstilo", t.vEstilo, [["caixa", "Destaque (caixa)"], ["simples", "Simples (só o texto)"]])}</label>
+              <label class="cfg-c"><span>Posição</span>${SEL("vPosicao", t.vPosicao, [["topo", "No topo do Início"], ["mensagem", "Abaixo da mensagem"], ["depois", "Depois da mentoria"]])}</label>
+              <label class="cfg-c"><span>Mostrar referência</span>${SEL("vRef", t.vRef, [["sim", "Sim"], ["nao", "Não"]])}</label>
+              <div class="cfg-c"><span>Fundo da caixa</span><div class="cfg-seg">${[["claro", "Claro"], ["escuro", "Escuro"], ["transparente", "Transparente"]].map(([k, tt]) => `<label><input type="radio" name="vFundo" value="${k}" ${t.vFundo === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
+            </div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Estilo visual</h3><p class="cfg-sub">Personalize a aparência da caixa do versículo.</p>
+            <div class="cfg-5">
+              <label class="cfg-c"><span>Fonte do texto</span>${SEL("vFonte", t.vFonte, [["serifa", "Serifada (Padrão)"], ["sem-serifa", "Sem serifa"]])}</label>
+              <label class="cfg-c"><span>Tamanho do texto</span>${SEL("vTamanho", t.vTamanho, [["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]])}</label>
+              ${corCampo("vCorTexto", t.vCorTexto, "#f6eed7", "Cor do texto")}
+              ${corCampo("vCorBorda", t.vCorBorda, "#d4af37", "Cor da borda")}
+              ${corCampo("vCorFundo", t.vCorFundo, "#0b0b0b", "Cor do fundo")}
+            </div>
+            <button type="button" class="link" data-a="v-cores-padrao">Voltar às cores padrão</button>
+          </div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Lista de versículos</h3><p class="cfg-sub">Gerencie os versículos que aparecerão em sequência para as alunas. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar versículo</button></div>
+            <div class="cfg-vtab">
+              <div class="cfg-vcab"><span></span><span>#</span><span>Texto do versículo</span><span>Referência</span><span>Ordem</span><span>Visível</span><span>Ações</span></div>
+              ${S.versiculos.map((x, i) => `
+              <div class="cfg-vlin${x.visivel ? "" : " oculto"}${hoje && hoje.id === x.id ? " hoje" : ""}" draggable="true" data-arrasta="vers:${x.id}">
+                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
+                <span class="cfg-n">${i + 1}</span>
+                <span class="cfg-vtxt">“${h(x.texto)}”</span>
+                <span class="cfg-vref">${h(x.ref)}${hoje && hoje.id === x.id ? `<em>Hoje</em>` : ""}</span>
+                <span class="cfg-vord"><button type="button" data-a="vers-sobe" data-id="${x.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button><button type="button" data-a="vers-desce" data-id="${x.id}" ${i === S.versiculos.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button></span>
+                <button type="button" class="cfg-vis${x.visivel ? " on" : ""}" data-a="vers-vis" data-id="${x.id}" aria-pressed="${x.visivel}" aria-label="Visível"><i></i></button>
+                <span class="cfg-vac"><button type="button" class="al-botao pequeno" data-a="vers-modal" data-id="${x.id}" title="Editar" aria-label="Editar">${IC_EQ.lapis}Editar</button><button type="button" class="cfg-lixo" data-a="vers-remover" data-id="${x.id}" aria-label="Excluir">${IC_MOD.lixo}</button></span>
+              </div>`).join("") || `<p class="cfg-sub" style="padding:12px">Nenhum versículo. Sem nenhum, o Início não mostra o quadro.</p>`}
+            </div>
+          </div>
+        </form>
+        ${previaCfgBox(previaVers(t))}
+      </div>`;
+  }
+  function previaVers(t: Record<string, string>) {
+    const vs = versHoje(), jor = curso(S.config.jornada);
+    const cores = [["texto", t.vCorTexto], ["borda", t.vCorBorda], ["fundo", t.vCorFundo]].filter(([, c]) => /^#[0-9a-f]{6}$/i.test(c || "")).map(([k, c]) => "--v-" + k + ":" + c).join(";");
+    const caixa = t.vExibir !== "nao" && vs ? `<figure class="pv-vers pvv-${h(t.vEstilo)} pvv-${h(t.vFundo)} pvv-${h(t.vFonte)} pvv-${h(t.vTamanho)}" style="${cores}"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote>${t.vRef !== "nao" ? `<figcaption>${h(vs.ref)}</figcaption>` : ""}</figure>` : "";
+    const ment = jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : "";
+    return pvTela("inicio", `<section class="pv-ola">${t.vPosicao === "topo" ? caixa : ""}<h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${t.vPosicao === "mensagem" ? caixa : ""}</section>${ment}${t.vPosicao === "depois" ? caixa : ""}`);
+  }
   function cfgPerfil() {
     const t = S.config.telas, bts = S.config.perfBotoes;
     return `
@@ -2417,7 +2478,7 @@ export function montar(app: HTMLElement) {
   }
   function previaMenu() {
     const M = menuRascunho(), vis = M.botoes.filter((b) => b.visivel !== false), c = M.cores;
-    const vh = versiculoDeHoje(), vs = vh >= 0 ? S.versiculos[vh] : null, jor = curso(S.config.jornada);
+    const vs = versHoje(), jor = curso(S.config.jornada);
     return `<div class="pv-tela"><div class="pv-topo"><span><b>${h(S.config.marcaTitulo)}</b><small>${h(S.config.marcaSub)}</small></span><i></i></div>
       <div class="pv-rolo"><section class="pv-ola"><h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}</section>${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}</div>
       <nav class="pv-nav pvn-${h(M.estilo)} pvn-${h(M.tamanho)}" style="--nb-fundo:${h(c.fundo)};--nb-inativo:${h(c.inativo)};--nb-ativo:${h(c.ativo)};--nb-texto:${h(c.texto)}">${vis.map((b, i) => `<span${i === 0 ? ' class="on"' : ""}${i === 0 && b.cor ? ` style="--nb-ativo:${h(b.cor)}"` : ""}>${IC_APP[b.icone || "inicio"] || IC_APP.inicio}<em>${h(b.rotulo)}</em></span>`).join("")}</nav></div>`;
@@ -2491,32 +2552,7 @@ export function montar(app: HTMLElement) {
     } else if (aba === "menu") {
       corpo = cfgMenu();
     } else if (aba === "versiculos") {
-      const vh = versiculoDeHoje();
-      corpo = `
-      <div class="cfg-painel">
-        <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Versículos</h2><p>Aparece um por dia no Início, em sequência, e volta ao primeiro depois do último. ${vh >= 0 ? "Hoje aparece o nº " + (vh + 1) + "." : ""}</p></div></div>
-        ${S.versiculos.map((x, i) => editando("vers", x.id) ? `
-          <form data-f="vers-salvar" data-id="${x.id}" class="cfg-vers editando">
-            <textarea id="editarCampo" class="campo" name="texto" rows="3" required>${h(x.texto)}</textarea>
-            <input class="campo" name="ref" value="${h(x.ref)}" placeholder="Referência (ex.: Salmos 23:1)" required />
-            <span style="display:flex;gap:8px">${botoesEdicao("Salvar")}</span>
-          </form>` : `
-          <div class="cfg-vers${i === vh ? " hoje" : ""}">
-            <span class="cfg-vers-n">${i + 1}</span>
-            <span class="cfg-vers-txt"><span>“${h(x.texto)}”</span><b>${h(x.ref)}</b>${i === vh ? `<em>Hoje</em>` : ""}</span>
-            <span class="acoes">
-              <button class="botao-neutro" data-a="vers-editar" data-id="${x.id}">Editar</button>
-              <button class="botao-neutro" data-a="vers-sobe" data-id="${x.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button>
-              <button class="botao-neutro" data-a="vers-desce" data-id="${x.id}" ${i === S.versiculos.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button>
-              <button class="botao-neutro botao-remover" data-a="vers-remover" data-id="${x.id}">Remover</button>
-            </span>
-          </div>`).join("") || `<p class="ini-vazio">Nenhum versículo. Sem nenhum, o Início não mostra o quadro.</p>`}
-        <form data-f="vers-add" class="cfg-vers-add">
-          <textarea class="campo" name="texto" rows="2" placeholder="Texto do versículo" required></textarea>
-          <input class="campo" name="ref" placeholder="Referência (ex.: Salmos 23:1)" required />
-          <button class="al-botao-ouro">+ Adicionar versículo</button>
-        </form>
-      </div>`;
+      corpo = cfgVersiculos();
     } else {
       const nm = (ABAS_CFG.find(([k]) => k === aba) || ABAS_CFG[0])[1];
       corpo = `<div class="cfg-painel"><div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG[aba]}</span><div><h2>${h(nm)}</h2><p>As opções desta aba chegam em breve.</p></div></div></div>`;
@@ -3981,7 +4017,7 @@ export function montar(app: HTMLElement) {
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {
     const ft = document.querySelector<HTMLFormElement>("#cfgTelas"), pvt = document.getElementById("cfgPrevia");
-    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : ft.dataset.tela === "perfil" ? previaPerfil(t) : previaPresentes(t); return; }
+    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : ft.dataset.tela === "perfil" ? previaPerfil(t) : ft.dataset.tela === "versiculos" ? previaVers(t) : previaPresentes(t); return; }
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"), pv = document.getElementById("cfgPrevia");
     if (!f || !pv) return;
     const v = valoresInicio(f);
@@ -4225,6 +4261,15 @@ export function montar(app: HTMLElement) {
             ${cardPapel("Suporte", "Suporte")}
           </div>
         </div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
+      </form>`;
+    } else if (m.tipo === "vers") {
+      const novo = m.id === "novo", x = novo ? null : S.versiculos.find((y) => y.id === m.id);
+      corpo = `
+      <form data-f="${novo ? "vers-add" : "vers-salvar"}" ${x ? `data-id="${x.id}"` : ""} class="eq-form pbt-form">
+        ${cabModal(novo ? IC_EQ.mais : IC_EQ.lapis, novo ? "Adicionar versículo" : "Editar versículo", "Aparece um por dia no Início, em sequência.")}
+        <label class="eq-campo"><span>Texto do versículo</span><textarea class="campo" name="texto" rows="4" required>${h(x?.texto ?? "")}</textarea></label>
+        <label class="eq-campo"><span>Referência</span><input class="campo" name="ref" value="${h(x?.ref ?? "")}" placeholder="Ex.: Salmos 23:1" required /></label>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "mb") {
@@ -4751,6 +4796,18 @@ export function montar(app: HTMLElement) {
       case "ir-comentarios": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "ir-alunas-recentes": ui.tab = "alunas"; ui.filtroAl = "recentes"; ui.paginaAl = 1; window.scrollTo(0, 0); break;
       case "ini-abrir-aluna": ui.acessoAluna = d.id; ui.acessoAba = "geral"; break;
+      case "vers-vis": {
+        const x = S.versiculos.find((y) => y.id === d.id); if (!x) break;
+        void executar(async () => { falhou(await supabase.from("versiculos").update({ visivel: !x.visivel }).eq("id", x.id).select("id").single()); return x.ref + (x.visivel ? " oculto." : " visível."); });
+        return;
+      }
+      case "vers-novo": ui.modal = { tipo: "vers", id: "novo" }; break;
+      case "vers-modal": ui.modal = { tipo: "vers", id: d.id }; break;
+      case "v-cores-padrao": {
+        const f = el.closest("form"); if (!f) return;
+        ([["vCorTexto", "#f6eed7"], ["vCorBorda", "#d4af37"], ["vCorFundo", "#0b0b0b"]] as const).forEach(([n, c]) => { const a1 = f.querySelector<HTMLInputElement>(`input[name="${n}"]`), a2 = f.querySelector<HTMLInputElement>(`input[data-hex="${n}"]`); if (a1) a1.value = c.toUpperCase(); if (a2) { a2.value = c; (a2.parentElement as HTMLElement).style.background = c; } });
+        ui.sujo = { f: "cfg-telas", id: "" }; atualizarPreviaCfg(); return;
+      }
       case "vers-editar": ui.editando = { tipo: "vers", id: d.id }; ui.focar = "editarCampo"; break;
       case "vers-sobe": case "vers-desce": {
         const i = S.versiculos.findIndex((x) => x.id === d.id); const j = a === "vers-sobe" ? i - 1 : i + 1; if (j < 0 || j >= S.versiculos.length) return;
@@ -5412,6 +5469,18 @@ export function montar(app: HTMLElement) {
       }
       case "cfg-telas": {
         const tv = valoresTelas(form), mod = form.dataset.tela === "modulos";
+        if (form.dataset.tela === "versiculos") {
+          const hex = (x: string) => (/^#[0-9a-f]{6}$/i.test(x || "") ? x.toLowerCase() : "");
+          const pad = { texto: "#f6eed7", borda: "#d4af37", fundo: "#0b0b0b" };
+          const cores = { texto: hex(tv.vCorTexto), borda: hex(tv.vCorBorda), fundo: hex(tv.vCorFundo) };
+          const iguais = cores.texto === pad.texto && cores.borda === pad.borda && cores.fundo === pad.fundo;
+          void executar(async () => {
+            falhou(await supabase.from("configuracoes").update({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores }).not("id", "is", null).select("id"));
+            await registrar(null, "Mudou a exibição dos versículos da área de membros");
+            return "Configurações dos versículos salvas.";
+          });
+          return;
+        }
         if (form.dataset.tela === "perfil") {
           void executar(async () => {
             falhou(await supabase.from("configuracoes").update({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout }).not("id", "is", null).select("id"));
@@ -5453,6 +5522,7 @@ export function montar(app: HTMLElement) {
       case "vers-add": {
         void executar(async () => {
           falhou(await supabase.from("versiculos").insert({ texto: v("texto"), referencia: v("ref"), ordem: S.versiculos.length + 1 }).select("id").single());
+          ui.modal = null;
           await registrar(null, "Adicionou o versículo " + v("ref")); return "Versículo adicionado.";
         });
         return;
@@ -5460,6 +5530,7 @@ export function montar(app: HTMLElement) {
       case "vers-salvar": {
         void executar(async () => {
           falhou(await supabase.from("versiculos").update({ texto: v("texto"), referencia: v("ref") }).eq("id", id).select("id").single());
+          ui.modal = null;
           ui.editando = null; await registrar(null, "Editou o versículo " + v("ref")); return "Versículo salvo.";
         });
         return;
@@ -5870,6 +5941,8 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement;
+    if (t.dataset?.hex) { const f = t.closest("form"); const tx = f?.querySelector<HTMLInputElement>(`input[name="${t.dataset.hex}"]`); if (tx) tx.value = t.value.toUpperCase(); (t.parentElement as HTMLElement).style.background = t.value; }
+    if (t.classList?.contains("cfg-hexin") && /^#[0-9a-f]{6}$/i.test(t.value)) { const c = t.parentElement?.querySelector<HTMLInputElement>("input[data-hex]"); if (c) { c.value = t.value.toLowerCase(); (c.parentElement as HTMLElement).style.background = t.value; } }
     if (t.closest?.("#cfgMenu")) {
       const M = menuRascunho();
       if (t.dataset.mbRot !== undefined) { const b = M.botoes[Number(t.dataset.mbRot)]; if (b) b.rotulo = t.value; }
@@ -6187,6 +6260,11 @@ export function montar(app: HTMLElement) {
         const velha = mx.c.modulos.map((x) => x.id);
         void executar(async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: nova.map((x) => x.id) }); return { msg: "Ordem dos módulos salva.", texto: "ordem dos módulos de " + mx.c.nome, desfazer: async () => { await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: velha }); } }; });
       } else render();
+      return;
+    }
+    if (ui.arrasto.startsWith("vers:") && t.dataset.arrasta?.startsWith("vers:")) {
+      const a1 = S.versiculos.findIndex((x) => "vers:" + x.id === ui.arrasto), b1 = S.versiculos.findIndex((x) => "vers:" + x.id === t.dataset.arrasta); ui.arrasto = null;
+      if (a1 >= 0 && b1 >= 0 && a1 !== b1) { const nova = S.versiculos.slice(); const [k] = nova.splice(a1, 1); nova.splice(b1, 0, k); void executar(async () => { for (let i = 0; i < nova.length; i++) falhou(await supabase.from("versiculos").update({ ordem: i + 1 }).eq("id", nova[i].id).select("id").single()); return "Ordem dos versículos salva."; }); } else render();
       return;
     }
     if (ui.arrasto.startsWith("mb:") && t.dataset.arrasta?.startsWith("mb:")) {
