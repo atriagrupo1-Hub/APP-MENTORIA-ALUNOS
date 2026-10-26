@@ -17,6 +17,7 @@ import * as api from "@/data/api";
 import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
+import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
 
@@ -125,7 +126,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -263,7 +264,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -427,6 +428,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vExibir: cfgIni.data?.vers_exibir === false ? "nao" : "sim", vEstilo: cfgIni.data?.vers_estilo ?? "caixa", vPosicao: cfgIni.data?.vers_posicao ?? "mensagem", vRef: cfgIni.data?.vers_referencia === false ? "nao" : "sim", vFundo: cfgIni.data?.vers_fundo ?? "escuro", vFonte: cfgIni.data?.vers_fonte ?? "serifa", vTamanho: cfgIni.data?.vers_tamanho ?? "medio",
         vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
+      aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -482,14 +484,14 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" } }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -518,6 +520,7 @@ export function montar(app: HTMLElement) {
   // Imagem para um campo de formulário: envia ao depósito "capas", guarda o caminho no campo escondido e mostra a prévia.
   const arquivoImg = Object.assign(document.createElement("input"), { type: "file", id: "arquivoImg", accept: "image/*", hidden: true });
   const arquivoBanner = Object.assign(document.createElement("input"), { type: "file", id: "arquivoBanner", accept: "image/*", hidden: true });
+  const arquivoApar = Object.assign(document.createElement("input"), { type: "file", id: "arquivoApar", accept: "image/*", hidden: true });
   let imgPara: { form: string; campo: string; previa: string; pasta: string; prop?: number } | null = null;
   const arquivoExtra = Object.assign(document.createElement("input"), { type: "file", id: "arquivoExtra", hidden: true });
   const arquivoAula = Object.assign(document.createElement("input"), { type: "file", id: "arquivoAula", hidden: true });
@@ -534,7 +537,7 @@ export function montar(app: HTMLElement) {
     })();
   });
   document.body.append(arquivoOp);
-  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg, arquivoBanner);
+  document.body.append(toastEl, arquivoCapa, arquivoExtra, arquivoAula, arquivoCat, arquivoFoto, arquivoImg, arquivoBanner, arquivoApar);
 
   const KT = "aion-painel-tema";
   let tema = (() => { try { return localStorage.getItem(KT) || "escuro"; } catch { return "escuro"; } })();
@@ -2352,6 +2355,61 @@ export function montar(app: HTMLElement) {
     const ment = jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : "";
     return pvTela("inicio", `<section class="pv-ola">${t.vPosicao === "topo" ? caixa : ""}<h4>Bem-vindo(a), <span>aluna</span></h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${t.vPosicao === "mensagem" ? caixa : ""}</section>${ment}${t.vPosicao === "depois" ? caixa : ""}`);
   }
+  /** Rascunho da aparência (o salvo, ou o padrão escuro). */
+  function aparRascunho(): Aparencia {
+    if (!ui.aparCfg) { const a = S.config.aparencia; ui.aparCfg = { tema: "escuro", brilho: true, bordas: true, sombras: true, animacoes: true, ...(a || {}), cores: { ...((a && a.cores) || {}) } }; }
+    return ui.aparCfg;
+  }
+  const IMGS_APAR: [keyof Aparencia, string, string][] = [["logo", "Logo do aplicativo", "Topo esquerdo"], ["fundoLogin", "Fundo de login", "Tela de acesso"], ["fundoPaginas", "Fundo das páginas", "Área da aluna"], ["favicon", "Ícone do aplicativo", "Favicon"]];
+  const CORES_APAR: [keyof Cores, string, string][] = [["primaria", "Cor primária", "Botões principais"], ["secundaria", "Cor secundária", "Destaques e ícones"], ["fundo", "Fundo principal", "Tela e seções"], ["cards", "Fundo de cards", "Caixas e módulos"], ["texto", "Texto principal", "Títulos e textos"], ["texto2", "Texto secundário", "Descrições"]];
+  function cfgAparencia() {
+    const A = aparRascunho(), c = coresDe(A), jor = curso(S.config.jornada), capa0 = jor && jor.modulos[0] ? capaSite(jor.modulos[0].capa) : "";
+    carregarFonte(A.fonteTitulo || ""); carregarFonte(A.fonteTexto || "");
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-aparencia" class="cfg-painel cfg-form" id="cfgApar">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.aparencia}</span><div><h2>Aparência</h2><p>Personalize as cores, fontes, imagens e estilo visual do aplicativo da aluna.</p></div></div>
+          <div class="cfg-bloco">
+            <h3>Tema geral</h3><p class="cfg-sub">Escolha o tema de cores principal do aplicativo.</p>
+            <div class="cfg-temas">${Object.entries(TEMAS).map(([k, [nm, p0]]) => `<label class="cfg-tema"><input type="radio" name="aTema" value="${k}" ${A.tema === k ? "checked" : ""} /><span class="cfg-tema-cx" style="background:${p0.fundo}"><span class="cfg-tema-cel" style="border-color:${p0.primaria};background:${p0.cards}">${capa0 ? `<img src="${h(capa0)}" alt="" />` : ""}<i style="background:${p0.primaria}"></i></span></span><em>${nm}</em></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Cores principais</h3><p class="cfg-sub">Personalize as cores do aplicativo. <button type="button" class="link" data-a="apar-cores-tema">Usar as cores do tema</button></p>
+            <div class="cfg-cores6">${CORES_APAR.map(([k, t, d]) => `<label class="cfg-cor6"><span><b>${t}</b><em>${d}</em></span><span class="cfg-hex"><i style="background:${h(c[k])}"><input type="color" value="${h(c[k])}" data-apar-cor="${k}" aria-label="${t}" /></i><b>${h(c[k].toUpperCase())}</b></span></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Tipografia</h3><p class="cfg-sub">Escolha a fonte utilizada no aplicativo.</p>
+            <div class="cfg-2">
+              <div class="cfg-c"><span>Fonte de títulos</span><select class="campo" data-apar-fonte="fonteTitulo">${Object.entries(FONTES_TITULO).map(([k, t]) => `<option value="${h(k)}" ${(A.fonteTitulo || "Cormorant Garamond") === k ? "selected" : ""}>${t}</option>`).join("")}</select>
+                <div class="cfg-fonte" style="font-family:'${h(A.fonteTitulo || "Cormorant Garamond")}',serif"><b>Aa</b><span><i>Título de exemplo</i><small>MENTORIA</small></span></div></div>
+              <div class="cfg-c"><span>Fonte de textos</span><select class="campo" data-apar-fonte="fonteTexto">${Object.entries(FONTES_TEXTO).map(([k, t]) => `<option value="${h(k)}" ${(A.fonteTexto || "Lato") === k ? "selected" : ""}>${t}</option>`).join("")}</select>
+                <div class="cfg-fonte" style="font-family:'${h(A.fonteTexto || "Lato")}',sans-serif"><b>Aa</b><span><i style="font-style:normal;font-weight:600;font-size:14px">Texto de exemplo</i><small style="letter-spacing:0;text-transform:none">Esta é uma descrição de exemplo para mostrar como ficará no aplicativo.</small></span></div></div>
+            </div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Imagens e fundos</h3><p class="cfg-sub">Personalize as imagens de fundo e elementos visuais.</p>
+            <div class="cfg-imgs">${IMGS_APAR.map(([k, t, d]) => { const v = A[k] as string | undefined, u = v ? previas["apar-" + k] || urlDaCapa(v) : ""; return `<div class="cfg-img"><span><b>${t}</b><em>(${d})</em></span><span class="cfg-img-l"><span class="cfg-img-th">${u ? `<img src="${h(u)}" alt="" />` : IC_CFG.img}</span><button type="button" class="al-botao pequeno" data-a="apar-img" data-v="${k}">Alterar imagem</button>${v ? `<button type="button" class="cfg-lixo" data-a="apar-img-tirar" data-v="${k}" aria-label="Remover">${IC_MOD.lixo}</button>` : ""}</span></div>`; }).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <h3>Recursos visuais</h3>
+            <div class="cfg-recs">${([["brilho", "Efeitos de brilho nos botões"], ["bordas", "Bordas douradas"], ["sombras", "Sombras suaves"], ["animacoes", "Animações de transição"]] as const).map(([k, t]) => `<label class="cfg-chave"><input type="checkbox" data-apar-rec="${k}" ${A[k] !== false ? "checked" : ""} /><i></i>${t}</label>`).join("")}</div>
+          </div>
+        </form>
+        ${previaCfgBox(previaApar())}
+      </div>`;
+  }
+  function previaApar() {
+    const A = aparRascunho(), c = coresDe(A), vs = versHoje(), jor = curso(S.config.jornada);
+    const ft = A.fonteTitulo || "Cormorant Garamond", fx = A.fonteTexto || "Lato";
+    const fundo = A.fundoPaginas ? `background-image:linear-gradient(rgba(0,0,0,.72),rgba(0,0,0,.86)),url('${previas["apar-fundoPaginas"] || urlDaCapa(A.fundoPaginas)}');background-size:cover;` : "";
+    const logo = A.logo ? `<img class="pv-logo" src="${h(previas["apar-logo"] || urlDaCapa(A.logo))}" alt="" />` : `<span><b>${h(S.config.marcaTitulo)}</b><small>${h(S.config.marcaSub)}</small></span>`;
+    return `<div class="pv-tela pv-apar${A.sombras === false ? " sem-sombra" : ""}${A.bordas === false ? " sem-borda" : ""}${A.brilho === false ? " sem-brilho" : ""}" style="--pa-p:${c.primaria};--pa-s:${c.secundaria};--pa-f:${c.fundo};--pa-c:${c.cards};--pa-t:${c.texto};--pa-t2:${c.texto2};--pa-ft:'${h(ft)}',serif;--pa-fx:'${h(fx)}',sans-serif;${fundo}">
+      <div class="pv-topo">${logo}<i></i></div>
+      <div class="pv-rolo">${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}
+        ${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div><div class="pv-botao">Continuar assistindo</div>` : ""}</div>
+      <nav class="pv-nav">${[["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"]].map(([ic, nm], i) => `<span${i === 0 ? ' class="on"' : ""}>${IC_CFG[ic]}<em>${nm}</em></span>`).join("")}</nav></div>`;
+  }
+  function redesenharApar() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaApar(); }
   function cfgPerfil() {
     const t = S.config.telas, bts = S.config.perfBotoes;
     return `
@@ -2551,6 +2609,8 @@ export function montar(app: HTMLElement) {
       corpo = cfgPerfil();
     } else if (aba === "menu") {
       corpo = cfgMenu();
+    } else if (aba === "aparencia") {
+      corpo = cfgAparencia();
     } else if (aba === "versiculos") {
       corpo = cfgVersiculos();
     } else {
@@ -5169,7 +5229,7 @@ export function montar(app: HTMLElement) {
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
-      case "cfg-aba": if (ui.sujo && ui.sujo.f === "cfg-menu") { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.cfgAba = d.v; render(); }); return; }
+      case "cfg-aba": if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
         if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
       case "cfg-previa": {
         ui.cfgPrevia = d.v === "computador" ? "computador" : "celular";
@@ -5194,6 +5254,9 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "pbt-editar": ui.modal = { tipo: "pbt", id: d.id }; break;
+      case "apar-cores-tema": { aparRascunho().cores = {}; ui.sujo = { f: "cfg-aparencia", id: "" }; break; }
+      case "apar-img": ui.aparAlvo = d.v; arquivoApar.click(); return;
+      case "apar-img-tirar": { const A = aparRascunho(); delete (A as Record<string, unknown>)[d.v]; delete previas["apar-" + d.v]; ui.sujo = { f: "cfg-aparencia", id: "" }; break; }
       case "mb-icone": { ui.estMenu = ""; const M = menuRascunho(); const b = M.botoes[Number(d.id)]; if (b) b.icone = d.v; ui.sujo = { f: "cfg-menu", id: "" }; break; }
       case "mb-vis": { const M = menuRascunho(); const b = M.botoes[Number(d.v)]; if (b && !FIXOS_MENU.has(b.id)) b.visivel = b.visivel === false; ui.sujo = { f: "cfg-menu", id: "" }; break; }
       case "mb-remover": { const M = menuRascunho(); M.botoes.splice(Number(d.v), 1); ui.sujo = { f: "cfg-menu", id: "" }; break; }
@@ -5442,6 +5505,17 @@ export function montar(app: HTMLElement) {
         if (form.dataset.id === "novo") M.botoes.push({ id: "link-" + Date.now().toString(36), rotulo, icone, url, visivel: true });
         else { const b = M.botoes[Number(form.dataset.id)]; if (b) { b.rotulo = rotulo; b.icone = icone; if (url) b.url = url; } }
         ui.modal = null; ui.sujo = { f: "cfg-menu", id: "" }; render(); toast("Clique em Salvar alterações para publicar no app.");
+        return;
+      }
+      case "cfg-aparencia": {
+        const A = aparRascunho(), base = TEMAS[A.tema]?.[1] || TEMAS.escuro[1];
+        const cores: Partial<Cores> = {}; for (const [k] of CORES_APAR) { const v = (A.cores || {})[k]; if (v && v.toLowerCase() !== base[k]) cores[k] = v.toLowerCase(); }
+        const salvar: Aparencia = { ...A, cores: Object.keys(cores).length ? cores : null };
+        void executar(async () => {
+          falhou(await supabase.from("configuracoes").update({ aparencia: salvar }).not("id", "is", null).select("id"));
+          await registrar(null, "Mudou a aparência da área de membros");
+          ui.aparCfg = null; ui.sujo = null; return "Aparência salva.";
+        });
         return;
       }
       case "cfg-menu": {
@@ -5861,7 +5935,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -5943,6 +6017,11 @@ export function montar(app: HTMLElement) {
     const t = e.target as HTMLInputElement;
     if (t.dataset?.hex) { const f = t.closest("form"); const tx = f?.querySelector<HTMLInputElement>(`input[name="${t.dataset.hex}"]`); if (tx) tx.value = t.value.toUpperCase(); (t.parentElement as HTMLElement).style.background = t.value; }
     if (t.classList?.contains("cfg-hexin") && /^#[0-9a-f]{6}$/i.test(t.value)) { const c = t.parentElement?.querySelector<HTMLInputElement>("input[data-hex]"); if (c) { c.value = t.value.toLowerCase(); (c.parentElement as HTMLElement).style.background = t.value; } }
+    if (t.closest?.("#cfgApar")) {
+      const A = aparRascunho();
+      if (t.dataset.aparCor) { A.cores = { ...(A.cores || {}), [t.dataset.aparCor]: t.value }; const i = t.parentElement as HTMLElement; i.style.background = t.value; const bb = i.nextElementSibling; if (bb) bb.textContent = t.value.toUpperCase(); }
+      ui.sujo = { f: "cfg-aparencia", id: "" }; redesenharApar();
+    }
     if (t.closest?.("#cfgMenu")) {
       const M = menuRascunho();
       if (t.dataset.mbRot !== undefined) { const b = M.botoes[Number(t.dataset.mbRot)]; if (b) b.rotulo = t.value; }
@@ -6020,6 +6099,13 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.closest?.("#cfgInicio, #cfgTelas")) { atualizarPreviaCfg(); }
+    if (t.closest?.("#cfgApar")) {
+      const A = aparRascunho();
+      if (t instanceof HTMLInputElement && t.name === "aTema" && t.checked) { A.tema = t.value; A.cores = {}; ui.sujo = { f: "cfg-aparencia", id: "" }; render(); return; }
+      if (t instanceof HTMLInputElement && t.dataset.aparRec) (A as Record<string, unknown>)[t.dataset.aparRec] = t.checked;
+      if (t instanceof HTMLSelectElement && t.dataset.aparFonte) { (A as Record<string, unknown>)[t.dataset.aparFonte] = t.value; ui.sujo = { f: "cfg-aparencia", id: "" }; render(); return; }
+      ui.sujo = { f: "cfg-aparencia", id: "" }; redesenharApar();
+    }
     if (t instanceof HTMLInputElement && t.closest("#cfgMenu") && t.type === "radio" && t.checked) { const M = menuRascunho(); if (t.name === "mbEstilo") M.estilo = t.value; if (t.name === "mbTamanho") M.tamanho = t.value; redesenharMenuCfg(); }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
@@ -6140,6 +6226,22 @@ export function montar(app: HTMLElement) {
         const bt = f?.querySelector('[data-a="cfg-banner-img"]'); if (bt) bt.innerHTML = IC_PF.up + "Trocar imagem";
         ui.sujo = { f: "cfg-inicio", id: "" };
         atualizarPreviaCfg();
+        toast("Imagem enviada. Clique em Salvar alterações para guardar.");
+      } catch (e) { toast(motivo(e)); }
+    })();
+  });
+  // Imagens da Aparência: enviadas agora, gravadas ao Salvar alterações.
+  arquivoApar.addEventListener("change", () => {
+    const file = arquivoApar.files?.[0]; arquivoApar.value = ""; const k = ui.aparAlvo; if (!file || !k) return;
+    void (async () => {
+      let arq: File | null = file;
+      if (k === "fundoLogin" || k === "fundoPaginas") arq = await editarCapa(file, k === "fundoLogin" ? 9 / 16 : 16 / 9, file.name);
+      if (!arq) return;
+      toast("Enviando a imagem…");
+      try {
+        const caminho = await enviarArquivo("capas", "aparencia", arq);
+        (aparRascunho() as Record<string, unknown>)[k] = caminho; previas["apar-" + k] = URL.createObjectURL(arq);
+        ui.sujo = { f: "cfg-aparencia", id: "" }; render();
         toast("Imagem enviada. Clique em Salvar alterações para guardar.");
       } catch (e) { toast(motivo(e)); }
     })();
