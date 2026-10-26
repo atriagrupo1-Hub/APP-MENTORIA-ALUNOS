@@ -777,9 +777,9 @@ export function uidStream(ref: string): string {
   return m ? m[1] : "";
 }
 
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; visivel: boolean }> } }> {
+export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; saudacao: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; visivel: boolean }> } }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").eq("visivel", true).order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
@@ -787,6 +787,7 @@ export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: s
   return {
     marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
     fraseRetorno: cfg.data?.frase_retorno ?? "",
+    saudacao: cfg.data?.inicio_saudacao ?? "Bem-vindo(a), {nome}",
     banner: {
       tipo: cfg.data?.inicio_banner ?? "card",
       imagem: urlDaCapa(cfg.data?.inicio_banner_imagem ?? null) ?? "",

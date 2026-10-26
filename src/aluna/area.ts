@@ -29,6 +29,7 @@ export function montar(raiz: HTMLElement) {
       if (!I._destOrig) I._destOrig = I.destaques || [];
       I.marca = { titulo: m.titulo || "", sub: m.sub || "" };
       I.fraseRetorno = m.frase || "";
+      if (m.saudacao) I.saudacao = m.saudacao;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
       I.estilo = m.estilo || "padrao";
       I.destaques = m.banner === "card" ? I._destOrig : [];
@@ -437,6 +438,14 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
 
+  /** Saudação do topo do Início (Configurações → Início): {nome} vira o primeiro nome da aluna. */
+  const saudacaoIni = (primeiro) => {
+    const t = (D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}";
+    const i = t.indexOf("{nome}");
+    if (i < 0) return `<span class="pa-saud">${h(t)}</span>`;
+    const antes = t.slice(0, i).trimEnd(), depois = t.slice(i + 6);
+    return `${antes ? `<span class="pa-saud">${h(antes)}</span> ` : ""}${h(primeiro)}${h(depois)}`;
+  };
   /** Banner do Início escolhido no painel (Configurações → Início): imagem ou vídeo. */
   function bannerInicio() {
     const b = (D && D.inicio && D.inicio.banner) || {};
@@ -550,7 +559,7 @@ export function montar(raiz: HTMLElement) {
       <div class="pa">
         <section class="pa-ola${estiloOla()}">
           ${versNo("topo")}
-          <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
+          <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
           ${versNo("mensagem")}
         </section>
         ${bannerInicio()}
@@ -576,7 +585,7 @@ export function montar(raiz: HTMLElement) {
     <div class="pa">
       <section class="pa-ola${estiloOla()}">
         ${versNo("topo")}
-        <h1 class="pa-nome serif"><span class="pa-saud">Bem-vindo(a),</span> ${h(primeiro)}</h1>
+        <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
         ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
         ${versNo("mensagem")}
       </section>
