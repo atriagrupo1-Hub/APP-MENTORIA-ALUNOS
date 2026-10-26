@@ -1436,3 +1436,8 @@ html.sem-sombras * { box-shadow: none !important; }
 html.sem-brilho * { text-shadow: none !important; }
 html.sem-brilho .botao, html.sem-brilho .ex-botao, html.sem-brilho button, html.sem-brilho .mod-bloco, html.sem-brilho .ex-card { box-shadow: none !important; filter: none; }
 html.sem-bordas .mod-bloco, html.sem-bordas .ex-card, html.sem-bordas .vers, html.sem-bordas .todos-mod, html.sem-bordas .mt-bloco, html.sem-bordas .pb-item, html.sem-bordas .pa-banner, html.sem-bordas .pf-al-moldura { border-color: var(--linha) !important; }
+
+/* Prévia dentro do painel: só rolar, sem clicar */
+html.modo-previa #app *, html.modo-previa #camada * { pointer-events: none !important; }
+html.modo-previa { scrollbar-width: none; }
+html.modo-previa::-webkit-scrollbar { display: none; }
