@@ -2754,7 +2754,9 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .reg-coroa { display: inline-grid; color: var(--eq-ouro); }
 .eq-pil.fora { color: var(--texto-2); background: var(--aa-cinza); }
 .reg-abrir { display: grid; place-items: center; width: 38px; height: 38px; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha); border-radius: 8px; cursor: pointer; }
-.reg-abrir[aria-pressed="true"] { color: #fff; background: var(--eq-azul); border-color: var(--eq-azul); }
+.reg-abrir[aria-pressed="true"] { color: #fff; background: #111; border-color: #111; }
+.reg-card { cursor: pointer; }
+.reg-card:not(.sel):hover { border-color: color-mix(in srgb, var(--eq-ouro) 55%, transparent); }
 .reg-ult { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--linha-suave); }
 .reg-ult > small { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--texto-2); }
 .reg-itens { margin: 0; padding: 0; list-style: none; }

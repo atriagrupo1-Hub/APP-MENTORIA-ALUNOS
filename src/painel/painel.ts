@@ -1853,7 +1853,7 @@ export function montar(app: HTMLElement) {
         <div class="reg-lista">${lista.map((y) => {
           const c = clsPapel(y.papel), n = ui.regMais[y.id] || 3, ver = y.acts.slice(0, n), resto = y.acts.length - ver.length;
           return `
-          <article class="reg-card${y.id === ui.regSel ? " sel" : ""}">
+          <article class="reg-card${y.id === ui.regSel ? " sel" : ""}" data-a="reg-sel" data-id="${h(y.id)}">
             <div class="reg-topo">
               ${avatarEq(y.id, y.nome, y.pes?.cor || "", "eq-av " + c, y.papel ? `<i class="${y.pes?.bloqueada ? "off" : "on"}"></i>` : "")}
               <div class="reg-dados">
