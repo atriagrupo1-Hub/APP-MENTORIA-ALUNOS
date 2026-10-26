@@ -919,14 +919,14 @@ export function montar(app: HTMLElement) {
     return `<div class="ini-item"><span class="ini-ic ${cls}">${ic}</span><span class="ini-txt"><span><b>${h(x.nome)}</b> ${txt}</span></span><span class="ini-quando">${haTempo(x.quando)}</span></div>`;
   };
   /** Tarefas da equipe: comentários sem resposta da equipe (e não ocultos). Diminui conforme responde. */
-  const paraResponder = () => S.comentarios.filter((k) => k.estado !== "oculto" && !k.resposta);
+  // Para moderar: comentário que ninguém da equipe tocou ainda (sem aprovar, ocultar, apagar nem responder).
+  const paraResponder = () => S.comentarios.filter((k) => k.estado === "moderar" && !k.resposta).sort((x, y) => y.criado.localeCompare(x.criado));
   const badge = (n: number) => (n ? `<span class="badge-alerta" aria-label="${n} para fazer">${n > 99 ? "99+" : n}</span>` : "");
   function tarefasInicio() { return paraResponder().length + listasAcessos().reduce((t, l) => t + l.lista.length, 0); }
   function telaInicio() {
     const { de, ate, chave } = periodoIni();
     carregarAtividades();
     const noPeriodo = (iso: string) => { if (!iso) return false; const d = diaDe(iso); return d >= de && d <= ate; };
-    const coms = S.comentarios.filter((k) => noPeriodo(k.criado)).sort((x, y) => y.criado.localeCompare(x.criado));
     const novas = S.alunas.filter((a) => noPeriodo(a.criadaEm)).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm));
     const atv = ativ && ativ.chave === chave ? ativ.lista : null;
     const cartao = (ic: string, titulo: string, acao: string, corpo: string) => `
@@ -942,15 +942,15 @@ export function montar(app: HTMLElement) {
       <div class="ini-tarefas" aria-label="Para fazer agora">
         <h3>Para fazer agora</h3>
         <div class="ini-tarefas-lista">
-          ${tarefa(IC_INI.balao, "Comentários para responder", nResp, "ir-comentarios")}
+          ${tarefa(IC_INI.balao, "Comentários para moderar", nResp, "ir-comentarios")}
           ${tarefa(IC_INI.cal, "Acessos que vencem em 15 dias", ls[0].lista.length, "ini-lista", "vencem")}
           ${tarefa(IC_INI.pessoas, "Sem acesso há mais de 14 dias", ls[1].lista.length, "ini-lista", "parada")}
           ${tarefa(IC_INI.pessoa, "Ainda sem o primeiro acesso", ls[2].lista.length, "ini-lista", "comecar")}
         </div>
       </div>
       <div class="ini-grade">
-        ${cartao(IC_INI.balao, "Últimos comentários" + (nResp ? " " + badge(nResp) : ""), "ir-comentarios", coms.slice(0, 3).map((k) => `
-          <div class="ini-item${k.estado !== "oculto" && !k.resposta ? " a-responder" : ""}">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">${k.estado === "moderar" ? "Moderar" : k.estado !== "oculto" && !k.resposta ? "Responder" : "Ver"}</button></div>`).join("") || vazio("Nenhum comentário no período."))}
+        ${cartao(IC_INI.balao, "Comentários para moderar" + (nResp ? " " + badge(nResp) : ""), "ir-comentarios", paraResponder().slice(0, 3).map((k) => `
+          <div class="ini-item a-responder">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">Moderar</button></div>`).join("") || vazio("Nenhum comentário para moderar. Tudo em dia."))}
         ${cartao(IC_INI.onda, "Últimas atividades", "ini-ativ-todas", atv ? (atv.slice(0, 3).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")) : vazio("Carregando…"))}
         ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
           <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
