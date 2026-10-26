@@ -17,6 +17,7 @@ import * as api from "@/data/api";
 import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
+import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
@@ -72,7 +73,7 @@ type Destaque = {
 type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean };
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
-type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; visivel: boolean };
+type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
@@ -128,7 +129,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -266,7 +267,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -432,6 +433,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
+      notif: notifDe(cfgIni.data?.notif),
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -488,14 +490,14 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -2367,6 +2369,7 @@ export function montar(app: HTMLElement) {
     onde_parei: ["Onde parei", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>`],
     sair: ["Sair da área de membros", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 7V4.5H4.5v15H14V17"/><path d="M20 12H10M16.5 8.5L20 12l-3.5 3.5"/></svg>`],
     link: ["Link", `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg>`],
+    notificacoes: ["Ativar notificações", SINO],
   };
   const tipoBt = (b: BotaoPerfil) => (b.url ? "link" : BT_PERFIL[b.id] ? b.id : "link");
   const SEL = (nome: string, atual: string, ops: [string, string][]) => `<select class="campo" name="${nome}">${ops.map(([k, t]) => `<option value="${k}" ${atual === k ? "selected" : ""}>${t}</option>`).join("")}</select>`;
@@ -2513,19 +2516,47 @@ export function montar(app: HTMLElement) {
             <h3>Texto complementar ${dicaCampo(`Uma mensagem opcional que aparece embaixo dos botões na tela Perfil da aluna.`, "cfg.texto-complementar")}</h3><p class="cfg-sub">Adicione uma mensagem adicional que aparece abaixo dos botões.</p>
             <label class="cfg-c"><textarea class="campo" name="perfTexto" rows="2" maxlength="240" placeholder="Opcional">${h(t.perfTexto)}</textarea></label>
           </div>
+          ${blocoNotif()}
           <div class="cfg-bloco">
             <h3>Layout das informações ${dicaCampo(`O visual da tela Perfil: Padrão, Com moldura (tudo dentro de uma borda dourada) ou Minimalista (botões sem fundo).`, "cfg.layout-das-informa-es")}</h3><p class="cfg-sub">Escolha como os elementos serão exibidos no perfil.</p>
             ${opcoesCfg("perfLayout", t.perfLayout, EST_TIT)}
           </div>
         </form>
-        ${previaCfgBox(previaPerfil(t))}
+        ${previaCfgBox(previaPerfil(t), `<div class="cfg-pvsel">${[["perfil", "Tela Perfil"], ["pop", "Pop-up de notificações"]].map(([k, tt]) => `<button type="button" data-a="pv-notif" data-v="${k}" aria-pressed="${(k === "pop") === ui.pvNotif}">${tt}</button>`).join("")}</div>`)}
       </div>`;
   }
+  /** Notificações (0092): o pop-up "Ativar notificações" que a aluna vê ao entrar. */
+  function notifDoForm(t: Record<string, string>): NotifCfg {
+    const n = S.config.notif;
+    if (t.nTitulo === undefined) return n;
+    return notifDe({ ativo: t.nAtivo !== "nao", titulo: t.nTitulo, texto: (t.nTexto || "").trim(), botao: t.nBotao, depois: t.nDepois, layout: t.nLayout, intervalo: Number(t.nIntervalo),
+      cores: { fundo: t["nCor-fundo"], borda: t["nCor-borda"], titulo: t["nCor-titulo"], texto: t["nCor-texto"], botao: t["nCor-botao"], botaoTexto: t["nCor-botaoTexto"] } });
+  }
+  function blocoNotif() {
+    const n = S.config.notif;
+    const CORES_N: [keyof NotifCfg["cores"], string][] = [["fundo", "Fundo"], ["borda", "Borda"], ["titulo", "Título"], ["texto", "Texto"], ["botao", "Botão"], ["botaoTexto", "Texto do botão"]];
+    return `
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Notificações ${dicaCampo(`O pop-up que pede para a aluna ativar os avisos das novas aulas. Aparece ao entrar no app, para quem ainda não ativou. Se ela tocar no botão pequeno, ele volta depois do tempo escolhido em "Mostrar de novo". O botão "Ativar notificações" do Perfil fica na lista de botões acima e some para quem já ativou.`, "cfg.notificacoes")}</h3><p class="cfg-sub">Pop-up para a aluna ativar os avisos das novas aulas.</p></div><label class="cfg-chave"><input type="checkbox" name="nAtivo" ${n.ativo ? "checked" : ""} /><i></i>Mostrar o pop-up</label></div>
+            <div class="cfg-2">
+              <label class="cfg-c"><span>Título</span><input class="campo" name="nTitulo" value="${h(n.titulo)}" maxlength="60" required /></label>
+              <label class="cfg-c"><span>Texto</span><input class="campo" name="nTexto" value="${h(n.texto)}" maxlength="160" placeholder="Opcional" /></label>
+              <label class="cfg-c"><span>Botão grande</span><input class="campo" name="nBotao" value="${h(n.botao)}" maxlength="30" required /></label>
+              <label class="cfg-c"><span>Botão pequeno</span><input class="campo" name="nDepois" value="${h(n.depois)}" maxlength="30" required /></label>
+            </div>
+            <div class="cfg-2" style="margin-top:14px">
+              <div class="cfg-c"><span>Onde aparece</span><div class="cfg-seg">${[["centro", "No meio da tela"], ["baixo", "Embaixo da tela"]].map(([k, tt]) => `<label><input type="radio" name="nLayout" value="${k}" ${n.layout === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
+              <label class="cfg-c"><span>Mostrar de novo para quem não ativou</span><select class="campo" name="nIntervalo">${INTERVALOS.map(([k, tt]) => `<option value="${k}" ${n.intervalo === k ? "selected" : ""}>${tt}</option>`).join("")}</select></label>
+            </div>
+            <div class="cfg-ncores">${CORES_N.map(([k, tt]) => `<label class="cfg-ncor"><input type="color" name="nCor-${k}" value="${n.cores[k]}" /><span>${tt}</span></label>`).join("")}</div>
+          </div>`;
+  }
   function previaPerfil(t: Record<string, string>) {
+    if (ui.pvNotif) return `<div class="pv-np">${pvTela("inicio", "")}${popNotif(notifDoForm(t), true)}</div>`;
     const nome = "Nome da Aluna", saud = (t.perfSaud || "").replace(/\{nome_completo\}/g, nome).replace(/\{nome\}/g, "Nome");
     const foto = t.perfImagem === "foto" ? `<div class="pv-pfoto"><span class="pv-pcirc pv-pic pv-pfo" title="Foto da aluna">${IC_CFG.perfil}</span><i>${IC_PF.cam}</i></div>` : t.perfImagem === "icone" ? `<div class="pv-pfoto"><span class="pv-pcirc pv-pic">${IC_CFG.perfil}</span></div>` : "";
     return pvTela("perfil", `<div class="pv-perfil pv-pl-${h(t.perfLayout)}"><small class="pv-ptit">${h(t.perfTitulo)}</small><h4>${h(saud)}</h4>${foto}
-      <div class="pv-pbts">${S.config.perfBotoes.filter((b) => b.visivel !== false).map((b) => `<span>${BT_PERFIL[tipoBt(b)][1]}<em>${h(b.rotulo)}</em><b>›</b></span>`).join("")}</div>
+      <div class="pv-pbts">${S.config.perfBotoes.filter((b) => b.visivel !== false).map((b) => `<span${b.cor || b.corTexto ? ` style="${b.cor ? "background:" + h(b.cor) + ";" : ""}${b.corTexto ? "color:" + h(b.corTexto) : ""}"` : ""}>${BT_PERFIL[tipoBt(b)][1]}<em>${h(b.rotulo)}</em><b>›</b></span>`).join("")}</div>
       ${t.perfTexto ? `<p class="pv-ptxt">${h(t.perfTexto)}</p>` : ""}</div>`);
   }
   async function salvarBotoesPerfil(lista: BotaoPerfil[], msg: string) {
@@ -2612,11 +2643,11 @@ export function montar(app: HTMLElement) {
       <nav class="pv-nav pvn-${h(M.estilo)} pvn-${h(M.tamanho)}" style="--nb-fundo:${h(c.fundo)};--nb-inativo:${h(c.inativo)};--nb-ativo:${h(c.ativo)};--nb-texto:${h(c.texto)}">${vis.map((b, i) => `<span${i === 0 ? ' class="on"' : ""}${i === 0 && b.cor ? ` style="--nb-ativo:${h(b.cor)}"` : ""}>${IC_APP[b.icone || "inicio"] || IC_APP.inicio}<em>${h(b.rotulo)}</em></span>`).join("")}</nav></div>`;
   }
   function redesenharMenuCfg() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaMenu(); }
-  const previaCfgBox = (miolo: string) => `
+  const previaCfgBox = (miolo: string, extra = "") => `
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
             <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
-          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${miolo}</div></div>
+          ${extra}<div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${miolo}</div></div>
         </aside>`;
   /** Moldura comum da prévia (topo com o nome, rolagem e o menu do app). */
   function pvTela(ativo: string, miolo: string) {
@@ -4462,6 +4493,9 @@ export function montar(app: HTMLElement) {
         <label class="eq-campo"><span>Texto do botão</span><input class="campo" name="rotulo" value="${h(b.rotulo)}" maxlength="40" required /></label>
         <label class="eq-campo"><span>Descrição (só no painel)</span><input class="campo" name="desc" value="${h(b.desc || "")}" maxlength="80" /></label>
         <label class="eq-campo pbt-url"><span>Link</span><input class="campo" name="url" type="url" value="${h(b.url || "")}" placeholder="https://" /><small>Abre numa nova aba.</small></label>
+        <div class="eq-campo"><span>Cores do botão</span>
+          <label class="eq-chk"><input type="checkbox" name="corPadrao" ${b.cor || b.corTexto ? "" : "checked"} /><span>Usar as cores padrão</span></label>
+          <span class="pbt-cores"><label class="cfg-ncor"><input type="color" name="cor" value="${h(b.cor || "#d4b170")}" /><span>Fundo</span></label><label class="cfg-ncor"><input type="color" name="corTexto" value="${h(b.corTexto || "#1a1206")}" /><span>Texto</span></label></span></div>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "perfil") {
@@ -5341,6 +5375,7 @@ export function montar(app: HTMLElement) {
       case "eq-filtro": ui.filtroEq = d.v; break;
       case "cfg-aba": if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
         if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
+      case "pv-notif": ui.pvNotif = d.v === "pop"; document.querySelectorAll<HTMLElement>('[data-a="pv-notif"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === d.v))); atualizarPreviaCfg(); return;
       case "cfg-previa": {
         ui.cfgPrevia = d.v === "computador" ? "computador" : "celular";
         const pv = document.getElementById("cfgPrevia"); if (pv) pv.className = "pv-" + ui.cfgPrevia + (pv.classList.contains("pv-real") ? " pv-real" : "");
@@ -5654,7 +5689,8 @@ export function montar(app: HTMLElement) {
         if (!rotulo) { toast("Escreva o texto do botão."); return; }
         if (tipo === "link" && !/^https?:\/\/\S+$/.test(url)) { toast("Coloque um link começando com https://"); return; }
         const lista = S.config.perfBotoes.slice(), novo = form.dataset.id === "novo";
-        const b: BotaoPerfil = { id: tipo === "link" ? "link-" + Date.now().toString(36) : tipo, rotulo, desc, visivel: true, ...(tipo === "link" ? { url } : {}) };
+        const padrao = (form.elements.namedItem("corPadrao") as HTMLInputElement | null)?.checked !== false;
+        const b: BotaoPerfil = { id: tipo === "link" ? "link-" + Date.now().toString(36) : tipo, rotulo, desc, visivel: true, ...(tipo === "link" ? { url } : {}), ...(padrao ? {} : { cor: v("cor"), corTexto: v("corTexto") }) };
         if (novo) lista.push(b); else { const i = Number(form.dataset.id); b.visivel = lista[i]?.visivel !== false; lista[i] = b; }
         void executar(async () => { ui.modal = null; return salvarBotoesPerfil(lista, "Botão salvo."); });
         return;
@@ -5675,7 +5711,7 @@ export function montar(app: HTMLElement) {
         }
         if (form.dataset.tela === "perfil") {
           void executar(async () => {
-            falhou(await supabase.from("configuracoes").update({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout }).not("id", "is", null).select("id"));
+            falhou(await supabase.from("configuracoes").update({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout, notif: notifDoForm(tv) }).not("id", "is", null).select("id"));
             await registrar(null, "Mudou as configurações do Perfil da área de membros");
             return "Configurações do Perfil salvas.";
           });
@@ -6054,7 +6090,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };

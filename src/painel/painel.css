@@ -3276,3 +3276,34 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .cfg-aj-rest { margin-left: auto; align-self: center; font-size: 12px; }
 .cfg-bloco h3 .ajuda-amarela, .cfg-l .ajuda-amarela { margin-left: 6px; }
 .cfg-bloco h3 .ajuda-amarela-txt, .cfg-l .ajuda-amarela-txt { font-size: 13px; font-weight: 400; color: var(--texto); }
+
+/* Notificações (0092): pop-up "Ativar notificações" — igual na área da aluna e na prévia do painel. */
+.np-fundo { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(0,0,0,.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: np-in .25s ease-out; }
+.np-fundo.np-baixo { place-items: end center; padding: 0; }
+.np { position: relative; width: 100%; max-width: 360px; padding: 34px 24px 18px; text-align: center; color: var(--np-txt); background: linear-gradient(180deg, color-mix(in srgb, var(--np-fundo) 88%, #fff 12%) 0%, var(--np-fundo) 100%); border: 1px solid color-mix(in srgb, var(--np-borda) 50%, transparent); border-radius: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 0 6px color-mix(in srgb, var(--np-borda) 8%, transparent); }
+.np-baixo .np { max-width: 520px; border-radius: 22px 22px 0 0; padding-bottom: calc(18px + env(safe-area-inset-bottom)); animation: np-sobe .3s ease-out; }
+.np-sino { position: relative; width: 84px; height: 84px; margin: 0 auto 18px; display: grid; place-items: center; border-radius: 50% !important; color: var(--np-bttxt); background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--np-bt) 45%, #fff 55%), var(--np-bt) 55%, color-mix(in srgb, var(--np-bt) 70%, #000 30%)); box-shadow: 0 0 0 8px color-mix(in srgb, var(--np-bt) 14%, transparent), 0 0 36px color-mix(in srgb, var(--np-bt) 45%, transparent); }
+.np-sino svg { width: 40px; height: 40px; }
+.np-sino i { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border-radius: 50% !important; background: #e2554a; border: 3px solid var(--np-fundo); }
+.np h2 { margin: 0 0 8px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.75rem; line-height: 1.15; font-weight: 700; color: var(--np-tit); }
+.np p { margin: 0 0 22px; font-size: 1rem; line-height: 1.5; color: var(--np-txt); }
+.np-ativar { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 58px; padding: 0 18px; font: inherit; font-size: 1.125rem; font-weight: 800; color: var(--np-bttxt); border: 0; border-radius: 999px !important; cursor: pointer; background: linear-gradient(180deg, color-mix(in srgb, var(--np-bt) 60%, #fff 40%) 0%, var(--np-bt) 55%, color-mix(in srgb, var(--np-bt) 82%, #000 18%) 100%); box-shadow: 0 10px 26px color-mix(in srgb, var(--np-bt) 38%, transparent), inset 0 1px 0 rgba(255,255,255,.55); }
+.np-ativar svg { width: 22px; height: 22px; flex: 0 0 auto; }
+.np-ativar:active { transform: scale(.98); }
+.np-depois { margin-top: 10px; padding: 10px 16px; font: inherit; font-size: .9375rem; color: var(--np-txt); opacity: .8; background: none; border: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+@keyframes np-in { from { opacity: 0; } }
+@keyframes np-sobe { from { transform: translateY(40px); opacity: 0; } }
+/* Prévia do pop-up dentro do celular de Configurações → Perfil. */
+.pv-np { position: relative; height: 100%; border-radius: 30px; overflow: hidden; }
+.pv-np .np-fundo.np-prev { position: absolute; inset: 0; z-index: 2; padding: 10px; animation: none; }
+.pv-np .np-prev.np-baixo { padding: 0; }
+.pv-np .np-prev .np { zoom: .6; animation: none; }
+.pv-np .np-prev button { pointer-events: none; }
+.cfg-pvsel { display: flex; gap: 6px; margin: 0 0 12px; }
+.cfg-pvsel button { flex: 1; min-height: 36px; font: inherit; font-size: 13px; font-weight: 600; color: var(--texto-2, #444); background: none; border: 1px solid var(--linha, #ddd); border-radius: 8px; cursor: pointer; }
+.cfg-pvsel button[aria-pressed="true"] { color: #fff; background: #111; border-color: #111; }
+.cfg-ncores { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 12px; }
+.cfg-ncor { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.cfg-ncor input[type="color"] { width: 38px; height: 32px; padding: 2px; border: 1px solid var(--linha, #ddd); border-radius: 8px; background: none; cursor: pointer; }
+.pbt-cores { display: flex; gap: 18px; margin-top: 8px; }
+.pbt-form:has(input[name="corPadrao"]:checked) .pbt-cores { display: none; }
