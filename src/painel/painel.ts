@@ -4389,11 +4389,11 @@ export function montar(app: HTMLElement) {
       const nova = m.tipo === "equipe-nova", e = nova ? null : pessoa(m.id);
       const papeis: Papel[] = souPrincipal() ? ["Suporte", "Administrador", "Dono"] : eu?.papel === "Dono" ? ["Suporte", "Administrador"] : ["Suporte"];
       const semNome = !nova && !euPode("nome"), semCodigo = !nova && !euPode("codigo");
-      const pd = e && e.papel === "Dono" ? e.pode : { adicionar: true, remover: true, codigo: true, nome: true };
+      const pd = e && e.papel === "Dono" ? e.pode : { adicionar: false, remover: false, codigo: false, nome: false };
       const comPapel = !!(nova || (e && gere(e)));
       const papelAtual = e ? e.papel : papeis[0];
       const ICP: Record<string, string> = { Dono: IC_EQ.coroa, Administrador: IC_EQ.grupo, Suporte: IC_EQ.fone };
-      const abasB = e && e.papel === "Dono" ? e.abasBloq : [];
+      const abasB = e && e.papel === "Dono" ? e.abasBloq : [...ABAS, ...ABAS_EXTRA].map(([id]) => id as string);
       const permDono = souPrincipal() && !(e && e.principal) ? `<section class="eqn-card" data-papel="Dono">
           <div class="eqn-ccab"><span class="eqn-cic">${IC_EQ.coroa}</span><div><h3>Dono <span class="eqn-q" tabindex="0" role="note" data-dica="O dono controla o painel inteiro. Aqui você escolhe o que ele pode fazer na equipe.">?</span></h3><p>Selecione o que este colaborador poderá fazer no painel.</p></div></div>
           <div class="eqn-lista">
