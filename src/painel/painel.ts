@@ -115,10 +115,10 @@ type Pessoa = {
   /** Última vez que entrou no painel (ISO), quando o banco tem. */
   ultimo: string; criado: string;
   /** Dono principal (o original) e o que um dono secundário pode fazer na equipe (0080). */
-  cor: string; abasBloq: string[];
+  cor: string; abasBloq: string[]; perms: string[];
   principal: boolean; pode: { adicionar: boolean; remover: boolean; codigo: boolean; nome: boolean };
 };
-type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string };
+type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string; perms: string[]; abasBloq: string[] };
 
 type Dados = {
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
@@ -186,7 +186,9 @@ const tipoDoBanco = (b: string) => (TIPOS.find((x) => x.banco === b) ?? TIPOS[2]
 
 /** O que o banco recusa, dito para gente. */
 const MOTIVOS: Record<string, string> = {
-  sem_permissao: "Seu papel não permite esta ação.",
+  sem_permissao: "Acesso bloqueado.",
+  "Acesso bloqueado.": "Acesso bloqueado.",
+  "row-level security": "Acesso bloqueado.",
   login_em_uso: "Já existe alguém com esse login.",
   login_invalido: "O login aceita letras minúsculas, números, ponto, hífen e sublinhado.",
   codigo_invalido: "O código tem de 4 a 6 números.",
@@ -200,7 +202,7 @@ const MOTIVOS: Record<string, string> = {
   produtos_categoria_id_fkey: "Este botão tem categorias. Mude-as de botão antes de remover.",
   "JWT expired": "Sua sessão expirou. Entre de novo.",
   // Atualização que a RLS barrou volta sem linha nenhuma.
-  "multiple (or no) rows returned": "Seu papel não permite esta ação, ou o item já não existe.",
+  "multiple (or no) rows returned": "Acesso bloqueado, ou o item já não existe.",
 };
 function motivo(e: unknown): string {
   const msg = e instanceof Error ? e.message : String((e as { message?: string })?.message ?? e);
@@ -417,7 +419,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       id: String(e.id), nome: String(e.nome), login: String(e.login),
       codigo: e.codigo ? String(e.codigo) : null, papel: PAPEL[String(e.papel)] ?? "Suporte",
       bloqueada: e.status === "bloqueada", souEu: !!e.sou_eu, ultimo: e.ultimo_acesso_em ? String(e.ultimo_acesso_em) : "", criado: e.criada_em ? String(e.criada_em) : "",
-      cor: e.cor_perfil ? String(e.cor_perfil) : "", abasBloq: Array.isArray(e.abas_bloqueadas) ? (e.abas_bloqueadas as string[]) : [], principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
+      cor: e.cor_perfil ? String(e.cor_perfil) : "", abasBloq: Array.isArray(e.abas_bloqueadas) ? (e.abas_bloqueadas as string[]) : [], perms: Array.isArray(e.permissoes) ? (e.permissoes as string[]) : [], principal: !!e.dono_principal, pode: { adicionar: e.pode_adicionar !== false, remover: e.pode_remover !== false, codigo: e.pode_codigo !== false, nome: e.pode_nome !== false },
     }));
   }
 
@@ -452,7 +454,13 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
 async function quemSouEu(): Promise<Eu | null> {
   const perfil = await api.meuPerfil();
   if (!perfil || perfil.status !== "ativa" || !PAPEL[perfil.papel]) return null;
-  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel], login: perfil.login ?? "", cor: "" };
+  // Suporte (0093): o que pode fazer e as abas que não abre. O banco confere de novo em cada ação.
+  let perms: string[] = [], abasBloq: string[] = [];
+  if (perfil.papel === "suporte") {
+    const { data } = await supabase.from("profiles").select("permissoes, abas_bloqueadas").eq("id", perfil.id).maybeSingle();
+    perms = (data?.permissoes as string[] | null) ?? []; abasBloq = (data?.abas_bloqueadas as string[] | null) ?? [];
+  }
+  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel], login: perfil.login ?? "", cor: "", perms, abasBloq };
 }
 
 /** Chama uma Edge Function com a sessão de quem está no painel. */
@@ -587,7 +595,31 @@ export function montar(app: HTMLElement) {
   /** Eu na lista da equipe (traz se sou o dono principal e o que posso). */
   const euEq = () => S.equipe.find((x) => x.souEu);
   /** Aba que o dono principal tirou deste dono secundário (aparece no menu com cadeado). */
-  const abaBloq = (id: string) => eu?.papel === "Dono" && !souPrincipal() && !!euEq()?.abasBloq.includes(id);
+  const abaBloq = (id: string) => eu?.papel === "Suporte" ? id === "config" || eu.abasBloq.includes(id) : eu?.papel === "Dono" && !souPrincipal() && !!euEq()?.abasBloq.includes(id);
+  /** Suporte (0093): o que cada membro pode fazer, por aba. Dono e administração: tudo. */
+  const GRUPOS_SUP: [string, string, [string, string][]][] = [
+    ["alunas", "Alunas", [["al_cadastrar", "Cadastrar aluna nova"], ["al_editar", "Editar nome, login e foto"], ["al_codigo", "Renovar o código de acesso"], ["al_liberar", "Liberar cursos, módulos e aulas"], ["al_tirar", "Tirar liberação"], ["al_validade", "Renovar e mudar a validade do acesso"], ["al_bloquear", "Bloquear e desbloquear aluna"], ["al_excluir", "Excluir aluna"]]],
+    ["engajamento", "Engajamento", [["eng_contato", "Registrar contato"]]],
+    ["comentarios", "Comentários", [["com_responder", "Responder"], ["com_aprovar", "Aprovar e publicar"], ["com_ocultar", "Ocultar e excluir"], ["com_restaurar", "Restaurar comentário excluído"]]],
+    ["cursos", "Cursos e conteúdos", [["cur_estado", "Liberar, bloquear e desativar curso, módulo e aula"], ["cur_datas", "Mudar a data de liberação"], ["cur_editar", "Criar e editar cursos, módulos e aulas"], ["cur_excluir", "Excluir conteúdo"]]],
+    ["layout", "Categorias", [["cat_estado", "Liberar e ocultar"], ["cat_editar", "Criar, editar e mudar a ordem"]]],
+  ];
+  const ACAO_PERM: Record<string, string> = {
+    "aluna-nova": "al_cadastrar", "editar-aluna": "al_editar", "foto-aluna-escolher": "al_editar", "foto-aluna-ajustar": "al_editar", "foto-aluna-remover": "al_editar",
+    liberar: "al_liberar", cronograma: "al_liberar", "copiar-liberacao": "al_liberar", renovar: "al_validade",
+    "bloquear-aluna": "al_bloquear", "desbloquear-aluna": "al_bloquear", "remover-aluna": "al_excluir", contato: "eng_contato",
+    "com-responder": "com_responder", "com-publicar": "com_aprovar", "com-ocultar": "com_ocultar", "com-remover": "com_ocultar", "com-restaurar": "com_restaurar",
+    "aula-bloquear": "cur_estado", "aula-liberar": "cur_estado", "mod-bloquear": "cur_estado",
+    "curso-novo": "cur_editar", "curso-novo-cat": "cur_editar", "mod-add": "cur_editar", "aula-add-abrir": "cur_editar", "aula-editar": "cur_editar", "mod-editar": "cur_editar",
+    "aula-duplicar": "cur_editar", "mod-duplicar": "cur_editar", "cs-duplicar": "cur_editar", "aula-renomear": "cur_editar", "mod-renomear": "cur_editar",
+    "aula-sobe": "cur_editar", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
+    "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
+    "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
+    "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar",
+    "cat-visivel": "cat_estado",
+  };
+  const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
+  const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
   /** A aba do menu a que cada tela pertence. */
   const abaDaTela = (t: string) => t === "ficha" ? "alunas" : t === "curso" || t === "aula" ? "cursos" : t === "catAba" ? "layout" : t;
   const souPrincipal = () => eu?.papel === "Dono" && !!euEq()?.principal;
@@ -4174,6 +4206,14 @@ export function montar(app: HTMLElement) {
   }
 
 
+  /** As permissões marcadas no card do Suporte (null se o card não está na tela ou não dá para mudar). */
+  function permsSupDoForm(form: HTMLFormElement) {
+    const tudo = form.querySelector<HTMLInputElement>('input[name="sp-tudo"]');
+    if (!tudo || tudo.disabled) return null;
+    const lista = [...form.querySelectorAll<HTMLInputElement>('input[name^="sp-"]:not([name="sp-tudo"])')].filter((x) => x.checked).map((x) => x.name.slice(3));
+    const abas = [...form.querySelectorAll<HTMLInputElement>('input[name^="spaba-"]')].filter((x) => !x.checked).map((x) => x.name.slice(6));
+    return { lista, abas };
+  }
   /** As permissões marcadas no formulário do dono secundário (null se o bloco não está na tela). */
   function permsDoForm(form: HTMLFormElement) {
     const c = (k: string) => form.querySelector<HTMLInputElement>(`input[name="perm-${k}"]`);
@@ -4439,6 +4479,18 @@ export function montar(app: HTMLElement) {
             <small class="eqn-nota">Aba desmarcada aparece no menu dele com cadeado, sem abrir.</small>
           </div>
         </section>` : "";
+      // Suporte (0093): nada marcado de fábrica; quem já é suporte abre com o que tem.
+      const ehSup = !!e && e.papel === "Suporte", spP = ehSup ? e!.perms : [], spAbasB = ehSup ? e!.abasBloq : GRUPOS_SUP.map(([id]) => id);
+      const spTodas = GRUPOS_SUP.every(([id, , ops]) => !spAbasB.includes(id) && ops.every(([k]) => spP.includes(k)));
+      const permSup = `<section class="eqn-card" data-papel="Suporte">
+          <div class="eqn-ccab"><span class="eqn-cic">${ICP.Suporte}</span><div><h3>Suporte <span class="eqn-q" tabindex="0" role="note" data-dica="Marque a aba que o suporte abre e o que ele pode fazer nela. Desmarcado, ele não consegue. Equipe e Configurações nunca abrem para o suporte.">?</span></h3><p>Selecione o que este colaborador poderá fazer no painel.</p></div></div>
+          <div class="eqn-lista"><label class="eqn-op tudo"><input type="checkbox" name="sp-tudo" ${spTodas ? "checked" : ""} ${comPapel ? "" : "disabled"} /><span><b>Marcar tudo</b><em>Todas as abas e ações abaixo.</em></span></label></div>
+          ${GRUPOS_SUP.map(([id, nome, ops]) => `<div class="eqn-spg">
+            <label class="eqn-aba eqn-spaba"><input type="checkbox" name="spaba-${id}" ${spAbasB.includes(id) ? "" : "checked"} ${comPapel ? "" : "disabled"} />${ICONE_MENU[id] || ""}<span>${nome}</span><em>Abrir a aba</em></label>
+            <div class="eqn-lista">${ops.map(([k, t]) => `<label class="eqn-op"><input type="checkbox" name="sp-${k}" data-grupo="${id}" ${spP.includes(k) ? "checked" : ""} ${comPapel ? "" : "disabled"} /><span><b>${t}</b></span></label>`).join("")}</div>
+          </div>`).join("")}
+          <small class="eqn-nota">Desmarcado, ele não consegue fazer. Aba desmarcada aparece no menu dele com cadeado.</small>
+        </section>`;
       const cardPapel = (pp: Papel, nomeP: string) => `<section class="eqn-card" data-papel="${pp}">
           <div class="eqn-ccab"><span class="eqn-cic">${ICP[pp]}</span><div><h3>${nomeP}</h3><p>As opções desta função vão ser escolhidas em breve.</p></div></div>
         </section>`;
@@ -4459,7 +4511,7 @@ export function montar(app: HTMLElement) {
           <div class="eqn-dir">
             ${permDono}
             ${papeis.includes("Administrador") || papelAtual === "Administrador" ? cardPapel("Administrador", "Administração") : ""}
-            ${cardPapel("Suporte", "Suporte")}
+            ${permSup}
           </div>
         </div>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
@@ -4551,6 +4603,11 @@ export function montar(app: HTMLElement) {
     if (a !== "eng-menu") ui.engMenu = "";
     if (a !== "cur-menu") ui.curMenu = "";
     if (a !== "cur-al-menu") ui.curAlMenu = "";
+    // Suporte (0093): sem a permissão, nem abre. O banco confere de novo ao salvar.
+    if (eu?.papel === "Suporte") {
+      const k = a === "estado-set" ? (/^(cat|catx):/.test(d.v || "") ? "cat_estado" : "cur_estado") : ACAO_PERM[a];
+      if (k && !podeS(k)) { ui.estMenu = ""; toast("Acesso bloqueado."); render(); return; }
+    }
     switch (a) {
       case "inicio-acessos": ui.inicioVista = "acessos"; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
       case "inicio-voltar": ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null; window.scrollTo(0, 0); break;
@@ -5997,7 +6054,7 @@ export function montar(app: HTMLElement) {
         const papelTxt = form.elements.namedItem("papel") ? v("papel") : e.papel;
         const papel = papelTxt === "Administrador" ? "admin" : papelTxt === "Dono" ? "dono" : "suporte";
         const codigo = form.elements.namedItem("codigo") ? v("codigo").trim() : "";
-        const perms = permsDoForm(form);
+        const perms = permsDoForm(form), permsSup = permsSupDoForm(form);
         if (nome.length < 2) { toast("Preencha o nome."); return; }
         if (codigo && !/^\d{4,6}$/.test(codigo)) { toast("O código tem de 4 a 6 números."); return; }
         if (S.equipe.some((x) => x.login === login && x.id !== e.id)) { toast("Esse login já está na equipe."); return; }
@@ -6006,6 +6063,7 @@ export function montar(app: HTMLElement) {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
           if (fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: e.id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[e.id] = fp.foto; }
           if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome, p_abas_bloqueadas: perms.abas });
+          if (papel === "suporte" && permsSup) await rpc("definir_permissoes_suporte", { p_id: e.id, p_permissoes: permsSup.lista, p_abas_bloqueadas: permsSup.abas });
           await registrar(null, "Editou " + nome + " na equipe", ["equipe", e.id]);
           ui.modal = null;
           return { msg: "Dados de " + nome + " salvos.", texto: "edição de " + nome + " na equipe", desfazer: async () => { await rpc("editar_colaborador", { p_id: e.id, p_nome: antes.nome, p_login: antes.login, p_papel: antes.papel, p_codigo: antes.codigo }); } };
@@ -6020,7 +6078,7 @@ export function montar(app: HTMLElement) {
         const codigo = v("codigo").trim();
         if (!/^\d{4,6}$/.test(codigo)) { toast("Escolha um código de 4 a 6 números."); return; }
         const papel = v("papel") === "Dono" ? "dono" : v("papel") === "Administrador" ? "admin" : "suporte";
-        const permissoes = papel === "dono" ? permsDoForm(form) : undefined;
+        const permissoes = papel === "dono" ? permsDoForm(form) : papel === "suporte" ? permsSupDoForm(form) ?? { lista: [], abas: GRUPOS_SUP.map(([id]) => id) } : undefined;
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo, permissoes });
           if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
@@ -6264,6 +6322,17 @@ export function montar(app: HTMLElement) {
     if (t instanceof HTMLInputElement && t.closest("#cfgMenu") && t.type === "radio" && t.checked) { const M = menuRascunho(); if (t.name === "mbEstilo") M.estilo = t.value; if (t.name === "mbTamanho") M.tamanho = t.value; redesenharMenuCfg(); }
     if (t instanceof HTMLInputElement && t.hasAttribute("data-perf-deg")) {
       const [a] = (ui.perfCor || "#e9d9b8").split(","); ui.perfCor = t.checked ? a + "," + (a === "#13284a" ? "#c9a25c" : "#13284a") : a; render(); return;
+    }
+    if (t instanceof HTMLInputElement && (t.name.startsWith("sp-") || t.name.startsWith("spaba-"))) {
+      const f = t.form!, todos = [...f.querySelectorAll<HTMLInputElement>('input[name^="sp-"]:not([name="sp-tudo"]), input[name^="spaba-"]')];
+      if (t.name === "sp-tudo") todos.forEach((x) => { x.checked = t.checked; });
+      else {
+        // Marcou uma ação: a aba dela abre junto. Fechou a aba: as ações dela saem.
+        if (t.name.startsWith("sp-") && t.checked) { const a = f.querySelector<HTMLInputElement>(`input[name="spaba-${t.dataset.grupo}"]`); if (a) a.checked = true; }
+        if (t.name.startsWith("spaba-") && !t.checked) f.querySelectorAll<HTMLInputElement>(`input[data-grupo="${t.name.slice(6)}"]`).forEach((x) => { x.checked = false; });
+        f.querySelector<HTMLInputElement>('input[name="sp-tudo"]')!.checked = todos.every((x) => x.checked);
+      }
+      return;
     }
     if (t instanceof HTMLInputElement && t.name.startsWith("aba-")) {
       const f = t.form!, todas = [...f.querySelectorAll<HTMLInputElement>('input[name^="aba-"]:not([name="aba-tudo"])')];

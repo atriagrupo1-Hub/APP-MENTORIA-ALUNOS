@@ -79,18 +79,22 @@ Deno.serve(async (req) => {
   // É da equipe mesmo? A resposta vem do banco, não do token.
   //
   // Os três papéis cadastram aluna: o dono, o administrador e o
-  // suporte. Quem não está nesta lista — uma aluna com sessão válida,
-  // por exemplo — para aqui.
+  // suporte — o suporte só com a permissão "al_cadastrar" e a aba Alunas
+  // liberada (0093). Quem não está nesta lista — uma aluna com sessão
+  // válida, por exemplo — para aqui.
   const EQUIPE = ["dono", "admin", "suporte"];
 
   const { data: perfil, error: erroPerfil } = await admin
     .from("profiles")
-    .select("papel, status")
+    .select("papel, status, permissoes, abas_bloqueadas")
     .eq("id", quem.user.id)
     .single();
 
   if (erroPerfil || !EQUIPE.includes(perfil?.papel) || perfil?.status !== "ativa") {
     return resposta({ erro: "sem_permissao" }, 403, origem);
+  }
+  if (perfil.papel === "suporte" && (!(perfil.permissoes ?? []).includes("al_cadastrar") || (perfil.abas_bloqueadas ?? []).includes("alunas"))) {
+    return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403, origem);
   }
 
   let nome = "";

@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
   let papel = "";
   let pode = { adicionar: true, remover: true, codigo: true, nome: true };
   let abasBloqueadas: string[] = [];
+  let permissoesSuporte: string[] = [];
   try {
     const corpo = await req.json();
     nome = String(corpo?.nome ?? "").trim();
@@ -121,6 +122,7 @@ Deno.serve(async (req) => {
       nome: p.nome !== false,
     };
     abasBloqueadas = Array.isArray(p.abas) ? p.abas.map((x: unknown) => String(x)).filter((x: string) => /^[a-z]{2,20}$/.test(x)).slice(0, 20) : [];
+    permissoesSuporte = Array.isArray(p.lista) ? p.lista.map((x: unknown) => String(x)).filter((x: string) => /^[a-z]{2,4}_[a-z]{3,12}$/.test(x)).slice(0, 40) : [];
   } catch {
     return resposta({ erro: "corpo_invalido" }, 400, origem);
   }
@@ -213,7 +215,10 @@ Deno.serve(async (req) => {
       id: conta.user.id, nome, login, papel, status: "ativa",
       ...(papel === "dono"
         ? { pode_adicionar: pode.adicionar, pode_remover: pode.remover, pode_codigo: pode.codigo, pode_nome: pode.nome, abas_bloqueadas: abasBloqueadas }
-        : {}),
+        : papel === "suporte"
+          // Suporte nasce só com o que foi marcado (0093); o banco filtra a lista.
+          ? { permissoes: permissoesSuporte, abas_bloqueadas: abasBloqueadas }
+          : {}),
     });
 
   if (erroPerfilNovo) {
