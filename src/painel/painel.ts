@@ -129,7 +129,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; divisor: { exibir: boolean; texto: string; cor: string; linha: string } };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -269,7 +269,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -435,7 +435,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
-      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""),
+      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""), divisor: divisorDe(cfgIni.data?.inicio_divisor),
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -449,6 +449,13 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     ajudas: Object.fromEntries(((ajudasR.data ?? []) as Array<{ chave: string; texto: string | null; removida: boolean }>).map((x) => [x.chave, { texto: x.texto, removida: !!x.removida }])),
     sugestoes: ((sugs.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, quem: x.autor_nome, autorId: x.autor_id ?? "", quando: x.quando })),
   };
+}
+
+/** A divisória "Também para você" do Início (0095): o que está salvo, com os valores de fábrica. */
+function divisorDe(x: unknown) {
+  const o = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
+  const hex = (v: unknown, p: string) => (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v) ? v : p);
+  return { exibir: o.exibir !== false, texto: typeof o.texto === "string" && o.texto.trim() ? o.texto : "Também para você", cor: hex(o.cor, "#b8b0a2"), linha: hex(o.linha, "#d4b170") };
 }
 
 async function quemSouEu(): Promise<Eu | null> {
@@ -498,7 +505,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "" }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -2267,10 +2274,11 @@ export function montar(app: HTMLElement) {
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
   function valoresInicio(f?: HTMLFormElement | null) {
     const c = S.config;
-    if (!f) return { saudacao: c.saudacao, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo };
+    const dv = c.divisor;
+    if (!f) return { saudacao: c.saudacao, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo, divExibir: dv.exibir, divTexto: dv.texto, divCor: dv.cor, divLinha: dv.linha };
     const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
     const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
-    return { saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" };
+    return { saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divLinha: g("divLinha") || dv.linha };
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
@@ -2732,6 +2740,13 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <h3>Estilo da seção ${dicaCampo(`O visual do bloco de boas-vindas no Início: Padrão (como é hoje), Com moldura (uma borda dourada em volta) ou Minimalista (sem fundo, mais limpo).`, "cfg.estilo-da-se-o")}</h3><p class="cfg-sub">Escolha o estilo visual da mensagem.</p>
             <div class="cfg-estilos">${est.map(([k, t]) => `<label class="cfg-est"><input type="radio" name="estilo" value="${k}" ${v.estilo === k ? "checked" : ""} /><span class="cfg-est-cx est-${k}"><i>${IC_CFG.img}</i><span><b></b><b></b><b></b></span></span><em>${t}</em></label>`).join("")}</div>
+          </div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Divisória “${h(v.divTexto)}” ${dicaCampo(`A linha com texto que separa a sua mentoria dos outros conteúdos no Início da aluna. Escolha o texto, a cor do texto e a cor das linhas, ou desligue para não aparecer.`, "cfg.divisoria")}</h3><p class="cfg-sub">O separador antes dos outros conteúdos do Início.</p></div><label class="cfg-chave"><input type="checkbox" name="divExibir" ${v.divExibir ? "checked" : ""} /><i></i>Exibir</label></div>
+            <div class="cfg-2">
+              <label class="cfg-c"><span>Texto</span><input class="campo" name="divTexto" value="${h(v.divTexto)}" maxlength="40" /></label>
+              <div class="cfg-ncores"><label class="cfg-ncor"><input type="color" name="divCor" value="${h(v.divCor)}" /><span>Cor do texto</span></label><label class="cfg-ncor"><input type="color" name="divLinha" value="${h(v.divLinha)}" /><span>Cor das linhas</span></label></div>
+            </div>
           </div>
         </form>
         <aside class="cfg-previa">
@@ -4392,7 +4407,7 @@ export function montar(app: HTMLElement) {
   function mandarPreviaInicio(v = valoresInicio(document.querySelector<HTMLFormElement>("#cfgInicio"))) {
     const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
-    fr.contentWindow?.postMessage({ tipo: "previa-inicio", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo }, location.origin);
+    fr.contentWindow?.postMessage({ tipo: "previa-inicio", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha } }, location.origin);
   }
   function posicionarCel() {
     const alvo = document.getElementById("cfgCel");
@@ -5975,7 +5990,7 @@ export function montar(app: HTMLElement) {
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
+          falhou(await supabase.from("configuracoes").update({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
           delete previas["cfg-banner"];
           setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");

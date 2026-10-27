@@ -33,6 +33,7 @@ export function montar(raiz: HTMLElement) {
       if (m.saudacao) I.saudacao = m.saudacao;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
       I.estilo = m.estilo || "padrao";
+      if (m.divisor) I.divisor = m.divisor;
       I.destaques = m.banner === "card" ? I._destOrig : [];
       render();
     });
@@ -578,7 +579,7 @@ export function montar(raiz: HTMLElement) {
           </section>
         </section>
         ${versNo("depois")}
-        <div class="mt-divisor" role="separator"><span>Também para você</span></div>
+        ${divisorIni()}
         ${cardsExtra}
       </div>`;
     }
@@ -597,11 +598,19 @@ export function montar(raiz: HTMLElement) {
         ${heroi}
       </section>
       ${versNo("depois")}
-      <div class="mt-divisor" role="separator"><span>Também para você</span></div>
+      ${divisorIni()}
       ${cardsExtra}
     </div>`;
   }
 
+  /** A divisória "Também para você" (Configurações → Início). */
+  function divisorIni() {
+    const d = (D && D.inicio && D.inicio.divisor) || { exibir: true, texto: "Também para você", cor: "", linha: "" };
+    if (!d.exibir) return "";
+    const ok = (c) => /^#[0-9a-f]{6}$/i.test(c || "");
+    const st = (ok(d.linha) ? `--mt-linha:${d.linha}8c;` : "") + (ok(d.cor) ? `--mt-cor:${d.cor};` : "");
+    return `<div class="mt-divisor" role="separator"${st ? ` style="${st}"` : ""}><span>${h(d.texto || "Também para você")}</span></div>`;
+  }
   /** Como o painel configurou as telas (Configurações → Módulos e Presentes). */
   const TELAS = () => (D && D.inicio && D.inicio.telas) || {};
   function telaModulos() {
