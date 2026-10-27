@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
     const out: Record<string, unknown> = {};
     for (const u of uids) {
       const j = await cf(`/${u}`);
-      out[u] = j?.success ? { estado: j.result?.status?.state, erro: j.result?.status?.errorReasonText || null, duracao: j.result?.duration ?? null, pronto: !!j.result?.readyToStream } : { estado: "nao_encontrado", erro: j?.errors?.[0]?.message ?? null };
+      out[u] = j?.success ? { estado: j.result?.status?.state, erro: j.result?.status?.errorReasonText || null, duracao: j.result?.duration ?? null, pronto: !!j.result?.readyToStream, nome: j.result?.meta?.name ?? null } : { estado: "nao_encontrado", erro: j?.errors?.[0]?.message ?? null };
     }
     return resposta({ estados: out });
   }
