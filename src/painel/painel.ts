@@ -4325,7 +4325,7 @@ export function montar(app: HTMLElement) {
   const capaIaDa = (alvo: AlvoCapaIa, id: string) => (ui.capaIa && ui.capaIa.alvo === alvo && ui.capaIa.id === id ? ui.capaIa : null);
   function capaIaBloco(alvo: AlvoCapaIa, id: string) {
     const r = capaIaDa(alvo, id), dv = `data-v="${alvo}" data-id="${id}"`;
-    if (!r?.aberto) return `<button type="button" class="al-botao ea-capaia-abrir" data-a="capa-ia-abrir" ${dv}>${IC_IA}Gerar capa com IA</button>`;
+    if (!r?.aberto) return `<button type="button" class="al-botao-ouro ea-capaia-abrir" data-a="capa-ia-abrir" ${dv}>${IC_IA}Gerar capa com IA</button>`;
     return `<div class="ea-capaia">
         <div class="ea-capaia-cab"><b>${IC_IA}Gerar capa com IA</b><button type="button" class="cfg-lixo" data-a="capa-ia-fechar" ${dv} aria-label="Fechar">✕</button></div>
         <small>A IA usa as capas que já existem como modelo e escreve na arte ${alvo === "aula" ? "o módulo, a aula e o nome da aula" : "o módulo e o nome do módulo"}, no mesmo estilo.</small>
