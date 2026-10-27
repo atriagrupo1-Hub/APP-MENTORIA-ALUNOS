@@ -3386,3 +3386,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .mp-capa-col .mp-pe-bts { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
 .mp-capa-col .mp-pe-bts .mp-dica { flex-basis: 100%; }
 .mp-capa-col .mp-pe-bts .mp-dica br { display: none; }
+/* Prévia das Configurações: fica parada no meio da tela enquanto o formulário rola (até telas de 1024 px). */
+.cfg-previa { position: sticky; top: max(16px, calc((100vh - 780px) / 2)); }
+@media (max-width: 1280px) { .cfg-grade { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); } .cfg-previa { position: sticky; } }
+@media (max-width: 1024px) { .cfg-grade { grid-template-columns: 1fr; } .cfg-previa { position: static; } }
