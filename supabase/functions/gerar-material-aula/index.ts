@@ -19,7 +19,8 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "npm
 const URL_SUPABASE = Deno.env.get("SUPABASE_URL")!;
 const CHAVE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CHAVE_SERVICO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CHAVE_IA = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+// O segredo se chama ANTHROPIC_API_KEY; se foi salvo com outro nome, vale o que tiver cara de chave da Anthropic.
+const CHAVE_IA = Deno.env.get("ANTHROPIC_API_KEY") ?? Object.values(Deno.env.toObject()).find((v) => v.trim().startsWith("sk-ant-"))?.trim() ?? "";
 const LIMITE = 20 * 1024 * 1024;
 
 const CORS = {
