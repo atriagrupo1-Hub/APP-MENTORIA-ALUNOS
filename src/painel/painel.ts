@@ -129,7 +129,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -269,7 +269,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -435,7 +435,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
-      notif: notifDe(cfgIni.data?.notif),
+      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""),
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -498,14 +498,14 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null) }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "" }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, capaIa: null as null | { aula: string; aberto: boolean; gerando: boolean; descricao: string; comTitulo: boolean; retrato: boolean; fundo: string; pronta: string; linha1: string; titulo: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, capaIa: null as null | { aula: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -616,7 +616,7 @@ export function montar(app: HTMLElement) {
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar",
-    "cat-visivel": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
+    "cat-visivel": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "capa-ia-usar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
   };
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
   const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
@@ -4304,9 +4304,10 @@ export function montar(app: HTMLElement) {
     return { titulo: v("titulo").trim() || r.pdf.titulo, subtitulo: v("subtitulo").trim(), secoes, fechamento: v("fechamento").trim() };
   }
   /*
-   * Gerar capa com IA (Edge Function gerar-capa): a IA de imagens cria a arte
-   * sem texto; aqui o painel escreve "MÓDULO X • AULA Y" e o título no estilo
-   * das capas AIÓN. A capa só entra na aula com "Usar esta capa" + Salvar aula.
+   * Gerar capa com IA (Edge Function gerar-capa): a IA de imagens faz a capa
+   * inteira, já com "MÓDULO X • AULA Y" e o título, usando as capas prontas
+   * como modelo e as orientações de estilo guardadas em Configurações. A capa
+   * só entra na aula com "Usar esta capa" (ajuste do recorte) + Salvar aula.
    */
   const capaIaDa = (aulaId: string) => (ui.capaIa && ui.capaIa.aula === aulaId ? ui.capaIa : null);
   function capaIaBloco(aulaId: string) {
@@ -4314,9 +4315,12 @@ export function montar(app: HTMLElement) {
     if (!r?.aberto) return `<button type="button" class="al-botao ea-capaia-abrir" data-a="capa-ia-abrir" data-id="${aulaId}">${IC_IA}Gerar capa com IA</button>`;
     return `<div class="ea-capaia">
         <div class="ea-capaia-cab"><b>${IC_IA}Gerar capa com IA</b><button type="button" class="cfg-lixo" data-a="capa-ia-fechar" data-id="${aulaId}" aria-label="Fechar">✕</button></div>
-        <label class="grupo"><span class="mp-rot">O que deve aparecer na capa</span><textarea class="campo" data-capaia-desc data-id="${aulaId}" rows="3" placeholder="Ex.: uma árvore com raízes douradas iluminadas debaixo da terra">${h(r.descricao)}</textarea><small>A arte sai no estilo das capas AIÓN: fundo escuro e luz dourada. O título é escrito pelo painel.</small></label>
-        <label class="eq-chk"><input type="checkbox" data-capaia-tit data-id="${aulaId}" ${r.comTitulo ? "checked" : ""} /><span>Escrever o módulo, a aula e o título na capa</span></label>
-        ${r.gerando ? `<span class="ea-ia-st"><span class="ea-ia-gir"></span>Criando a imagem… pode levar até 1 minuto.</span>` : ""}
+        <small>A IA usa as capas que já existem como modelo e escreve na arte o módulo, a aula e o nome da aula, no mesmo estilo.</small>
+        <label class="grupo"><span class="mp-rot">O que deve aparecer na capa (opcional)</span><textarea class="campo" data-capaia-desc data-id="${aulaId}" rows="3" placeholder="Ex.: uma árvore com raízes douradas iluminadas debaixo da terra">${h(r.descricao)}</textarea></label>
+        ${eu?.papel === "Suporte" ? "" : `<details class="ea-capaia-guia"${S.config.capaGuia ? "" : " open"}><summary>Orientações de estilo das capas (valem para todas)</summary>
+          <textarea class="campo" data-capaia-guia rows="6" placeholder="Cole aqui as instruções que você já usa no seu projeto de capas: fonte, cores, posição do título, tipo de imagem…">${h(r.guia)}</textarea>
+          <button type="button" class="al-botao pequeno" data-a="capa-ia-guia">Salvar orientações</button></details>`}
+        ${r.gerando ? `<span class="ea-ia-st"><span class="ea-ia-gir"></span>Criando a capa… pode levar até 2 minutos.</span>` : ""}
         ${r.pronta && !r.gerando ? `<img class="ea-capaia-img${r.retrato ? " retrato" : ""}" src="${r.pronta}" alt="Capa gerada" />
           <div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-usar" data-id="${aulaId}">Usar esta capa</button><button type="button" class="al-botao pequeno" data-a="capa-ia-gerar" data-id="${aulaId}">${IC_REFAZ}Refazer</button><button type="button" class="al-botao pequeno" data-a="capa-ia-fechar" data-id="${aulaId}">Descartar</button></div>`
         : `<div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-gerar" data-id="${aulaId}"${r.gerando ? " disabled" : ""}>${IC_IA}Gerar capa</button></div>`}
@@ -4324,51 +4328,16 @@ export function montar(app: HTMLElement) {
   }
   function atualizarCapaIaVazio(aulaId: string) { const el = document.getElementById("capaIa"); if (el) el.innerHTML = capaIaBloco(aulaId); }
   function atualizarCapaIa() { const id = ui.capaIa?.aula; const el = document.getElementById("capaIa"); if (id && el) el.innerHTML = capaIaBloco(id); }
-  /** Junta a arte com o texto: módulo e aula em cima, o título grande em dourado. */
-  async function comporCapa(fundo: string, retrato: boolean, linha1: string, titulo: string, comTitulo: boolean): Promise<string> {
-    const W = retrato ? 1024 : 1920, H = retrato ? 1536 : 1080;
-    const img = await new Promise<HTMLImageElement>((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = fundo; });
-    const cv = Object.assign(document.createElement("canvas"), { width: W, height: H }), g = cv.getContext("2d")!;
-    const k = Math.max(W / img.width, H / img.height);
-    g.drawImage(img, (W - img.width * k) / 2, (H - img.height * k) / 2, img.width * k, img.height * k);
-    if (comTitulo) {
-      if (!document.getElementById("fonte-capa")) {
-        const l = Object.assign(document.createElement("link"), { id: "fonte-capa", rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" });
-        await new Promise((ok) => { l.onload = ok; l.onerror = ok; document.head.append(l); });
-      }
-      await document.fonts.load('120px "Bebas Neue"').catch(() => []);
-      const sombra = retrato ? g.createLinearGradient(0, H * 0.45, 0, H) : g.createLinearGradient(W * 0.42, 0, W, 0);
-      sombra.addColorStop(0, "rgba(0,0,0,0)"); sombra.addColorStop(0.55, "rgba(0,0,0,.62)"); sombra.addColorStop(1, "rgba(0,0,0,.82)");
-      g.fillStyle = sombra; g.fillRect(0, 0, W, H);
-      const larg = retrato ? W * 0.84 : W * 0.34, cx = retrato ? W / 2 : W * 0.795;
-      const palavras = titulo.toUpperCase().split(/\s+/).filter(Boolean);
-      let tam = retrato ? 150 : 132, linhas: string[] = [];
-      const quebrar = () => { linhas = []; let at = ""; g.font = `${tam}px "Bebas Neue", Impact, sans-serif`; for (const p of palavras) { const t = at ? at + " " + p : p; if (g.measureText(t).width <= larg) at = t; else { if (at) linhas.push(at); at = p; } } if (at) linhas.push(at); };
-      quebrar(); while ((linhas.length > 4 || linhas.some((l) => g.measureText(l).width > larg)) && tam > 56) { tam -= 6; quebrar(); }
-      const alt = tam * 0.98, total = 64 + linhas.length * alt, y0 = retrato ? H - 120 - total : (H - total) / 2;
-      g.textAlign = "center"; g.textBaseline = "top";
-      g.font = `600 ${retrato ? 30 : 26}px "Lato", Arial, sans-serif`; (g as unknown as { letterSpacing: string }).letterSpacing = "6px";
-      g.fillStyle = "#e2c485"; g.fillText(linha1.toUpperCase(), cx, y0);
-      (g as unknown as { letterSpacing: string }).letterSpacing = "0px";
-      g.font = `${tam}px "Bebas Neue", Impact, sans-serif`;
-      const ouro = g.createLinearGradient(0, y0 + 60, 0, y0 + total);
-      ouro.addColorStop(0, "#f8e7b6"); ouro.addColorStop(0.5, "#e0bd72"); ouro.addColorStop(1, "#b88a42");
-      g.shadowColor = "rgba(0,0,0,.65)"; g.shadowBlur = 18; g.fillStyle = ouro;
-      linhas.forEach((l, i) => g.fillText(l, cx, y0 + 64 + i * alt));
-      g.shadowBlur = 0;
-    }
-    return cv.toDataURL("image/jpeg", 0.9);
-  }
   async function capaIaGerar(aulaId: string) {
     const r = capaIaDa(aulaId), x = acharAula(aulaId); if (!r || !x || r.gerando) return;
-    const nome = document.querySelector<HTMLInputElement>('#formAula input[name="nome"]')?.value.trim() || x.a.nome;
+    const titulo = document.querySelector<HTMLInputElement>('#formAula input[name="nome"]')?.value.trim() || x.a.nome;
+    const rotA = document.querySelector<HTMLInputElement>('#formAula input[name="rotulo"]')?.value.trim() || x.a.rot || "Aula";
+    const numA = document.querySelector<HTMLInputElement>('#formAula input[name="numero"]')?.value.trim() || String(x.a.num);
     r.retrato = document.querySelector<HTMLSelectElement>('#formAula select[name="tipo"]')?.value === "pdf";
     r.gerando = true; atualizarCapaIa();
     try {
-      const j = await chamarFuncao("gerar-capa", { descricao: r.descricao, aula: nome, modulo: x.m.nome, formato: r.retrato ? "retrato" : "paisagem" });
-      r.fundo = String(j.imagem || ""); if (!r.fundo) throw new Error("A IA de imagens não devolveu a imagem.");
-      r.linha1 = `${x.m.rot || "Módulo"} ${numModulo(x.c, x.mi)} • ${x.a.rot || "Aula"} ${x.a.num}`; r.titulo = nome;
-      r.pronta = await comporCapa(r.fundo, r.retrato, r.linha1, r.titulo, r.comTitulo);
+      const j = await chamarFuncao("gerar-capa", { aula_id: aulaId, descricao: r.descricao, titulo, linha1: `${x.m.rot || "Módulo"} ${numModulo(x.c, x.mi)} • ${rotA} ${numA}`, formato: r.retrato ? "retrato" : "paisagem" });
+      r.pronta = String(j.imagem || ""); if (!r.pronta) throw new Error("A IA de imagens não devolveu a imagem.");
     } catch (e) { toast(e instanceof Error && e.message ? e.message : motivo(e)); }
     r.gerando = false; atualizarCapaIa();
   }
@@ -5441,12 +5410,17 @@ export function montar(app: HTMLElement) {
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
       case "ia-doc": iaEscolherDoc(d.id); return;
-      case "capa-ia-abrir": ui.capaIa = { aula: d.id, aberto: true, gerando: false, descricao: capaIaDa(d.id)?.descricao ?? "", comTitulo: true, retrato: false, fundo: "", pronta: "", linha1: "", titulo: "" }; atualizarCapaIa(); return;
+      case "capa-ia-abrir": ui.capaIa = { aula: d.id, aberto: true, gerando: false, descricao: "", guia: S.config.capaGuia, retrato: false, pronta: "" }; atualizarCapaIa(); return;
+      case "capa-ia-guia": {
+        const r = ui.capaIa; if (!r) return; const guia = r.guia.trim();
+        void (async () => { const x = await supabase.from("configuracoes").update({ capa_guia: guia || null }).not("id", "is", null).select("id"); if (x.error || !x.data?.length) { toast(motivo(x.error ?? new Error("Acesso bloqueado."))); return; } S.config.capaGuia = guia; toast("Orientações das capas salvas."); })();
+        return;
+      }
       case "capa-ia-fechar": ui.capaIa = null; const el = document.getElementById("capaIa"); if (el) el.innerHTML = capaIaBloco(d.id); return;
       case "capa-ia-gerar": void capaIaGerar(d.id); return;
       case "capa-ia-usar": {
         const r = capaIaDa(d.id); if (!r?.pronta) return;
-        void fetch(r.pronta).then((x) => x.blob()).then((bl) => { enviarCapaAula(new File([bl], "capa-ia.jpg", { type: "image/jpeg" })); ui.capaIa = null; atualizarCapaIaVazio(d.id); });
+        void fetch(r.pronta).then((x) => x.blob()).then((bl) => editarCapa(new File([bl], "capa-ia.png", { type: "image/png" }), r.retrato ? 2 / 3 : 16 / 9, "capa-ia")).then((f) => { if (!f) return; enviarCapaAula(f); ui.capaIa = null; atualizarCapaIaVazio(d.id); });
         return;
       }
       case "ia-gerar": void iaChamar(d.id, "tudo"); return;
@@ -6706,11 +6680,7 @@ export function montar(app: HTMLElement) {
     const t = e.target as HTMLTextAreaElement;
     if (t?.dataset?.iaExtra !== undefined) { iaDe(t.dataset.id!).extra = t.value; return; }
     if (t?.dataset?.capaiaDesc !== undefined) { const r = capaIaDa(t.dataset.id!); if (r) r.descricao = t.value; return; }
-    if ((t as unknown as HTMLInputElement)?.dataset?.capaiaTit !== undefined) {
-      const r = capaIaDa(t.dataset.id!); if (!r) return; r.comTitulo = (t as unknown as HTMLInputElement).checked;
-      if (r.fundo) void comporCapa(r.fundo, r.retrato, r.linha1, r.titulo, r.comTitulo).then((u) => { r.pronta = u; atualizarCapaIa(); });
-      return;
-    }
+    if (t?.dataset?.capaiaGuia !== undefined) { if (ui.capaIa) ui.capaIa.guia = t.value; return; }
     const r = ui.aula ? iaDa(ui.aula) : null;
     if (r && t?.closest?.("#formAula") && (t.name === "texto" || t.name === "exercicio") && r[t.name === "texto" ? "sobre" : "instrucoes"] !== undefined) r[t.name === "texto" ? "sobre" : "instrucoes"] = t.value;
   });
