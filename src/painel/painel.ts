@@ -5416,7 +5416,7 @@ export function montar(app: HTMLElement) {
         void (async () => { const x = await supabase.from("configuracoes").update({ capa_guia: guia || null }).not("id", "is", null).select("id"); if (x.error || !x.data?.length) { toast(motivo(x.error ?? new Error("Acesso bloqueado."))); return; } S.config.capaGuia = guia; toast("Orientações das capas salvas."); })();
         return;
       }
-      case "capa-ia-fechar": ui.capaIa = null; const el = document.getElementById("capaIa"); if (el) el.innerHTML = capaIaBloco(d.id); return;
+      case "capa-ia-fechar": ui.capaIa = null; atualizarCapaIaVazio(d.id); return;
       case "capa-ia-gerar": void capaIaGerar(d.id); return;
       case "capa-ia-usar": {
         const r = capaIaDa(d.id); if (!r?.pronta) return;
