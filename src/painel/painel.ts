@@ -4246,13 +4246,19 @@ export function montar(app: HTMLElement) {
     }
     const r = alvo.getBoundingClientRect(), comp = ui.cfgPrevia === "computador";
     const W = comp ? 1280 : 390, k = r.width / W;
-    Object.assign(celReal.style, { display: "block", left: r.left + window.scrollX + "px", top: r.top + window.scrollY + "px", width: r.width + "px", height: r.height + "px" });
+    // Fixo na tela, em cima do celular desenhado; o que sai da área que rola fica cortado.
+    let pai = alvo.parentElement; while (pai && pai !== document.body && !/(auto|scroll)/.test(getComputedStyle(pai).overflowY)) pai = pai.parentElement;
+    const c = pai && pai !== document.body ? pai.getBoundingClientRect() : { top: 0, bottom: innerHeight, left: 0, right: innerWidth };
+    const corte = `inset(${Math.max(0, c.top - r.top)}px ${Math.max(0, r.right - c.right)}px ${Math.max(0, r.bottom - c.bottom)}px ${Math.max(0, c.left - r.left)}px round 30px)`;
+    Object.assign(celReal.style, { display: "block", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", clipPath: corte });
     const fr = celReal.querySelector("iframe")!;
     Object.assign(fr.style, { width: W + "px", height: r.height / k + "px", transform: `scale(${k})` });
   }
   /** Recarrega o app da prévia (depois de salvar). */
   function recarregarCel() { const fr = celReal?.querySelector("iframe"); if (fr) { celPronto = false; fr.contentWindow?.location.reload(); } }
   window.addEventListener("resize", () => posicionarCel());
+  // Rolar a página (ou o painel) leva a prévia junto com o celular.
+  document.addEventListener("scroll", () => { if (celReal && celReal.style.display !== "none") posicionarCel(); }, { capture: true, passive: true });
 
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {

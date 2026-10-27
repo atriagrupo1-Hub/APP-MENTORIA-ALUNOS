@@ -3257,7 +3257,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 @media (max-width: 1100px) { .cfg-temas { grid-template-columns: repeat(3, 1fr); } }
 
 /* Prévia real do Início (o app da aluna num iframe) */
-.cel-real { position: absolute; z-index: 4; overflow: hidden; border-radius: 30px; background: #000; }
+.cel-real { position: fixed; z-index: 4; overflow: hidden; border-radius: 30px; background: #000; }
 .cel-real iframe { display: block; border: 0; transform-origin: 0 0; background: #000; }
 .pv-computador + .cel-real, .cel-real.pc { border-radius: 6px; }
 .pv-real .pv-real-alvo { width: 100%; height: 100%; border-radius: 30px; background: #000; }
