@@ -6,6 +6,11 @@
  * conteúdo de um PDF de apoio. O PDF é montado aqui (pdf-lib), guardado
  * no depósito `materiais` e devolvido para a equipe revisar e pôr na aula.
  *
+ * Modos (campo `alvo`): "tudo" gera os três; "sobre", "instrucoes" ou
+ * "pdf" refazem só aquele (o painel reenvia o mesmo documento); "montar"
+ * só remonta o PDF a partir do conteúdo que a equipe editou, sem IA.
+ * "extra" leva as informações que a equipe quis acrescentar.
+ *
  * Quem pode: quem cria e edita aulas — pode('cur_editar'), conferido no
  * banco com a sessão de quem chamou. A chave da Anthropic vive só aqui
  * (segredo ANTHROPIC_API_KEY), nunca no navegador.
@@ -149,18 +154,41 @@ Deno.serve(async (req) => {
   const doUsuario = createClient(URL_SUPABASE, CHAVE_ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: pode } = await doUsuario.rpc("pode", { p_acao: "cur_editar" });
   if (pode !== true) return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403);
-  if (!CHAVE_IA) return resposta({ erro: "sem_chave", mensagem: "A chave da IA ainda não foi cadastrada no Supabase." }, 503);
+  if (!CHAVE_IA && alvo !== "montar") return resposta({ erro: "sem_chave", mensagem: "A chave da IA ainda não foi cadastrada no Supabase." }, 503);
 
-  let aulaId = "", nome = "", tipo = "", dados = "";
-  try { const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? ""); }
-  catch { return resposta({ erro: "corpo_invalido" }, 400); }
-  if (!/^[0-9a-f-]{36}$/.test(aulaId) || !dados) return resposta({ erro: "corpo_invalido" }, 400);
-  if (dados.length * 0.75 > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 20 MB." }, 413);
+  let aulaId = "", nome = "", tipo = "", dados = "", alvo = "tudo", extra = "", anterior = "";
+  let pdfEditado: Material["pdf"] | null = null;
+  try {
+    const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? "");
+    alvo = ["tudo", "sobre", "instrucoes", "pdf", "montar"].includes(c.alvo) ? c.alvo : "tudo";
+    extra = String(c.extra ?? "").slice(0, 4000); anterior = String(c.anterior ?? "").slice(0, 8000);
+    if (alvo === "montar" && c.pdf && Array.isArray(c.pdf.secoes)) {
+      const lista = (x: unknown) => (Array.isArray(x) ? x.map((y) => String(y)).filter((y) => y.trim()).slice(0, 40) : []);
+      pdfEditado = { titulo: String(c.pdf.titulo ?? "").slice(0, 200), subtitulo: String(c.pdf.subtitulo ?? "").slice(0, 300), fechamento: String(c.pdf.fechamento ?? "").slice(0, 600),
+        secoes: c.pdf.secoes.slice(0, 20).map((x: Record<string, unknown>) => ({ titulo: String(x?.titulo ?? "").slice(0, 200), paragrafos: lista(x?.paragrafos), itens: lista(x?.itens) })) };
+    }
+  } catch { return resposta({ erro: "corpo_invalido" }, 400); }
+  if (!/^[0-9a-f-]{36}$/.test(aulaId) || (alvo === "montar" ? !pdfEditado : !dados)) return resposta({ erro: "corpo_invalido" }, 400);
+  if (alvo !== "montar" && dados.length * 0.75 > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 20 MB." }, 413);
 
   const admin = createClient(URL_SUPABASE, CHAVE_SERVICO, { auth: { persistSession: false } });
   const { data: aula } = await admin.from("aulas").select("titulo, modulos(titulo, produto_id)").eq("id", aulaId).maybeSingle();
   if (!aula) return resposta({ erro: "aula_nao_encontrada" }, 404);
   const mod = (aula as unknown as { modulos: { titulo: string; produto_id: string } | null }).modulos;
+
+  const guardar = async (pdfM: Material["pdf"]) => {
+    const pdf = await montarPdf({ sobre: "", instrucoes: "", pdf: pdfM }, aula.titulo, mod?.titulo ?? "");
+    const slug = aula.titulo.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase().slice(0, 60);
+    const caminho = `${mod?.produto_id ?? "aulas"}/${Date.now()}-material-${slug || "aula"}.pdf`;
+    const up = await admin.storage.from("materiais").upload(caminho, pdf, { contentType: "application/pdf" });
+    if (up.error) throw new Error(up.error.message);
+    const { data: link } = await admin.storage.from("materiais").createSignedUrl(caminho, 60 * 60 * 6);
+    return { pdf_path: caminho, pdf_url: link?.signedUrl ?? "", titulo_pdf: pdfM.titulo };
+  };
+  if (alvo === "montar") {
+    try { return resposta({ pdf: pdfEditado, ...(await guardar(pdfEditado!)) }); }
+    catch (e) { console.error("falha ao montar o PDF", e instanceof Error ? e.message : e); return resposta({ erro: "indisponivel", mensagem: "Não consegui montar o PDF. Tente de novo." }, 503); }
+  }
 
   // O documento como o Claude lê: PDF direto; Word e texto viram texto.
   const bytes = Uint8Array.from(atob(dados), (ch) => ch.charCodeAt(0));
@@ -186,7 +214,9 @@ Deno.serve(async (req) => {
       fallbacks: "default",
       output_config: { effort: "medium", format: { type: "json_schema", schema: ESQUEMA } },
       system: SISTEMA,
-      messages: [{ role: "user", content: [documento, { type: "text", text: `Aula: ${aula.titulo}\nMódulo: ${mod?.titulo ?? ""}\n\nPrepare o material desta aula.` }] }],
+      messages: [{ role: "user", content: [documento, { type: "text", text: `Aula: ${aula.titulo}\nMódulo: ${mod?.titulo ?? ""}\n\nPrepare o material desta aula.`
+        + (extra.trim() ? `\n\nInformações que a equipe acrescentou (considere junto com o documento):\n${extra.trim()}` : "")
+        + (alvo !== "tudo" && anterior.trim() ? `\n\nA equipe pediu para refazer ${alvo === "sobre" ? "o Sobre a aula" : alvo === "instrucoes" ? "as Instruções" : "o PDF"}. Escreva uma versão diferente desta anterior:\n${anterior.trim()}` : "") }] }],
     } as never) as Anthropic.Beta.BetaMessage;
     if (r.stop_reason === "refusal") return resposta({ erro: "recusa", mensagem: "A IA não conseguiu gerar o material deste documento." }, 422);
     if (r.stop_reason === "max_tokens") return resposta({ erro: "longo", mensagem: "O documento é longo demais para gerar de uma vez." }, 422);
@@ -199,12 +229,8 @@ Deno.serve(async (req) => {
     return resposta({ erro: "ia", mensagem: "A IA não respondeu agora. Tente de novo." }, 502);
   }
 
-  const pdf = await montarPdf(material, aula.titulo, mod?.titulo ?? "");
-  const slug = aula.titulo.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase().slice(0, 60);
-  const caminho = `${mod?.produto_id ?? "aulas"}/${Date.now()}-material-${slug || "aula"}.pdf`;
-  const up = await admin.storage.from("materiais").upload(caminho, pdf, { contentType: "application/pdf" });
-  if (up.error) { console.error("falha ao guardar o PDF", up.error.message); return resposta({ erro: "indisponivel", mensagem: "Não consegui guardar o PDF. Tente de novo." }, 503); }
-  const { data: link } = await admin.storage.from("materiais").createSignedUrl(caminho, 60 * 60);
-
-  return resposta({ sobre: material.sobre, instrucoes: material.instrucoes, titulo_pdf: material.pdf.titulo, pdf_path: caminho, pdf_url: link?.signedUrl ?? "" });
+  // Refazer só um texto: o PDF não muda.
+  if (alvo === "sobre" || alvo === "instrucoes") return resposta({ sobre: material.sobre, instrucoes: material.instrucoes });
+  try { return resposta({ sobre: material.sobre, instrucoes: material.instrucoes, pdf: material.pdf, ...(await guardar(material.pdf)) }); }
+  catch (e) { console.error("falha ao guardar o PDF", e instanceof Error ? e.message : e); return resposta({ erro: "indisponivel", mensagem: "Não consegui guardar o PDF. Tente de novo." }, 503); }
 });
