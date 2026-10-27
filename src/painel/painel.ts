@@ -3904,11 +3904,10 @@ export function montar(app: HTMLElement) {
   const IC_ORAR_BT = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M10 5h4M7 21v-7l5-4 5 4v7M10 21v-4h4v4"/></svg>`;
   const textoSobre = (hex: string) => { const n = parseInt(hex.slice(1), 16); const l = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; return l > 0.6 ? "#1a1206" : "#fff"; };
   const estiloBotao = (cor: string) => `--bt:${cor};color:${textoSobre(cor)}`;
-  const editorBotao = (campo: string, rotulo: string, nome: string, cor: string, icone = "", form = "") => `
+  const editorBotao = (campo: string, rotulo: string, nome: string, cor: string, _icone = "", form = "") => `
     <div class="eb" data-eb="${campo}">
       <label class="grupo"><span class="rotulo-ajuda mp-rot">${rotulo}</span><input class="campo" name="${campo}"${form ? ` form="${form}"` : ""} value="${h(nome)}" maxlength="40" data-eb-nome /></label>
-      <label class="grupo eb-cor"><span class="rotulo-ajuda mp-rot">Cor</span><span class="eb-cor-linha"><input type="color" class="campo-cor" name="${campo}Cor"${form ? ` form="${form}"` : ""} value="${h(cor)}" data-eb-cor /><button type="button" class="eb-padrao" data-a="eb-padrao" data-v="${campo}">Cor padrão</button></span></label>
-      <div class="grupo eb-previa"><span class="rotulo-ajuda mp-rot">Como a aluna vê</span><span class="eb-fundo"><span class="eb-botao" style="${estiloBotao(cor)}">${icone}<b>${h(nome)}</b></span></span></div>
+      <input type="hidden" name="${campo}Cor"${form ? ` form="${form}"` : ""} value="${h(cor)}" data-eb-cor />
     </div>`;
   // Ordinal do título de cada opção extra do e-book (a 1ª opção é o próprio PDF).
   const ORDINAL = ["Segunda", "Terceira", "Quarta", "Quinta", "Sexta", "Sétima", "Oitava", "Nona", "Décima"];

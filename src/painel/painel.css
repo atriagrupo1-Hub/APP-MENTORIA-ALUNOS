@@ -3390,3 +3390,5 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .cfg-previa { position: sticky; top: max(16px, calc((100vh - 780px) / 2)); }
 @media (max-width: 1280px) { .cfg-grade { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr); } .cfg-previa { position: sticky; } }
 @media (max-width: 1024px) { .cfg-grade { grid-template-columns: 1fr; } .cfg-previa { position: static; } }
+/* Botão do e-book: só o texto (sem cor e sem prévia). */
+.eb { grid-template-columns: minmax(0, 1fr); }
