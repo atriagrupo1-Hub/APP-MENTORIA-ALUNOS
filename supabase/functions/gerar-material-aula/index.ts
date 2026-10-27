@@ -156,10 +156,11 @@ Deno.serve(async (req) => {
   if (pode !== true) return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403);
   if (!CHAVE_IA && alvo !== "montar") return resposta({ erro: "sem_chave", mensagem: "A chave da IA ainda não foi cadastrada no Supabase." }, 503);
 
+  let link = "";
   let aulaId = "", nome = "", tipo = "", dados = "", alvo = "tudo", extra = "", anterior = "";
   let pdfEditado: Material["pdf"] | null = null;
   try {
-    const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? "");
+    const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? ""); link = String(c.url ?? "");
     alvo = ["tudo", "sobre", "instrucoes", "pdf", "montar"].includes(c.alvo) ? c.alvo : "tudo";
     extra = String(c.extra ?? "").slice(0, 4000); anterior = String(c.anterior ?? "").slice(0, 8000);
     if (alvo === "montar" && c.pdf && Array.isArray(c.pdf.secoes)) {
@@ -168,6 +169,18 @@ Deno.serve(async (req) => {
         secoes: c.pdf.secoes.slice(0, 20).map((x: Record<string, unknown>) => ({ titulo: String(x?.titulo ?? "").slice(0, 200), paragrafos: lista(x?.paragrafos), itens: lista(x?.itens) })) };
     }
   } catch { return resposta({ erro: "corpo_invalido" }, 400); }
+  // Importação em lote: o documento pode vir por link público do Google Drive/Docs, baixado aqui.
+  if (!dados && link && alvo !== "montar") {
+    if (!/^https:\/\/(drive\.google\.com|docs\.google\.com|drive\.usercontent\.google\.com)\//.test(link)) return resposta({ erro: "link_invalido" }, 400);
+    try {
+      const r = await fetch(link, { redirect: "follow" });
+      const ct = r.headers.get("content-type") ?? "";
+      if (!r.ok || /text\/html/.test(ct)) return resposta({ erro: "sem_acesso", mensagem: "Não consegui baixar o documento pelo link. A pasta está pública?" }, 400);
+      const buf = new Uint8Array(await r.arrayBuffer());
+      let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      dados = btoa(bin); if (!tipo) tipo = ct.split(";")[0];
+    } catch { return resposta({ erro: "sem_acesso", mensagem: "Não consegui baixar o documento pelo link." }, 400); }
+  }
   if (!/^[0-9a-f-]{36}$/.test(aulaId) || (alvo === "montar" ? !pdfEditado : !dados)) return resposta({ erro: "corpo_invalido" }, 400);
   if (alvo !== "montar" && dados.length * 0.75 > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 20 MB." }, 413);
 
