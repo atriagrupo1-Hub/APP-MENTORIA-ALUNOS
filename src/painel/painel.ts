@@ -28,7 +28,7 @@ type TipoExtra = "Vídeo" | "Áudio" | "Texto" | "PDF / e-book" | "Link" | "Imag
 
 type Extra = { id: string; tipo: TipoExtra; nome: string; arquivo: string };
 type Aula = {
-  id: string; nome: string; video: string; capa: string; texto: string;
+  id: string; nome: string; semNum?: boolean; video: string; capa: string; texto: string;
   // Nulos enquanto a 0047 não estiver no banco: aí os campos não aparecem.
   resumo: string | null; exercicio: string | null;
   acesso: AcessoAula; extras: Extra[]; criado: string; duracao: number;
@@ -52,7 +52,7 @@ type Opcao = {
   id: string; rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf";
   texto: string; arquivo: string; video: string; capa: string; tituloTela: string; instrucoes: string; extras: Extra[];
 };
-type Modulo = { id: string; nome: string; num: number; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; catAba: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -250,7 +250,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id").not("aula_id", "is", null).order("ordem"),
@@ -311,7 +311,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
-      num: Number(a.numero) || 0, pub: a.publicado !== false, liberadaEm: a.liberada_em ?? "", rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
+      num: Number(a.numero) || 0, semNum: !!a.sem_numero, pub: a.publicado !== false, liberadaEm: a.liberada_em ?? "", rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
       tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
       botaoEbook: a.botao_ebook ?? "", botaoEbookCor: a.botao_ebook_cor ?? "", opcoes: opcoesDa.get(a.id) ?? [],
     });
@@ -322,7 +322,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -589,7 +589,8 @@ export function montar(app: HTMLElement) {
   const erroNumero = (n: number, usados: number[], oQue: "módulo" | "aula") =>
     !Number.isInteger(n) || n < 0 || n > 999 ? "O número precisa ser de 0 a 999."
       : usados.includes(n) ? (oQue === "módulo" ? "Já existe um módulo com o número " + n + "." : "Já existe uma aula com o número " + n + " neste módulo.") : "";
-  const campoNumero = (valor: number, rotulo: string) => `<input type="number" class="campo campo-num" name="numero" min="0" max="999" step="1" inputmode="numeric" required value="${valor}" aria-label="${rotulo}" />`;
+  // Vazio = sem número: a aluna não vê número nenhum (0096). O número guardado continua dando a ordem.
+  const campoNumero = (valor: number | "", rotulo: string) => `<input type="number" class="campo campo-num" name="numero" min="0" max="999" step="1" inputmode="numeric" value="${valor}" placeholder="Sem número" aria-label="${rotulo}" />`;
   const localAula = (aid: string) => { const x = acharAula(aid); return x ? x.m.rot + " " + numModulo(x.c, x.mi) + " · " + x.a.rot + " " + x.a.num : "Aula removida"; };
   function trocado<T>(arr: T[], i: number, d: number): T[] | null {
     const j = i + d; if (j < 0 || j >= arr.length) return null;
@@ -3483,7 +3484,7 @@ export function montar(app: HTMLElement) {
           <div class="mp-campos">
             <div class="mp-linha3">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required /></label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.num, "Número do módulo")}</label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.semNum ? "" : m.num, "Número do módulo")}</label>
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><input id="editarCampo" class="campo" name="nome" value="${ui.novoMod === m.id ? "" : h(m.nome)}" placeholder="Nome do novo módulo" required /></label>
             </div>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="4">${h(m.intro)}</textarea></label>
@@ -3812,7 +3813,7 @@ export function montar(app: HTMLElement) {
     const cab = editando("mod", m.id) ? `
       <form data-f="mod-renomear" data-id="${m.id}" class="mod-form">
         <label class="grupo"><span class="rotulo rotulo-ajuda">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required style="max-width:220px" /></label>
-        <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.num, "Número do módulo")}</label>
+        <label class="grupo"><span class="rotulo rotulo-ajuda">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.semNum ? "" : m.num, "Número do módulo")}</label>
         <label class="grupo largo"><span class="rotulo">Nome do módulo</span><input id="editarCampo" class="campo" name="nome" value="${h(m.nome)}" required /></label>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="3" aria-label="Descrição do módulo">${h(m.intro)}</textarea></div>
         <div class="grupo largo"><span class="rotulo rotulo-ajuda">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
@@ -3867,7 +3868,7 @@ export function montar(app: HTMLElement) {
       <div class="linha">
         <form data-f="aula-renomear" data-id="${a.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;flex:1 1 100%">
           <label class="cs-add-num"><span>Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required style="width:150px" aria-label="Nome antes do número" /></label>
-          <label class="cs-add-num"><span>Número ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.num, "Número da aula")}</label>
+          <label class="cs-add-num"><span>Número ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.semNum ? "" : a.num, "Número da aula")}</label>
           <input id="editarCampo" class="campo" style="flex:1 1 280px;max-width:560px" name="nome" value="${h(a.nome)}" required />
           ${botoesEdicao("Salvar")}
         </form>
@@ -3989,7 +3990,7 @@ export function montar(app: HTMLElement) {
           <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>Informações da aula</h3><p>Edite o conteúdo e as configurações da aula.</p></div></div>
           <div class="ea-linha3">
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required /></label>
-            <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.num, "Número da aula")}</label>
+            <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.semNum ? "" : a.num, "Número da aula")}</label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input id="nomeAula" class="campo" name="nome" value="${ui.novaAula === a.id ? "" : h(a.nome)}" placeholder="Nome da nova aula" required /></label>
           </div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
@@ -6091,15 +6092,15 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "mod-renomear":
-        { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, num = Number(v("numero"));
-          const erro = erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
+        { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, semNum = v("numero") === "", num = semNum ? mm.num : Number(v("numero"));
+          const erro = semNum ? "" : erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
           const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
           const libMod = v("libera"), liberaMod = libMod && !isNaN(+new Date(libMod)) ? new Date(libMod).toISOString() : null, liberaVelha = mm.libera || null;
           const criado = v("criado"), mudouCriado = !!criado && criado !== dataLocal(mm.criado) && !isNaN(+new Date(criado));
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
             const novoM = ui.novoMod === id; if (novoM) ui.novoMod = "";
-            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
@@ -6127,8 +6128,8 @@ export function montar(app: HTMLElement) {
             return { msg: "Aula salva.", texto: "nome da aula " + velho, desfazer: async () => { falhou(await supabase.from("aulas").update({ titulo: velho, numero: numVelho, rotulo: rotVelho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "aula": {
-        const xa = acharAula(id)!; const num = Number(v("numero"));
-        const erro = erroNumero(num, xa.m.aulas.filter((k) => k.id !== id).map((k) => k.num), "aula"); if (erro) { toast(erro); return; }
+        const xa = acharAula(id)!; const semNum = v("numero") === "", num = semNum ? xa.a.num : Number(v("numero"));
+        const erro = semNum ? "" : erroNumero(num, xa.m.aulas.filter((k) => k.id !== id).map((k) => k.num), "aula"); if (erro) { toast(erro); return; }
         const tipo = (["video", "audio", "pdf"].includes(v("tipo")) ? v("tipo") : "video") as Aula["tipo"];
         const video = tipo === "video" ? v("video") : ""; const ref = idDoVideo(video);
         const arquivo = tipo === "video" ? null : v("arquivoAula") || null;
@@ -6137,7 +6138,7 @@ export function montar(app: HTMLElement) {
         const ativa = true, mudouStatus = false;
         const mudouMidia = tipo !== xa.a.tipo || (arquivo || "") !== (xa.a.tipo === "video" ? "" : xa.a.arquivo);
         const nova = ui.novaAula === id;
-        const base = { ...(nova ? { publicado: true } : {}), titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
+        const base = { ...(nova ? { publicado: true } : {}), titulo: v("nome") || xa.a.nome, rotulo: v("rotulo") || "Aula", numero: num, sem_numero: semNum, libera_em: liberaIso, tipo, arquivo_path: arquivo, ...(mudouMidia ? { duracao_segundos: null } : {}) };
         const baseVelha = { titulo: xa.a.nome, rotulo: xa.a.rot, numero: xa.a.num, libera_em: xa.a.libera || null, tipo: xa.a.tipo, arquivo_path: xa.a.arquivo || null, ...(mudouMidia ? { duracao_segundos: xa.a.duracao || null } : {}) };
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
