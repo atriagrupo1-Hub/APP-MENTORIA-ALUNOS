@@ -505,7 +505,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, capaIa: null as null | { aula: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -3447,17 +3447,23 @@ export function montar(app: HTMLElement) {
         <div class="mp-cab"><span class="mp-cab-ic">${IC_INFO}</span><div><h3>Informações do módulo</h3><p>Edite as informações e as capas do módulo.</p></div></div>
         <div class="mp-grade">
           <div class="mp-capas">
+            <div class="mp-capa-col">
             <span class="rotulo-ajuda mp-rot">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
             <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}">${capaH ? `<img src="${h(capaH)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
             <input type="hidden" name="capaH" value="${h(m.capaH)}" />
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modh" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+            <div class="capa-ia-box" data-capaia-box="modh:${m.id}">${capaIaBloco("modh", m.id)}</div>
+            </div>
+            <div class="mp-capa-col">
             <span class="rotulo-ajuda mp-rot">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
             <span class="mp-pe">
               <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-v" data-previa="modv-${m.id}">${capaV ? `<img src="${h(capaV)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
               <input type="hidden" name="capa" value="${h(m.capa)}" />
               <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modv" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
             </span>
+            <div class="capa-ia-box" data-capaia-box="modv:${m.id}">${capaIaBloco("modv", m.id)}</div>
+            </div>
           </div>
           <div class="mp-campos">
             <div class="mp-linha3">
@@ -4007,7 +4013,7 @@ export function montar(app: HTMLElement) {
             <div id="previaCapa" class="ea-capa-img${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
-            <div id="capaIa">${capaIaBloco(a.id)}</div>
+            <div class="capa-ia-box" data-capaia-box="aula:${a.id}">${capaIaBloco("aula", a.id)}</div>
           </section>
 
           <form id="formExtra" data-f="extra-add" data-id="${a.id}" hidden></form>
@@ -4310,41 +4316,56 @@ export function montar(app: HTMLElement) {
   }
   /*
    * Gerar capa com IA (Edge Function gerar-capa): a IA de imagens faz a capa
-   * inteira, já com "MÓDULO X • AULA Y" e o título, usando as capas prontas
-   * como modelo e as orientações de estilo guardadas em Configurações. A capa
-   * só entra na aula com "Usar esta capa" (ajuste do recorte) + Salvar aula.
+   * inteira, já com o texto (módulo, aula e nome), usando as capas prontas do
+   * mesmo tipo como modelo e as orientações de estilo guardadas. Serve para a
+   * capa da aula e para as duas capas do módulo (deitada e em pé). A capa só
+   * entra com "Usar esta capa" (ajuste do recorte) + Salvar.
    */
-  const capaIaDa = (aulaId: string) => (ui.capaIa && ui.capaIa.aula === aulaId ? ui.capaIa : null);
-  function capaIaBloco(aulaId: string) {
-    const r = capaIaDa(aulaId);
-    if (!r?.aberto) return `<button type="button" class="al-botao ea-capaia-abrir" data-a="capa-ia-abrir" data-id="${aulaId}">${IC_IA}Gerar capa com IA</button>`;
+  type AlvoCapaIa = "aula" | "modh" | "modv";
+  const capaIaDa = (alvo: AlvoCapaIa, id: string) => (ui.capaIa && ui.capaIa.alvo === alvo && ui.capaIa.id === id ? ui.capaIa : null);
+  function capaIaBloco(alvo: AlvoCapaIa, id: string) {
+    const r = capaIaDa(alvo, id), dv = `data-v="${alvo}" data-id="${id}"`;
+    if (!r?.aberto) return `<button type="button" class="al-botao ea-capaia-abrir" data-a="capa-ia-abrir" ${dv}>${IC_IA}Gerar capa com IA</button>`;
     return `<div class="ea-capaia">
-        <div class="ea-capaia-cab"><b>${IC_IA}Gerar capa com IA</b><button type="button" class="cfg-lixo" data-a="capa-ia-fechar" data-id="${aulaId}" aria-label="Fechar">✕</button></div>
-        <small>A IA usa as capas que já existem como modelo e escreve na arte o módulo, a aula e o nome da aula, no mesmo estilo.</small>
-        <label class="grupo"><span class="mp-rot">O que deve aparecer na capa (opcional)</span><textarea class="campo" data-capaia-desc data-id="${aulaId}" rows="3" placeholder="Ex.: uma árvore com raízes douradas iluminadas debaixo da terra">${h(r.descricao)}</textarea></label>
+        <div class="ea-capaia-cab"><b>${IC_IA}Gerar capa com IA</b><button type="button" class="cfg-lixo" data-a="capa-ia-fechar" ${dv} aria-label="Fechar">✕</button></div>
+        <small>A IA usa as capas que já existem como modelo e escreve na arte ${alvo === "aula" ? "o módulo, a aula e o nome da aula" : "o módulo e o nome do módulo"}, no mesmo estilo.</small>
+        <label class="grupo"><span class="mp-rot">O que deve aparecer na capa (opcional)</span><textarea class="campo" data-capaia-desc rows="4" placeholder="Ex.: uma árvore com raízes douradas iluminadas debaixo da terra">${h(r.descricao)}</textarea></label>
         ${eu?.papel === "Suporte" ? "" : `<details class="ea-capaia-guia"${S.config.capaGuia ? "" : " open"}><summary>Orientações de estilo das capas (valem para todas)</summary>
-          <textarea class="campo" data-capaia-guia rows="6" placeholder="Cole aqui as instruções que você já usa no seu projeto de capas: fonte, cores, posição do título, tipo de imagem…">${h(r.guia)}</textarea>
+          <textarea class="campo" data-capaia-guia rows="7" placeholder="Cole aqui as instruções que você já usa no seu projeto de capas: fonte, cores, posição do título, tipo de imagem…">${h(r.guia)}</textarea>
           <button type="button" class="al-botao pequeno" data-a="capa-ia-guia">Salvar orientações</button></details>`}
         ${r.gerando ? `<span class="ea-ia-st"><span class="ea-ia-gir"></span>Criando a capa… pode levar até 2 minutos.</span>` : ""}
         ${r.pronta && !r.gerando ? `<img class="ea-capaia-img${r.retrato ? " retrato" : ""}" src="${r.pronta}" alt="Capa gerada" />
-          <div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-usar" data-id="${aulaId}">Usar esta capa</button><button type="button" class="al-botao pequeno" data-a="capa-ia-gerar" data-id="${aulaId}">${IC_REFAZ}Refazer</button><button type="button" class="al-botao pequeno" data-a="capa-ia-fechar" data-id="${aulaId}">Descartar</button></div>`
-        : `<div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-gerar" data-id="${aulaId}"${r.gerando ? " disabled" : ""}>${IC_IA}Gerar capa</button></div>`}
+          <div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-usar" ${dv}>Usar esta capa</button><button type="button" class="al-botao pequeno" data-a="capa-ia-gerar" ${dv}>${IC_REFAZ}Refazer</button><button type="button" class="al-botao pequeno" data-a="capa-ia-fechar" ${dv}>Descartar</button></div>`
+        : `<div class="ea-capaia-bts"><button type="button" class="al-botao-ouro pequeno" data-a="capa-ia-gerar" ${dv}${r.gerando ? " disabled" : ""}>${IC_IA}Gerar capa</button></div>`}
       </div>`;
   }
-  function atualizarCapaIaVazio(aulaId: string) { const el = document.getElementById("capaIa"); if (el) el.innerHTML = capaIaBloco(aulaId); }
-  function atualizarCapaIa() { const id = ui.capaIa?.aula; const el = document.getElementById("capaIa"); if (id && el) el.innerHTML = capaIaBloco(id); }
-  async function capaIaGerar(aulaId: string) {
-    const r = capaIaDa(aulaId), x = acharAula(aulaId); if (!r || !x || r.gerando) return;
-    const titulo = document.querySelector<HTMLInputElement>('#formAula input[name="nome"]')?.value.trim() || x.a.nome;
-    const rotA = document.querySelector<HTMLInputElement>('#formAula input[name="rotulo"]')?.value.trim() || x.a.rot || "Aula";
-    const numA = document.querySelector<HTMLInputElement>('#formAula input[name="numero"]')?.value.trim() || String(x.a.num);
-    r.retrato = document.querySelector<HTMLSelectElement>('#formAula select[name="tipo"]')?.value === "pdf";
-    r.gerando = true; atualizarCapaIa();
+  /** Redesenha só a caixa da IA (sem mexer no resto do formulário). */
+  function atualizarCapaIa(alvo: AlvoCapaIa, id: string) {
+    const el = document.querySelector<HTMLElement>(`[data-capaia-box="${alvo}:${id}"]`); if (el) el.innerHTML = capaIaBloco(alvo, id);
+  }
+  async function capaIaGerar(alvo: AlvoCapaIa, id: string) {
+    const r = capaIaDa(alvo, id); if (!r || r.gerando) return;
+    let corpo: Record<string, unknown>;
+    if (alvo === "aula") {
+      const x = acharAula(id); if (!x) return;
+      const titulo = document.querySelector<HTMLInputElement>('#formAula input[name="nome"]')?.value.trim() || x.a.nome;
+      const rotA = document.querySelector<HTMLInputElement>('#formAula input[name="rotulo"]')?.value.trim() || x.a.rot || "Aula";
+      const numA = document.querySelector<HTMLInputElement>('#formAula input[name="numero"]')?.value.trim() || String(x.a.num);
+      r.retrato = document.querySelector<HTMLSelectElement>('#formAula select[name="tipo"]')?.value === "pdf";
+      corpo = { alvo, aula_id: id, titulo, linha1: `${x.m.rot || "Módulo"} ${numModulo(x.c, x.mi)} • ${rotA} ${numA}` };
+    } else {
+      const x = acharModulo(id); if (!x) return;
+      const f = document.querySelector<HTMLFormElement>(`form[data-f="mod-renomear"][data-id="${id}"]`);
+      const campo = (n: string) => (f?.elements.namedItem(n) as HTMLInputElement | null)?.value.trim() || "";
+      r.retrato = alvo === "modv";
+      corpo = { alvo, modulo_id: id, titulo: campo("nome") || x.m.nome, linha1: `${campo("rotulo") || x.m.rot || "Módulo"} ${campo("numero") || numModulo(x.c, x.i)}` };
+    }
+    r.gerando = true; atualizarCapaIa(alvo, id);
     try {
-      const j = await chamarFuncao("gerar-capa", { aula_id: aulaId, descricao: r.descricao, titulo, linha1: `${x.m.rot || "Módulo"} ${numModulo(x.c, x.mi)} • ${rotA} ${numA}`, formato: r.retrato ? "retrato" : "paisagem" });
+      const j = await chamarFuncao("gerar-capa", { ...corpo, descricao: r.descricao, formato: r.retrato ? "retrato" : "paisagem" });
       r.pronta = String(j.imagem || ""); if (!r.pronta) throw new Error("A IA de imagens não devolveu a imagem.");
     } catch (e) { toast(e instanceof Error && e.message ? e.message : motivo(e)); }
-    r.gerando = false; atualizarCapaIa();
+    r.gerando = false; atualizarCapaIa(alvo, id);
   }
   /** As permissões marcadas no card do Suporte (null se o card não está na tela ou não dá para mudar). */
   function permsSupDoForm(form: HTMLFormElement) {
@@ -5415,17 +5436,25 @@ export function montar(app: HTMLElement) {
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
       case "ia-doc": iaEscolherDoc(d.id); return;
-      case "capa-ia-abrir": ui.capaIa = { aula: d.id, aberto: true, gerando: false, descricao: "", guia: S.config.capaGuia, retrato: false, pronta: "" }; atualizarCapaIa(); return;
+      case "capa-ia-abrir": {
+        const antes = ui.capaIa; ui.capaIa = { alvo: d.v as AlvoCapaIa, id: d.id, aberto: true, gerando: false, descricao: "", guia: S.config.capaGuia, retrato: false, pronta: "" };
+        if (antes) atualizarCapaIa(antes.alvo, antes.id);
+        atualizarCapaIa(d.v as AlvoCapaIa, d.id); return;
+      }
       case "capa-ia-guia": {
         const r = ui.capaIa; if (!r) return; const guia = r.guia.trim();
         void (async () => { const x = await supabase.from("configuracoes").update({ capa_guia: guia || null }).not("id", "is", null).select("id"); if (x.error || !x.data?.length) { toast(motivo(x.error ?? new Error("Acesso bloqueado."))); return; } S.config.capaGuia = guia; toast("Orientações das capas salvas."); })();
         return;
       }
-      case "capa-ia-fechar": ui.capaIa = null; atualizarCapaIaVazio(d.id); return;
-      case "capa-ia-gerar": void capaIaGerar(d.id); return;
+      case "capa-ia-fechar": ui.capaIa = null; atualizarCapaIa(d.v as AlvoCapaIa, d.id); return;
+      case "capa-ia-gerar": void capaIaGerar(d.v as AlvoCapaIa, d.id); return;
       case "capa-ia-usar": {
-        const r = capaIaDa(d.id); if (!r?.pronta) return;
-        void fetch(r.pronta).then((x) => x.blob()).then((bl) => editarCapa(new File([bl], "capa-ia.png", { type: "image/png" }), r.retrato ? 2 / 3 : 16 / 9, "capa-ia")).then((f) => { if (!f) return; enviarCapaAula(f); ui.capaIa = null; atualizarCapaIaVazio(d.id); });
+        const alvo = d.v as AlvoCapaIa, r = capaIaDa(alvo, d.id); if (!r?.pronta) return;
+        void fetch(r.pronta).then((x) => x.blob()).then((bl) => editarCapa(new File([bl], "capa-ia.png", { type: "image/png" }), r.retrato ? 2 / 3 : 16 / 9, "capa-ia")).then((f) => {
+          if (!f) return;
+          if (alvo === "aula") enviarCapaAula(f); else { const ac = alvoCapa(alvo, d.id); if (ac) enviarCapa(ac, f); }
+          ui.capaIa = null; atualizarCapaIa(alvo, d.id);
+        });
         return;
       }
       case "ia-gerar": void iaChamar(d.id, "tudo"); return;
@@ -6684,7 +6713,7 @@ export function montar(app: HTMLElement) {
   document.addEventListener("input", (e) => {
     const t = e.target as HTMLTextAreaElement;
     if (t?.dataset?.iaExtra !== undefined) { iaDe(t.dataset.id!).extra = t.value; return; }
-    if (t?.dataset?.capaiaDesc !== undefined) { const r = capaIaDa(t.dataset.id!); if (r) r.descricao = t.value; return; }
+    if (t?.dataset?.capaiaDesc !== undefined) { if (ui.capaIa) ui.capaIa.descricao = t.value; return; }
     if (t?.dataset?.capaiaGuia !== undefined) { if (ui.capaIa) ui.capaIa.guia = t.value; return; }
     const r = ui.aula ? iaDa(ui.aula) : null;
     if (r && t?.closest?.("#formAula") && (t.name === "texto" || t.name === "exercicio") && r[t.name === "texto" ? "sobre" : "instrucoes"] !== undefined) r[t.name === "texto" ? "sobre" : "instrucoes"] = t.value;

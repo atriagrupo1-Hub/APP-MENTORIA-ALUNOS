@@ -3374,3 +3374,15 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .ea-extra-dentro .mp-cab { margin-bottom: 0; align-items: center; }
 .ea-extra-dentro .mp-cab h3 { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; }
 .ea-extra-dentro[hidden] { display: none; }
+/* Módulo: capas lado a lado em cima, campos com a largura toda embaixo (não fica apertado). */
+.mp-dupla .mp-grade, .mp-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.mp-capas, .mp-dupla .mp-capas { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 24px; padding: 0 0 22px; border-right: 0; border-bottom: 1px solid var(--linha-suave); align-items: start; }
+.mp-capa-col { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.mp-capa-col .mp-capa-h { max-width: 100%; }
+.mp-dupla .mp-linha3, .mp-linha3 { grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1.6fr); gap: 16px; }
+.capa-ia-box .ea-capaia { margin-top: 6px; }
+@media (max-width: 900px) { .mp-capas, .mp-dupla .mp-capas { grid-template-columns: minmax(0, 1fr); } .mp-linha3, .mp-dupla .mp-linha3 { grid-template-columns: minmax(0, 1fr); } }
+.mp-capa-col .mp-pe { flex-direction: column; align-items: flex-start; gap: 10px; }
+.mp-capa-col .mp-pe-bts { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mp-capa-col .mp-pe-bts .mp-dica { flex-basis: 100%; }
+.mp-capa-col .mp-pe-bts .mp-dica br { display: none; }
