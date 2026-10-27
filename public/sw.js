@@ -78,7 +78,7 @@ self.addEventListener("push", (evento) => {
   evento.waitUntil((async () => {
     await self.registration.showNotification(av.title || "AION", {
       body: av.body || "", tag: av.tag || "aviso", renotify: true, silent: false,
-      icon: "/icone-192.png", badge: "/favicon-32.png", vibrate: [200, 100, 200],
+      icon: "/icone-192.png", badge: "/badge-aviso.png", vibrate: [200, 100, 200],
       data: { url: av.url || "/" },
     });
     // O número no ícone do app instalado: quantos avisos estão na bandeja.
