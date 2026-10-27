@@ -4221,10 +4221,15 @@ export function montar(app: HTMLElement) {
   const iaDa = (aulaId: string) => (ui.ia && ui.ia.aula === aulaId ? ui.ia : null);
   function iaEstado(aulaId: string) {
     const r = iaDa(aulaId), g = r?.gerando || "";
+    return `<span class="ea-ia-doc"><button type="button" class="al-botao pequeno" data-a="ia-doc" data-id="${aulaId}"${g ? " disabled" : ""}>${IC_PF.up}${r?.doc ? "Trocar documento" : "Escolher documento"}</button><em>${r?.doc ? h(r.doc.nome) : "PDF, Word (.docx) ou texto, até 20 MB"}</em></span>
+    `;
+  }
+  /** O botão Gerar com IA e o andamento, embaixo das informações adicionais. */
+  function iaBotoes(aulaId: string) {
+    const r = iaDa(aulaId), g = r?.gerando || "";
     const st = g ? `<span class="ea-ia-st"><span class="ea-ia-gir"></span>${g === "montar" ? "Montando o PDF…" : g === "tudo" ? "Lendo o documento e gerando… pode levar até 2 minutos." : "Refazendo…"}</span>`
       : r?.pdf || r?.sobre != null ? `<span class="ea-ia-st ok">Pronto. Revise os campos abaixo e salve a aula.</span>` : "";
-    return `<span class="ea-ia-doc"><button type="button" class="al-botao pequeno" data-a="ia-doc" data-id="${aulaId}"${g ? " disabled" : ""}>${IC_PF.up}${r?.doc ? "Trocar documento" : "Escolher documento"}</button><em>${r?.doc ? h(r.doc.nome) : "PDF, Word (.docx) ou texto, até 20 MB"}</em></span>
-      <span class="ea-ia-bts"><button type="button" class="al-botao-ouro" data-a="ia-gerar" data-id="${aulaId}"${!r?.doc || g ? " disabled" : ""}>${IC_IA}${r?.pdf ? "Gerar tudo de novo" : "Gerar com IA"}</button>${st}</span>`;
+    return `<span class="ea-ia-bts"><button type="button" class="al-botao-ouro" data-a="ia-gerar" data-id="${aulaId}"${!r?.doc || g ? " disabled" : ""}>${IC_IA}${r?.pdf ? "Gerar tudo de novo" : "Gerar com IA"}</button>${st}</span>`;
   }
   function iaPdfBloco(aulaId: string) {
     const r = iaDa(aulaId); if (!r?.pdf) return "";
@@ -4250,11 +4255,13 @@ export function montar(app: HTMLElement) {
             <div class="ea-ia-cab"><span class="ea-ia-ic">${IC_IA}</span><div><b class="rotulo-ajuda">Sobre a aula ${dicaCampo(`Gerar com IA: envie o documento completo da aula (PDF, Word .docx ou texto) e, se quiser, acrescente informações. A IA preenche a descrição, as instruções e monta um PDF de apoio. Revise tudo; nada vai para a aluna antes de você salvar a aula. Cada campo tem "Refazer com IA", que gera outra versão com o mesmo documento.`, "aula.gerar-ia")}</b><small>Gerar com IA a partir do documento da aula.</small></div></div>
             <div id="iaEstado" class="ea-ia-estado">${iaEstado(aulaId)}</div>
             <label class="grupo"><span class="mp-rot">Informações adicionais (opcional)</span><textarea class="campo" data-ia-extra data-id="${aulaId}" rows="2" placeholder="Ex.: reforçar o exercício da oração da manhã">${h(iaDa(aulaId)?.extra || "")}</textarea></label>
+            <div id="iaBts">${iaBotoes(aulaId)}</div>
           </div>`;
   }
   function atualizarIA() {
     const id = ui.ia?.aula; if (!id) return;
     const e = document.getElementById("iaEstado"); if (e) e.innerHTML = iaEstado(id);
+    const bt = document.getElementById("iaBts"); if (bt) bt.innerHTML = iaBotoes(id);
     const p = document.getElementById("iaPdf"); if (p) p.innerHTML = iaPdfBloco(id);
     document.querySelectorAll<HTMLButtonElement>("[data-ia-ref]").forEach((b) => { b.hidden = !ui.ia?.doc; b.disabled = !!ui.ia?.gerando; });
   }
