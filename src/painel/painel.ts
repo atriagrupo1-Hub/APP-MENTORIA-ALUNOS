@@ -3984,10 +3984,19 @@ export function montar(app: HTMLElement) {
           ${blocoIA(a.id)}
           <div class="ea-ia-lin"><span class="rotulo-ajuda mp-rot"><span data-rot-desc>${tipoA === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)"}</span> ${dicaCampo(AJ.texto)}</span>${iaRefazerBt(a.id, "sobre")}</div>
           <label class="grupo ea-ia-campo"><textarea class="campo" name="texto" rows="5" aria-label="Descrição da aula" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(iaDa(a.id)?.sobre ?? a.texto)}</textarea></label>
-          ${a.resumo === null ? "" : `
-          <div class="ea-ia-lin"><span class="rotulo-ajuda mp-rot">Instruções (botão “Instruções” da aula) ${dicaCampo(AJ.exercicio)}</span>${iaRefazerBt(a.id, "instrucoes")}</div>
-          <label class="grupo ea-ia-campo"><textarea class="campo" name="exercicio" rows="4" aria-label="Instruções da aula" placeholder="Título das instruções na primeira linha. Depois, o texto.">${h(iaDa(a.id)?.instrucoes ?? (a.exercicio || ""))}</textarea></label>`}
           <div id="iaPdf">${iaPdfBloco(a.id)}</div>
+          <div class="ea-extra ea-extra-dentro" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
+            <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
+            <div class="ea-extra-form">
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do conteúdo ${dicaCampo(AJ.extraNome)}</span><input class="campo" name="nome" form="formExtra" placeholder="Ex: Material da aula" required /></label>
+              <label class="grupo"><span class="rotulo-ajuda mp-rot">${tipo === "Link" ? "Endereço do link" : tipo === "Texto" ? "Texto" : tipo === "Vídeo" ? "Link ou identificador do vídeo" : "Arquivo no depósito de " + tipoDaTela(tipo).deposito} ${dicaCampo(AJ.extraArquivo)}</span>
+                <span class="ea-arq"><input class="campo" name="arquivo" form="formExtra" placeholder="${tipo === "Link" ? "https://" : tipo === "Texto" ? "Escreva aqui" : tipo === "Vídeo" ? "uid do Cloudflare Stream" : "Nenhum arquivo selecionado"}" required />${semArquivo ? "" : `<button type="button" class="al-botao" data-a="enviar-arquivo">Escolher arquivo</button>`}</span></label>
+              <div><button class="al-botao-ouro" form="formExtra">Adicionar</button></div>
+            </div>
+            ${a.extras.length ? `<div class="ea-extras">${a.extras.map((e) => `
+              <div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}" title="Remover">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
+          </div>
           <input type="hidden" id="campoCapa" name="capa" value="${h(a.capa)}" />
           <div class="ea-bts"><button class="al-botao-ouro">${IC_SALVAR}Salvar aula</button><button type="button" class="al-botao" data-a="voltar-sem-salvar">Voltar sem salvar</button></div>
         </form>
@@ -4001,18 +4010,7 @@ export function montar(app: HTMLElement) {
             <div id="capaIa">${capaIaBloco(a.id)}</div>
           </section>
 
-          <section class="cs-cartao ea-extra" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
-            <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
-            <form data-f="extra-add" data-id="${a.id}" class="ea-extra-form">
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do conteúdo ${dicaCampo(AJ.extraNome)}</span><input class="campo" name="nome" placeholder="Ex: Material da aula" required /></label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">${tipo === "Link" ? "Endereço do link" : tipo === "Texto" ? "Texto" : tipo === "Vídeo" ? "Link ou identificador do vídeo" : "Arquivo no depósito de " + tipoDaTela(tipo).deposito} ${dicaCampo(AJ.extraArquivo)}</span>
-                <span class="ea-arq"><input class="campo" name="arquivo" placeholder="${tipo === "Link" ? "https://" : tipo === "Texto" ? "Escreva aqui" : tipo === "Vídeo" ? "uid do Cloudflare Stream" : "Nenhum arquivo selecionado"}" required />${semArquivo ? "" : `<button type="button" class="al-botao" data-a="enviar-arquivo">Escolher arquivo</button>`}</span></label>
-              <div><button class="al-botao-ouro">Adicionar</button></div>
-            </form>
-            ${a.extras.length ? `<div class="ea-extras">${a.extras.map((e) => `
-              <div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}" title="Remover">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
-          </section>
+          <form id="formExtra" data-f="extra-add" data-id="${a.id}" hidden></form>
 
           <section class="cs-cartao ea-config">
             <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR}</span><div><h3>Configurações</h3></div></div>
@@ -4252,7 +4250,7 @@ export function montar(app: HTMLElement) {
   const iaRefazerBt = (aulaId: string, campo: "sobre" | "instrucoes") => { const r = iaDa(aulaId); return `<button type="button" class="ea-ia-refazer" data-a="ia-refazer" data-v="${campo}" data-id="${aulaId}" data-ia-ref${r?.doc ? "" : " hidden"}${r?.gerando ? " disabled" : ""}>${IC_REFAZ}Refazer com IA</button>`; };
   function blocoIA(aulaId: string) {
     return `<div class="ea-ia" id="iaBloco">
-            <div class="ea-ia-cab"><span class="ea-ia-ic">${IC_IA}</span><div><b class="rotulo-ajuda">Sobre a aula ${dicaCampo(`Gerar com IA: envie o documento completo da aula (PDF, Word .docx ou texto) e, se quiser, acrescente informações. A IA preenche a descrição, as instruções e monta um PDF de apoio. Revise tudo; nada vai para a aluna antes de você salvar a aula. Cada campo tem "Refazer com IA", que gera outra versão com o mesmo documento.`, "aula.gerar-ia")}</b><small>Gerar com IA a partir do documento da aula.</small></div></div>
+            <div class="ea-ia-cab"><span class="ea-ia-ic">${IC_IA}</span><div><b class="rotulo-ajuda">Sobre a aula ${dicaCampo(`Gerar com IA: envie o documento completo da aula (PDF, Word .docx ou texto) e, se quiser, acrescente informações. A IA preenche a descrição e monta um PDF de apoio. Revise tudo; nada vai para a aluna antes de você salvar a aula. Cada campo tem "Refazer com IA", que gera outra versão com o mesmo documento.`, "aula.gerar-ia")}</b><small>Gerar com IA a partir do documento da aula.</small></div></div>
             <div id="iaEstado" class="ea-ia-estado">${iaEstado(aulaId)}</div>
             <label class="grupo"><span class="mp-rot">Informações adicionais (opcional)</span><textarea class="campo" data-ia-extra data-id="${aulaId}" rows="2" placeholder="Ex.: reforçar o exercício da oração da manhã">${h(iaDa(aulaId)?.extra || "")}</textarea></label>
             <div id="iaBts">${iaBotoes(aulaId)}</div>
@@ -6129,8 +6127,8 @@ export function montar(app: HTMLElement) {
         const botaoEb = tipo === "pdf" ? { botao_ebook: v("botaoEbook") || null, botao_ebook_cor: v("botaoEbookCor") || null } : {};
         const extrasAula: Record<string, string | null> = {};
         if (x0.resumo !== null) {
-          const e = (form.elements.namedItem("exercicio") as HTMLTextAreaElement).value;
-          extrasAula.exercicio = e.trim() ? e : null;
+          const ex = form.elements.namedItem("exercicio") as HTMLTextAreaElement | null;
+          if (ex) extrasAula.exercicio = ex.value.trim() ? ex.value : null;
         }
         void executar(async () => {
           falhou(await supabase.from("aulas").update({ ...base, ...botaoEb, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
