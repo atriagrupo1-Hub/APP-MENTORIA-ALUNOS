@@ -722,9 +722,9 @@
   .mt-todos { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; margin-top: 12px; padding: 0 10px; font: inherit; font-size: 14.5px; font-weight: 700; color: var(--ouro-claro); background: none; border: 0; cursor: pointer; }
   .mt-todos span { font-size: 1.25rem; line-height: 1; }
   .mt-divisor { display: flex; align-items: center; gap: 14px; margin: 34px 0 6px; }
-  .mt-divisor::before, .mt-divisor::after { content: ""; flex: 1 1 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(212,177,112,.55)); }
-  .mt-divisor::after { background: linear-gradient(90deg, rgba(212,177,112,.55), transparent); }
-  .mt-divisor span { flex: 0 0 auto; font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--texto-3); }
+  .mt-divisor::before, .mt-divisor::after { content: ""; flex: 1 1 0; height: 1px; background: linear-gradient(90deg, transparent, var(--mt-linha, rgba(212,177,112,.55))); }
+  .mt-divisor::after { background: linear-gradient(90deg, var(--mt-linha, rgba(212,177,112,.55)), transparent); }
+  .mt-divisor span { flex: 0 0 auto; font-size: 12px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; color: var(--mt-cor, var(--texto-3)); }
   html[data-tema="claro"] .mt-bloco { background: radial-gradient(120% 70% at 50% 0%, rgba(212,177,112,.18), transparent 65%), #ffffff; border-color: rgba(169,124,47,.6); box-shadow: 0 16px 36px -24px rgba(60,40,10,.4); }
   html[data-tema="claro"] .mt-rot, html[data-tema="claro"] .mt-sub, html[data-tema="claro"] .mt-todos { color: #8a6220; }
   .saiu { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 24px 20px; background: radial-gradient(90% 60% at 50% 0%, rgba(212,177,112,.14), transparent 70%), var(--fundo); }
