@@ -2034,7 +2034,8 @@ export function montar(raiz: HTMLElement) {
     if (S.abrirPend) { const v = S.abrirPend; S.abrirPend = null; abrirAlvo(v); }
     if (pushOk() && Notification.permission === "granted") { try { await inscrever(); } catch { S.notifOn = false; } }
     if (S.tela === "perfil") render();
-    const n = NOTIF(); if (!n || !n.ativo || S.notifOn || S.notifVisto || S.tela !== "inicio") return;
+    // Na prévia do painel (Configurações → Início) o pop-up não aparece.
+    const n = NOTIF(); if (PREVIA || !n || !n.ativo || S.notifOn || S.notifVisto || S.tela !== "inicio") return;
     S.notifVisto = true;
     let adiado = null; try { adiado = await api.meuAvisoNotificacao(); } catch { return; }
     if (adiado && n.intervalo > 0 && Date.now() - new Date(adiado).getTime() < n.intervalo * 864e5) return;
