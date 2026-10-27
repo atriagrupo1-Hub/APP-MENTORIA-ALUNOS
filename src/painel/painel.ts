@@ -496,7 +496,7 @@ async function enviarArquivo(deposito: string, pasta: string, arquivo: File): Pr
   return caminho;
 }
 const urlDaCapa = (caminho: string) =>
-  /^https?:\/\//.test(caminho) ? caminho : supabase.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
+  /^https?:\/\//.test(caminho) || caminho.startsWith("/") ? caminho : supabase.storage.from("capas").getPublicUrl(caminho).data.publicUrl;
 
 /* ---------- o painel ---------- */
 
@@ -3464,7 +3464,7 @@ export function montar(app: HTMLElement) {
           <div class="mp-capas">
             <div class="mp-capa-col">
             <span class="rotulo-ajuda mp-rot">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
-            <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}">${capaH ? `<img src="${h(capaH)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
+            <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}" data-a="mod-capa-h" data-id="${m.id}" title="Escolher a capa">${capaH ? `<img src="${h(capaH)}" alt="" onerror="this.remove()" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
             <input type="hidden" name="capaH" value="${h(m.capaH)}" />
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modh" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
@@ -3473,7 +3473,7 @@ export function montar(app: HTMLElement) {
             <div class="mp-capa-col">
             <span class="rotulo-ajuda mp-rot">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
             <span class="mp-pe">
-              <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-v" data-previa="modv-${m.id}">${capaV ? `<img src="${h(capaV)}" alt="" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
+              <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-v" data-previa="modv-${m.id}" data-a="mod-capa-v" data-id="${m.id}" title="Escolher a capa">${capaV ? `<img src="${h(capaV)}" alt="" onerror="this.remove()" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
               <input type="hidden" name="capa" value="${h(m.capa)}" />
               <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modv" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
             </span>
@@ -4024,7 +4024,7 @@ export function montar(app: HTMLElement) {
         <div class="ea-lado">
           <section class="cs-cartao ea-capa${tipoA === "pdf" ? " em-pe" : ""}" data-capa-aula>
             <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
-            <div id="previaCapa" class="ea-capa-img${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
+            <div id="previaCapa" data-a="escolher-capa" title="Escolher a capa" class="ea-capa-img${previa ? "" : " sem"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${previa ? `<img hidden alt="" src="${h(previa)}" onerror="this.parentElement.classList.add('sem')" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
             <div class="capa-ia-box" data-capaia-box="aula:${a.id}">${capaIaBloco("aula", a.id)}</div>
@@ -5418,7 +5418,7 @@ export function montar(app: HTMLElement) {
         if (rasc) { void executar(async () => { falhou(await supabase.from("aulas").delete().eq("id", rasc).select("id")); return "Aula nova descartada."; }); return; }
         break;
       }
-      case "aula-capa-tirar": { const cp = document.getElementById("campoCapa") as HTMLInputElement | null; if (cp) cp.value = ""; if (ui.aula) delete previas[ui.aula]; const pv = document.getElementById("previaCapa"); if (pv) pv.style.background = "linear-gradient(160deg,#2a2116,#0c0a07 65%)"; if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Capa tirada. Clique em Salvar aula para guardar."); return; }
+      case "aula-capa-tirar": { const cp = document.getElementById("campoCapa") as HTMLInputElement | null; if (cp) cp.value = ""; if (ui.aula) delete previas[ui.aula]; const pv = document.getElementById("previaCapa"); if (pv) { pv.style.background = "linear-gradient(160deg,#2a2116,#0c0a07 65%)"; pv.classList.add("sem"); } if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Capa tirada. Clique em Salvar aula para guardar."); return; }
       case "aula-liberar": {
         const x = acharAula(d.id)!; const liberar = x.a.acesso !== "liberada";
         void executar(async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: liberar }); return { msg: liberar ? "Aula liberada para todas." : "Liberação retirada.", texto: "liberação da aula " + x.a.nome, desfazer: async () => { await rpc("definir_liberada_geral", { p_aula: x.a.id, p_liberada: !liberar }); } }; });
@@ -6629,7 +6629,7 @@ export function montar(app: HTMLElement) {
         ui.sujo = { f: "aula", id: aulaId };
         previas[aulaId] = URL.createObjectURL(file);
         const pv = document.getElementById("previaCapa");
-        if (pv) pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)";
+        if (pv) { pv.classList.remove("sem"); pv.style.background = "url('" + previas[aulaId] + "') center/cover no-repeat, linear-gradient(160deg,#131c33,#060911 60%,#101830)"; }
         toast("Imagem pronta. Clique em Salvar aula para guardar.");
       } catch (e) { toast(motivo(e)); }
     })();
