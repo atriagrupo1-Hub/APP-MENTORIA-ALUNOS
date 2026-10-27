@@ -39,7 +39,8 @@ function montar(itens: Pendente[]): Aviso[] {
   }
   if (pres.length === 1) out.push({ title: "Presente novo liberado", body: pres[0].titulo ?? "", url: "/?abrir=presente:" + pres[0].ref_id, tag: "presente-" + pres[0].ref_id });
   else if (pres.length > 1) out.push({ title: "Novos presentes liberados", body: plural(pres.length, "presente novo", "presentes novos") + " para você.", url: "/?abrir=presentes", tag: "presentes" });
-  return out;
+  // Chamada para ela tocar no aviso.
+  return out.map((a) => ({ ...a, body: a.body + "\n" + (a.tag.startsWith("presente") ? "Aperte para ouvir ou ver." : "Clique aqui para ver.") }));
 }
 
 Deno.serve(async (req) => {
