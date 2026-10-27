@@ -36,25 +36,38 @@ Deno.serve(async (req) => {
   if (pode !== true) return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403);
   if (!CHAVE_IMG) return resposta({ erro: "sem_chave", mensagem: "A chave da IA de imagens ainda não foi cadastrada no Supabase." }, 503);
 
-  let aulaId = "", descricao = "", titulo = "", linha1 = "", retrato = false;
+  let alvo = "aula", aulaId = "", moduloId = "", descricao = "", titulo = "", linha1 = "", retrato = false;
   try {
     const c = await req.json();
+    alvo = ["modh", "modv"].includes(c.alvo) ? c.alvo : "aula"; moduloId = String(c.modulo_id ?? "");
     aulaId = String(c.aula_id ?? ""); descricao = String(c.descricao ?? "").slice(0, 1500);
     titulo = String(c.titulo ?? "").slice(0, 160); linha1 = String(c.linha1 ?? "").slice(0, 80); retrato = c.formato === "retrato";
   } catch { return resposta({ erro: "corpo_invalido" }, 400); }
-  if (!/^[0-9a-f-]{36}$/.test(aulaId) || !titulo.trim()) return resposta({ erro: "corpo_invalido" }, 400);
+  if (!/^[0-9a-f-]{36}$/.test(alvo === "aula" ? aulaId : moduloId) || !titulo.trim()) return resposta({ erro: "corpo_invalido" }, 400);
 
-  // Os modelos: capas de aula já feitas, primeiro as do mesmo módulo.
+  // Os modelos: capas já feitas do mesmo tipo (aula; módulo deitada; módulo em pé), primeiro as mais próximas.
   const admin = createClient(URL_SUPABASE, CHAVE_SERVICO, { auth: { persistSession: false } });
-  const [{ data: aula }, { data: cfg }] = await Promise.all([
-    admin.from("aulas").select("modulo_id").eq("id", aulaId).maybeSingle(),
-    admin.from("configuracoes").select("capa_guia").maybeSingle(),
-  ]);
-  const { data: capas } = await admin.from("aulas").select("capa_path, modulo_id").not("capa_path", "is", null).neq("id", aulaId).limit(60);
-  const caminhos = (capas ?? [])
-    .filter((x) => x.capa_path && !String(x.capa_path).startsWith("/") && !/^https?:/.test(String(x.capa_path)))
-    .sort((a, b) => Number(b.modulo_id === aula?.modulo_id) - Number(a.modulo_id === aula?.modulo_id))
-    .slice(0, 3).map((x) => String(x.capa_path));
+  const { data: cfg } = await admin.from("configuracoes").select("capa_guia").maybeSingle();
+  let caminhos: string[] = [];
+  const valido = (p: unknown) => !!p && !String(p).startsWith("/") && !/^https?:/.test(String(p));
+  if (alvo === "aula") {
+    const { data: aula } = await admin.from("aulas").select("modulo_id").eq("id", aulaId).maybeSingle();
+    const { data: capas } = await admin.from("aulas").select("capa_path, modulo_id").not("capa_path", "is", null).neq("id", aulaId).limit(60);
+    caminhos = (capas ?? []).filter((x) => valido(x.capa_path))
+      .sort((a, b) => Number(b.modulo_id === aula?.modulo_id) - Number(a.modulo_id === aula?.modulo_id)).map((x) => String(x.capa_path));
+  } else {
+    const col = alvo === "modh" ? "capa_horizontal_path" : "capa_path";
+    const { data: mod } = await admin.from("modulos").select("produto_id").eq("id", moduloId).maybeSingle();
+    const { data: capas } = await admin.from("modulos").select(`${col}, produto_id`).not(col, "is", null).neq("id", moduloId).limit(60);
+    caminhos = ((capas ?? []) as Record<string, unknown>[]).filter((x) => valido(x[col]))
+      .sort((a, b) => Number(b.produto_id === mod?.produto_id) - Number(a.produto_id === mod?.produto_id)).map((x) => String(x[col]));
+  }
+  // Capa deitada de módulo sem modelos ainda: as capas em pé dos módulos e as das aulas mostram o estilo.
+  if (alvo === "modh" && caminhos.length < 3) {
+    const { data: outras } = await admin.from("aulas").select("capa_path").not("capa_path", "is", null).limit(20);
+    caminhos = caminhos.concat((outras ?? []).filter((x) => valido(x.capa_path)).map((x) => String(x.capa_path)));
+  }
+  caminhos = caminhos.slice(0, 3);
   const modelos: Blob[] = [];
   for (const p of caminhos) { const { data } = await admin.storage.from("capas").download(p); if (data) modelos.push(data); }
 
@@ -63,8 +76,9 @@ Deno.serve(async (req) => {
     modelos.length ? "As imagens enviadas são capas desta mesma mentoria. Crie UMA capa nova que pareça da mesma coleção: mesmo estilo de arte, mesma luz dourada sobre fundo escuro, mesma tipografia, mesmo tamanho e posição dos textos, mesmas cores." : "Capa de aula de mentoria cristã: arte cinematográfica, fundo escuro, luz dourada, tipografia condensada dourada.",
     guia ? `Orientações de estilo da mentoria (siga à risca):\n${guia}` : "",
     `Escreva na capa, exatamente assim, com acentos corretos e sem outras palavras:\n- Linha pequena: "${linha1.toUpperCase()}"\n- Título: "${titulo.toUpperCase()}"`,
+    alvo === "aula" ? "" : `É a capa ${alvo === "modh" ? "deitada" : "em pé"} de um MÓDULO (não de uma aula).`,
     descricao.trim() ? `A arte desta capa deve mostrar: ${descricao.trim()}` : "Crie uma arte simbólica que represente o título.",
-    retrato ? "Formato em pé (capa de e-book)." : "Formato horizontal. Deixe todo o texto e o elemento principal dentro da faixa central 16:9 (nada importante colado nas bordas de cima e de baixo).",
+    retrato ? "Formato em pé." : "Formato horizontal. Deixe todo o texto e o elemento principal dentro da faixa central 16:9 (nada importante colado nas bordas de cima e de baixo).",
   ].filter(Boolean).join("\n\n");
 
   let r: Response;
