@@ -3369,3 +3369,8 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .ea-capaia-guia summary { cursor: pointer; font-size: 13px; font-weight: 600; color: #8a6a2c; }
 .ea-capaia-guia[open] summary { margin-bottom: 8px; }
 .ea-capaia-guia .al-botao { align-self: flex-start; margin-top: 8px; }
+/* Conteúdo extra dentro do formulário da aula, embaixo da descrição. */
+.ea-extra-dentro { display: flex; flex-direction: column; gap: 14px; padding: 16px 18px; border: 1px solid var(--linha, #e5e0d6); border-radius: 12px; }
+.ea-extra-dentro .mp-cab { margin-bottom: 0; align-items: center; }
+.ea-extra-dentro .mp-cab h3 { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; }
+.ea-extra-dentro[hidden] { display: none; }
