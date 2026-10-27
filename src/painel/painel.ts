@@ -505,7 +505,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, ia: null as null | { aula: string; gerando: boolean; titulo: string; url: string; pdf: string; adicionado: boolean }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -616,7 +616,7 @@ export function montar(app: HTMLElement) {
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar",
-    "cat-visivel": "cat_estado",
+    "cat-visivel": "cat_estado", "ia-gerar": "cur_editar", "ia-pdf-add": "cur_editar",
   };
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
   const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
@@ -3998,6 +3998,7 @@ export function montar(app: HTMLElement) {
             <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
           </section>
 
+          ${cartaoIA(a.id)}
           <section class="cs-cartao ea-extra" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
             <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
             <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
@@ -4206,6 +4207,44 @@ export function montar(app: HTMLElement) {
   }
 
 
+  /** Gerar com IA (Edge Function gerar-material-aula): documento da aula → Sobre, Instruções e PDF. */
+  function cartaoIA(aulaId: string) {
+    const r = ui.ia && ui.ia.aula === aulaId ? ui.ia : null;
+    const IC_DOC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>`;
+    return `<section class="cs-cartao ea-ia">
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Gerar com IA ${dicaCampo(`Envie o documento completo da aula (PDF, Word .docx ou texto). A IA lê e escreve o "Sobre a aula", as "Instruções" e um PDF de apoio para a aluna baixar. Os textos entram nos campos ao lado para você revisar; nada vai para a aluna antes de você salvar a aula e adicionar o PDF.`, "aula.gerar-ia")}</h3></div></div>
+            ${r?.gerando ? `<p class="ea-ia-st"><span class="ea-ia-gir"></span>Lendo o documento e gerando… pode levar até 2 minutos.</p>`
+              : r?.pdf ? `<p class="ea-ia-st ok">Pronto. O Sobre a aula e as Instruções foram preenchidos ao lado — revise e salve a aula.</p>
+                <div class="ea-ia-pdf"><span>${IC_DOC}<b>${h(r.titulo)}</b></span><a class="al-botao pequeno" href="${h(r.url)}" target="_blank" rel="noopener">Ver PDF</a><button type="button" class="al-botao-ouro pequeno" data-a="ia-pdf-add" data-id="${aulaId}"${r.adicionado ? " disabled" : ""}>${r.adicionado ? "PDF na aula" : "Adicionar PDF à aula"}</button></div>`
+              : `<p class="ea-ia-st">Envie o documento da aula e a IA escreve o resumo, as instruções e o PDF para a aluna baixar.</p>`}
+            <button type="button" class="al-botao" data-a="ia-gerar" data-id="${aulaId}"${r?.gerando ? " disabled" : ""}>${IC_PF.up}${r?.pdf ? "Gerar de novo com outro documento" : "Enviar documento e gerar"}</button>
+          </section>`;
+  }
+  function gerarComIA(aulaId: string) {
+    const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" });
+    inp.addEventListener("change", () => {
+      const f = inp.files?.[0]; if (!f) return;
+      if (f.size > 20 * 1024 * 1024) { toast("O arquivo passa de 20 MB."); return; }
+      ui.ia = { aula: aulaId, gerando: true, titulo: "", url: "", pdf: "", adicionado: false }; render();
+      void (async () => {
+        try {
+          const b64 = await new Promise<string>((ok, erro) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = () => erro(r.error); r.readAsDataURL(f); });
+          const r = await chamarFuncao("gerar-material-aula", { aula_id: aulaId, nome: f.name, tipo: f.type, base64: b64 });
+          if (!r.pdf_path) throw new Error(String(r.mensagem || r.erro || "falhou"));
+          ui.ia = { aula: aulaId, gerando: false, titulo: String(r.titulo_pdf || "Material da aula"), url: String(r.pdf_url || ""), pdf: String(r.pdf_path), adicionado: false };
+          render();
+          const fa = document.querySelector<HTMLFormElement>("#formAula");
+          if (fa) {
+            const t = fa.elements.namedItem("texto") as HTMLTextAreaElement | null, ex = fa.elements.namedItem("exercicio") as HTMLTextAreaElement | null;
+            if (t) t.value = String(r.sobre || ""); if (ex) ex.value = String(r.instrucoes || "");
+            ui.sujo = { f: "aula", id: aulaId };
+          }
+          toast("Material gerado. Revise e salve a aula.");
+        } catch (e) { ui.ia = null; render(); toast(e instanceof Error && e.message ? e.message : motivo(e)); }
+      })();
+    });
+    inp.click();
+  }
   /** As permissões marcadas no card do Suporte (null se o card não está na tela ou não dá para mudar). */
   function permsSupDoForm(form: HTMLFormElement) {
     const tudo = form.querySelector<HTMLInputElement>('input[name="sp-tudo"]');
@@ -5274,6 +5313,16 @@ export function montar(app: HTMLElement) {
       }
       case "escolher-capa": arquivoCapa.click(); return;
       case "enviar-arquivo": arquivoExtra.click(); return;
+      case "ia-gerar": gerarComIA(d.id); return;
+      case "ia-pdf-add": {
+        const x = acharAula(d.id), r = ui.ia; if (!x || !r || r.aula !== d.id || !r.pdf || r.adicionado) return;
+        void executar(async () => {
+          const n = falhou(await supabase.from("conteudos").insert({ produto_id: x.c.id, aula_id: d.id, tipo: "pdf", titulo: r.titulo, arquivo_path: r.pdf, ordem: x.a.extras.length }).select("id").single());
+          r.adicionado = true;
+          return { msg: "PDF adicionado à aula.", texto: "PDF " + r.titulo, desfazer: async () => { falhou(await supabase.from("conteudos").delete().eq("id", n.data!.id).select("id").single()); } };
+        });
+        return;
+      }
       case "op-add": {
         const box = document.querySelector<HTMLElement>("[data-ops]"); if (!box) return;
         const n = box.querySelectorAll("[data-op-bloco]").length;
