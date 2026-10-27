@@ -144,6 +144,7 @@ type LinhaModulo = {
   capa_horizontal_path?: string | null;
   rotulo?: string | null;
   numero: number;
+  sem_numero?: boolean;
   titulo: string;
   intro: string | null;
   capa_path: string | null;
@@ -163,6 +164,7 @@ type LinhaAula = {
   rotulo?: string | null;
   modulo_id: string;
   numero: number;
+  sem_numero?: boolean;
   titulo: string;
   ordem: number;
   duracao_segundos: number | null;
@@ -379,6 +381,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
   const listaModulos: Modulo[] = ((modulos.data ?? []) as LinhaModulo[]).map((m) => ({
     id: m.id,
     numero: m.numero,
+    semNumero: !!m.sem_numero,
     titulo: m.titulo,
     intro: m.intro ?? "",
     ordem: m.ordem,
@@ -397,6 +400,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         id: a.id,
         moduloId: a.modulo_id,
         numero: a.numero,
+        semNumero: !!a.sem_numero,
         rotulo: a.rotulo ?? null,
         tipo: a.tipo ?? "video",
         botaoEbook: a.botao_ebook ?? null,

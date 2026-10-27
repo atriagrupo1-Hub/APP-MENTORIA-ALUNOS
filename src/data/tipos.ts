@@ -15,6 +15,8 @@ export type Modulo = {
   /** Cor do módulo (#rrggbb), do painel: contorno, brilho e linha (0054). */
   cor?: string | null;
   numero: number;
+  /** Sem número para a aluna (0096). */
+  semNumero?: boolean;
   titulo: string;
   intro: string;
   ordem: number;
@@ -44,6 +46,8 @@ export type Aula = {
   publicado?: boolean;
   moduloId: string;
   numero: number;
+  /** Sem número para a aluna (0096). */
+  semNumero?: boolean;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rotulo?: string | null;
   /** Vídeo, áudio ou PDF; áudio e PDF guardam o caminho do arquivo (0067). */

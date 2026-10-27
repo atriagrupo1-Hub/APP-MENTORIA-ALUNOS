@@ -108,11 +108,11 @@ export function montar(raiz: HTMLElement) {
       .map((m, k) => {
         const vivo = cat.aoVivo[m.id];
         return {
-          id: m.id, num: Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
+          id: m.id, num: m.semNumero ? "" : Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
           capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-            id: a.id, num: Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
+            id: a.id, num: a.semNumero ? "" : Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
           })),
         };
       });
