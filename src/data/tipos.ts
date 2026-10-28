@@ -50,6 +50,8 @@ export type Aula = {
   numero: number;
   /** Sem número para a aluna (0096). */
   semNumero?: boolean;
+  /** Quando a aula entrou (para "Novos" na versão geral). */
+  criadoEm?: string | null;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rotulo?: string | null;
   /** Vídeo, áudio ou PDF; áudio e PDF guardam o caminho do arquivo (0067). */

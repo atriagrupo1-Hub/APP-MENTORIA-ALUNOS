@@ -1551,3 +1551,13 @@ html:has(.ig) .nav-base button[aria-current="page"] { background: rgba(217,177,9
 html:has(.ig) .nav-base button[aria-current="page"]::before { display: none; }
 @media (min-width: 900px) { .ig-slide { height: 360px; } .ig-card { width: 190px; height: 262px; } }
 .ig-fila-cab p { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.ig-topo-tela { padding-top: 6px; padding-bottom: 16px; }
+.ig-tela-tit { font: 400 24px "Cinzel", Georgia, serif !important; letter-spacing: .04em; text-transform: uppercase; color: #fff !important; }
+.ig-topo-tela .ig-ola span { margin-top: 4px; color: rgba(226,232,240,.58); }
+.ig-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+.ig-grade .ig-card { width: 100%; }
+.ig-busca-in { width: 100%; min-height: 48px; padding: 0 14px; border: 1px solid rgba(233,196,120,.35); border-radius: 12px; background: #0b0b0e; color: #fff; font: inherit; font-size: 16px; outline: none; }
+.ig-busca-in:focus { border-color: #e8be63; }
+.ig-busca-res { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; margin-top: 12px; overflow-y: auto; }
+.ig-busca-res button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: #0b0b0e; color: #fff; font: inherit; text-align: left; cursor: pointer; }
+.ig-busca-res em { font-style: normal; font-size: 12.5px; color: rgba(226,232,240,.6); }

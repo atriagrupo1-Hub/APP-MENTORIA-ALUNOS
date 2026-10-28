@@ -161,6 +161,7 @@ type LinhaAula = {
   modulo_id: string;
   numero: number;
   sem_numero?: boolean;
+  criada_em?: string | null;
   titulo: string;
   ordem: number;
   duracao_segundos: number | null;
@@ -410,6 +411,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
         moduloId: a.modulo_id,
         numero: a.numero,
         semNumero: !!a.sem_numero,
+        criadoEm: a.criada_em ?? null,
         rotulo: a.rotulo ?? null,
         tipo: a.tipo ?? "video",
         botaoEbook: a.botao_ebook ?? null,
@@ -830,7 +832,8 @@ export async function dadosDoInicio(geral = false): Promise<{ marca: { titulo: s
   // Versão geral (0103): o que a equipe configurou para ela vale por cima do resto.
   const base = (cfg.data ?? {}) as Record<string, any>;
   const vg = base.versao_geral && typeof base.versao_geral === "object" ? base.versao_geral : {};
-  const d = (geral ? { ...base, ...vg } : base) as Record<string, any>;
+  // Menu: a versão geral tem os botões dela (Início, Meus Cursos, Novos, Perfil); o da mentoria não vale para ela.
+  const d = (geral ? { ...base, menu_botoes: null, ...vg } : base) as Record<string, any>;
   return {
     versao: geral ? "geral" : "mentoria",
     aparencia: (d?.aparencia ?? null) as Record<string, unknown> | null,

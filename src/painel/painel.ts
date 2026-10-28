@@ -434,7 +434,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   // Duas versões do app (0103): a versão geral guarda só o que muda, por cima da mentoria.
   const cfgBase = (cfgIni.data ?? {}) as Record<string, any>;
   const geralRaw = (cfgBase.versao_geral && typeof cfgBase.versao_geral === "object" ? cfgBase.versao_geral : {}) as Record<string, unknown>;
-  const cd: Record<string, any> = versaoCfg === "geral" ? { ...cfgBase, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia } : cfgBase;
+  const cd: Record<string, any> = versaoCfg === "geral" ? { ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia } : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
@@ -2709,12 +2709,15 @@ export function montar(app: HTMLElement) {
     material: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h6M9 17h6"/></svg>`,
     balao: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-4 3.5V16H4z"/></svg>`,
     trofeu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>`,
+    estrela: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2l2.5 5.1 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z"/></svg>`,
     coroa: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17L3 7l5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/></svg>`,
   };
-  const NOME_IC_APP: Record<string, string> = {"inicio": "Casa", "modulos": "Grade", "presentes": "Presente", "perfil": "Pessoa", "play": "Play", "engrenagem": "Engrenagem", "livro": "Livro", "material": "Documento", "balao": "Balão", "trofeu": "Troféu", "coroa": "Coroa"};
+  const NOME_IC_APP: Record<string, string> = {"inicio": "Casa", "modulos": "Grade", "presentes": "Presente", "perfil": "Pessoa", "play": "Play", "engrenagem": "Engrenagem", "livro": "Livro", "material": "Documento", "balao": "Balão", "trofeu": "Troféu", "estrela": "Estrela", "coroa": "Coroa"};
   const CORES_MENU_PADRAO = { fundo: "#0b0b0d", inativo: "#a8a8a8", ativo: "#d4af37", texto: "#f1e6c9" };
   /** Os botões que o app mostra hoje, na ordem (Início, Módulos, cada botão publicado, Perfil). */
   function menuBase(): BotaoMenu[] {
+    // Versão geral (0103): o menu do desenho — Início, Meus Cursos, Novos e Perfil.
+    if (versaoCfg === "geral") return [{ id: "inicio", rotulo: "Início", icone: "inicio", visivel: true }, { id: "meus", rotulo: "Meus Cursos", icone: "livro", visivel: true }, { id: "novos", rotulo: "Novos", icone: "estrela", visivel: true }, { id: "perfil", rotulo: "Perfil", icone: "perfil", visivel: true }];
     const jorCat = S.cursos.find((c) => c.id === S.config.jornada)?.cat;
     return [{ id: "inicio", rotulo: "Início", icone: "inicio", visivel: true }, { id: "modulos", rotulo: "Módulos", icone: "modulos", visivel: true },
       ...S.cats.filter((k) => k.pub && k.id !== jorCat).map((k) => ({ id: "aba:" + k.id, rotulo: k.nome, icone: k.icone || "presentes", visivel: true })),

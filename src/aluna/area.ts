@@ -188,7 +188,7 @@ export function montar(raiz: HTMLElement) {
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
           id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
-          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
+          itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, criado: a.criadoEm || "", titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
       }));
     const pj = cat.produtos.find((x) => x.id === jornada);
@@ -310,6 +310,8 @@ export function montar(raiz: HTMLElement) {
 
   /* ---------- ícones (da maquete) ---------- */
   const ICONES = {
+    meus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 7.9 4.8 4 4.8v13c3.9 0 6.4.6 8 1.8 1.6-1.2 4.1-1.8 8-1.8v-13c-3.9 0-6.4.6-8 1.8z"/><path d="M12 6.6v13"/></svg>',
+    novos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.2l2.5 5.1 5.6.8-4 3.9 1 5.5-5.1-2.7-5.1 2.7 1-5.5-4-3.9 5.6-.8z"/></svg>',
     resumo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>',
     exercicio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l1.5 1.5L8 5M4 12l1.5 1.5L8 11M4 18l1.5 1.5L8 17M11 6h9M11 12h9M11 18h9"/></svg>',
     mais: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5.5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="18.5" r="1.8"/></svg>',
@@ -343,7 +345,8 @@ export function montar(raiz: HTMLElement) {
    */
   const ABAS = () => (D && D.abas) || null;
   const abaAtual = () => { const l = ABAS(); if (!l || !l.length) return null; return l.find((a) => a.id === S.aba) || l.find((a) => /presente/i.test(a.titulo)) || l[0]; };
-  const NAVL_BASE = () => { const l = ABAS(); return [["inicio", "Início"], ...(GERAL ? [] : [["modulos", "Módulos"]]), ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
+  // Versão geral (0103): Início, Meus Cursos, Novos e Perfil, como no desenho.
+  const NAVL_BASE = () => { const l = ABAS(); if (GERAL) return [["inicio", "Início"], ["meus", "Meus Cursos", "meus"], ["novos", "Novos", "novos"], ["perfil", "Perfil"]]; return [["inicio", "Início"], ["modulos", "Módulos"], ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
   /** Menu do app como o painel deixou (Configurações → Menu inferior): ordem, nome, ícone, cor, visível e links extras. */
   const MENU = () => (D && D.inicio && D.inicio.menu) || { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" };
   const NAVL = () => {
@@ -402,11 +405,11 @@ export function montar(raiz: HTMLElement) {
     if (!S.entrou && S.saiu) { document.body.classList.add("sem-nav"); app.innerHTML = telaSaiu(); return; }
     if (!S.entrou) { document.body.classList.add("sem-nav"); app.innerHTML = telaEntrada(); return; }
     document.body.classList.remove("sem-nav");
-    const telas = { inicio: telaInicio, modulos: telaModulos, modulo: telaModulo, aula: telaAula, presentes: telaPresentes, categoria: telaCategoria, cursoPres: telaCursoPres, presente: telaPresente, opcao: telaOpcao, perfil: telaPerfil, jornada: telaJornada, leitor: telaLeitor };
+    const telas = { meus: telaMeus, novos: telaNovos, inicio: telaInicio, modulos: telaModulos, modulo: telaModulo, aula: telaAula, presentes: telaPresentes, categoria: telaCategoria, cursoPres: telaCursoPres, presente: telaPresente, opcao: telaOpcao, perfil: telaPerfil, jornada: telaJornada, leitor: telaLeitor };
     if (!telas[S.tela]) S.tela = "inicio";
     const n = navAtual();
     app.innerHTML = `
-      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" || (GERAL && S.tela === "inicio") ? "" : `<header class="topo"><div class="pagina">
+      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" || (GERAL && (S.tela === "inicio" || S.tela === "meus" || S.tela === "novos")) ? "" : `<header class="topo"><div class="pagina">
         <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
         <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
@@ -611,6 +614,7 @@ export function montar(raiz: HTMLElement) {
     if (!cursoLiberado(curso)) return { selo: "Bloqueado", sub: "Liberação pela administração", cls: "ig-tr" };
     if (ehEbook(curso)) return { selo: "E-book", sub: "Leitura completa", cls: "ig-ouro" };
     const n = curso.itens.length, t = tipoDoCurso(c, curso);
+    if (n && curso.itens.every((x) => x.tipoMidia === "pdf")) return { selo: "E-books", sub: p(n, "e-book", "e-books"), cls: "ig-ouro" };
     if (t === "freq") return { selo: "Playlist", sub: p(n, "faixa", "faixas"), cls: "ig-azul" };
     if (t === "mestres" || t === "video") return { selo: "Vídeos", sub: p(n, "vídeo", "vídeos"), cls: "ig-ouro" };
     return { selo: "Curso", sub: p(n, "aula", "aulas"), cls: "ig-ouro" };
@@ -662,7 +666,7 @@ export function montar(raiz: HTMLElement) {
         <button class="ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
         <div class="ig-ola"><span>${h(String((D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}").split("{nome}")[0].replace(/[,\s]+$/, "") || "Bem-vindo(a)")},</span><b>${h(primeiro || "aluna")}</b></div>
         <div class="ig-marca">${APAR && APAR.logo ? `<img src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `<b>${h(m.titulo || "")}</b>${m.sub ? `<span>${h(m.sub)}</span>` : ""}`}</div>
-        <div class="ig-bts">${n && n.ativo ? `<button class="ig-bt" data-a="${sinoAviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${sinoAviso ? "<i></i>" : ""}</button>` : ""}</div>
+        <div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button>${n && n.ativo ? `<button class="ig-bt" data-a="${sinoAviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${sinoAviso ? "<i></i>" : ""}</button>` : ""}</div>
       </header>
       ${slides.length ? `
       <section class="ig-hero" aria-label="Destaques">
@@ -690,6 +694,37 @@ export function montar(raiz: HTMLElement) {
       ${versNo("depois")}
       ${!filas.length ? `<div class="vazio" style="margin:22px 16px">Em breve, conteúdos para você.</div>` : ""}
     </div>`;
+  }
+  /** Cabeçalho das telas da versão geral (Meus Cursos, Novos). */
+  const cabIg = (tit, sub) => `<header class="ig-topo ig-topo-tela"><div class="ig-ola"><b class="ig-tela-tit">${h(tit)}</b>${sub ? `<span>${h(sub)}</span>` : ""}</div><div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button></div></header>`;
+  /** Meus Cursos (versão geral): só o que está liberado para ela. */
+  function telaMeus() {
+    const meus = PRESENTES().filter((x) => cursoLiberado(x.curso));
+    return `<div class="ig">${cabIg("Meus Cursos", meus.length ? p(meus.length, "conteúdo liberado", "conteúdos liberados") : "")}
+      ${meus.length ? `<div class="ig-grade">${meus.map(cardIg).join("")}</div>` : `<div class="vazio" style="margin:22px 16px">Nenhum conteúdo liberado ainda. Assim que liberar, ele aparece aqui.</div>`}</div>`;
+  }
+  /** Novos (versão geral): os conteúdos que entraram por último, os mais novos primeiro. */
+  function telaNovos() {
+    const todos = PRESENTES().flatMap((x) => x.curso.itens.map((t, j) => ({ x, t, j })));
+    const novos = todos.filter((o) => o.t.criado).sort((a, b) => b.t.criado.localeCompare(a.t.criado)).slice(0, 30);
+    return `<div class="ig">${cabIg("Novos", "Os conteúdos que chegaram por último")}
+      ${novos.length ? `<div class="ig-grade">${novos.map((o) => itemIg(o.x, o.t, o.j)).join("")}</div>` : `<div class="vazio" style="margin:22px 16px">Em breve, novidades para você.</div>`}</div>`;
+  }
+  /** Busca do topo (versão geral): procura nos cursos e nos conteúdos pelo nome. */
+  function abrirBuscaIg() {
+    folha(`<h2 class="serif" style="margin:0 0 10px">Buscar</h2><input class="ig-busca-in" type="search" placeholder="Nome do curso, e-book ou conteúdo" autocomplete="off" aria-label="Buscar" /><div class="ig-busca-res"></div>`);
+    const inp = camada.querySelector(".ig-busca-in"), res = camada.querySelector(".ig-busca-res");
+    const norm = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const achar = () => {
+      const q = norm(inp.value.trim()); if (q.length < 2) { res.innerHTML = ""; return; }
+      const out = [];
+      for (const x of PRESENTES()) {
+        if (norm(x.curso.nome).includes(q)) out.push(`<button ${ehEbook(x.curso) ? 'data-a="ebook"' : 'data-a="curso-pres"'} data-v="${x.ci}-${x.i}"><b>${h(x.curso.nome)}</b><em>${h(x.c.nome)}</em></button>`);
+        x.curso.itens.forEach((t, j) => { if (norm(t.titulo).includes(q)) out.push(`<button data-a="presente" data-v="${x.ci}-${x.i}-${j}"><b>${h(t.titulo)}</b><em>${h(x.curso.nome)}</em></button>`); });
+      }
+      res.innerHTML = out.slice(0, 30).join("") || `<p class="apoio">Nada encontrado.</p>`;
+    };
+    inp.addEventListener("input", achar); inp.focus();
   }
   /** Carrossel do Início geral: os pontinhos e o "01 / 05" seguem o deslize; passa sozinho a cada 6 s. */
   let igTimer = 0;
@@ -2066,6 +2101,7 @@ export function montar(raiz: HTMLElement) {
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
         if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": libera em breve."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "dest-fechado": aviso("Em breve, só para você."); return;
+      case "ig-busca": abrirBuscaIg(); return;
       case "ig-slide": { const tr = app.querySelector("[data-ig-trilho]"); if (tr) tr.scrollTo({ left: +d.v * tr.clientWidth, behavior: "smooth" }); return; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
