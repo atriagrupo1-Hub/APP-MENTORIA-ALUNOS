@@ -693,6 +693,8 @@ export function montar(app: HTMLElement) {
     try { if (eu) S = await lerTudo(eu); } catch (e) { toast(motivo(e)); }
     ocupado = false;
     render();
+    // Salvou algo com o celular da prévia à vista: ele recarrega com o que ficou gravado.
+    if (celReal && celReal.style.display !== "none") recarregarCel();
   }
 
   /* ---------- moldura ---------- */
@@ -820,7 +822,7 @@ export function montar(app: HTMLElement) {
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
-    posicionarCel();
+    posicionarCel(); mandarPreviaCfg();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -2526,7 +2528,7 @@ export function montar(app: HTMLElement) {
         ${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div><div class="pv-botao">Continuar assistindo</div>` : ""}</div>
       <nav class="pv-nav">${[["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"]].map(([ic, nm], i) => `<span${i === 0 ? ' class="on"' : ""}>${IC_CFG[ic]}<em>${nm}</em></span>`).join("")}</nav></div>`;
   }
-  function redesenharApar() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaApar(); }
+  function redesenharApar() { mandarPreviaCfg(); }
   function cfgPerfil() {
     const t = S.config.telas, bts = S.config.perfBotoes;
     return `
@@ -2686,12 +2688,14 @@ export function montar(app: HTMLElement) {
       <div class="pv-rolo"><section class="pv-ola"><h4>${h((S.config.saudacao || "Bem-vindo(a), {nome}").replace("{nome}", "aluna"))}</h4>${S.config.fraseRetorno ? `<p>${h(S.config.fraseRetorno)}</p>` : ""}${vs ? `<figure class="pv-vers"><small>Versículo de hoje</small><blockquote>“${h(vs.texto)}”</blockquote><figcaption>${h(vs.ref)}</figcaption></figure>` : ""}</section>${jor ? `<div class="pv-mentoria"><small>Sua mentoria</small><b>${h(jor.nome)}</b><span>Continue de onde parou</span></div>` : ""}</div>
       <nav class="pv-nav pvn-${h(M.estilo)} pvn-${h(M.tamanho)}" style="--nb-fundo:${h(c.fundo)};--nb-inativo:${h(c.inativo)};--nb-ativo:${h(c.ativo)};--nb-texto:${h(c.texto)}">${vis.map((b, i) => `<span${i === 0 ? ' class="on"' : ""}${i === 0 && b.cor ? ` style="--nb-ativo:${h(b.cor)}"` : ""}>${IC_APP[b.icone || "inicio"] || IC_APP.inicio}<em>${h(b.rotulo)}</em></span>`).join("")}</nav></div>`;
   }
-  function redesenharMenuCfg() { const pv = document.getElementById("cfgPrevia"); if (pv) pv.innerHTML = previaMenu(); }
-  const previaCfgBox = (miolo: string, extra = "") => `
+  function redesenharMenuCfg() { mandarPreviaCfg(); }
+  /** A prévia de todas as abas de Configurações é o app de verdade (o mesmo celular do Início). */
+  const previaCfgBox = (_miolo: string, extra = "") => `
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
             <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
-          ${extra}<div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia}" id="cfgPrevia">${miolo}</div></div>
+          ${extra}<div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia"><div class="pv-real-alvo" id="cfgCel"></div></div></div>
+          <p class="cfg-pvnota">É o app de verdade, com o que está publicado e o que você mudou aqui (ainda sem salvar). Role com o mouse dentro do celular.</p>
         </aside>`;
   /** Moldura comum da prévia (topo com o nome, rolagem e o menu do app). */
   function pvTela(ativo: string, miolo: string) {
@@ -4455,6 +4459,23 @@ export function montar(app: HTMLElement) {
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
     fr.contentWindow?.postMessage({ tipo: "previa-inicio", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha } }, location.origin);
   }
+  /** Manda para o app da prévia o que está sendo editado na aba aberta de Configurações (ainda sem salvar). */
+  function mandarPreviaCfg() {
+    const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
+    const aba = ui.cfgAba;
+    if (aba === "inicio") { mandarPreviaInicio(); return; }
+    const t = valoresTelas(document.querySelector<HTMLFormElement>("#cfgTelas"));
+    const hex = (x: string) => (/^#[0-9a-f]{6}$/i.test(x || "") ? x.toLowerCase() : "");
+    const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio" };
+    if (aba === "modulos") Object.assign(msg, { ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim() || "Todos os módulos", modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho } });
+    else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim() || "Presentes", presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
+    else if (aba === "versiculos") Object.assign(msg, { vers: { exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
+    else if (aba === "perfil") Object.assign(msg, { ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim() || "Seu perfil", saudacao: (t.perfSaud || "").trim() || "{nome_completo}", imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
+    else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
+    else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
+    else return;
+    fr.contentWindow?.postMessage(JSON.parse(JSON.stringify(msg)), location.origin);
+  }
   /**
    * Configurações: a página não rola; rola só o formulário (lado esquerdo) e o
    * miolo do celular. A prévia fica parada. A altura vem de onde a grade começa.
@@ -4484,7 +4505,7 @@ export function montar(app: HTMLElement) {
     if (!celReal) {
       celReal = document.createElement("div"); celReal.className = "cel-real";
       const fr = document.createElement("iframe"); fr.title = "Prévia do app da aluna"; fr.src = "/?previa=1";
-      fr.addEventListener("load", () => { celPronto = false; setTimeout(() => { celPronto = true; mandarPreviaInicio(); }, 2500); });
+      fr.addEventListener("load", () => { celPronto = false; setTimeout(() => { celPronto = true; mandarPreviaCfg(); }, 2500); });
       celReal.append(fr); document.body.append(celReal);
     }
     const r = alvo.getBoundingClientRect(), comp = ui.cfgPrevia === "computador";
@@ -4506,7 +4527,7 @@ export function montar(app: HTMLElement) {
   /** Redesenha só a prévia do app em Configurações → Início (o formulário continua como está). */
   function atualizarPreviaCfg() {
     const ft = document.querySelector<HTMLFormElement>("#cfgTelas"), pvt = document.getElementById("cfgPrevia");
-    if (ft && pvt) { const t = valoresTelas(ft); pvt.innerHTML = ft.dataset.tela === "modulos" ? previaModulos(t) : ft.dataset.tela === "perfil" ? previaPerfil(t) : ft.dataset.tela === "versiculos" ? previaVers(t) : previaPresentes(t); return; }
+    if (ft && pvt) { mandarPreviaCfg(); return; }
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"), pv = document.getElementById("cfgPrevia");
     if (!f || !pv) return;
     const v = valoresInicio(f);

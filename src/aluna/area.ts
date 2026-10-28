@@ -25,8 +25,23 @@ export function montar(raiz: HTMLElement) {
     window.addEventListener("message", (ev) => {
       if (ev.origin !== location.origin || !D || !D.inicio) return;
       const m = ev.data || {};
+      // As outras abas de Configurações: o que está sendo editado entra por cima do salvo, e a tela vai para onde se mexe.
+      if (m.tipo === "previa-cfg") {
+        const I = D.inicio;
+        if (m.telas) I.telas = { ...(I.telas || {}), ...m.telas };
+        if (m.vers) I.vers = { ...(I.vers || {}), ...m.vers };
+        if (m.perfil) I.perfil = { ...(I.perfil || {}), ...m.perfil };
+        if (m.notif) I.notif = m.notif;
+        if (m.menu) I.menu = m.menu;
+        if (m.apar) { APAR = m.apar; aplicarAparencia(m.apar, (c) => (c && (c.startsWith("data:") || c.startsWith("blob:")) ? c : api.urlDaCapa(c) || "")); }
+        if (m.ir && m.ir !== S.previaIr) { S.previaIr = m.ir; camada.innerHTML = ""; acao("ir", { v: m.ir }); }
+        render();
+        camada.innerHTML = m.pop && I.notif ? popNotif(I.notif) : camada.querySelector(".fundo-folha") ? camada.innerHTML : "";
+        return;
+      }
       if (m.tipo !== "previa-inicio") return;
       const I = D.inicio;
+      if (S.tela !== "inicio") { S.previaIr = "inicio"; camada.innerHTML = ""; acao("ir", { v: "inicio" }); }
       if (!I._destOrig) I._destOrig = I.destaques || [];
       I.marca = { titulo: m.titulo || "", sub: m.sub || "" };
       I.fraseRetorno = m.frase || "";
