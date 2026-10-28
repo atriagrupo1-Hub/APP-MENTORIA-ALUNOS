@@ -93,8 +93,9 @@ export function montar(raiz: HTMLElement) {
   /** Atributo style com o estilo escolhido no painel (vazio = visual padrão). */
   const est = (e, parte, tipo, extra = "") => { const css = cssVisual(e && e[parte], tipo); return css || extra ? ` style="${[extra, css].filter(Boolean).join(";")}"` : ""; };
   // Aparência do painel (tema, cores, fontes, imagens) — vale também na tela de entrada.
-  let APAR = null;
+  let APAR = null, APAR_GERAL = false;
   void api.aparenciaDoApp().then((a) => {
+    if (APAR_GERAL) return; // a versão geral já pôs a aparência dela
     APAR = a;
     if (a && a.tema === "claro" && !ler("aion-tema", "")) { S.tema = "claro"; }
     aplicarAparencia(a, (c) => api.urlDaCapa(c) || "");
@@ -143,21 +144,28 @@ export function montar(raiz: HTMLElement) {
   });
   let S = ini();
   let D = null; // dados vindos do banco
+  // Versão geral (0103): aluna sem a mentoria. Sem Módulos e sem "Sua mentoria"; o Início mostra os conteúdos dela.
+  let GERAL = false;
 
   /* ---------- dados ---------- */
   async function carregar() {
     // Tudo de uma vez: a pergunta dos presentes sai assim que o catálogo chega,
     // sem esperar o resto.
+    // Versão do app (0103): na prévia do painel vem do painel; para a aluna, o banco decide pelos acessos dela.
+    const pVersao = PREVIA_PAINEL ? Promise.resolve(new URLSearchParams(location.search).get("versao") === "geral" ? "geral" : "mentoria") : api.minhaVersao().catch(() => "mentoria");
     const pCat = api.carregarCatalogo();
     const pProd = pCat.then((c) => api.produtosLiberados(c.produtos.filter((x) => x.id !== c.produtoJornada && !x.modulos.length).map((x) => x.id))).catch(() => new Set());
-    const [perfil, cat, libs, abert, prodLib, inicio] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd, api.dadosDoInicio().catch(() => null)]);
+    const [perfil, cat, libs, abert, prodLib, inicio] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd, pVersao.then((v) => api.dadosDoInicio(v === "geral")).catch(() => null)]);
+    GERAL = (await pVersao) === "geral";
+    // A versão geral pode ter a sua própria aparência (Configurações → Versão geral → Aparência).
+    if (GERAL && inicio && inicio.aparencia) { APAR_GERAL = true; APAR = inicio.aparencia; aplicarAparencia(APAR, (c) => api.urlDaCapa(c) || ""); }
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
     const jornada = cat.produtoJornada;
     // Categoria Desativada no painel: some daqui inteira. Bloqueada aparece, com cadeado.
     const catOculta = new Set(cat.categorias.filter((c) => c.publicado === false).map((c) => c.id));
     const jornadaOculta = (() => { const pj = cat.produtos.find((x) => x.id === jornada); return !!(pj && catOculta.has(pj.categoriaId)); })();
     const mods = cat.modulos
-      .filter((m) => !jornadaOculta && (jornada ? m.produtoId === jornada : true))
+      .filter((m) => !GERAL && !jornadaOculta && (jornada ? m.produtoId === jornada : true))
       .sort((a, b) => a.ordem - b.ordem || a.numero - b.numero)
       .map((m, k) => {
         const vivo = cat.aoVivo[m.id];
@@ -335,7 +343,7 @@ export function montar(raiz: HTMLElement) {
    */
   const ABAS = () => (D && D.abas) || null;
   const abaAtual = () => { const l = ABAS(); if (!l || !l.length) return null; return l.find((a) => a.id === S.aba) || l.find((a) => /presente/i.test(a.titulo)) || l[0]; };
-  const NAVL_BASE = () => { const l = ABAS(); return [["inicio", "Início"], ["modulos", "Módulos"], ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
+  const NAVL_BASE = () => { const l = ABAS(); return [["inicio", "Início"], ...(GERAL ? [] : [["modulos", "Módulos"]]), ...(l ? l.map((a) => ["aba:" + a.id, a.titulo, a.icone]) : [["presentes", "Presentes"]]), ["perfil", "Perfil"]]; };
   /** Menu do app como o painel deixou (Configurações → Menu inferior): ordem, nome, ícone, cor, visível e links extras. */
   const MENU = () => (D && D.inicio && D.inicio.menu) || { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" };
   const NAVL = () => {
@@ -583,7 +591,29 @@ export function montar(raiz: HTMLElement) {
   }
   // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
   const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `<b>${h(m.titulo || "")}</b><span>${h(m.sub || "")}</span>`; };
+  /** Início da versão geral: boas-vindas, versículo, banner, destaques e os conteúdos (sem a mentoria). */
+  function telaInicioGeral() {
+    const primeiro = (S.nome || "").split(" ")[0];
+    const lista = PRESENTES();
+    const meus = lista.filter((x) => cursoLiberado(x.curso)), outros = lista.filter((x) => !cursoLiberado(x.curso));
+    return `
+    <div class="pa">
+      <section class="pa-ola${estiloOla()}">
+        ${versNo("topo")}
+        <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
+        ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
+        ${versNo("mensagem")}
+      </section>
+      ${bannerInicio()}
+      ${meus.length ? `<section class="mt-bloco ig-bloco" aria-labelledby="h-meus"><div class="mt-cab"><p class="mt-rot" id="h-meus">Seus conteúdos</p></div><div class="cat-grade">${meus.map(cartaoPresente).join("")}</div></section>` : ""}
+      ${versNo("depois")}
+      ${cartoesDestaque()}
+      ${outros.length ? `${divisorIni()}<div class="cat-grade">${outros.map(cartaoPresente).join("")}</div>` : ""}
+      ${!lista.length ? `<div class="vazio" style="margin-top:22px">Em breve, conteúdos para você.</div>` : ""}
+    </div>`;
+  }
   function telaInicio() {
+    if (GERAL) return telaInicioGeral();
     // Primeiro acesso: nenhuma aula concluída nem começada (o progresso vem do banco).
     // Uma linha de progresso existe quando a aula foi começada (tem data de atualização).
     const primeiraVez = !D || ![...D.prog.values()].some((l) => l.concluida || (l.posicaoSegundos || 0) > 0 || !!l.atualizadaEm);

@@ -125,6 +125,8 @@ type Pessoa = {
 type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string; perms: string[]; abasBloq: string[] };
 
 type Dados = {
+  /** O que a versão geral (0103) muda por cima da mentoria, como está no banco. */
+  geralRaw: Record<string, unknown>;
   cats: Cat[]; catsAba: CatAba[]; catItens: { id: string; cat: string; tipo: "curso" | "modulo" | "aula"; item: string }[]; cursos: Curso[]; alunas: Aluna[];
   comentarios: Comentario[]; removidos: Comentario[]; equipe: Pessoa[];
   historico: Hist[]; sessoes: Sessao[]; sugestoes: Sugestao[];
@@ -246,6 +248,8 @@ async function carregarFotos(): Promise<boolean> {
 }
 /** Liberação de cada aula pelas alunas: a próxima data marcada e a última já aberta. */
 const libPorAula = new Map<string, { prox: string; ult: string }>();
+/** Qual versão do app está sendo configurada em Configurações (0103). */
+let versaoCfg: "mentoria" | "geral" = "mentoria";
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
@@ -273,7 +277,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -427,20 +431,25 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     }));
   }
 
+  // Duas versões do app (0103): a versão geral guarda só o que muda, por cima da mentoria.
+  const cfgBase = (cfgIni.data ?? {}) as Record<string, any>;
+  const geralRaw = (cfgBase.versao_geral && typeof cfgBase.versao_geral === "object" ? cfgBase.versao_geral : {}) as Record<string, unknown>;
+  const cd: Record<string, any> = versaoCfg === "geral" ? { ...cfgBase, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia } : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
-    config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", saudacao: cfgIni.data?.inicio_saudacao ?? "Bem-vindo(a), {nome}", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
-      telas: { modTitulo: cfgIni.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfgIni.data?.modulos_titulo_estilo ?? "padrao", modProgresso: cfgIni.data?.modulos_progresso === false ? "nao" : "sim", modLayout: cfgIni.data?.modulos_layout ?? "padrao", modTamanho: cfgIni.data?.modulos_tamanho ?? "medio", presTitulo: cfgIni.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfgIni.data?.presentes_titulo_estilo ?? "padrao", presLayout: cfgIni.data?.presentes_layout ?? "grandes", presEstilo: cfgIni.data?.presentes_estilo ?? "padrao",
-        perfTitulo: cfgIni.data?.perfil_titulo ?? "Seu perfil", perfSaud: cfgIni.data?.perfil_saudacao ?? "{nome_completo}", perfImagem: cfgIni.data?.perfil_imagem ?? "nenhum", perfTexto: cfgIni.data?.perfil_texto ?? "", perfLayout: cfgIni.data?.perfil_layout ?? "padrao",
-        vExibir: cfgIni.data?.vers_exibir === false ? "nao" : "sim", vEstilo: cfgIni.data?.vers_estilo ?? "caixa", vPosicao: cfgIni.data?.vers_posicao ?? "mensagem", vRef: cfgIni.data?.vers_referencia === false ? "nao" : "sim", vFundo: cfgIni.data?.vers_fundo ?? "escuro", vFonte: cfgIni.data?.vers_fonte ?? "serifa", vTamanho: cfgIni.data?.vers_tamanho ?? "medio",
-        vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
-      perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
-      aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
-      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""), estiloAula: limparEstilo(cfgIni.data?.estilo_aula), estiloInicio: limparEstilo(cfgIni.data?.estilo_inicio), estiloPerfil: limparEstilo(cfgIni.data?.estilo_perfil), estiloNotif: limparEstilo(cfgIni.data?.estilo_notif), divisor: divisorDe(cfgIni.data?.inicio_divisor),
-      menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
+    config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
+      telas: { modTitulo: cd.modulos_titulo ?? "Todos os módulos", modTitEstilo: cd.modulos_titulo_estilo ?? "padrao", modProgresso: cd.modulos_progresso === false ? "nao" : "sim", modLayout: cd.modulos_layout ?? "padrao", modTamanho: cd.modulos_tamanho ?? "medio", presTitulo: cd.presentes_titulo ?? "Presentes", presTitEstilo: cd.presentes_titulo_estilo ?? "padrao", presLayout: cd.presentes_layout ?? "grandes", presEstilo: cd.presentes_estilo ?? "padrao",
+        perfTitulo: cd.perfil_titulo ?? "Seu perfil", perfSaud: cd.perfil_saudacao ?? "{nome_completo}", perfImagem: cd.perfil_imagem ?? "nenhum", perfTexto: cd.perfil_texto ?? "", perfLayout: cd.perfil_layout ?? "padrao",
+        vExibir: cd.vers_exibir === false ? "nao" : "sim", vEstilo: cd.vers_estilo ?? "caixa", vPosicao: cd.vers_posicao ?? "mensagem", vRef: cd.vers_referencia === false ? "nao" : "sim", vFundo: cd.vers_fundo ?? "escuro", vFonte: cd.vers_fonte ?? "serifa", vTamanho: cd.vers_tamanho ?? "medio",
+        vCorTexto: (cd.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cd.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cd.vers_cores as Record<string, string> | null)?.fundo ?? "" },
+      perfBotoes: Array.isArray(cd.perfil_botoes) ? (cd.perfil_botoes as BotaoPerfil[]) : [],
+      aparencia: (cd.aparencia as Aparencia | null) ?? null,
+      notif: notifDe(cd.notif), capaGuia: String(cd.capa_guia ?? ""), estiloAula: limparEstilo(cd.estilo_aula), estiloInicio: limparEstilo(cd.estilo_inicio), estiloPerfil: limparEstilo(cd.estilo_perfil), estiloNotif: limparEstilo(cd.estilo_notif), divisor: divisorDe(cd.inicio_divisor),
+      menu: { botoes: Array.isArray(cd.menu_botoes) ? (cd.menu_botoes as BotaoMenu[]) : null, estilo: cd.menu_estilo ?? "padrao", cores: (cd.menu_cores as Record<string, string> | null) ?? null, tamanho: cd.menu_tamanho ?? "medio" } },
+    geralRaw,
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
       id: x.id, imagem: x.imagem_path ?? "", rotulo: x.rotulo, titulo: x.titulo, descricao: x.descricao ?? "", botao: x.botao,
@@ -509,7 +518,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
+  let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -679,6 +688,18 @@ export function montar(app: HTMLElement) {
    * Toda escrita passa por aqui: chama o banco, avisa, relê e redesenha.
    * Se o banco recusar, a tela diz por quê e mostra o que o banco tem.
    */
+  /**
+   * Grava em Configurações respeitando a versão aberta (0103): na versão
+   * mentoria, nas colunas de sempre; na versão geral, por cima, em
+   * `versao_geral`. O curso da mentoria e o guia das capas valem para as duas.
+   */
+  async function cfgUpdate(obj: Record<string, unknown>) {
+    if (versaoCfg !== "geral") return supabase.from("configuracoes").update(obj).not("id", "is", null).select("id");
+    const dir: Record<string, unknown> = {}, vg: Record<string, unknown> = { ...S.geralRaw };
+    for (const [k, v] of Object.entries(obj)) (k === "capa_guia" || k === "produto_jornada" ? dir : vg)[k] = v;
+    S.geralRaw = vg;
+    return supabase.from("configuracoes").update({ ...dir, versao_geral: vg }).not("id", "is", null).select("id");
+  }
   async function executar(fn: () => Promise<Resultado>) {
     if (ocupado) return;
     ocupado = true;
@@ -2658,7 +2679,7 @@ export function montar(app: HTMLElement) {
       ${t.perfTexto ? `<p class="pv-ptxt">${h(t.perfTexto)}</p>` : ""}</div>`);
   }
   async function salvarBotoesPerfil(lista: BotaoPerfil[], msg: string) {
-    falhou(await supabase.from("configuracoes").update({ perfil_botoes: lista }).not("id", "is", null).select("id"));
+    falhou(await cfgUpdate({ perfil_botoes: lista }));
     await registrar(null, "Mudou os botões do Perfil da área de membros");
     return msg;
   }
@@ -2843,7 +2864,11 @@ export function montar(app: HTMLElement) {
     }
     return `
     <section class="tela ativa cfg2">
-      <div class="cfg-abas" role="tablist">${ABAS_CFG.map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}${ehDono() && Object.values(S.ajudas).some((x) => x.removida) ? `<button type="button" class="link cfg-aj-rest" data-a="ajudas-restaurar">Restaurar interrogações removidas (${Object.values(S.ajudas).filter((x) => x.removida).length})</button>` : ""}</div>
+      <div class="cfg-versao" role="group" aria-label="Versão do app">
+        <span class="cfg-versao-rot">Você está configurando ${dicaCampo(`O app tem duas versões. A versão mentoria é a de quem tem acesso à mentoria (a de sempre). A versão geral é a de quem só tem outros produtos: sem Módulos e sem “Sua mentoria”, com o Início mostrando os conteúdos dela. Quem decide é o acesso da aluna: dar a mentoria para ela em Alunas muda o app dela para a versão mentoria; tirar, volta para a geral. Cada versão tem as suas cores, textos, menu, Perfil e aparência.`, "cfg.versoes")}</span>
+        <span class="cfg-versao-seg">${([["mentoria", "Versão mentoria", "Quem tem a mentoria"], ["geral", "Versão geral", "Quem só tem outros produtos"]] as const).map(([k, t, d]) => `<button type="button" data-a="cfg-versao" data-v="${k}" aria-pressed="${versaoCfg === k}"><b>${t}</b><em>${d}</em></button>`).join("")}</span>
+      </div>
+      <div class="cfg-abas" role="tablist">${ABAS_CFG.filter(([k]) => versaoCfg !== "geral" || (k !== "modulos" && k !== "aulas")).map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}${ehDono() && Object.values(S.ajudas).some((x) => x.removida) ? `<button type="button" class="link cfg-aj-rest" data-a="ajudas-restaurar">Restaurar interrogações removidas (${Object.values(S.ajudas).filter((x) => x.removida).length})</button>` : ""}</div>
       ${corpo}
     </section>`;
   }
@@ -4565,6 +4590,8 @@ export function montar(app: HTMLElement) {
   // Se o celular desenhado mudar de tamanho (tela, fontes, imagens), o app de dentro acompanha na hora.
   let celObservado: HTMLElement | null = null;
   const celRO = new ResizeObserver(() => posicionarCel());
+  /** O app da prévia abre na versão que está sendo configurada (0103). */
+  const srcPrevia = () => "/?previa=1" + (versaoCfg === "geral" ? "&versao=geral" : "");
   function posicionarCel() {
     const alvo = document.getElementById("cfgCel");
     if (alvo !== celObservado) { celRO.disconnect(); celObservado = alvo; if (alvo) celRO.observe(alvo); }
@@ -4573,7 +4600,7 @@ export function montar(app: HTMLElement) {
     if (celReal && celReal.style.display === "none") recarregarCel();
     if (!celReal) {
       celReal = document.createElement("div"); celReal.className = "cel-real";
-      const fr = document.createElement("iframe"); fr.title = "Prévia do app da aluna"; fr.src = "/?previa=1";
+      const fr = document.createElement("iframe"); fr.title = "Prévia do app da aluna"; fr.src = srcPrevia();
       fr.addEventListener("load", () => { celPronto = false; setTimeout(() => { celPronto = true; mandarPreviaCfg(); }, 2500); });
       celReal.append(fr); document.body.append(celReal);
     }
@@ -5425,7 +5452,7 @@ export function montar(app: HTMLElement) {
       case "dest-editar": ui.destEditar = d.id; break;
       case "dest-exibir": {
         const on = !S.config.exibirDestaques;
-        void executar(async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: on, inicio_banner: on ? "card" : "nenhum" }).not("id", "is", null).select("id")); await registrar(null, (on ? "Exibiu" : "Escondeu") + " os destaques do Início"); return { msg: on ? "Os destaques aparecem no Início." : "Os destaques foram escondidos do Início.", texto: "exibição dos destaques", desfazer: async () => { falhou(await supabase.from("configuracoes").update({ exibir_destaques: !on }).not("id", "is", null).select("id")); } }; });
+        void executar(async () => { falhou(await cfgUpdate({ exibir_destaques: on, inicio_banner: on ? "card" : "nenhum" })); await registrar(null, (on ? "Exibiu" : "Escondeu") + " os destaques do Início"); return { msg: on ? "Os destaques aparecem no Início." : "Os destaques foram escondidos do Início.", texto: "exibição dos destaques", desfazer: async () => { falhou(await cfgUpdate({ exibir_destaques: !on })); } }; });
         return;
       }
       case "dest-duplicar": {
@@ -5825,6 +5852,18 @@ export function montar(app: HTMLElement) {
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
+      case "cfg-versao": {
+        const nova = d.v === "geral" ? "geral" : "mentoria"; if (nova === versaoCfg) return;
+        const trocar = () => {
+          ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.prevEst = { cat: {}, mod: {}, aula: undefined, inicio: undefined, perfil: undefined, notif: undefined, foco: "" };
+          versaoCfg = nova;
+          if (nova === "geral" && (ui.cfgAba === "modulos" || ui.cfgAba === "aulas")) ui.cfgAba = "inicio";
+          const fr = celReal?.querySelector("iframe"); if (fr) { celPronto = false; fr.src = srcPrevia(); }
+          void executar(async () => (nova === "geral" ? "Configurando a versão geral (quem não tem a mentoria)." : "Configurando a versão mentoria."));
+        };
+        if (ui.sujo) { mostrarAviso(trocar); return; }
+        trocar(); return;
+      }
       case "estilo-tela": {
         const [tela, k] = String(d.v).split(":") as [TelaEst, string]; const T = TELA_EST[tela];
         const pt = T?.partes.find((x) => x.k === k); if (!pt || !el) return;
@@ -5838,7 +5877,7 @@ export function montar(app: HTMLElement) {
           aoFechar: () => { ui.prevEst[tela] = undefined; mandarPreviaCfg(); },
           aoSalvar: async (e) => {
             const novo = limparEstilo({ ...base, [pt.k]: e?.[pt.k] });
-            const r = await supabase.from("configuracoes").update({ [T.col]: novo }).not("id", "is", null).select("id");
+            const r = await cfgUpdate({ [T.col]: novo });
             if (r.error) { toast(motivo(r.error)); return false; }
             T.set(novo);
             void executar(async () => { await registrar(null, "Mudou o estilo " + T.nome + ": " + pt.nome); return "Estilo de " + pt.nome + " salvo."; });
@@ -5850,7 +5889,7 @@ export function montar(app: HTMLElement) {
       case "estilo-tela-limpar": {
         const T = TELA_EST[d.v as TelaEst]; if (!T) return;
         confirmar({ titulo: "Voltar o estilo " + T.nome + " ao padrão?", texto: "Todas as cores, contornos e sombras escolhidos aqui saem. Dá para escolher de novo depois.", rotulo: "Voltar ao padrão" }, async () => {
-          falhou(await supabase.from("configuracoes").update({ [T.col]: null }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ [T.col]: null }));
           await registrar(null, "Voltou o estilo " + T.nome + " ao padrão");
           return "Estilo " + T.nome + " voltou ao padrão.";
         });
@@ -6134,7 +6173,7 @@ export function montar(app: HTMLElement) {
         return;
       case "cfg-retorno": {
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ frase_retorno: v("fraseRetorno") }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ frase_retorno: v("fraseRetorno") }));
           await registrar(null, "Mudou a frase de retorno do Início"); return "Frase de retorno salva.";
         });
         return;
@@ -6153,7 +6192,7 @@ export function montar(app: HTMLElement) {
         const cores: Partial<Cores> = {}; for (const [k] of CORES_APAR) { const v = (A.cores || {})[k]; if (v && v.toLowerCase() !== base[k]) cores[k] = v.toLowerCase(); }
         const salvar: Aparencia = { ...A, cores: Object.keys(cores).length ? cores : null };
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ aparencia: salvar }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ aparencia: salvar }));
           await registrar(null, "Mudou a aparência da área de membros");
           ui.aparCfg = null; ui.sujo = null; return "Aparência salva.";
         });
@@ -6165,7 +6204,7 @@ export function montar(app: HTMLElement) {
         const botoes = M.botoes.map((b) => ({ id: b.id, rotulo: b.rotulo.trim() || "Botão", icone: b.icone, ...(b.cor ? { cor: b.cor } : {}), ...(b.url ? { url: b.url } : {}), visivel: b.visivel !== false }));
         const cores = JSON.stringify(M.cores) === JSON.stringify(CORES_MENU_PADRAO) ? null : M.cores;
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ menu_botoes: botoes, menu_estilo: M.estilo, menu_cores: cores, menu_tamanho: M.tamanho }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ menu_botoes: botoes, menu_estilo: M.estilo, menu_cores: cores, menu_tamanho: M.tamanho }));
           await registrar(null, "Mudou o menu inferior da área de membros");
           ui.menuCfg = null; ui.sujo = null;
           return "Menu inferior salvo.";
@@ -6191,7 +6230,7 @@ export function montar(app: HTMLElement) {
           const cores = { texto: hex(tv.vCorTexto), borda: hex(tv.vCorBorda), fundo: hex(tv.vCorFundo) };
           const iguais = cores.texto === pad.texto && cores.borda === pad.borda && cores.fundo === pad.fundo;
           void executar(async () => {
-            falhou(await supabase.from("configuracoes").update({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores }).not("id", "is", null).select("id"));
+            falhou(await cfgUpdate({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores }));
             await registrar(null, "Mudou a exibição dos versículos da área de membros");
             return "Configurações dos versículos salvas.";
           });
@@ -6199,7 +6238,7 @@ export function montar(app: HTMLElement) {
         }
         if (form.dataset.tela === "perfil") {
           void executar(async () => {
-            falhou(await supabase.from("configuracoes").update({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout, notif: notifDoForm(tv) }).not("id", "is", null).select("id"));
+            falhou(await cfgUpdate({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout, notif: notifDoForm(tv) }));
             await registrar(null, "Mudou as configurações do Perfil da área de membros");
             return "Configurações do Perfil salvas.";
           });
@@ -6209,7 +6248,7 @@ export function montar(app: HTMLElement) {
           ? { modulos_titulo: (tv.modTitulo || "").trim() || "Todos os módulos", modulos_titulo_estilo: tv.modTitEstilo, modulos_progresso: tv.modProgresso !== "nao", modulos_layout: tv.modLayout, modulos_tamanho: tv.modTamanho }
           : { presentes_titulo: (tv.presTitulo || "").trim() || "Presentes", presentes_titulo_estilo: tv.presTitEstilo, presentes_layout: tv.presLayout, presentes_estilo: tv.presEstilo };
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update(linha).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate(linha));
           await registrar(null, "Mudou as configurações de " + (mod ? "Módulos" : "Presentes") + " da área de membros");
           return "Configurações de " + (mod ? "Módulos" : "Presentes") + " salvas.";
         });
@@ -6221,7 +6260,7 @@ export function montar(app: HTMLElement) {
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }));
           delete previas["cfg-banner"];
           setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");
@@ -6231,7 +6270,7 @@ export function montar(app: HTMLElement) {
       }
       case "cfg-marca": {
         void executar(async () => {
-          falhou(await supabase.from("configuracoes").update({ marca_titulo: v("marcaTitulo"), marca_sub: v("marcaSub") }).not("id", "is", null).select("id"));
+          falhou(await cfgUpdate({ marca_titulo: v("marcaTitulo"), marca_sub: v("marcaSub") }));
           await registrar(null, "Mudou o nome do cabeçalho da área de membros"); return "Nome do cabeçalho salvo.";
         });
         return;
