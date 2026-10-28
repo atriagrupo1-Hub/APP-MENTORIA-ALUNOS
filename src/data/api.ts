@@ -813,51 +813,64 @@ export function uidStream(ref: string): string {
   return m ? m[1] : "";
 }
 
-export async function dadosDoInicio(): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; saudacao: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean }> }; notif: NotifCfg; estiloAula: Record<string, unknown> | null; estiloInicio: Record<string, unknown> | null; estiloPerfil: Record<string, unknown> | null; estiloNotif: Record<string, unknown> | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string } }> {
+/** Qual versão do app a aluna vê (0103): "mentoria" ou "geral". Quem decide é o banco, pelos acessos dela. */
+export async function minhaVersao(): Promise<"mentoria" | "geral"> {
+  const { data, error } = await supabase.rpc("minha_versao");
+  if (error) throw new Error(`versão: ${error.message}`);
+  return data === "geral" ? "geral" : "mentoria";
+}
+
+export async function dadosDoInicio(geral = false): Promise<{ marca: { titulo: string; sub: string }; fraseRetorno: string; saudacao: string; versiculos: [string, string][]; destaques: Destaque[]; banner: { tipo: string; imagem: string; video: string }; estilo: string; telas: Record<string, string | boolean>; vers: { exibir: boolean; estilo: string; posicao: string; referencia: boolean; fundo: string; fonte: string; tamanho: string; cores: Record<string, string> | null }; menu: { botoes: Array<{ id: string; rotulo: string; icone?: string; cor?: string; url?: string; visivel: boolean }> | null; estilo: string; cores: Record<string, string> | null; tamanho: string }; perfil: { titulo: string; saudacao: string; imagem: string; texto: string; layout: string; botoes: Array<{ id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean }> }; notif: NotifCfg; estiloAula: Record<string, unknown> | null; estiloInicio: Record<string, unknown> | null; estiloPerfil: Record<string, unknown> | null; estiloNotif: Record<string, unknown> | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string }; versao: string; aparencia: Record<string, unknown> | null }> {
   const [cfg, vs, ds] = await Promise.all([
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, notif, inicio_divisor, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, notif, inicio_divisor, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, aparencia, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("texto, referencia").eq("visivel", true).order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").eq("visivel", true).order("ordem").order("criado_em"),
   ]);
   for (const r of [cfg, vs, ds]) if (r.error) throw new Error(`início: ${r.error.message}`);
+  // Versão geral (0103): o que a equipe configurou para ela vale por cima do resto.
+  const base = (cfg.data ?? {}) as Record<string, any>;
+  const vg = base.versao_geral && typeof base.versao_geral === "object" ? base.versao_geral : {};
+  const d = (geral ? { ...base, ...vg } : base) as Record<string, any>;
   return {
-    marca: { titulo: cfg.data?.marca_titulo ?? "", sub: cfg.data?.marca_sub ?? "" },
-    fraseRetorno: cfg.data?.frase_retorno ?? "",
-    saudacao: cfg.data?.inicio_saudacao ?? "Bem-vindo(a), {nome}",
+    versao: geral ? "geral" : "mentoria",
+    aparencia: (d?.aparencia ?? null) as Record<string, unknown> | null,
+    marca: { titulo: d?.marca_titulo ?? "", sub: d?.marca_sub ?? "" },
+    fraseRetorno: d?.frase_retorno ?? "",
+    saudacao: d?.inicio_saudacao ?? "Bem-vindo(a), {nome}",
     banner: {
-      tipo: cfg.data?.inicio_banner ?? "card",
-      imagem: urlDaCapa(cfg.data?.inicio_banner_imagem ?? null) ?? "",
-      video: uidStream(cfg.data?.inicio_banner_video ?? ""),
+      tipo: d?.inicio_banner ?? "card",
+      imagem: urlDaCapa(d?.inicio_banner_imagem ?? null) ?? "",
+      video: uidStream(d?.inicio_banner_video ?? ""),
     },
-    estilo: cfg.data?.inicio_estilo ?? "padrao",
+    estilo: d?.inicio_estilo ?? "padrao",
     telas: {
-      modTitulo: cfg.data?.modulos_titulo ?? "Todos os módulos", modTitEstilo: cfg.data?.modulos_titulo_estilo ?? "padrao",
-      modProgresso: cfg.data?.modulos_progresso !== false, modLayout: cfg.data?.modulos_layout ?? "padrao", modTamanho: cfg.data?.modulos_tamanho ?? "medio",
-      presTitulo: cfg.data?.presentes_titulo ?? "Presentes", presTitEstilo: cfg.data?.presentes_titulo_estilo ?? "padrao",
-      presLayout: cfg.data?.presentes_layout ?? "grandes", presEstilo: cfg.data?.presentes_estilo ?? "padrao",
+      modTitulo: d?.modulos_titulo ?? "Todos os módulos", modTitEstilo: d?.modulos_titulo_estilo ?? "padrao",
+      modProgresso: d?.modulos_progresso !== false, modLayout: d?.modulos_layout ?? "padrao", modTamanho: d?.modulos_tamanho ?? "medio",
+      presTitulo: d?.presentes_titulo ?? "Presentes", presTitEstilo: d?.presentes_titulo_estilo ?? "padrao",
+      presLayout: d?.presentes_layout ?? "grandes", presEstilo: d?.presentes_estilo ?? "padrao",
     },
     vers: {
-      exibir: cfg.data?.vers_exibir !== false, estilo: cfg.data?.vers_estilo ?? "caixa", posicao: cfg.data?.vers_posicao ?? "mensagem",
-      referencia: cfg.data?.vers_referencia !== false, fundo: cfg.data?.vers_fundo ?? "escuro", fonte: cfg.data?.vers_fonte ?? "serifa",
-      tamanho: cfg.data?.vers_tamanho ?? "medio", cores: cfg.data?.vers_cores ?? null,
+      exibir: d?.vers_exibir !== false, estilo: d?.vers_estilo ?? "caixa", posicao: d?.vers_posicao ?? "mensagem",
+      referencia: d?.vers_referencia !== false, fundo: d?.vers_fundo ?? "escuro", fonte: d?.vers_fonte ?? "serifa",
+      tamanho: d?.vers_tamanho ?? "medio", cores: d?.vers_cores ?? null,
     },
     menu: {
-      botoes: Array.isArray(cfg.data?.menu_botoes) ? cfg.data.menu_botoes : null,
-      estilo: cfg.data?.menu_estilo ?? "padrao", cores: cfg.data?.menu_cores ?? null, tamanho: cfg.data?.menu_tamanho ?? "medio",
+      botoes: Array.isArray(d?.menu_botoes) ? d.menu_botoes : null,
+      estilo: d?.menu_estilo ?? "padrao", cores: d?.menu_cores ?? null, tamanho: d?.menu_tamanho ?? "medio",
     },
     perfil: {
-      titulo: cfg.data?.perfil_titulo ?? "Seu perfil", saudacao: cfg.data?.perfil_saudacao ?? "{nome_completo}",
-      imagem: cfg.data?.perfil_imagem ?? "nenhum", texto: cfg.data?.perfil_texto ?? "", layout: cfg.data?.perfil_layout ?? "padrao",
-      botoes: Array.isArray(cfg.data?.perfil_botoes) ? cfg.data.perfil_botoes : [],
+      titulo: d?.perfil_titulo ?? "Seu perfil", saudacao: d?.perfil_saudacao ?? "{nome_completo}",
+      imagem: d?.perfil_imagem ?? "nenhum", texto: d?.perfil_texto ?? "", layout: d?.perfil_layout ?? "padrao",
+      botoes: Array.isArray(d?.perfil_botoes) ? d.perfil_botoes : [],
     },
-    notif: notifDe(cfg.data?.notif),
-    estiloAula: cfg.data?.estilo_aula ?? null,
-    estiloInicio: cfg.data?.estilo_inicio ?? null,
-    estiloPerfil: cfg.data?.estilo_perfil ?? null,
-    estiloNotif: cfg.data?.estilo_notif ?? null,
-    divisor: ((d) => ({ exibir: d.exibir !== false, texto: typeof d.texto === "string" && d.texto.trim() ? d.texto : "Também para você", cor: typeof d.cor === "string" ? d.cor : "", linha: typeof d.linha === "string" ? d.linha : "" }))((cfg.data?.inicio_divisor ?? {}) as Record<string, unknown>),
+    notif: notifDe(d?.notif),
+    estiloAula: d?.estilo_aula ?? null,
+    estiloInicio: d?.estilo_inicio ?? null,
+    estiloPerfil: d?.estilo_perfil ?? null,
+    estiloNotif: d?.estilo_notif ?? null,
+    divisor: ((d) => ({ exibir: d.exibir !== false, texto: typeof d.texto === "string" && d.texto.trim() ? d.texto : "Também para você", cor: typeof d.cor === "string" ? d.cor : "", linha: typeof d.linha === "string" ? d.linha : "" }))((d?.inicio_divisor ?? {}) as Record<string, unknown>),
     versiculos: ((vs.data ?? []) as Array<{ texto: string; referencia: string }>).map((v) => [v.texto, v.referencia]),
-    destaques: (cfg.data?.exibir_destaques === false || (cfg.data?.inicio_banner ?? "card") !== "card" ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
+    destaques: (d?.exibir_destaques === false || (d?.inicio_banner ?? "card") !== "card" ? [] : (ds.data ?? []) as Record<string, string | null>[]).map((d) => ({
       id: String(d.id), imagem: d.imagem_path ?? "", rotulo: d.rotulo ?? "", titulo: d.titulo ?? "", descricao: d.descricao ?? "",
       botao: d.botao ?? "", destino: d.destino === "categoria" ? "categoria" : "presentes", categoriaId: d.categoria_id ?? null,
       categoriaNome: d.categoria_nome ?? "", icone: d.icone ?? "estrela", cor: d.cor ?? "dourado",
