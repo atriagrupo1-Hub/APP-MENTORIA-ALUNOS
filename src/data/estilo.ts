@@ -78,7 +78,8 @@ export type TipoParte = "card" | "botao" | "capa" | "texto";
  * As partes da tela da aula (Configurações → Aulas, 0099). O que se escolhe
  * para uma parte vale para todas as aulas. `sel` é onde o app aplica.
  */
-export const PARTES_AULA: { k: string; nome: string; desc: string; tipo: TipoParte; sel: string; aba?: string }[] = [
+export type ParteTela = { k: string; nome: string; desc: string; tipo: TipoParte; sel: string; aba?: string; svg?: boolean };
+export const PARTES_AULA: ParteTela[] = [
   { k: "video", nome: "Vídeo", desc: "Contorno, sombra e cantos do vídeo.", tipo: "capa", sel: ".aula-col .player" },
   { k: "play", nome: "Botão de play", desc: "O botão redondo no meio do vídeo.", tipo: "botao", sel: ".aula-col .play-centro" },
   { k: "textos", nome: "Títulos e textos", desc: "Cor do “Módulo · Aula”, dos títulos e dos textos da aula.", tipo: "texto", sel: ".aula-col .aula-local, .aula-col .aula-local b, .aula-col .sobre-titulo, .aula-col .sobre-cartao p, .aula-col .ex-cartao h3, .aula-col .ex-texto p, .aula-col .prox-aulas h2, .aula-col .coms-cab h2" },
@@ -92,13 +93,39 @@ export const PARTES_AULA: { k: string; nome: string; desc: string; tipo: TipoPar
   { k: "modulos", nome: "Botões Módulo anterior · Próximo", desc: "Os dois botões no fim da página.", tipo: "botao", sel: ".aula-col .aula-entre button" },
 ];
 
-/** O CSS da tela da aula com o estilo escolhido (vazio = visual padrão). */
-export function cssDaAula(e: Estilo | null | undefined): string {
+/**
+ * As partes fixas da tela inicial e do que fica em todas as telas (topo e menu
+ * de baixo) — Configurações → Início (0100). Os cards de módulo não entram:
+ * eles são configurados em Módulos.
+ */
+export const PARTES_INICIO: ParteTela[] = [
+  { k: "topo", nome: "Faixa do topo", desc: "A barra de cima, com o nome e a foto.", tipo: "card", sel: ".topo" },
+  { k: "marca", nome: "Nome no topo", desc: "A linha grande (ex.: Mentoria).", tipo: "texto", sel: ".topo .marca b" },
+  { k: "marcasub", nome: "Subtítulo no topo", desc: "A linha pequena (ex.: Área de alunos).", tipo: "texto", sel: ".topo .marca span" },
+  { k: "foto", nome: "Contorno da foto", desc: "O círculo da foto no canto de cima.", tipo: "capa", sel: ".topo .av-topo" },
+  { k: "ola", nome: "Card de boas-vindas", desc: "O bloco com a saudação e a mensagem.", tipo: "card", sel: ".pa-ola" },
+  { k: "saudacao", nome: "Saudação", desc: "“Bem-vindo(a), nome”.", tipo: "texto", sel: ".pa-nome" },
+  { k: "mensagem", nome: "Mensagem de boas-vindas", desc: "O texto embaixo da saudação.", tipo: "texto", sel: ".pa-intro" },
+  { k: "vers", nome: "Card do versículo", desc: "Fundo, contorno e sombra da caixa do versículo.", tipo: "card", sel: ".pa .vers" },
+  { k: "verstexto", nome: "Texto do versículo", desc: "", tipo: "texto", sel: ".pa .vers-txt" },
+  { k: "versref", nome: "“Versículo de hoje” e referência", desc: "", tipo: "texto", sel: ".pa .vers-rot, .pa .vers-ref" },
+  { k: "mentoria", nome: "Card “Sua mentoria”", desc: "O bloco que envolve a mentoria (os cards dos módulos ficam em Módulos).", tipo: "card", sel: ".pa .mt-bloco" },
+  { k: "mentoriatx", nome: "Textos de “Sua mentoria”", desc: "“Sua mentoria”, o nome e “Comece por aqui”.", tipo: "texto", sel: ".pa .mt-rot, .pa .mt-tit, .pa .mt-passo" },
+  { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
+  { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },
+  { k: "menuicone", nome: "Ícones do menu", desc: "Os ícones dos botões que não estão abertos.", tipo: "texto", sel: ".nav-base button:not([aria-current]) svg, .nav-base .nb-link svg", svg: true },
+  { k: "menuativo", nome: "Botão aberto do menu", desc: "Nome e ícone da tela em que a aluna está.", tipo: "texto", sel: ".nav-base button[aria-current=\"page\"], .nav-base button[aria-current=\"page\"] svg", svg: true },
+];
+
+/** O CSS de uma tela (aula ou início) com o estilo escolhido (vazio = visual padrão). */
+export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): string {
   if (!e) return "";
-  return PARTES_AULA.map((p) => {
+  return partes.map((p) => {
     const v = e[p.k]; if (!v) return "";
-    if (p.tipo === "texto") return v.texto ? `${p.sel}{color:${v.texto} !important}` : "";
+    if (p.tipo === "texto") return v.texto ? `${p.sel}{color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}}` : "";
     const css = cssVisual(v, p.tipo === "capa" ? "capa" : p.tipo);
     return css ? `${p.sel}{${css}}` : "";
   }).join("\n");
 }
+export const cssDaAula = (e: Estilo | null | undefined) => cssDaTela(PARTES_AULA, e);
+export const cssDoInicio = (e: Estilo | null | undefined) => cssDaTela(PARTES_INICIO, e);
