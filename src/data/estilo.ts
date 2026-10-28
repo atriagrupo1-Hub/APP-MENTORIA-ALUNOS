@@ -78,7 +78,7 @@ export type TipoParte = "card" | "botao" | "capa" | "texto";
  * As partes da tela da aula (Configurações → Aulas, 0099). O que se escolhe
  * para uma parte vale para todas as aulas. `sel` é onde o app aplica.
  */
-export type ParteTela = { k: string; nome: string; desc: string; tipo: TipoParte; sel: string; aba?: string; svg?: boolean };
+export type ParteTela = { k: string; nome: string; desc: string; tipo: TipoParte; sel: string; aba?: string; svg?: boolean; extra?: string };
 export const PARTES_AULA: ParteTela[] = [
   { k: "video", nome: "Vídeo", desc: "Contorno, sombra e cantos do vídeo.", tipo: "capa", sel: ".aula-col .player" },
   { k: "play", nome: "Botão de play", desc: "O botão redondo no meio do vídeo.", tipo: "botao", sel: ".aula-col .play-centro" },
@@ -117,6 +117,23 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "menuativo", nome: "Botão aberto do menu", desc: "Nome e ícone da tela em que a aluna está.", tipo: "texto", sel: ".nav-base button[aria-current=\"page\"], .nav-base button[aria-current=\"page\"] svg", svg: true },
 ];
 
+/** As partes da tela Perfil (Configurações → Perfil, 0101). */
+export const PARTES_PERFIL: ParteTela[] = [
+  { k: "fundo", nome: "Fundo da tela", desc: "Cor ou degradê atrás de tudo no Perfil.", tipo: "card", sel: "html:has(.pf-al)", extra: "html:has(.pf-al) body,html:has(.pf-al) main{background:transparent !important}html:has(.pf-al){min-height:100%;background-attachment:fixed !important}" },
+  { k: "titulo", nome: "Título", desc: "“Seu perfil”.", tipo: "texto", sel: ".pf-al .ola p" },
+  { k: "nome", nome: "Nome da aluna", desc: "", tipo: "texto", sel: ".pf-al .ola h1" },
+  { k: "foto", nome: "Contorno da foto", desc: "Quando a foto aparece no Perfil.", tipo: "capa", sel: ".pf-al .pf-foto-circ" },
+  { k: "botoes", nome: "Botões", desc: "Configurar, Onde parei e os outros.", tipo: "botao", sel: ".pf-al .pf-al-bt:not(.sair)" },
+  { k: "sair", nome: "Botão Sair", desc: "", tipo: "botao", sel: ".pf-al .pf-al-bt.sair" },
+  { k: "botaoicone", nome: "Ícones dos botões", desc: "", tipo: "texto", sel: ".pf-al .pf-al-bt svg", svg: true },
+  { k: "botaoseta", nome: "Setinha dos botões", desc: "O círculo com › no fim de cada botão.", tipo: "botao", sel: ".pf-al .pf-al-bt > b" },
+  { k: "notif", nome: "Barra dos avisos", desc: "O card “Avisos das novas aulas”.", tipo: "card", sel: ".pf-al .np-card" },
+  { k: "notiftexto", nome: "Textos da barra dos avisos", desc: "", tipo: "texto", sel: ".pf-al .np-ctxt b, .pf-al .np-ctxt em" },
+  { k: "notifsino", nome: "Sino da barra dos avisos", desc: "", tipo: "botao", sel: ".pf-al .np-csino" },
+  { k: "notifbt", nome: "Botão Ativar", desc: "", tipo: "botao", sel: ".pf-al .np-cbt" },
+  { k: "texto", nome: "Texto do fim", desc: "O texto livre embaixo dos botões.", tipo: "texto", sel: ".pf-al .pf-al-txt" },
+];
+
 /** O CSS de uma tela (aula ou início) com o estilo escolhido (vazio = visual padrão). */
 export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): string {
   if (!e) return "";
@@ -124,8 +141,9 @@ export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): st
     const v = e[p.k]; if (!v) return "";
     if (p.tipo === "texto") return v.texto ? `${p.sel}{color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}}` : "";
     const css = cssVisual(v, p.tipo === "capa" ? "capa" : p.tipo);
-    return css ? `${p.sel}{${css}}` : "";
+    return css ? `${p.sel}{${css}}${v.fundo && p.extra ? p.extra : ""}` : "";
   }).join("\n");
 }
 export const cssDaAula = (e: Estilo | null | undefined) => cssDaTela(PARTES_AULA, e);
 export const cssDoInicio = (e: Estilo | null | undefined) => cssDaTela(PARTES_INICIO, e);
+export const cssDoPerfil = (e: Estilo | null | undefined) => cssDaTela(PARTES_PERFIL, e);
