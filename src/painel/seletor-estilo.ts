@@ -102,7 +102,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
           <span class="se-rot se-rot2">Escolha a cor <em>(${alvo === "fundo.a" ? (f?.t === "degrade" ? "cor 1 do degradê" : "preenchimento") : alvo === "fundo.b" ? "cor 2 do degradê" : alvo === "texto" ? "texto" : alvo === "borda" ? "contorno" : "sombra"})</em></span>
           <div class="se-sv" data-se-sv style="background:${hsvParaHex(hsv[0], 1, 1)}"><i style="left:${hsv[1] * 100}%;top:${(1 - hsv[2]) * 100}%"></i></div>
           <div class="se-hue" data-se-hue><i style="left:${(hsv[0] / 360) * 100}%"></i></div>
-          <div class="se-hexl"><span class="se-hexam" style="background:${corAgora}"></span><input class="campo se-hex" value="${corAgora.toUpperCase()}" maxlength="7" spellcheck="false" aria-label="Código da cor" data-se="hex" />${"EyeDropper" in window ? `<button type="button" class="se-gota" data-se="gota" title="Pegar uma cor da tela"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg></button>` : ""}</div>
+          <div class="se-hexl"><span class="se-hexam" style="background:${corAgora}"></span><input class="campo se-hex" value="${corAgora.toUpperCase()}" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar outro)" data-se="hex" /><button type="button" class="se-gota" data-se="copiar" title="Copiar o código da cor" aria-label="Copiar o código da cor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button>${"EyeDropper" in window ? `<button type="button" class="se-gota" data-se="gota" title="Pegar uma cor da tela"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg></button>` : ""}</div>
           <div class="se-prontas">${PRONTAS.map((c) => `<button type="button" data-se="pronta" data-v="${c}" title="${c.toUpperCase()}" style="background:${c}"${c === corAgora ? ' class="on"' : ""}></button>`).join("")}</div>
         </div>` : "");
     caixa.innerHTML = `
@@ -118,6 +118,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
           <div class="se-seg">${[["padrao", "Padrão do app"], ["cor", "Cor sólida"], ["degrade", "Degradê"]].map(([k, n]) => `<button type="button" data-se="fundo-tipo" data-v="${k}" aria-pressed="${(f ? f.t : "padrao") === k}">${n}</button>`).join("")}</div>
           ${f ? `<div class="se-chips">${chip("fundo.a", f.a, f.t === "degrade" ? "Cor 1" : "Cor")}${f.t === "degrade" ? chip("fundo.b", f.b || "#5a3d16", "Cor 2") : ""}</div>` : ""}
           ${f?.t === "degrade" ? `<label class="se-linha"><span>Direção</span><input type="range" min="0" max="360" step="5" value="${f.ang ?? 135}" data-se="ang" /><em>${f.ang ?? 135}°</em></label>
+            <div class="se-codl"><code>${h(cssFundo(f))}</code><button type="button" class="se-lnk" data-se="copiar-deg">Copiar código</button></div>
             <div class="se-degs">${DEGRADES.map(([a, b, g], i) => `<button type="button" data-se="deg" data-v="${i}" title="Degradê pronto" style="background:${cssFundo({ t: "degrade", a, b, ang: g })}"></button>`).join("")}</div>` : ""}
           ${f ? cor("fundo") : ""}
         </div>
@@ -218,6 +219,11 @@ export function abrirSeletorEstilo(o: Opcoes) {
       case "forma": v.forma = v.forma === val ? null : (val as Visual["forma"]); mudou(); break;
       case "tam": v.tam = val as Visual["tam"]; mudou(); break;
       case "pronta": porCor(val); mudou(); break;
+      case "copiar": case "copiar-deg": {
+        const txt = a === "copiar" ? corDoAlvo().toUpperCase() : v.fundo ? cssFundo(v.fundo) : "";
+        void navigator.clipboard?.writeText(txt).then(() => { b.textContent = a === "copiar" ? "✓" : "Copiado ✓"; setTimeout(() => desenhar(), 900); }).catch(() => {});
+        return;
+      }
       case "restaurar": delete est[parte]; alvo = tipo() === "texto" ? "texto" : tipo() === "capa" ? "borda" : "fundo.a"; mudou(); break;
       case "gota": {
         const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;

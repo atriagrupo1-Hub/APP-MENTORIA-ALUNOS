@@ -3526,3 +3526,19 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .cfg-versao { padding: 8px 12px; margin-bottom: 10px; }
 .cfg-versao-seg button { flex-direction: row; align-items: baseline; gap: 8px; min-width: 0; padding: 7px 14px; }
 @media (max-width: 1400px) { .cfg-versao-seg button em { display: none; } }
+/* Código da cor ao lado de cada cor do painel: copiar ou colar. */
+.cor-cod { display: inline-flex; align-items: center; flex: none; height: 32px; border: 1px solid var(--linha); border-radius: 8px; background: var(--aa-cartao, #fff); overflow: hidden; vertical-align: middle; }
+.cor-cod input { width: 76px; height: 100%; padding: 0 6px 0 8px; border: 0; background: transparent; color: var(--texto); font: 600 12.5px ui-monospace, Menlo, monospace; letter-spacing: .02em; outline: none; }
+.cor-cod button { display: grid; place-items: center; width: 30px; height: 100%; border: 0; border-left: 1px solid var(--linha-suave); background: transparent; color: var(--texto-2); cursor: pointer; }
+.cor-cod button:hover { color: var(--al-ouro, #9a7224); background: var(--al-cab, #f3efe7); }
+.cor-cod button svg { width: 15px; height: 15px; }
+.cfg-hex:has(+ .cor-cod) > b { display: none; }
+.cfg-ncor + .cor-cod { margin-left: -4px; }
+.cfg-mbtodos { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; padding: 10px 14px; border: 1px dashed var(--al-ouro, #b8892e); border-radius: 10px; background: var(--al-ouro-fundo, #fbf6ea); }
+.se-codl { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.se-codl code { flex: 1; min-width: 0; padding: 6px 8px; border-radius: 8px; background: var(--al-cab, #f3efe7); font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: all; }
+.cfg-orl > .cfg-n, .cfg-orl > .cfg-corbt, .cfg-orl > .est3, .cfg-orl > .cfg-mbic, .cfg-mbtodos > .cfg-corbt { flex: none; }
+.cfg-mbl .cfg-mbrot { flex: 1; min-width: 70px; width: auto; }
+.cfg-mbl { gap: 10px; }
+.cfg-mbl > .cfg-mbic { display: none; }
+.cfg-mbl .cfg-mbrot { min-width: 96px; }
