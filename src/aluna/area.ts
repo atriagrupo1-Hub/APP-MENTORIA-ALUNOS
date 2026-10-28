@@ -14,7 +14,7 @@ import { supabase } from "../data/supabase";
 import * as api from "../data/api";
 import { aplicarAparencia } from "../data/aparencia";
 import { popNotif, SINO } from "../data/notif";
-import { cssDaAula, cssVisual, limparEstilo } from "../data/estilo";
+import { cssDaAula, cssDoInicio, cssVisual, limparEstilo } from "../data/estilo";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
@@ -40,6 +40,7 @@ export function montar(raiz: HTMLElement) {
         if (m.menu) I.menu = m.menu;
         if (m.apar) { APAR = m.apar; aplicarAparencia(m.apar, (c) => (c && (c.startsWith("data:") || c.startsWith("blob:")) ? c : api.urlDaCapa(c) || "")); }
         PREV_AULA = "estiloAula" in m ? limparEstilo(m.estiloAula) : undefined;
+        PREV_INICIO = undefined;
         if (m.ir === "aula-exemplo") {
           // Configurações → Aulas: uma aula de exemplo (a primeira com vídeo), e o celular vai até a parte que está sendo mexida.
           if (S.tela !== "aula") { S.previaIr = m.ir; camada.innerHTML = ""; const k = Math.max(0, MODS().findIndex((x) => x.aulas.length)); if (MODS()[k]) acao("aula", { m: k, i: 0 }); }
@@ -53,6 +54,8 @@ export function montar(raiz: HTMLElement) {
       if (m.tipo !== "previa-inicio") return;
       const I = D.inicio;
       if (S.tela !== "inicio") { S.previaIr = "inicio"; camada.innerHTML = ""; acao("ir", { v: "inicio" }); }
+      PREV_AULA = undefined;
+      PREV_INICIO = "estiloInicio" in m ? limparEstilo(m.estiloInicio) : undefined;
       if (!I._destOrig) I._destOrig = I.destaques || [];
       I.marca = { titulo: m.titulo || "", sub: m.sub || "" };
       I.fraseRetorno = m.frase || "";
@@ -62,15 +65,18 @@ export function montar(raiz: HTMLElement) {
       if (m.divisor) I.divisor = m.divisor;
       I.destaques = m.banner === "card" ? I._destOrig : [];
       render();
+      if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
     });
   }
   // Estilos sendo editados no painel (prévia), por cima dos salvos: { cat: {id: estilo}, mod: {id: estilo} }.
   let PREV_EST = { cat: {}, mod: {} };
   // Estilo da tela da aula sendo editado no painel (undefined = vale o salvo).
   let PREV_AULA = undefined;
+  let PREV_INICIO = undefined;
   let estiloAulaEl = null;
   function aplicarEstiloAula() {
-    const css = cssDaAula(PREV_AULA !== undefined ? PREV_AULA : limparEstilo(D && D.inicio && D.inicio.estiloAula));
+    const css = cssDaAula(PREV_AULA !== undefined ? PREV_AULA : limparEstilo(D && D.inicio && D.inicio.estiloAula))
+      + "\n" + cssDoInicio(PREV_INICIO !== undefined ? PREV_INICIO : limparEstilo(D && D.inicio && D.inicio.estiloInicio));
     if (!estiloAulaEl) { if (!css) return; estiloAulaEl = document.createElement("style"); estiloAulaEl.id = "estilo-aula"; document.head.append(estiloAulaEl); }
     if (estiloAulaEl.textContent !== css) estiloAulaEl.textContent = css;
   }
