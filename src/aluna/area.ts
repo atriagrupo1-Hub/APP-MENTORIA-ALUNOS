@@ -14,7 +14,7 @@ import { supabase } from "../data/supabase";
 import * as api from "../data/api";
 import { aplicarAparencia } from "../data/aparencia";
 import { popNotif, SINO } from "../data/notif";
-import { cssVisual, limparEstilo } from "../data/estilo";
+import { cssDaAula, cssVisual, limparEstilo } from "../data/estilo";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
@@ -39,8 +39,14 @@ export function montar(raiz: HTMLElement) {
         if (m.notif) I.notif = m.notif;
         if (m.menu) I.menu = m.menu;
         if (m.apar) { APAR = m.apar; aplicarAparencia(m.apar, (c) => (c && (c.startsWith("data:") || c.startsWith("blob:")) ? c : api.urlDaCapa(c) || "")); }
-        if (m.ir && m.ir !== S.previaIr) { S.previaIr = m.ir; camada.innerHTML = ""; acao("ir", { v: m.ir }); }
+        PREV_AULA = "estiloAula" in m ? limparEstilo(m.estiloAula) : undefined;
+        if (m.ir === "aula-exemplo") {
+          // Configurações → Aulas: uma aula de exemplo (a primeira com vídeo), e o celular vai até a parte que está sendo mexida.
+          if (S.tela !== "aula") { S.previaIr = m.ir; camada.innerHTML = ""; const k = Math.max(0, MODS().findIndex((x) => x.aulas.length)); if (MODS()[k]) acao("aula", { m: k, i: 0 }); }
+          if (m.abaAula && S.abaAula !== m.abaAula) S.abaAula = m.abaAula;
+        } else if (m.ir && m.ir !== S.previaIr) { S.previaIr = m.ir; camada.innerHTML = ""; acao("ir", { v: m.ir }); }
         render();
+        if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
         camada.innerHTML = m.pop && I.notif ? popNotif(I.notif) : camada.querySelector(".fundo-folha") ? camada.innerHTML : "";
         return;
       }
@@ -60,6 +66,14 @@ export function montar(raiz: HTMLElement) {
   }
   // Estilos sendo editados no painel (prévia), por cima dos salvos: { cat: {id: estilo}, mod: {id: estilo} }.
   let PREV_EST = { cat: {}, mod: {} };
+  // Estilo da tela da aula sendo editado no painel (undefined = vale o salvo).
+  let PREV_AULA = undefined;
+  let estiloAulaEl = null;
+  function aplicarEstiloAula() {
+    const css = cssDaAula(PREV_AULA !== undefined ? PREV_AULA : limparEstilo(D && D.inicio && D.inicio.estiloAula));
+    if (!estiloAulaEl) { if (!css) return; estiloAulaEl = document.createElement("style"); estiloAulaEl.id = "estilo-aula"; document.head.append(estiloAulaEl); }
+    if (estiloAulaEl.textContent !== css) estiloAulaEl.textContent = css;
+  }
   const estCat = (curso) => { const p = PREV_EST.cat || {}; return curso.catAbaId && curso.catAbaId in p ? limparEstilo(p[curso.catAbaId]) : curso.estilo; };
   const estMod = (md) => { const p = PREV_EST.mod || {}; return md.id in p ? limparEstilo(p[md.id]) : md.estilo; };
   /** Atributo style com o estilo escolhido no painel (vazio = visual padrão). */
@@ -351,6 +365,7 @@ export function montar(raiz: HTMLElement) {
     const cfgAntes = app.querySelector(".config-corpo");
     const cfgTopo = cfgAntes ? cfgAntes.scrollTop : null;
     const pagTopo = window.scrollY;
+    aplicarEstiloAula();
     try { renderReal(); } finally {
       const cfg = app.querySelector(".config");
       if (cfg && cfgTopo !== null) { cfg.classList.add("sem-anim"); const c = cfg.querySelector(".config-corpo"); if (c) c.scrollTop = cfgTopo; window.scrollTo(0, pagTopo); }

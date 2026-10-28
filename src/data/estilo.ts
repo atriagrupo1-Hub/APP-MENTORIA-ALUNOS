@@ -70,3 +70,35 @@ export function cssVisual(v: Visual | null | undefined, tipo: "card" | "botao" |
   if (v.tam && tipo === "botao") imp("zoom", ZOOM[v.tam]);
   return r.join(";");
 }
+
+/** Tipos de parte: o seletor mostra só o que faz sentido para cada uma. */
+export type TipoParte = "card" | "botao" | "capa" | "texto";
+
+/**
+ * As partes da tela da aula (Configurações → Aulas, 0099). O que se escolhe
+ * para uma parte vale para todas as aulas. `sel` é onde o app aplica.
+ */
+export const PARTES_AULA: { k: string; nome: string; desc: string; tipo: TipoParte; sel: string; aba?: string }[] = [
+  { k: "video", nome: "Vídeo", desc: "Contorno, sombra e cantos do vídeo.", tipo: "capa", sel: ".aula-col .player" },
+  { k: "play", nome: "Botão de play", desc: "O botão redondo no meio do vídeo.", tipo: "botao", sel: ".aula-col .play-centro" },
+  { k: "textos", nome: "Títulos e textos", desc: "Cor do “Módulo · Aula”, dos títulos e dos textos da aula.", tipo: "texto", sel: ".aula-col .aula-local, .aula-col .aula-local b, .aula-col .sobre-titulo, .aula-col .sobre-cartao p, .aula-col .ex-cartao h3, .aula-col .ex-texto p, .aula-col .prox-aulas h2, .aula-col .coms-cab h2" },
+  { k: "icones", nome: "Ícones", desc: "Cor dos ícones da tela da aula.", tipo: "texto", sel: ".aula-col .abas-aula svg, .aula-col .sobre-ic svg, .aula-col .nav-ant svg, .aula-col .nav-prox svg, .aula-col .la-assistir svg, .aula-col .aula-entre svg, .aula-col .com-abrir-txt svg, .aula-col .com-acoes svg" },
+  { k: "anterior", nome: "Botão Aula anterior", desc: "", tipo: "botao", sel: ".aula-col .nav-ant" },
+  { k: "proxima", nome: "Botão Próxima aula", desc: "", tipo: "botao", sel: ".aula-col .nav-prox" },
+  { k: "abas", nome: "Botões Sobre · Instruções · PDF", desc: "", tipo: "botao", sel: ".aula-col .abas-aula button" },
+  { k: "cards", nome: "Cards de Sobre e Instruções", desc: "O card que abre ao tocar em Sobre, Instruções ou PDF.", tipo: "card", sel: ".aula-col .sobre-cartao, .aula-col .ex-cartao", aba: "sobre" },
+  { k: "comentarios", nome: "Card de comentários", desc: "", tipo: "card", sel: ".aula-col .coms" },
+  { k: "proxcards", nome: "Cards das próximas aulas", desc: "A lista embaixo, com as próximas aulas do módulo.", tipo: "card", sel: ".aula-col .prox-card" },
+  { k: "modulos", nome: "Botões Módulo anterior · Próximo", desc: "Os dois botões no fim da página.", tipo: "botao", sel: ".aula-col .aula-entre button" },
+];
+
+/** O CSS da tela da aula com o estilo escolhido (vazio = visual padrão). */
+export function cssDaAula(e: Estilo | null | undefined): string {
+  if (!e) return "";
+  return PARTES_AULA.map((p) => {
+    const v = e[p.k]; if (!v) return "";
+    if (p.tipo === "texto") return v.texto ? `${p.sel}{color:${v.texto} !important}` : "";
+    const css = cssVisual(v, p.tipo === "capa" ? "capa" : p.tipo);
+    return css ? `${p.sel}{${css}}` : "";
+  }).join("\n");
+}

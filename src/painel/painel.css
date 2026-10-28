@@ -3501,3 +3501,14 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .se-cor { margin-top: 12px; padding: 12px; background: var(--al-cab, #f3efe7); border-radius: 12px; }
 .se-rot2 { margin-bottom: 10px; }
 .se-cor .se-prontas { grid-template-columns: repeat(11, 1fr); }
+.se-am-txt { font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; }
+.se-am-txt b { font-size: 30px; margin-right: 6px; }
+/* Configurações → Aulas: uma linha por parte da tela da aula. */
+.cfg-aul { gap: 14px; padding: 10px 14px; }
+.cfg-aul-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cfg-aul-tx b { font-size: 14px; font-weight: 600; }
+.cfg-aul-tx small { font-size: 12.5px; color: var(--texto-2); }
+.cfg-aul-on, .cfg-aul-pd { flex: none; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.cfg-aul-on { color: #8a5a00; background: #fbefcf; }
+.cfg-aul-pd { color: var(--texto-2); background: var(--al-cab, #f3efe7); }
+[data-tema="escuro"] .cfg-aul-on { color: #f2c46b; background: rgba(242, 196, 107, .15); }
