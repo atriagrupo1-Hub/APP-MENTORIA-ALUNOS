@@ -4521,7 +4521,7 @@ export function montar(app: HTMLElement) {
     const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
     const pt = PARTES_INICIO.find((x) => x.k === ui.prevEst.foco);
-    fr.contentWindow?.postMessage({ tipo: "previa-inicio", estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha } }, location.origin);
+    try { fr.contentWindow?.postMessage({ tipo: "previa-inicio", estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha } }, location.origin); } catch { /* idem */ }
   }
   /** Manda para o app da prévia o que está sendo editado na aba aberta de Configurações (ainda sem salvar). */
   function mandarPreviaCfg() {
@@ -4539,7 +4539,7 @@ export function montar(app: HTMLElement) {
     else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
     else if (aba === "aulas") { const pt = PARTES_AULA.find((x) => x.k === ui.prevEst.foco); Object.assign(msg, { ir: "aula-exemplo", estiloAula: ui.prevEst.aula === undefined ? S.config.estiloAula : ui.prevEst.aula, foco: pt ? pt.sel.split(",")[0].trim() : "", abaAula: pt?.aba || "" }); }
     else return;
-    fr.contentWindow?.postMessage(JSON.parse(JSON.stringify(msg)), location.origin);
+    try { fr.contentWindow?.postMessage(JSON.parse(JSON.stringify(msg)), location.origin); } catch { /* nunca trava o painel por causa da prévia */ }
   }
   /**
    * Configurações: a página não rola; rola só o formulário (lado esquerdo) e o
@@ -4562,8 +4562,12 @@ export function montar(app: HTMLElement) {
   }
   window.addEventListener("resize", () => ajustarCfgAltura());
   new MutationObserver(() => ajustarTelaPrevia()).observe(document.body, { childList: true, subtree: true });
+  // Se o celular desenhado mudar de tamanho (tela, fontes, imagens), o app de dentro acompanha na hora.
+  let celObservado: HTMLElement | null = null;
+  const celRO = new ResizeObserver(() => posicionarCel());
   function posicionarCel() {
     const alvo = document.getElementById("cfgCel");
+    if (alvo !== celObservado) { celRO.disconnect(); celObservado = alvo; if (alvo) celRO.observe(alvo); }
     if (!alvo) { if (celReal) celReal.style.display = "none"; return; }
     // Voltou para a aba: recarrega, para mostrar o app com o que mudou em outras telas.
     if (celReal && celReal.style.display === "none") recarregarCel();
