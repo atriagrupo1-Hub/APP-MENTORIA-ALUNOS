@@ -51,6 +51,8 @@ type Aula = {
 type Opcao = {
   id: string; rotulo: string; cor: string; tipo: "texto" | "audio" | "video" | "pdf";
   texto: string; arquivo: string; video: string; capa: string; tituloTela: string; instrucoes: string; extras: Extra[];
+  /** Ativa (a aluna vê), bloqueada (vê com cadeado e o aviso) ou desativada (não aparece) — 0097. */
+  estado?: "ativo" | "bloqueado" | "desativado"; aviso?: string;
 };
 type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
 type Curso = {
@@ -253,7 +255,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
-    supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id").not("aula_id", "is", null).order("ordem"),
+    supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id, publicado, bloqueado, aviso_bloqueio").not("aula_id", "is", null).order("ordem"),
     supabase.rpc("alunas_do_painel"),
     emPaginas((de, ate) => supabase.from("acessos").select("aluna_id, escopo, produto_id, modulo_id, aula_id, abre_em, concedido_em").order("id").range(de, ate)),
     supabase.from("cronograma_modulo").select("aluna_id, modulo_id, dias"),
@@ -293,7 +295,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     if (k.pai_id) { const l = extrasDaOpcao.get(k.pai_id) ?? []; l.push(comoExtra(k)); extrasDaOpcao.set(k.pai_id, l); continue; }
     if (k.opcao) {
       const l = opcoesDa.get(k.aula_id) ?? [];
-      l.push({ id: k.id, rotulo: k.titulo ?? "", cor: k.cor || "", tipo: ["texto", "audio", "video", "pdf"].includes(k.tipo) ? k.tipo : "texto", texto: k.texto ?? "", arquivo: k.arquivo_path ?? "", video: k.video_ref ?? "", capa: k.capa_path ?? "", tituloTela: k.titulo_tela ?? "", instrucoes: k.instrucoes ?? "", extras: [] });
+      l.push({ id: k.id, rotulo: k.titulo ?? "", cor: k.cor || "", tipo: ["texto", "audio", "video", "pdf"].includes(k.tipo) ? k.tipo : "texto", texto: k.texto ?? "", arquivo: k.arquivo_path ?? "", video: k.video_ref ?? "", capa: k.capa_path ?? "", tituloTela: k.titulo_tela ?? "", instrucoes: k.instrucoes ?? "", extras: [] , estado: k.publicado === false ? "desativado" : k.bloqueado ? "bloqueado" : "ativo", aviso: k.aviso_bloqueio ?? "" });
       opcoesDa.set(k.aula_id, l); continue;
     }
     const lista = extrasDa.get(k.aula_id) ?? [];
@@ -512,7 +514,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -817,6 +819,7 @@ export function montar(app: HTMLElement) {
     ajustarArvore();
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
+    ajustarCfgAltura();
     posicionarCel();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
@@ -3914,17 +3917,17 @@ export function montar(app: HTMLElement) {
   const ORDINAL = ["Segunda", "Terceira", "Quarta", "Quinta", "Sexta", "Sétima", "Oitava", "Nona", "Décima"];
   const OPCAO_NOVA = (rotulo = ""): Opcao => ({ id: "", rotulo, cor: COR_BOTAO, tipo: "texto", texto: "", arquivo: "", video: "", capa: "", tituloTela: "", instrucoes: "", extras: [] });
   function blocoOpcao(k: number, op: Opcao) {
-    const t = op.tipo, f = ` form="formAula"`;
+    const t = op.tipo, f = "";
     const grupo = t === "video" || t === "audio" ? "midia" : t;
     const midia = grupo === "midia";
     const capa = op.capa ? urlDaCapa(op.capa) : "";
     const tipoEx = TIPOS[3].tela;
     return `
               <div class="ea-op2" data-op-bloco data-op-id="${op.id}" data-op-extra-tipo="${tipoEx}">
-                <div class="ea-op2-tit"><span data-op-tit>${ORDINAL[k] || k + 2 + "ª"} opção</span>${k > 0 ? `<button type="button" class="ea-op-tirar" data-a="op-tirar">${IC_MOD.lixo}Tirar esta opção</button>` : ""}</div>
+                <div class="ea-op2-tit"><span data-op-tit>${op.id ? "Editar opção: " + h(op.rotulo) : "Nova opção de leitura"}</span></div>
                 <input type="hidden" name="op${k}Capa"${f} value="${h(op.capa)}" data-op-capa />
                 <div class="ea-op-topo">
-                  ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor || COR_BOTAO, IC_ORAR_BT, "formAula")}
+                  ${editorBotao("op" + k + "Rotulo", "Nome do botão", op.rotulo, op.cor || COR_BOTAO, IC_ORAR_BT)}
                   <label class="grupo"><span class="rotulo-ajuda mp-rot">O que abre neste botão</span>
                     <select class="campo" name="op${k}Tipo"${f} data-op2-tipo>${([["texto", "Texto"], ["audio", "Áudio"], ["video", "Vídeo"], ["pdf", "PDF"]] as const).map(([v, n]) => `<option value="${v}"${t === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
                 </div>
@@ -3956,7 +3959,51 @@ export function montar(app: HTMLElement) {
                     </div>
                   </div>
                 </div>
+                <div class="ea-op-est">
+                  <label class="grupo"><span class="rotulo-ajuda mp-rot">Como fica para a aluna</span>
+                    <select class="campo" name="op${k}Estado" data-op-estado>${([["ativo", "Ativa — a aluna vê e abre"], ["bloqueado", "Bloqueada — a aluna vê com cadeado"], ["desativado", "Desativada — não aparece"]] as const).map(([v, n]) => `<option value="${v}"${(op.estado || "ativo") === v ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+                  <label class="grupo" data-op-aviso${(op.estado || "ativo") === "bloqueado" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Aviso quando bloqueada (a aluna lê ao tocar)</span><input class="campo" name="op${k}Aviso" value="${h(op.aviso || "")}" maxlength="160" placeholder="Ex.: Libera depois que você terminar o e-book" /></label>
+                </div>
+                <div class="ea-op-bts">
+                  ${op.id ? `<button type="button" class="al-botao perigo" data-a="op-remover" data-id="${op.id}">${IC_MOD.lixo}Remover</button>` : ""}
+                  <span></span>
+                  <button type="button" class="al-botao" data-a="op-cancelar">Cancelar</button>
+                  <button type="button" class="al-botao-ouro" data-a="op-salvar" data-id="${op.id}">${op.id ? IC_SALVAR + "Salvar" : IC_CURSO.mais + "Criar"}</button>
+                </div>
               </div>`;
+  }
+  /** Lê o editor de uma opção do e-book: o que vai para a tabela conteudos (ou o erro). */
+  function lerOpcao(bl: HTMLElement): { erro: string } | { dados: Record<string, unknown> } {
+    const campo = (sufixo: string) => (bl.querySelector<HTMLInputElement>(`[name$="${sufixo}"]`)?.value ?? "").trim();
+    const rot = campo("Rotulo"); const t = (bl.querySelector<HTMLSelectElement>("[data-op2-tipo]")?.value || "texto") as Opcao["tipo"];
+    const vid = t === "video" ? campo("Video") : ""; const vref = vid ? idDoVideo(vid) : null;
+    if (!rot) return { erro: "Escreva o nome do botão." };
+    if (vid && !vref) return { erro: "Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador." };
+    const estado = campo("Estado") || "ativo";
+    return { dados: {
+      titulo: rot, cor: campo("RotuloCor") || null, tipo: t,
+      texto: (t === "texto" ? campo("Texto") : t === "pdf" ? "" : campo("Desc")) || null,
+      arquivo_path: (t === "pdf" ? campo("Pdf") : t === "audio" ? campo("Audio") : "") || null,
+      video_ref: vref, video_provider: vref ? provedorDoLink(vid) : null,
+      capa_path: t === "video" || t === "audio" ? campo("Capa") || null : null,
+      titulo_tela: t === "video" || t === "audio" ? campo("Titulo") || null : null,
+      instrucoes: t === "video" || t === "audio" ? campo("Instr") || null : null,
+      publicado: estado !== "desativado", bloqueado: estado === "bloqueado", aviso_bloqueio: estado === "bloqueado" ? campo("Aviso") || null : null,
+    } };
+  }
+  /** As opções já criadas (uma linha cada) e o editor da que está aberta. */
+  function opcoesEbook(a: Aula) {
+    const ESTO: Record<string, [string, string]> = { ativo: ["Ativa", "verde"], bloqueado: ["Bloqueada", "amarelo"], desativado: ["Desativada", "vermelho"] };
+    const TIPON: Record<string, string> = { texto: "Texto", audio: "Áudio", video: "Vídeo", pdf: "PDF" };
+    const linhas = a.opcoes.map((op) => ui.opEdit === op.id ? blocoOpcao(0, op) : `
+              <div class="ea-op-linha">
+                <span class="ea-op-nome"><b>${h(op.rotulo || "Sem nome")}</b><em>${TIPON[op.tipo] || ""}${op.estado === "bloqueado" && op.aviso ? " · " + h(op.aviso) : ""}</em></span>
+                <span class="est3-pil ${ESTO[op.estado || "ativo"][1]}">${ESTO[op.estado || "ativo"][0]}</span>
+                <button type="button" class="al-botao pequeno" data-a="op-editar" data-id="${op.id}">${IC_CURSO.lapis}Editar</button>
+                <button type="button" class="cfg-lixo" data-a="op-remover" data-id="${op.id}" aria-label="Remover ${h(op.rotulo)}">${IC_MOD.lixo}</button>
+              </div>`).join("");
+    return `<div class="ea-ops" data-ops>${linhas || (ui.opEdit === "nova" ? "" : `<p class="mp-dica" style="margin:0">Nenhuma opção ainda. A aluna vê só o botão principal do e-book.</p>`)}${ui.opEdit === "nova" ? blocoOpcao(0, OPCAO_NOVA()) : ""}</div>
+        ${ui.opEdit === "nova" ? "" : `<div class="ea-op-novabt"><button type="button" class="al-botao-ouro" data-a="op-nova">${IC_CURSO.mais}Adicionar nova opção de leitura</button>${dicaCampo(`Cria mais um botão na tela do e-book, embaixo do botão principal. Pode abrir um texto (um resumo, as orações), um áudio, um vídeo ou um PDF. Cada opção pode ficar ativa, bloqueada (a aluna vê com cadeado e o aviso que você escrever) ou desativada (não aparece).`, "aula.nova-opcao")}</div>`}`;
   }
   function telaAula() {
     const x = ui.aula ? acharAula(ui.aula) : null;
@@ -4049,8 +4096,7 @@ export function montar(app: HTMLElement) {
 
       <section class="cs-cartao ea-opcoes" data-campo-pdf${tipoA === "pdf" ? "" : " hidden"}>
         <div class="mp-cab"><span class="mp-cab-ic">${IC_LIVRO_BT}</span><div><h3 class="rotulo-ajuda">Outras opções do e-book ${dicaCampo(AJ.op2)}</h3><p>Cada opção vira um botão na tela do e-book, embaixo do “${"Ler ebook completo"}”.</p></div></div>
-        <div class="ea-ops" data-ops>${(a.opcoes.length ? a.opcoes : [OPCAO_NOVA("Ler apenas as orações")]).map((op, k) => blocoOpcao(k, op)).join("")}</div>
-        <button type="button" class="al-botao ea-op-add" data-a="op-add">${IC_CURSO.mais}Adicionar outra opção</button>
+        ${opcoesEbook(a)}
       </section>
     </section>`;
   }
@@ -4409,6 +4455,27 @@ export function montar(app: HTMLElement) {
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
     fr.contentWindow?.postMessage({ tipo: "previa-inicio", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha } }, location.origin);
   }
+  /**
+   * Configurações: a página não rola; rola só o formulário (lado esquerdo) e o
+   * miolo do celular. A prévia fica parada. A altura vem de onde a grade começa.
+   */
+  function ajustarCfgAltura() {
+    const g = document.querySelector<HTMLElement>(".cfg-grade"); if (!g) return;
+    if (innerWidth <= 1024) { g.style.removeProperty("height"); return; }
+    const topo = g.getBoundingClientRect().top + scrollY;
+    g.style.height = `calc(100vh - ${Math.round(topo) + 18}px)`;
+    const sobra = document.documentElement.scrollHeight - innerHeight;
+    if (sobra > 0) g.style.height = `calc(100vh - ${Math.round(topo) + 18 + sobra}px)`;
+    ajustarTelaPrevia();
+  }
+  /** O desenho do app no celular foi feito para 250 px de largura: num celular menor, diminui junto. */
+  function ajustarTelaPrevia() {
+    const cel = document.querySelector<HTMLElement>("#cfgPrevia.pv-celular"), tela = cel?.querySelector<HTMLElement>(".pv-tela"); if (!cel || !tela) return;
+    const z = Math.min(1, (cel.clientWidth - 20) / 250);
+    Object.assign(tela.style, { zoom: String(z), width: 100 / z + "%", height: 100 / z + "%" });
+  }
+  window.addEventListener("resize", () => ajustarCfgAltura());
+  new MutationObserver(() => ajustarTelaPrevia()).observe(document.body, { childList: true, subtree: true });
   function posicionarCel() {
     const alvo = document.getElementById("cfgCel");
     if (!alvo) { if (celReal) celReal.style.display = "none"; return; }
@@ -5571,6 +5638,31 @@ export function montar(app: HTMLElement) {
         });
         break;
       }
+      case "op-nova": ui.opEdit = "nova"; break;
+      case "op-editar": ui.opEdit = d.id; break;
+      case "op-cancelar": ui.opEdit = ""; break;
+      case "op-salvar": {
+        const x = ui.aula ? acharAula(ui.aula) : null, bl = el.closest<HTMLElement>("[data-op-bloco]"); if (!x || !bl) return;
+        const r = lerOpcao(bl); if ("erro" in r) { toast(r.erro); return; }
+        const opId = d.id;
+        void executar(async () => {
+          if (opId) falhou(await supabase.from("conteudos").update(r.dados).eq("id", opId).select("id").single());
+          else falhou(await supabase.from("conteudos").insert({ ...r.dados, produto_id: x.c.id, aula_id: x.a.id, opcao: true, ordem: x.a.opcoes.length }).select("id").single());
+          ui.opEdit = "";
+          return opId ? "Opção salva." : "Opção criada.";
+        });
+        return;
+      }
+      case "op-remover": {
+        const x = ui.aula ? acharAula(ui.aula) : null, op = x?.a.opcoes.find((o) => o.id === d.id); if (!op) return;
+        confirmar({ titulo: "Remover a opção " + (op.rotulo || "") + "?", texto: "O botão sai da tela do e-book. Isso não tem como desfazer.", rotulo: "Remover opção" }, async () => {
+          falhou(await supabase.from("conteudos").delete().eq("pai_id", op.id).select("id"));
+          falhou(await supabase.from("conteudos").delete().eq("id", op.id).select("id"));
+          ui.opEdit = "";
+          return "Opção removida.";
+        });
+        return;
+      }
       case "op-tirar": {
         el.closest("[data-op-bloco]")?.remove();
         document.querySelectorAll<HTMLElement>("[data-ops] [data-op-tit]").forEach((x, k) => { x.textContent = (ORDINAL[k] || k + 2 + "ª") + " opção"; });
@@ -6143,31 +6235,9 @@ export function montar(app: HTMLElement) {
         if (video && !ref) { toast("Não reconheci o vídeo. Cole o link do Cloudflare Stream ou só o identificador."); return; }
         const texto = (form.elements.namedItem("texto") as HTMLTextAreaElement).value;
         const x0 = acharAula(id)!.a; const velho = { capa: x0.capa, texto: x0.texto, video: x0.video, resumo: x0.resumo, exercicio: x0.exercicio };
-        // E-book: o botão do PDF e as outras opções, lidas de cada bloco na tela.
-        type LinhaOp = { id: string; dados: Record<string, unknown> };
-        const opcoes: LinhaOp[] = [];
-        if (tipo === "pdf") {
-          let erroOp = "";
-          document.querySelectorAll<HTMLElement>("[data-ops] [data-op-bloco]").forEach((bl, ordem) => {
-            const campo = (sufixo: string) => (bl.querySelector<HTMLInputElement>(`[name$="${sufixo}"]`)?.value ?? "").trim();
-            const rot = campo("Rotulo"); const t = (bl.querySelector<HTMLSelectElement>("[data-op2-tipo]")?.value || "texto") as Opcao["tipo"];
-            const vid = t === "video" ? campo("Video") : ""; const vref = vid ? idDoVideo(vid) : null;
-            if (vid && !vref) erroOp = "Não reconheci o vídeo da opção " + (ordem + 2) + ". Cole o link do Cloudflare Stream ou só o identificador.";
-            if (!rot && !campo("Texto") && !campo("Pdf") && !vid && !campo("Audio")) return; // bloco vazio: não guarda
-            opcoes.push({ id: bl.dataset.opId || "", dados: {
-              titulo: rot || "Opção", cor: campo("RotuloCor") || null, tipo: t, ordem,
-              texto: (t === "texto" ? campo("Texto") : t === "pdf" ? "" : campo("Desc")) || null,
-              arquivo_path: (t === "pdf" ? campo("Pdf") : t === "audio" ? campo("Audio") : "") || null,
-              video_ref: vref, video_provider: vref ? provedorDoLink(vid) : null,
-              capa_path: t === "video" || t === "audio" ? campo("Capa") || null : null,
-              titulo_tela: t === "video" || t === "audio" ? campo("Titulo") || null : null,
-              instrucoes: t === "video" || t === "audio" ? campo("Instr") || null : null,
-            } });
-          });
-          if (erroOp) { toast(erroOp); return; }
-        }
-        const idsOp = new Set(opcoes.map((o) => o.id).filter(Boolean));
-        const opApagar = tipo === "pdf" ? xa.a.opcoes.filter((o) => !idsOp.has(o.id)).map((o) => o.id) : [];
+        // As outras opções do e-book são salvas uma a uma, no próprio editor delas (op-salvar).
+        const opcoes: { id: string; dados: Record<string, unknown> }[] = [];
+        const opApagar: string[] = [];
         const botaoEb = tipo === "pdf" ? { botao_ebook: v("botaoEbook") || null, botao_ebook_cor: v("botaoEbookCor") || null } : {};
         const extrasAula: Record<string, string | null> = {};
         if (x0.resumo !== null) {
@@ -6398,6 +6468,9 @@ export function montar(app: HTMLElement) {
 
   /* ---------- eventos ---------- */
   let apertou = { x: 0, y: 0 };
+  // Arrastar só vale enquanto o botão está apertado na alça: soltou, tudo volta a ser selecionável.
+  const soltarArrasto = () => setTimeout(() => app.querySelectorAll<HTMLElement>('[draggable="true"]').forEach((el) => { if (el.tagName !== "BUTTON") el.draggable = false; }), 0);
+  document.addEventListener("mouseup", soltarArrasto); document.addEventListener("dragend", soltarArrasto);
   app.addEventListener("mousedown", (e) => {
     apertou = { x: e.clientX, y: e.clientY };
     const alca = (e.target as HTMLElement).closest?.('[class*="alca"]');
@@ -6490,6 +6563,11 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-rel-ate")) { ui.relAte = t.value; render(); return; }
     if (t.hasAttribute("data-cur-al-de")) { ui.curAlDe = t.value; ui.curAlFiltro = ""; render(); return; }
     if (t.hasAttribute("data-cur-al-ate")) { ui.curAlAte = t.value; ui.curAlFiltro = ""; render(); return; }
+    if (t.hasAttribute("data-op-estado")) {
+      const av = t.closest<HTMLElement>("[data-op-bloco]")?.querySelector<HTMLElement>("[data-op-aviso]");
+      if (av) av.hidden = t.value !== "bloqueado";
+      return;
+    }
     if (t.hasAttribute("data-op2-tipo")) {
       const bl = t.closest<HTMLElement>("[data-op-bloco]"); if (!bl) return;
       const gr = t.value === "video" || t.value === "audio" ? "midia" : t.value;

@@ -216,6 +216,8 @@ type LinhaProduto = {
 
 type LinhaConteudo = {
   opcao?: boolean | null;
+  bloqueado?: boolean | null;
+  aviso_bloqueio?: string | null;
   cor?: string | null;
   capa_path?: string | null;
   titulo_tela?: string | null;
@@ -300,7 +302,7 @@ export async function minhasAberturas(): Promise<Map<string, string>> {
 }
 
 export async function carregarCatalogo(): Promise<Catalogo> {
-  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes, catsAba] =
+  const [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos, ajustes, catsAba, trancadas] =
     await Promise.all([
       supabase.from("modulos").select("*").order("ordem"),
       supabase.from("aulas").select("*").order("ordem"),
@@ -311,6 +313,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
       supabase.from("categorias_aba").select("id, publicado, bloqueada_geral, icone, cor, ordem"),
+      supabase.rpc("opcoes_bloqueadas"),
     ]);
 
   for (const r of [modulos, aulas, categorias, presentes, aoVivo, produtos, conteudos]) {
@@ -327,7 +330,15 @@ export async function carregarCatalogo(): Promise<Catalogo> {
   const conteudoDoPresente = new Map<string, Conteudo[]>();
   const conteudoDoProduto = new Map<string, Conteudo[]>();
 
-  for (const k of (conteudos.data ?? []) as LinhaConteudo[]) {
+  // Opções bloqueadas: o banco não entrega o conteúdo, só o botão com cadeado e o aviso.
+  const linhas = ((conteudos.data ?? []) as LinhaConteudo[]).slice();
+  const ja = new Set(linhas.map((k) => k.id));
+  for (const t of (trancadas.data ?? []) as Array<{ id: string; aula_id: string | null; presente_id: string | null; modulo_id: string | null; produto_id: string; tipo: Conteudo["tipo"]; titulo: string | null; cor: string | null; ordem: number; aviso: string | null }>) {
+    if (ja.has(t.id)) continue;
+    linhas.push({ id: t.id, produto_id: t.produto_id, modulo_id: t.modulo_id, aula_id: t.aula_id, presente_id: t.presente_id, tipo: t.tipo, titulo: t.titulo, texto: null, arquivo_path: null, url: null, video_provider: null, video_ref: null, ordem: t.ordem, publicado: true, opcao: true, cor: t.cor, bloqueado: true, aviso_bloqueio: t.aviso } as LinhaConteudo);
+  }
+
+  for (const k of linhas) {
     const item: Conteudo = {
       id: k.id,
       produtoId: k.produto_id,
@@ -345,6 +356,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       publicado: k.publicado,
       opcao: !!k.opcao, cor: k.cor ?? null, capaPath: k.capa_path ?? null,
       tituloTela: k.titulo_tela ?? null, instrucoes: k.instrucoes ?? null, paiId: k.pai_id ?? null,
+      bloqueado: !!k.bloqueado, avisoBloqueio: k.aviso_bloqueio ?? null,
     };
 
     const [mapa, chave] = k.aula_id

@@ -3404,3 +3404,32 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 .mp-capa-h:empty::after, .mp-capa-v:empty::after, .ea-capa-img.sem::after { content: "Adicionar imagem"; position: absolute; left: 0; right: 0; top: calc(50% + 12px); text-align: center; font-size: 13px; font-weight: 600; color: #8f8167; }
 .ea-capa-img.sem > :not(.e3-selo):not([class*="selo"]) { visibility: hidden; }
 [data-tema="escuro"] .mp-capa-h:empty, [data-tema="escuro"] .mp-capa-v:empty, [data-tema="escuro"] .ea-capa-img.sem { background: #1d1a15 !important; border-color: #4a3f2c; }
+/* Todo texto do painel pode ser selecionado e copiado, inclusive dentro dos campos (Safari e Chrome). */
+body, .casca, .casca *:not([class*="alca"]):not(img) { -webkit-user-select: text !important; user-select: text !important; }
+input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !important; user-select: text !important; -webkit-user-drag: none; }
+/* Configurações (telas largas): rola só o formulário; a prévia fica parada e o celular rola por dentro. */
+@media (min-width: 1025px) {
+  .cfg-grade { align-items: stretch; margin-bottom: 0; min-height: 420px; }
+  .cfg-grade > .cfg-form { margin-bottom: 0; overflow-y: auto; overscroll-behavior: contain; min-height: 0; position: relative; }
+  .cfg-previa { position: relative; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .cfg-previa .cfg-pvfundo { flex: 1; min-height: 0; }
+  .cfg-previa .pv-celular { height: 100%; max-height: 560px; min-height: 0; }
+  .cfg-previa .pv-computador { height: 100%; max-height: 420px; }
+}
+.pv-rolo { overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.pv-rolo::-webkit-scrollbar { display: none; }
+
+/* Outras opções do e-book: uma linha por opção, editor só quando abre. */
+.ea-op-linha { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--linha-suave); border-radius: 12px; background: var(--aa-cartao); }
+.ea-op-nome { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ea-op-nome b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ea-op-nome em { font-style: normal; font-size: 13px; opacity: .7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ea-op-linha .est3-pil { cursor: default; }
+.ea-op-linha .cfg-lixo { flex: none; }
+.ea-op-novabt { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+@media (max-width: 640px) { .ea-op-linha { flex-wrap: wrap; } .ea-op-nome { flex-basis: 100%; } }
+.ea-op-est { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
+.ea-op-est [hidden] { display: none; }
+.ea-op-bts { display: flex; align-items: center; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--linha-suave); }
+.ea-op-bts > span { flex: 1; }
+.ea-op-bts > button { min-height: 40px; }
