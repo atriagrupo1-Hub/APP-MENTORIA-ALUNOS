@@ -134,6 +134,17 @@ export const PARTES_PERFIL: ParteTela[] = [
   { k: "texto", nome: "Texto do fim", desc: "O texto livre embaixo dos botões.", tipo: "texto", sel: ".pf-al .pf-al-txt" },
 ];
 
+/** As partes do pop-up "Ativar notificações" (Configurações → Perfil → Notificações, 0102). */
+export const PARTES_NOTIF: ParteTela[] = [
+  { k: "caixa", nome: "Caixa do pop-up", desc: "Fundo, contorno, sombra e cantos.", tipo: "card", sel: ".np-fundo .np" },
+  { k: "veu", nome: "Fundo atrás do pop-up", desc: "A cor que escurece a tela atrás.", tipo: "card", sel: ".np-fundo" },
+  { k: "sino", nome: "Sino", desc: "O círculo com o sino no alto.", tipo: "botao", sel: ".np-fundo .np-sino" },
+  { k: "titulo", nome: "Título", desc: "", tipo: "texto", sel: ".np-fundo .np h2" },
+  { k: "texto", nome: "Texto", desc: "", tipo: "texto", sel: ".np-fundo .np p" },
+  { k: "ativar", nome: "Botão grande (ativar)", desc: "", tipo: "botao", sel: ".np-fundo .np-ativar" },
+  { k: "depois", nome: "Botão pequeno (agora não)", desc: "", tipo: "botao", sel: ".np-fundo .np-depois" },
+];
+
 /** O CSS de uma tela (aula ou início) com o estilo escolhido (vazio = visual padrão). */
 export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): string {
   if (!e) return "";
@@ -147,3 +158,4 @@ export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): st
 export const cssDaAula = (e: Estilo | null | undefined) => cssDaTela(PARTES_AULA, e);
 export const cssDoInicio = (e: Estilo | null | undefined) => cssDaTela(PARTES_INICIO, e);
 export const cssDoPerfil = (e: Estilo | null | undefined) => cssDaTela(PARTES_PERFIL, e);
+export const cssDaNotif = (e: Estilo | null | undefined) => cssDaTela(PARTES_NOTIF, e);
