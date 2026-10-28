@@ -1464,3 +1464,11 @@ html.modo-previa::-webkit-scrollbar { display: none; }
 .np-ctxt b { display: block; font-size: 15px; }
 .np-ctxt em { display: block; margin-top: 2px; font-style: normal; font-size: 13px; opacity: .8; }
 .np-cbt { flex: 0 0 auto; min-height: 40px; padding: 0 16px; font: inherit; font-size: 14px; font-weight: 800; color: #1a140a; background: linear-gradient(180deg, #f4dfa6, #d4b170 55%, #b8924e); border: 0; border-radius: 999px !important; cursor: pointer; }
+
+/* Opção do e-book bloqueada (0097): botão com cadeado, apagado; ao tocar, o aviso. */
+.eb-op-bloq { opacity: .62; filter: saturate(.55); }
+.eb-op-bloq svg { width: 18px; height: 18px; }
+.eb-bloq-folha { text-align: center; padding-top: 6px; }
+.eb-bloq-folha .eb-bloq-ic { display: inline-flex; width: 52px; height: 52px; border-radius: 50%; align-items: center; justify-content: center; background: rgba(201, 162, 77, .14); color: var(--ouro, #c9a24d); margin-bottom: 10px; }
+.eb-bloq-folha .eb-bloq-ic svg { width: 24px; height: 24px; }
+.eb-bloq-folha p { margin: 8px 0 0; line-height: 1.55; opacity: .85; }

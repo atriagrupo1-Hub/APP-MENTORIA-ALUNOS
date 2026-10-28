@@ -1244,7 +1244,7 @@ export function montar(raiz: HTMLElement) {
         <p class="eb-desc">${h(t.texto || "Um livro da mentoria para ler no seu tempo. Abra quando quiser, no celular ou no computador.")}</p>
         ${livre ? `
         <button class="${clsBotao(t.botaoCor)}"${corBotao(t.botaoCor)} data-a="ler-pdf-aula">${ICONES.livro}${h(t.botao || "Ler ebook completo")}</button>
-        ${(t.opcoes || []).map((o) => `<button class="${clsBotao(o.cor, "eb-ler-2")}"${corBotao(o.cor)} data-a="ebook-opcao" data-id="${o.id}">${icOpcao(o.tipo)}${h(o.titulo || "Abrir")}</button>`).join("")}
+        ${(t.opcoes || []).map((o) => `<button class="${clsBotao(o.cor, "eb-ler-2")}${o.bloqueado ? " eb-op-bloq" : ""}"${corBotao(o.cor)} data-a="ebook-opcao" data-id="${o.id}">${o.bloqueado ? ICONES.cadeado : icOpcao(o.tipo)}${h(o.titulo || "Abrir")}</button>`).join("")}
         <p class="eb-dica">O ebook abre aqui mesmo, dentro do aplicativo.</p>` : `<p class="eb-dica eb-fech">${ICONES.cadeado}${h(txtFech || "Libera em breve")}</p>`}
       </div>`;
   }
@@ -1784,6 +1784,7 @@ export function montar(raiz: HTMLElement) {
       case "ebook-opcao": {
         const c = conteudoAtual(); const item = c && (c.tipo === "aula" ? c.md.aulas[c.a] : c.curso.itens[c.j]);
         const op = item && (item.opcoes || []).find((x) => x.id === d.id); if (!op) return;
+        if (op.bloqueado) { folha(`<div class="eb-bloq-folha"><span class="eb-bloq-ic">${ICONES.cadeado}</span><h2 class="serif">${h(op.titulo || "Em breve")}</h2><p>${h((op.avisoBloqueio || "").trim() || "Este conteúdo ainda não foi liberado. Assim que liberar, ele abre aqui.")}</p></div><button class="botao-2 largo" data-a="fechar-folha" style="margin-top:16px;width:100%">Entendi</button>`); return; }
         if (op.tipo === "texto") {
           if (!(op.texto || "").trim()) { aviso("Este conteúdo será adicionado em breve."); return; }
           const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;padding:28px 22px 60px;font-family:Georgia,'Cormorant Garamond',serif;font-size:18px;line-height:1.75;color:#3a2a14;background:linear-gradient(180deg,#f7ecd9,#f3e4c8)}h1{font-size:26px;line-height:1.25;text-align:center;color:#5a3d16;margin:6px 0 22px}p{margin:0 0 16px}b{color:#5a3d16}</style></head><body><h1>${h(op.titulo)}</h1>${paragrafos(op.texto)}</body></html>`;

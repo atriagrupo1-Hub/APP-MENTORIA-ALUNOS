@@ -141,6 +141,9 @@ export type Conteudo = {
   instrucoes?: string | null;
   /** Conteúdo extra de uma opção: aponta para ela. */
   paiId?: string | null;
+  /** Opção bloqueada (0097): a aluna vê o botão com cadeado e lê o aviso. */
+  bloqueado?: boolean;
+  avisoBloqueio?: string | null;
 };
 
 /**
