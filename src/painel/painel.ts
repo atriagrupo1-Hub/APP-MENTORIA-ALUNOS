@@ -18,6 +18,8 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
+import { cssFundo, limparEstilo, type Estilo } from "@/data/estilo";
+import { abrirSeletorEstilo } from "./seletor-estilo";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
@@ -54,7 +56,7 @@ type Opcao = {
   /** Ativa (a aluna vê), bloqueada (vê com cadeado e o aviso) ou desativada (não aparece) — 0097. */
   estado?: "ativo" | "bloqueado" | "desativado"; aviso?: string;
 };
-type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; estilo: Estilo | null; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; catAba: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -76,7 +78,7 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -252,7 +254,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, rotulo").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id, publicado, bloqueado, aviso_bloqueio").not("aula_id", "is", null).order("ordem"),
@@ -324,7 +326,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -427,7 +429,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
 
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "" })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cfgIni.data?.marca_titulo ?? "", marcaSub: cfgIni.data?.marca_sub ?? "", fraseRetorno: cfgIni.data?.frase_retorno ?? "", saudacao: cfgIni.data?.inicio_saudacao ?? "Bem-vindo(a), {nome}", exibirDestaques: cfgIni.data?.exibir_destaques !== false, jornada: cfgIni.data?.produto_jornada ?? "", banner: cfgIni.data?.inicio_banner ?? "card", bannerImg: cfgIni.data?.inicio_banner_imagem ?? "", bannerVideo: cfgIni.data?.inicio_banner_video ?? "", estilo: cfgIni.data?.inicio_estilo ?? "padrao",
@@ -525,7 +527,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null> }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2342,6 +2344,15 @@ export function montar(app: HTMLElement) {
     return t;
   }
   const presBotao = () => S.cats.find((k) => k.icone === "presentes" && !S.cursos.some((c) => c.id === S.config.jornada && c.cat === k.id));
+  /** Botão que abre o seletor de estilo de uma categoria ou módulo; a amostra mostra o que está escolhido. */
+  function botaoEstilo(acao: string, id: string, nome: string, e: Estilo | null, tema: string) {
+    const v = e && (e.botao || e.card), f = v?.fundo;
+    const am = f ? cssFundo(f) : COR_HEX[tema] || (/^#[0-9a-f]{6}$/i.test(tema) ? tema : "#c9a25c");
+    const borda = v?.borda ? `;box-shadow:inset 0 0 0 2px ${v.borda.cor}` : "";
+    return `<button type="button" class="se-abre" data-a="${acao}" data-id="${id}" title="Cores, degradê, contorno, sombra, tamanho e formato" aria-label="Estilo de ${h(nome)}"><i style="background:${h(am)}${h(borda)}"></i>Estilo</button>`;
+  }
+  const PARTES_CAT = [{ k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }];
+  const PARTES_MOD = [{ k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }, { k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "aulas", nome: "Cards das aulas", tipo: "card" as const }];
   function cfgModulos() {
     const t = S.config.telas, jor = curso(S.config.jornada);
     const mods = jor ? jor.modulos : [];
@@ -2367,6 +2378,7 @@ export function montar(app: HTMLElement) {
                 <span class="cfg-mini">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}</span>
                 <b>${h(m.nome)}</b>
                 <span class="cfg-aulas">${p(m.aulas.length, "aula", "aulas")}</span>
+                ${botaoEstilo("estilo-mod", m.id, m.nome, m.estilo, m.cor)}
                 ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo))}
                 <button type="button" class="eq-pts" data-a="cfg-mod-ir" data-id="${jor!.id}" title="Abrir o curso para editar" aria-label="Editar ${h(m.nome)}">${IC_EQ.pontos}</button>
               </div>`; }).join("")}</div>
@@ -2384,14 +2396,14 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.presentes}</span><div><h2>Presentes</h2><p>Configure os botões de categorias e o conteúdo que aparece na área de Presentes.</p></div></div>
           ${tituloCfg("presTitulo", "presTitEstilo", t.presTitulo, t.presTitEstilo, `<small>Nome que aparece no topo da tela de Presentes.</small>`)}
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Botões de categorias ${dicaCampo(`As categorias que aparecem dentro de Presentes no app. Para cada uma dá para escolher o ícone e a cor, deixar visível ou oculta, editar a capa e o conteúdo, excluir e arrastar para mudar a ordem.`, "cfg.bot-es-de-categorias")}</h3><p class="cfg-sub">Personalize os botões que aparecem para a aluna na área de Presentes.</p></div>${pb ? `<button type="button" class="al-botao-ouro pequeno" data-a="catx-nova" data-id="${pb.id}">${IC_EQ.mais}Adicionar categoria</button>` : ""}</div>
+            <div class="cfg-blcab"><div><h3>Botões de categorias ${dicaCampo(`As categorias que aparecem dentro de Presentes no app. Para cada uma dá para escolher o ícone e o estilo (qualquer cor, degradê, contorno, sombra, tamanho e formato do botão, do card e da capa), deixar visível ou oculta, editar a capa e o conteúdo, excluir e arrastar para mudar a ordem.`, "cfg.bot-es-de-categorias")}</h3><p class="cfg-sub">Personalize os botões que aparecem para a aluna na área de Presentes.</p></div>${pb ? `<button type="button" class="al-botao-ouro pequeno" data-a="catx-nova" data-id="${pb.id}">${IC_EQ.mais}Adicionar categoria</button>` : ""}</div>
             <div class="cfg-ordem">${cats.map((x) => { const c = capaSite(x.capa), ic = x.icone || "estrela", cor = x.cor || "dourado", vis = x.pub; return `
               <div class="cfg-orl cfg-catl" draggable="true" data-arrasta="${x.id}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
                 <span class="cfg-mini lg">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}</span>
                 <b>${h(x.nome)}</b>
                 <span class="est3"><button type="button" class="cfg-icbt" data-a="estado-menu" data-v="pic:${x.id}" title="Ícone" aria-label="Ícone de ${h(x.nome)}">${IC_CAT_P[ic]}</button>${ui.estMenu === "pic:" + x.id ? `<span class="est3-menu cfg-icmenu" role="menu">${Object.entries(ICONE_DEST).map(([k, nm]) => `<button type="button" role="menuitem" data-a="pcat-icone" data-id="${x.id}" data-v="${k}" title="${nm}" aria-label="${nm}">${IC_CAT_P[k]}</button>`).join("")}</span>` : ""}</span>
-                <span class="est3"><button type="button" class="cfg-corbt" data-a="estado-menu" data-v="pcor:${x.id}" title="Cor" aria-label="Cor de ${h(x.nome)}" style="background:${COR_HEX[cor]}"></button>${ui.estMenu === "pcor:" + x.id ? `<span class="est3-menu cfg-cormenu" role="menu">${Object.entries(COR_DEST).map(([k, nm]) => `<button type="button" role="menuitem" data-a="pcat-cor" data-id="${x.id}" data-v="${k}" title="${nm}" aria-label="${nm}" style="background:${COR_HEX[k]}"></button>`).join("")}</span>` : ""}</span>
+                ${botaoEstilo("estilo-cat", x.id, x.nome, x.estilo, cor)}
                 <button type="button" class="cfg-vis${vis ? " on" : ""}" data-a="pcat-vis" data-id="${x.id}" aria-pressed="${vis}"><i></i>${vis ? "Visível" : "Oculta"}</button>
                 <button type="button" class="al-botao pequeno" data-a="catx-editar" data-id="${x.id}">${IC_EQ.lapis}Editar</button>
                 <button type="button" class="cfg-lixo" data-a="catx-remover" data-id="${x.id}" aria-label="Excluir ${h(x.nome)}">${IC_MOD.lixo}</button>
@@ -4466,7 +4478,7 @@ export function montar(app: HTMLElement) {
     if (aba === "inicio") { mandarPreviaInicio(); return; }
     const t = valoresTelas(document.querySelector<HTMLFormElement>("#cfgTelas"));
     const hex = (x: string) => (/^#[0-9a-f]{6}$/i.test(x || "") ? x.toLowerCase() : "");
-    const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio" };
+    const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio", estilos: ui.prevEst };
     if (aba === "modulos") Object.assign(msg, { ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim() || "Todos os módulos", modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho } });
     else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim() || "Presentes", presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
     else if (aba === "versiculos") Object.assign(msg, { vers: { exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
@@ -5756,6 +5768,24 @@ export function montar(app: HTMLElement) {
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
+      case "estilo-cat": case "estilo-mod": {
+        const ehCat = a === "estilo-cat", x = ehCat ? S.catsAba.find((y) => y.id === d.id) : acharModulo(d.id!)?.m;
+        if (!x || !el) return;
+        const mapa = ehCat ? ui.prevEst.cat : ui.prevEst.mod, id = x.id;
+        abrirSeletorEstilo({
+          ancora: el, titulo: "Estilo de " + x.nome, partes: ehCat ? PARTES_CAT : PARTES_MOD, valor: x.estilo,
+          aoMudar: (e) => { mapa[id] = e; mandarPreviaCfg(); },
+          aoFechar: () => { delete mapa[id]; mandarPreviaCfg(); },
+          aoSalvar: async (e) => {
+            const r = await supabase.from(ehCat ? "categorias_aba" : "modulos").update({ estilo: e }).eq("id", id).select("id").single();
+            if (r.error) { toast(motivo(r.error)); return false; }
+            x.estilo = e;
+            void executar(async () => { await registrar(null, "Mudou o estilo " + (ehCat ? "da categoria " : "do módulo ") + x.nome, ehCat ? ["catx", id] : undefined); return "Estilo de " + x.nome + " salvo."; });
+            return true;
+          },
+        });
+        return;
+      }
       case "pcat-icone": case "pcat-cor": {
         ui.estMenu = ""; const x = S.catsAba.find((y) => y.id === d.id); if (!x) break;
         const campo = a === "pcat-icone" ? "icone" : "cor";
