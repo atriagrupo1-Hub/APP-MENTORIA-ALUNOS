@@ -530,7 +530,7 @@ export function montar(app: HTMLElement) {
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
     abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "posicao", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
-    filtroAl: "todas", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
+    filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
@@ -2122,13 +2122,24 @@ export function montar(app: HTMLElement) {
     vence: (x, y) => (x.validade || "9999").localeCompare(y.validade || "9999"),
     acesso: (x, y) => (y.ultimoAcesso || "").localeCompare(x.ultimoAcesso || ""),
   };
+  /**
+   * Aluna da mentoria (0103): tem acesso ao curso da mentoria, a um módulo dele
+   * ou a uma aula dele — a mesma regra que o banco usa para escolher a versão do app.
+   */
+  function daMentoria(a: Aluna) {
+    const j = curso(S.config.jornada); if (!j) return true;
+    if (a.acesso.cursos.includes(j.id) || j.modulos.some((m) => a.acesso.modulos.includes(m.id))) return true;
+    const ids = new Set(j.modulos.flatMap((m) => m.aulas.map((x) => x.id)));
+    return a.acesso.aulas.some((id) => ids.has(id)) || aulasDaLiberacao(a).some((id) => ids.has(id));
+  }
+  const doGrupo = (a: Aluna) => daMentoria(a) === (ui.grupoAl === "mentoria");
   /** As alunas da busca e do filtro, na ordem escolhida — é também o que a planilha exporta. */
   function listaAlunas() {
     const q = norm(ui.busca).trim();
     const f = FILTROS_AL.find((x) => x[0] === ui.filtroAl) || FILTROS_AL[0];
     const soDigitos = q.replace(/\D/g, "");
     const pelosDigitos = (a: Aluna) => soDigitos.length >= 4 && /^[\d\s()+.\-]+$/.test(q) && a.celular.replace(/\D/g, "").includes(soDigitos);
-    return { f, lista: S.alunas.filter((a) => (casa(q, a.nome + " " + a.login + " " + a.email, a.celular) || pelosDigitos(a)) && f[2](a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
+    return { f, lista: S.alunas.filter((a) => (casa(q, a.nome + " " + a.login + " " + a.email, a.celular) || pelosDigitos(a)) && f[2](a) && doGrupo(a)).sort(ORDENS[ui.ordemAl] || ORDENS.recentes) };
   }
   /*
    * Alunas, no desenho da referência: indicadores com ícone, barra de
@@ -2175,8 +2186,12 @@ export function montar(app: HTMLElement) {
           </select>
         </label>
       </div>
+      <div class="al-grupos cfg-versao-seg" role="group" aria-label="Quais alunas mostrar">
+        ${([["mentoria", "Alunos mentoria", IC_CFG.modulos], ["geral", "Alunos gerais", IC_CFG.inicio]] as const).map(([k, t, ic]) => `<button type="button" data-a="al-grupo" data-v="${k}" aria-pressed="${ui.grupoAl === k}">${ic}${t} (${S.alunas.filter((a) => daMentoria(a) === (k === "mentoria")).length})</button>`).join("")}
+        ${dicaCampo(`Alunos mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Alunos gerais: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de lista (e o app dela) na hora.`, "al.grupos")}
+      </div>
       <div class="al-filtros">
-        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="al-filtro" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter(fn).length})</button>`).join("")}
+        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="al-filtro" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter((a) => fn(a) && doGrupo(a)).length})</button>`).join("")}
       </div>
       ${ui.sel.length ? barraLote() : ""}
       ${lista.length ? `
@@ -5062,6 +5077,7 @@ export function montar(app: HTMLElement) {
       case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
       case "al-filtro": ui.filtroAl = d.v; ui.paginaAl = 1; break;
+      case "al-grupo": ui.grupoAl = d.v === "geral" ? "geral" : "mentoria"; ui.paginaAl = 1; ui.sel = []; break;
       case "sel-limpar": ui.sel = []; break;
       case "lote-remover": {
         const ids = ui.sel.filter((id) => S.alunas.some((x) => x.id === id));
