@@ -388,7 +388,7 @@ export function montar(raiz: HTMLElement) {
     const cfgTopo = cfgAntes ? cfgAntes.scrollTop : null;
     const pagTopo = window.scrollY;
     aplicarEstiloAula();
-    try { renderReal(); } finally {
+    try { renderReal(); if (GERAL && S.tela === "inicio") ligarCarrossel(); } finally {
       const cfg = app.querySelector(".config");
       if (cfg && cfgTopo !== null) { cfg.classList.add("sem-anim"); const c = cfg.querySelector(".config-corpo"); if (c) c.scrollTop = cfgTopo; window.scrollTo(0, pagTopo); }
       encaixarVideo();
@@ -406,7 +406,7 @@ export function montar(raiz: HTMLElement) {
     if (!telas[S.tela]) S.tela = "inicio";
     const n = navAtual();
     app.innerHTML = `
-      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : `<header class="topo"><div class="pagina">
+      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" || (GERAL && S.tela === "inicio") ? "" : `<header class="topo"><div class="pagina">
         <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
         <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
         <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
@@ -591,26 +591,115 @@ export function montar(raiz: HTMLElement) {
   }
   // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
   const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `<b>${h(m.titulo || "")}</b><span>${h(m.sub || "")}</span>`; };
-  /** Início da versão geral: boas-vindas, versículo, banner, destaques e os conteúdos (sem a mentoria). */
+  /*
+   * Início da versão geral (0103), no desenho "AION — Tela Inicial": topo com a
+   * aluna e a marca, um carrossel de destaques, atalhos para as categorias e uma
+   * fileira de cards por categoria (cursos, e-books, frequências…), cada um com
+   * o selo do tipo ou "Bloqueado". Tudo vem do banco: o que está liberado para
+   * ela abre; o resto aparece trancado e não abre.
+   */
+  const IG = {
+    busca: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="6.2"/><path d="M15.8 15.8L20.5 20.5"/></svg>',
+    sino: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.4 10.2a5.6 5.6 0 0111.2 0c0 4 1.4 5.4 1.4 5.4H5c0-.001 1.4-1.4 1.4-5.4z"/><path d="M10.2 18.4a2 2 0 003.6 0"/></svg>',
+    seta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"/><path d="M13 6.5l5.5 5.5L13 17.5"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.4v13.2L19 12z"/></svg>',
+    cad: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.6" width="14" height="9.4" rx="2.3"/><path d="M8.4 10.6V8a3.6 3.6 0 017.2 0v2.6"/></svg>',
+    tudo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 7.9 4.8 4 4.8v13c3.9 0 6.4.6 8 1.8 1.6-1.2 4.1-1.8 8-1.8v-13c-3.9 0-6.4.6-8 1.8z"/><path d="M12 6.6v13"/></svg>',
+  };
+  /** O selo, a linha de baixo e a cor de cada card, pelo tipo do curso. */
+  function seloIg(c, curso) {
+    if (!cursoLiberado(curso)) return { selo: "Bloqueado", sub: "Liberação pela administração", cls: "ig-tr" };
+    if (ehEbook(curso)) return { selo: "E-book", sub: "Leitura completa", cls: "ig-ouro" };
+    const n = curso.itens.length, t = tipoDoCurso(c, curso);
+    if (t === "freq") return { selo: "Playlist", sub: p(n, "faixa", "faixas"), cls: "ig-azul" };
+    if (t === "mestres" || t === "video") return { selo: "Vídeos", sub: p(n, "vídeo", "vídeos"), cls: "ig-ouro" };
+    return { selo: "Curso", sub: p(n, "aula", "aulas"), cls: "ig-ouro" };
+  }
+  function cardIg(x) {
+    const { c, ci, i, curso } = x, key = ci + "-" + i, sl = seloIg(c, curso), livre = sl.cls !== "ig-tr";
+    const acao = livre && ehEbook(curso) ? `data-a="ebook" data-v="${key}"` : `data-a="curso-pres" data-v="${key}"`;
+    return `<button class="ig-card ${sl.cls}" ${acao} aria-label="${h(curso.nome)}${livre ? "" : " (bloqueado)"}"${est(estCat(curso), "card", "card")}>
+        ${curso.capa ? `<span class="ig-card-img">${img(curso.capa, "")}</span>` : ""}<span class="ig-card-veu" aria-hidden="true"></span>
+        <span class="ig-card-in"><span class="ig-selo">${h(sl.selo)}</span><span class="ig-card-tit">${h(curso.nome)}</span>
+          <span class="ig-card-pe"><span>${h(sl.sub)}</span><i aria-hidden="true">${livre ? IG.play : IG.cad}</i></span></span>
+      </button>`;
+  }
+  /** Os slides do carrossel: os destaques do Início (painel); sem destaques, os cursos liberados. */
+  function slidesIg() {
+    const ds = (D && D.inicio && D.inicio.destaques) || [];
+    if (ds.length) return ds.slice(0, 8).map((d) => {
+      const ci = d.destino === "categoria" && d.categoriaId ? CATS().findIndex((c) => c.id === d.categoriaId) : -1;
+      const alvo = d.destino === "presentes" ? `data-a="ir" data-v="presentes"` : ci >= 0 ? `data-a="categoria" data-v="${ci}"` : `data-a="ir-cat" data-v="${h(d.categoriaNome || d.rotulo)}"`;
+      return { rot: d.rotulo || "Destaque", tit: d.titulo, desc: d.descricao, bt: d.botao || "Acessar agora", img: fotoOuSite(d.imagem), alvo };
+    });
+    return PRESENTES().filter((x) => cursoLiberado(x.curso)).slice(0, 5).map((x) => ({ rot: "Destaque", tit: x.curso.nome, desc: x.curso.descricao, bt: "Acessar agora", img: x.curso.capa,
+      alvo: ehEbook(x.curso) ? `data-a="ebook" data-v="${x.ci}-${x.i}"` : `data-a="curso-pres" data-v="${x.ci}-${x.i}"` }));
+  }
+  /** Card de um conteúdo (aula, áudio, e-book) dentro da fileira da categoria. */
+  function itemIg(x, t, j) {
+    const { c, ci, i, curso } = x, livre = cursoLiberado(curso) && aulaAdmin(t.id), freq = tipoDoCurso(c, curso) === "freq";
+    const sl = !livre ? { selo: "Bloqueado", sub: "Liberação pela administração", cls: "ig-tr" }
+      : t.tipoMidia === "pdf" ? { selo: "E-book", sub: "Leitura completa", cls: "ig-ouro" }
+      : freq ? { selo: "Áudio", sub: feitaId(t.id) ? "Ouvido" : "Ouvir", cls: "ig-azul" }
+      : { selo: "Vídeo", sub: feitaId(t.id) ? "Assistido" : "Assistir", cls: "ig-ouro" };
+    return `<button class="ig-card ${sl.cls}" data-a="presente" data-v="${ci}-${i}-${j}" aria-label="${h(t.titulo)}${livre ? "" : " (bloqueado)"}"${est(estCat(curso), "card", "card")}>
+        ${t.capa || curso.capa ? `<span class="ig-card-img">${img(t.capa || curso.capa, "")}</span>` : ""}<span class="ig-card-veu" aria-hidden="true"></span>
+        <span class="ig-card-in"><span class="ig-selo">${h(sl.selo)}</span><span class="ig-card-tit">${h(t.titulo)}</span>
+          <span class="ig-card-pe"><span>${h(sl.sub)}</span><i aria-hidden="true">${livre ? IG.play : IG.cad}</i></span></span>
+      </button>`;
+  }
   function telaInicioGeral() {
-    const primeiro = (S.nome || "").split(" ")[0];
-    const lista = PRESENTES();
-    const meus = lista.filter((x) => cursoLiberado(x.curso)), outros = lista.filter((x) => !cursoLiberado(x.curso));
+    const primeiro = (S.nome || "").trim();
+    const m = (D && D.inicio && D.inicio.marca) || {};
+    const n = NOTIF(), sinoAviso = !!(n && n.ativo && !S.notifOn && !PREVIA);
+    const slides = slidesIg(), lista = PRESENTES();
+    // Os liberados para ela primeiro; os trancados depois.
+    const filas = lista.filter((x) => cursoLiberado(x.curso)).concat(lista.filter((x) => !cursoLiberado(x.curso)));
+    const dois = (k) => String(k).padStart(2, "0");
     return `
-    <div class="pa">
-      <section class="pa-ola${estiloOla()}">
-        ${versNo("topo")}
-        <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
-        ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
-        ${versNo("mensagem")}
-      </section>
-      ${bannerInicio()}
-      ${meus.length ? `<section class="mt-bloco ig-bloco" aria-labelledby="h-meus"><div class="mt-cab"><p class="mt-rot" id="h-meus">Seus conteúdos</p></div><div class="cat-grade">${meus.map(cartaoPresente).join("")}</div></section>` : ""}
+    <div class="ig">
+      <header class="ig-topo">
+        <button class="ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
+        <div class="ig-ola"><span>${h(String((D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}").split("{nome}")[0].replace(/[,\s]+$/, "") || "Bem-vindo(a)")},</span><b>${h(primeiro || "aluna")}</b></div>
+        <div class="ig-marca">${APAR && APAR.logo ? `<img src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `<b>${h(m.titulo || "")}</b>${m.sub ? `<span>${h(m.sub)}</span>` : ""}`}</div>
+        <div class="ig-bts">${n && n.ativo ? `<button class="ig-bt" data-a="${sinoAviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${sinoAviso ? "<i></i>" : ""}</button>` : ""}</div>
+      </header>
+      ${slides.length ? `
+      <section class="ig-hero" aria-label="Destaques">
+        <div class="ig-trilho" data-ig-trilho>${slides.map((sd, k) => `
+          <button class="ig-slide" ${sd.alvo} aria-label="${h(sd.tit)}">
+            ${sd.img ? `<span class="ig-slide-img">${img(sd.img, "")}</span>` : ""}<span class="ig-slide-veu" aria-hidden="true"></span>
+            <span class="ig-slide-in"><span class="ig-rot">${h(sd.rot)}</span><span class="ig-tit">${h(sd.tit)}</span><span class="ig-linha" aria-hidden="true"></span>
+              ${sd.desc ? `<span class="ig-desc">${h(sd.desc)}</span>` : ""}<span style="flex:1"></span>
+              <span class="ig-cta"><span>${h(sd.bt)}</span>${IG.seta}</span></span>
+            <span class="ig-cont"><b>${dois(k + 1)}</b> / ${dois(slides.length)}</span>
+          </button>`).join("")}</div>
+        ${slides.length > 1 ? `<div class="ig-pontos">${slides.map((_, k) => `<button data-a="ig-slide" data-v="${k}" aria-label="Destaque ${k + 1}"${k === 0 ? ' class="on"' : ""}></button>`).join("")}</div>` : ""}
+      </section>` : ""}
+      ${filas.length > 1 ? `<div class="ig-atalhos">
+        <button data-a="ir" data-v="presentes"><i>${IG.tudo}</i><span>Tudo</span></button>
+        ${filas.map((x) => `<button ${ehEbook(x.curso) ? `data-a="ebook"` : `data-a="curso-pres"`} data-v="${x.ci}-${x.i}"><i>${icPresente(x.c, x.curso) || IG.tudo}</i><span>${h(x.curso.nome)}</span></button>`).join("")}
+      </div>` : ""}
+      ${versNo("topo")}${versNo("mensagem")}
+      ${filas.map((x) => { const abre = ehEbook(x.curso) ? `data-a="ebook" data-v="${x.ci}-${x.i}"` : `data-a="curso-pres" data-v="${x.ci}-${x.i}"`; return `
+      <section class="ig-fila" aria-label="${h(x.curso.nome)}">
+        <div class="ig-fila-cab"><div><h2>${h(x.curso.nome)}</h2>${x.curso.descricao ? `<p>${h(x.curso.descricao)}</p>` : ""}</div>
+          <button class="ig-ver" ${abre}>Ver todos${IG.seta}</button></div>
+        <div class="ig-cards">${x.curso.itens.length ? x.curso.itens.map((t, j) => itemIg(x, t, j)).join("") : cardIg(x)}</div>
+      </section>`; }).join("")}
       ${versNo("depois")}
-      ${cartoesDestaque()}
-      ${outros.length ? `${divisorIni()}<div class="cat-grade">${outros.map(cartaoPresente).join("")}</div>` : ""}
-      ${!lista.length ? `<div class="vazio" style="margin-top:22px">Em breve, conteúdos para você.</div>` : ""}
+      ${!filas.length ? `<div class="vazio" style="margin:22px 16px">Em breve, conteúdos para você.</div>` : ""}
     </div>`;
+  }
+  /** Carrossel do Início geral: os pontinhos e o "01 / 05" seguem o deslize; passa sozinho a cada 6 s. */
+  let igTimer = 0;
+  function ligarCarrossel() {
+    clearInterval(igTimer);
+    const tr = app.querySelector("[data-ig-trilho]"); if (!tr) return;
+    const pts = [...app.querySelectorAll(".ig-pontos button")];
+    const atual = () => Math.round(tr.scrollLeft / Math.max(1, tr.clientWidth));
+    tr.addEventListener("scroll", () => { const k = atual(); pts.forEach((b, j) => b.classList.toggle("on", j === k)); }, { passive: true });
+    if (pts.length > 1 && !PREVIA) igTimer = setInterval(() => { if (!document.body.contains(tr)) { clearInterval(igTimer); return; } const k = (atual() + 1) % pts.length; tr.scrollTo({ left: k * tr.clientWidth, behavior: "smooth" }); }, 6000);
   }
   function telaInicio() {
     if (GERAL) return telaInicioGeral();
@@ -1977,6 +2066,7 @@ export function montar(raiz: HTMLElement) {
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
         if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": libera em breve."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "dest-fechado": aviso("Em breve, só para você."); return;
+      case "ig-slide": { const tr = app.querySelector("[data-ig-trilho]"); if (tr) tr.scrollTo({ left: +d.v * tr.clientWidth, behavior: "smooth" }); return; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
       case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
       case "ir-cat": {
