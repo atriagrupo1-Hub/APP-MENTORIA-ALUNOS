@@ -3542,3 +3542,12 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .cfg-mbl { gap: 10px; }
 .cfg-mbl > .cfg-mbic { display: none; }
 .cfg-mbl .cfg-mbrot { min-width: 96px; }
+/* Chave de versão: à esquerda, com o mesmo botão das abas de Configurações. */
+.cfg-versao { justify-content: flex-start; padding: 10px; gap: 14px; }
+.cfg-versao-seg { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; background: none; border-radius: 0; }
+.cfg-versao-seg button { display: inline-flex; flex-direction: row; align-items: center; gap: 10px; min-width: 0; min-height: 46px; padding: 0 18px; font: inherit; font-size: 15px; font-weight: 600; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 8px; box-shadow: none; cursor: pointer; }
+.cfg-versao-seg button svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.cfg-versao-seg button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); border-color: #c9a25c; box-shadow: none; }
+.cfg-versao-seg button[aria-pressed="true"] svg { color: #e3bd6e; }
+.cfg-versao-rot { font-weight: 500; }
+@media (max-width: 700px) { .cfg-versao-seg button { flex: 1 1 140px; } }
