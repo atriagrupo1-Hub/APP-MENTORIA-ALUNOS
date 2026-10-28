@@ -149,6 +149,7 @@ type LinhaModulo = {
   intro: string | null;
   capa_path: string | null;
   cor_destaque: string | null;
+  estilo?: Record<string, unknown> | null;
   ordem: number;
   bloqueado_geral: boolean;
   titulo_na_arte: boolean;
@@ -312,7 +313,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
-      supabase.from("categorias_aba").select("id, publicado, bloqueada_geral, icone, cor, ordem"),
+      supabase.from("categorias_aba").select("id, publicado, bloqueada_geral, icone, cor, ordem, estilo"),
       supabase.rpc("opcoes_bloqueadas"),
     ]);
 
@@ -401,6 +402,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     capaPath: m.capa_path,
     capaHorizontalPath: m.capa_horizontal_path ?? null,
     cor: m.cor_destaque ?? null,
+    estilo: m.estilo ?? null,
     rotulo: m.rotulo ?? null,
     bloqueadoGeral: m.bloqueado_geral,
     tituloNaArte: m.titulo_na_arte,
@@ -458,7 +460,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
    * esta função —, então admin e aluna nunca divergem.
    */
   // Categoria dentro da aba (0076): Oculta esconde o curso; Bloqueada o deixa à vista, sem acesso.
-  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; publicado: boolean; bloqueada_geral: boolean; icone: string | null; cor: string | null; ordem: number | null }>).map((x) => [x.id, x]));
+  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; publicado: boolean; bloqueada_geral: boolean; icone: string | null; cor: string | null; ordem: number | null; estilo: Record<string, unknown> | null }>).map((x) => [x.id, x]));
   const listaProdutos: Produto[] = ((produtos.data ?? []) as LinhaProduto[]).map(
     (p): Produto => ({
       id: p.id,
@@ -473,6 +475,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       bloqueadoGeral: p.bloqueado_geral || !!estadoCatAba.get(p.categoria_aba_id ?? "")?.bloqueada_geral,
       catIcone: estadoCatAba.get(p.categoria_aba_id ?? "")?.icone ?? null,
       catCor: estadoCatAba.get(p.categoria_aba_id ?? "")?.cor ?? null,
+      catAbaId: p.categoria_aba_id ?? null,
+      catEstilo: estadoCatAba.get(p.categoria_aba_id ?? "")?.estilo ?? null,
       catOrdem: estadoCatAba.get(p.categoria_aba_id ?? "")?.ordem ?? null,
       modulos: listaModulos
         .filter((m) => m.produtoId === p.id)

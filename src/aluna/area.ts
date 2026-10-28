@@ -14,12 +14,14 @@ import { supabase } from "../data/supabase";
 import * as api from "../data/api";
 import { aplicarAparencia } from "../data/aparencia";
 import { popNotif, SINO } from "../data/notif";
+import { cssVisual, limparEstilo } from "../data/estilo";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
   // Prévia dentro do painel (Configurações): só para olhar e rolar, sem clicar.
   // O painel manda o que está sendo editado (ainda sem salvar) e a tela redesenha.
   const PREVIA = new URLSearchParams(location.search).has("previa");
+  const PREVIA_PAINEL = PREVIA && window.parent !== window;
   if (PREVIA) {
     document.documentElement.classList.add("modo-previa");
     window.addEventListener("message", (ev) => {
@@ -28,6 +30,9 @@ export function montar(raiz: HTMLElement) {
       // As outras abas de Configurações: o que está sendo editado entra por cima do salvo, e a tela vai para onde se mexe.
       if (m.tipo === "previa-cfg") {
         const I = D.inicio;
+        PREV_EST = m.estilos && typeof m.estilos === "object" ? m.estilos : { cat: {}, mod: {} };
+        // Mexendo nos cards das aulas de um módulo: a lista dele fica aberta na prévia.
+        for (const [id, e] of Object.entries(PREV_EST.mod || {})) { const k = MODS().findIndex((x) => x.id === id); if (k >= 0 && e && e.aulas) S.verAulas = { ...(S.verAulas || {}), [k]: true }; }
         if (m.telas) I.telas = { ...(I.telas || {}), ...m.telas };
         if (m.vers) I.vers = { ...(I.vers || {}), ...m.vers };
         if (m.perfil) I.perfil = { ...(I.perfil || {}), ...m.perfil };
@@ -53,6 +58,12 @@ export function montar(raiz: HTMLElement) {
       render();
     });
   }
+  // Estilos sendo editados no painel (prévia), por cima dos salvos: { cat: {id: estilo}, mod: {id: estilo} }.
+  let PREV_EST = { cat: {}, mod: {} };
+  const estCat = (curso) => { const p = PREV_EST.cat || {}; return curso.catAbaId && curso.catAbaId in p ? limparEstilo(p[curso.catAbaId]) : curso.estilo; };
+  const estMod = (md) => { const p = PREV_EST.mod || {}; return md.id in p ? limparEstilo(p[md.id]) : md.estilo; };
+  /** Atributo style com o estilo escolhido no painel (vazio = visual padrão). */
+  const est = (e, parte, tipo, extra = "") => { const css = cssVisual(e && e[parte], tipo); return css || extra ? ` style="${[extra, css].filter(Boolean).join(";")}"` : ""; };
   // Aparência do painel (tema, cores, fontes, imagens) — vale também na tela de entrada.
   let APAR = null;
   void api.aparenciaDoApp().then((a) => {
@@ -124,7 +135,7 @@ export function montar(raiz: HTMLElement) {
         const vivo = cat.aoVivo[m.id];
         return {
           id: m.id, num: m.semNumero ? "" : Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
-          capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length],
+          capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length], estilo: limparEstilo(m.estilo),
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
             id: a.id, num: a.semNumero ? "" : Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
@@ -139,7 +150,7 @@ export function montar(raiz: HTMLElement) {
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
-          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
+          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
@@ -198,7 +209,8 @@ export function montar(raiz: HTMLElement) {
   /** "Aula 1", "Episódio 2"…: nome e número que a equipe escolheu para a aula (0064). */
   const lA = (md, i) => ((md && md.aulas[i] && md.aulas[i].rot) || "Aula") + " " + nA(md, i);
   const agora = () => Date.now();
-  const aulaAdmin = (id) => { if (!D || !D.prog.has(id)) return false; const ab = D.abert.get(id); return !ab || new Date(ab).getTime() <= agora(); };
+  // Na prévia do painel (conta da equipe, que o banco já deixa ver tudo) o app aparece como para a aluna com as aulas liberadas.
+  const aulaAdmin = (id) => { if (PREVIA_PAINEL && D) return true; if (!D || !D.prog.has(id)) return false; const ab = D.abert.get(id); return !ab || new Date(ab).getTime() <= agora(); };
   const aberturaDe = (id) => { const ab = D && D.abert.get(id); return ab && new Date(ab).getTime() > agora() ? ab : null; };
   const feitaId = (id) => !!(D && D.prog.get(id)?.concluida);
   const feita = (m, a) => feitaId(MODS()[m].aulas[a].id);
@@ -413,14 +425,14 @@ export function montar(raiz: HTMLElement) {
   function linhaModulo(m, irModulo) {
     const md = MODS()[m], e = estadoMod(m), n = feitasMod(m), t = md.aulas.length;
     const aberto = !!(S.verAulas || {})[m];
-    const COR = md.cor;
+    const COR = md.cor, E = estMod(md);
     const meta = `<p class="mc-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>${t ? p(t, "aula", "aulas") : "Aula será adicionada em breve"}</span></p>`;
     if (e.fech) {
       const msg = msgModFechado(m);
       return `
-    <div class="mod-bloco mc mc-tranc" style="--mc:${COR}">
+    <div class="mod-bloco mc mc-tranc"${est(E, "card", "card", "--mc:" + COR)}>
       <button class="mc-top" data-a="modulo" data-m="${m}" aria-label="${h(md.rot)} ${md.num}, ${h(titulo(md.titulo))}. Bloqueado. ${h(msg)}.">
-        <span class="mc-capa" aria-hidden="true">${img(md.capa, "")}</span>
+        <span class="mc-capa" aria-hidden="true"${est(E, "capa", "capa")}>${img(md.capa, "")}</span>
         <span class="mc-info" aria-hidden="true">
           <span class="mc-rot">${h(md.rot)} ${md.num}</span>
           <b class="mc-tit serif">${h(titulo(md.titulo))}</b>
@@ -434,20 +446,20 @@ export function montar(raiz: HTMLElement) {
     </div>`;
     }
     return `
-    <div class="mod-bloco mc" style="--mc:${COR}">
+    <div class="mod-bloco mc"${est(E, "card", "card", "--mc:" + COR)}>
       <div class="mc-top">
-        <button class="mc-capa" data-a="modulo" data-m="${m}" aria-label="Abrir o ${h(md.rot)} ${md.num}">${img(md.capa, "")}</button>
+        <button class="mc-capa"${est(E, "capa", "capa")} data-a="modulo" data-m="${m}" aria-label="Abrir o ${h(md.rot)} ${md.num}">${img(md.capa, "")}</button>
         <div class="mc-info">
           <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">${h(md.rot)} ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
           ${meta}
           ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
           ${irModulo
-            ? `<button class="ex-botao mc-ver-grande" data-a="modulo" data-m="${m}">Ver aulas</button>`
-            : t ? `<button class="mc-ver ver-aulas" data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}<span aria-hidden="true">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
+            ? `<button class="ex-botao mc-ver-grande"${est(E, "botao", "botao")} data-a="modulo" data-m="${m}">Ver aulas</button>`
+            : t ? `<button class="mc-ver ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}<span aria-hidden="true">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
         </div>
       </div>
     ${irModulo || !t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
-      <button class="la-item${ea.fech ? " fechada" : ""}" data-a="aula" data-m="${m}" data-i="${i}">
+      <button class="la-item${ea.fech ? " fechada" : ""}"${est(E, "aulas", "card")} data-a="aula" data-m="${m}" data-i="${i}">
         <span class="la-capa">${img(x.capa, "")}<span class="la-ic">${ea.fech ? '<span class="cadeado"></span>' : feita(m, i) ? "✓" : ""}</span></span>
         <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(lA(md, i))}</b><span>${h(x.titulo)}</span>${ea.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ea.txt)}</span>` : `<em>${feita(m, i) ? "Concluída" : "Disponível"}</em>`}</span>
         ${ea.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
@@ -643,11 +655,11 @@ export function montar(raiz: HTMLElement) {
     const n = feitasMod(m), t = md.aulas.length;
     const c = md.aulas.findIndex((_, a) => !feita(m, a));
     const pct = t ? Math.round((n / t) * 100) : 0;
-    const COR = md.cor;
+    const COR = md.cor, E = estMod(md);
     const cardAula = (a) => {
       const e = estadoAula(m, a), ps = posicao(m, a), feitaA = feita(m, a);
       return `
-        <button class="la-item${e.fech ? " fechada" : ""}${a === c ? " atual" : ""}" data-a="aula" data-m="${m}" data-i="${a}">
+        <button class="la-item${e.fech ? " fechada" : ""}${a === c ? " atual" : ""}"${est(E, "aulas", "card")} data-a="aula" data-m="${m}" data-i="${a}">
           <span class="la-capa">${img(md.aulas[a].capa, "")}<span class="la-ic">${e.fech ? '<span class="cadeado"></span>' : feitaA ? "✓" : ""}</span>${ps > 0 && !feitaA ? `<span class="mp-visto"><i style="width:${ps * 100}%"></i></span>` : ""}</span>
           <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(lA(md, a))}</b><span>${h(md.aulas[a].titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${feitaA ? "Concluída" : "Disponível"}</em>`}</span>
           ${e.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
@@ -658,7 +670,7 @@ export function montar(raiz: HTMLElement) {
     ${cabMp(`data-a="voltar-mod"`, NOME_ORIGEM[S.origemMod] || "Início")}
     <div class="mp mv" style="--mc:${COR}">
       <section class="mv-topo" aria-labelledby="h-mod">
-        <span class="mv-capa-mod">${img(md.capa, md.rot + " " + md.num + " — " + titulo(md.titulo))}</span>
+        <span class="mv-capa-mod"${est(E, "capa", "capa")}>${img(md.capa, md.rot + " " + md.num + " — " + titulo(md.titulo))}</span>
         <div class="mv-txt">
           <p class="mv-rot">${h(md.rot)} ${md.num}<span aria-hidden="true"></span></p>
           <h1 class="serif mv-tit" id="h-mod">${h(md.titulo)}</h1>
@@ -1099,39 +1111,39 @@ export function montar(raiz: HTMLElement) {
   const corPresente = (c, curso) => curso.cor && curso.cor in COR_DESTAQUE ? COR_DESTAQUE[curso.cor] : (/descobert/i.test(curso.nome) ? "desc" : /e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
   const botaoPresente = (curso) => (/descobert/i.test(curso.nome) ? "Ver as descobertas" : /e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
   function cartaoPresente({ c, ci, i, curso }) {
-    const key = ci + "-" + i;
+    const key = ci + "-" + i, E = estCat(curso);
     if (!cursoLiberado(curso)) return `
-        <section class="ex-card ex-banner pres-banner-card pres-fech ${corPresente(c, curso)}" aria-labelledby="h-pr-${key}">
+        <section class="ex-card ex-banner pres-banner-card pres-fech ${corPresente(c, curso)}"${est(E, "card", "card")} aria-labelledby="h-pr-${key}">
           <button class="pres-fech-alvo" data-a="curso-pres" data-v="${key}" aria-label="${h(curso.nome)}. Bloqueado, ainda não liberado.">
             <span class="pres-fech-area" aria-hidden="true">
-              <span class="ex-img ex-img-banner cat-fech-fosco">${img(curso.capa, "")}</span>
+              <span class="ex-img ex-img-banner cat-fech-fosco"${est(E, "capa", "capa")}>${img(curso.capa, "")}</span>
               <span class="cat-fech-veu"><span class="cat-fech-cad">${ICONES.cadeado}</span><span class="cat-fech-chama">Em breve, só para você</span></span>
             </span>
             <span class="ex-info">
               <span class="ex-rot">${icPresente(c, curso)}${h(curso.nome)}</span>
               <span class="pres-fech-tit serif" id="h-pr-${key}">${h(curso.nome)}</span>
               <span class="ex-desc cat-fech-fosco">${h(curso.descricao)}</span>
-              <span class="ex-botao cat-fech-fosco">${h(botaoPresente(curso))}</span>
+              <span class="ex-botao cat-fech-fosco"${est(E, "botao", "botao")}>${h(botaoPresente(curso))}</span>
             </span>
           </button>
         </section>`;
     const acaoP = ehEbook(curso) ? `data-a="ebook" data-v="${key}"` : `data-a="curso-pres" data-v="${key}"`;
     return `
-        <section class="ex-card ex-banner pres-banner-card ${corPresente(c, curso)}" aria-labelledby="h-pr-${key}">
-          <button class="ex-img ex-img-banner" ${acaoP} aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
+        <section class="ex-card ex-banner pres-banner-card ${corPresente(c, curso)}"${est(E, "card", "card")} aria-labelledby="h-pr-${key}">
+          <button class="ex-img ex-img-banner"${est(E, "capa", "capa")} ${acaoP} aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
           <div class="ex-info">
             <p class="ex-rot">${icPresente(c, curso)}${h(curso.nome)}</p>
             <h2 class="serif" id="h-pr-${key}">${h(curso.nome)}</h2>
             <p class="ex-desc">${h(curso.descricao)}</p>
-            <button class="ex-botao" ${acaoP}>${h(botaoPresente(curso))}</button>
+            <button class="ex-botao"${est(E, "botao", "botao")} ${acaoP}>${h(botaoPresente(curso))}</button>
           </div>
         </section>`;
   }
   /** Botão de categoria em grade ou lista (Configurações → Presentes → Layout dos botões). */
   function botaoCategoria({ c, ci, i, curso }) {
-    const key = ci + "-" + i, fech = !cursoLiberado(curso);
+    const key = ci + "-" + i, fech = !cursoLiberado(curso), E = estCat(curso);
     const acao = fech ? `data-a="curso-pres" data-v="${key}"` : ehEbook(curso) ? `data-a="ebook" data-v="${key}"` : `data-a="curso-pres" data-v="${key}"`;
-    return `<button class="pb-item ${corPresente(c, curso)}${fech ? " fech" : ""}" ${acao} aria-label="${h(curso.nome)}${fech ? ". Bloqueado, ainda não liberado." : ""}">
+    return `<button class="pb-item ${corPresente(c, curso)}${fech ? " fech" : ""}"${est(E, "botao", "botao")} ${acao} aria-label="${h(curso.nome)}${fech ? ". Bloqueado, ainda não liberado." : ""}">
         <span class="pb-img">${img(curso.capa, "")}</span>
         <span class="pb-nome">${icPresente(c, curso)}<b class="serif">${h(curso.nome)}</b></span>
         ${fech ? `<span class="pb-cad">${ICONES.cadeado}</span>` : `<span class="pb-seta" aria-hidden="true">›</span>`}
@@ -1152,7 +1164,7 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="pagina">
       <h1 class="todos-mod serif${ehPres ? " tit-" + h(t.presTitEstilo || "padrao") : ""}">${h(titulo)}</h1>
-      ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
+      ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button${est(estCat(x.curso), "botao", "botao")} data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
       <div class="cat-grade${ehPres ? " pg-est-" + h(t.presEstilo || "padrao") : ""}">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
     </div>`;
   }

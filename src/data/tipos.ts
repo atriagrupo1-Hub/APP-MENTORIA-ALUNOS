@@ -14,6 +14,8 @@ export type Modulo = {
   capaHorizontalPath?: string | null;
   /** Cor do módulo (#rrggbb), do painel: contorno, brilho e linha (0054). */
   cor?: string | null;
+  /** Estilo escolhido no painel (0098): card, capa, botão e cards das aulas. */
+  estilo?: Record<string, unknown> | null;
   numero: number;
   /** Sem número para a aluna (0096). */
   semNumero?: boolean;
@@ -169,6 +171,9 @@ export type Produto = {
   catIcone?: string | null;
   catCor?: string | null;
   catOrdem?: number | null;
+  /** Categoria (Configurações → Presentes) e o estilo dela (0098). */
+  catAbaId?: string | null;
+  catEstilo?: Record<string, unknown> | null;
   modulos: Modulo[];
   presentes: Presente[];
   /** Conteúdo pendurado direto no produto, sem módulo nem item. */
