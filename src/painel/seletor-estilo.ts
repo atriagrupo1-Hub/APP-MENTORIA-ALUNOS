@@ -9,7 +9,7 @@
  */
 import { cssFundo, cssVisual, limparEstilo, SOMBRAS, type Estilo, type Visual } from "../data/estilo";
 
-export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" };
+export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string };
 type Opcoes = {
   ancora: HTMLElement;
   titulo: string;
@@ -78,19 +78,21 @@ export function abrirSeletorEstilo(o: Opcoes) {
 
   function amostra() {
     const v = est[parte], t = tipo();
+    if (t === "texto") return `<span class="se-am se-am-txt" style="color:${v?.texto || "#f1e6c9"}"><b>Aa</b> Título e texto${o.partes.length === 1 && /cone/i.test(o.titulo) ? " · ✦ ▶ ☰" : ""}</span>`;
     const css = cssVisual(v, t).replace(/ !important/g, "");
     if (t === "capa") return `<span class="se-am se-am-capa" style="${h(css)}"><i></i></span>`;
     if (t === "card") return `<span class="se-am se-am-card" style="${h(css)}"><b>Título do card</b><em>Texto do card</em></span>`;
-    return `<span class="se-am se-am-bt" style="${h(css)}">Ver aulas ›</span>`;
+    return `<span class="se-am se-am-bt" style="${h(css)}">${h(o.partes.find((p) => p.k === parte)?.exemplo || "Ver aulas ›")}</span>`;
   }
   const chip = (k: string, cor: string, rot: string, vazio = false) =>
     `<button type="button" class="se-chip${alvo === k ? " on" : ""}${vazio ? " vazio" : ""}" data-se="alvo" data-v="${k}" title="Editar: ${rot}"><i style="background:${vazio ? "transparent" : cor}"></i>${rot}</button>`;
 
   function desenhar() {
     const v = V(), t = tipo(), f = v.fundo;
-    const temFundo = t !== "capa";
-    if (!temFundo && alvo.startsWith("fundo")) alvo = "borda";
-    if (alvo === "texto" && !temFundo) alvo = "borda";
+    const temFundo = t !== "capa" && t !== "texto", soCor = t === "texto";
+    if (soCor) alvo = "texto";
+    else if (!temFundo && alvo.startsWith("fundo")) alvo = "borda";
+    if (alvo === "texto" && !temFundo && !soCor) alvo = "borda";
     hsv = hexParaHsv(corDoAlvo());
     const corAgora = corDoAlvo();
     const sec = alvo.startsWith("fundo") ? "fundo" : alvo;
@@ -108,6 +110,9 @@ export function abrirSeletorEstilo(o: Opcoes) {
       ${o.partes.length > 1 ? `<div class="se-partes" role="tablist">${o.partes.map((p) => `<button type="button" role="tab" data-se="parte" data-v="${p.k}" aria-selected="${p.k === parte}">${h(p.nome)}${est[p.k] && Object.keys(est[p.k]!).length ? "<i></i>" : ""}</button>`).join("")}</div>` : ""}
       <div class="se-rolo">
         <div class="se-amostra">${amostra()}</div>
+        ${soCor ? `<div class="se-sec"><span class="se-rot">Cor</span>
+          <div class="se-chips">${chip("texto", v.texto || "#f1e6c9", v.texto ? "Cor escolhida" : "Cor do app (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
+          ${cor("texto")}</div>` : ""}
         ${temFundo ? `
         <div class="se-sec"><span class="se-rot">Preenchimento</span>
           <div class="se-seg">${[["padrao", "Padrão do app"], ["cor", "Cor sólida"], ["degrade", "Degradê"]].map(([k, n]) => `<button type="button" data-se="fundo-tipo" data-v="${k}" aria-pressed="${(f ? f.t : "padrao") === k}">${n}</button>`).join("")}</div>
@@ -120,7 +125,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
           <div class="se-chips">${chip("texto", v.texto || "#ffffff", v.texto ? "Cor do texto" : "Cor do texto (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
           ${v.texto ? cor("texto") : ""}
         </div>` : ""}
-        <div class="se-sec"><span class="se-rot">Contorno</span>
+        ${soCor ? "" : `<div class="se-sec"><span class="se-rot">Contorno</span>
           <div class="se-chips">${chip("borda", v.borda?.cor || "#d4af37", v.borda ? "Cor do contorno" : "Sem contorno escolhido", !v.borda)}${v.borda ? `<button type="button" class="se-lnk" data-se="tirar" data-v="borda">Usar o do app</button>` : ""}</div>
           ${v.borda ? `<label class="se-linha"><span>Espessura</span><input type="range" min="0" max="8" step="1" value="${v.borda.w}" data-se="bw" /><em>${v.borda.w ? v.borda.w + " px" : "Sem"}</em></label>` : ""}
           ${v.borda ? cor("borda") : ""}
@@ -131,7 +136,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
         </div>
         <div class="se-sec"><span class="se-rot">Formato dos cantos</span>
           <div class="se-seg">${[["quadrado", "Quadrado"], ["arredondado", "Arredondado"], ["redondo", t === "botao" ? "Redondo" : "Bem arredondado"]].map(([k, n]) => `<button type="button" data-se="forma" data-v="${k}" aria-pressed="${v.forma === k}"><i class="se-forma se-f-${k}"></i>${n}</button>`).join("")}</div>
-        </div>
+        </div>`}
         ${t === "botao" ? `<div class="se-sec"><span class="se-rot">Tamanho</span>
           <div class="se-seg">${[["p", "Menor"], ["m", "Normal"], ["g", "Maior"]].map(([k, n]) => `<button type="button" data-se="tam" data-v="${k}" aria-pressed="${(v.tam || "m") === k}">${n}</button>`).join("")}</div></div>` : ""}
       </div>
@@ -193,7 +198,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
     const a = b.dataset.se!, val = b.dataset.v || "", v = V();
     switch (a) {
       case "cancelar": fechar(false); return;
-      case "parte": parte = val; alvo = tipo() === "capa" ? "borda" : "fundo.a"; break;
+      case "parte": parte = val; alvo = tipo() === "texto" ? "texto" : tipo() === "capa" ? "borda" : "fundo.a"; break;
       case "alvo":
         alvo = val;
         // Escolher uma cor que ainda não existe já liga essa parte com uma cor de partida.
@@ -212,7 +217,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
       case "forma": v.forma = v.forma === val ? null : (val as Visual["forma"]); mudou(); break;
       case "tam": v.tam = val as Visual["tam"]; mudou(); break;
       case "pronta": porCor(val); mudou(); break;
-      case "restaurar": delete est[parte]; alvo = tipo() === "capa" ? "borda" : "fundo.a"; mudou(); break;
+      case "restaurar": delete est[parte]; alvo = tipo() === "texto" ? "texto" : tipo() === "capa" ? "borda" : "fundo.a"; mudou(); break;
       case "gota": {
         const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
         void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) { porCor(r.sRGBHex.toLowerCase()); mudou(); desenhar(); posicionar(); } }).catch(() => {});

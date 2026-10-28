@@ -18,7 +18,7 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { cssFundo, limparEstilo, type Estilo } from "@/data/estilo";
+import { cssFundo, limparEstilo, PARTES_AULA, type Estilo } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
 
@@ -133,7 +133,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; divisor: { exibir: boolean; texto: string; cor: string; linha: string } };
+  config: { marcaTitulo: string; marcaSub: string; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; estiloAula: Estilo | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string } };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -273,7 +273,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, estilo_aula").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -439,7 +439,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vCorTexto: (cfgIni.data?.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cfgIni.data?.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cfgIni.data?.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cfgIni.data?.perfil_botoes) ? (cfgIni.data!.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cfgIni.data?.aparencia as Aparencia | null) ?? null,
-      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""), divisor: divisorDe(cfgIni.data?.inicio_divisor),
+      notif: notifDe(cfgIni.data?.notif), capaGuia: String(cfgIni.data?.capa_guia ?? ""), estiloAula: limparEstilo(cfgIni.data?.estilo_aula), divisor: divisorDe(cfgIni.data?.inicio_divisor),
       menu: { botoes: Array.isArray(cfgIni.data?.menu_botoes) ? (cfgIni.data!.menu_botoes as BotaoMenu[]) : null, estilo: cfgIni.data?.menu_estilo ?? "padrao", cores: (cfgIni.data?.menu_cores as Record<string, string> | null) ?? null, tamanho: cfgIni.data?.menu_tamanho ?? "medio" } },
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
     destaques: ((dests.data ?? []) as Record<string, string & boolean>[]).map((x) => ({
@@ -509,7 +509,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", divisor: divisorDe(null) }, versiculos: [], destaques: [] };
+  let S: Dados = { cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -527,7 +527,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null> }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2271,6 +2271,7 @@ export function montar(app: HTMLElement) {
     presentes: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-6-4-6-1.5S10 9 12 9zm0 0c1.5-3 6-4 6-1.5S14 9 12 9z"/></svg>`,
     perfil: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg>`,
     menu: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></svg>`,
+    aulas: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M10.5 9.3v5.4l4.5-2.7z"/></svg>`,
     versiculos: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c3-1 6-1 8.5 1 2.5-2 5.5-2 8.5-1v13c-3-1-6-1-8.5 1-2.5-2-5.5-2-8.5-1z"/><path d="M12 6.5v13"/></svg>`,
     aparencia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 1.8-1 1.3-2-.6-1.2.2-2.5 1.5-2.5H17a3.5 3.5 0 0 0 3.5-3.5c0-5-3.8-9-8.5-9z"/><circle cx="7.5" cy="11" r="1.2"/><circle cx="10.5" cy="7" r="1.2"/><circle cx="15" cy="7.5" r="1.2"/></svg>`,
     modelo: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg>`,
@@ -2278,7 +2279,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Versículos"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Versículos"], ["aparencia", "Aparência"]];
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
   function valoresInicio(f?: HTMLFormElement | null) {
     const c = S.config;
@@ -2353,6 +2354,27 @@ export function montar(app: HTMLElement) {
   }
   const PARTES_CAT = [{ k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }];
   const PARTES_MOD = [{ k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }, { k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "aulas", nome: "Cards das aulas", tipo: "card" as const }];
+  /** Configurações → Aulas (0099): o estilo da tela da aula, igual para todas. A prévia abre uma aula de exemplo. */
+  function cfgAulas() {
+    const E = ui.prevEst.aula ?? S.config.estiloAula;
+    const algum = !!S.config.estiloAula;
+    return `
+      <div class="cfg-grade">
+        <div class="cfg-painel cfg-form" id="cfgAulas">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.aulas}</span><div><h2>Aulas</h2><p>O que você escolher aqui vale para todas as aulas. A prévia mostra uma aula de exemplo.</p></div></div>
+          <div class="cfg-bloco">
+            <div class="cfg-blcab"><div><h3>Tela da aula ${dicaCampo(`Cada parte da tela da aula tem o seu estilo: cor (ou degradê), cor do texto, contorno, sombra, formato dos cantos e tamanho dos botões. Toque em Estilo para mudar; o celular ao lado mostra na hora. Só grava quando você aperta Salvar no seletor, e vale para todas as aulas.`, "cfg.tela-da-aula")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${algum ? `<button type="button" class="al-botao pequeno" data-a="estilo-aula-limpar">${IC_REFAZ}Voltar tudo ao padrão</button>` : ""}</div>
+            <div class="cfg-ordem">${PARTES_AULA.map((pt) => { const v = E?.[pt.k]; const am = v?.fundo ? cssFundo(v.fundo) : v?.texto || v?.borda?.cor || ""; return `
+              <div class="cfg-orl cfg-aul">
+                <span class="cfg-aul-tx"><b>${h(pt.nome)}</b>${pt.desc ? `<small>${h(pt.desc)}</small>` : ""}</span>
+                ${v ? `<span class="cfg-aul-on">Personalizado</span>` : `<span class="cfg-aul-pd">Padrão</span>`}
+                <button type="button" class="se-abre" data-a="estilo-aula" data-v="${pt.k}" aria-label="Estilo de ${h(pt.nome)}"><i style="background:${h(am || "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button>
+              </div>`; }).join("")}</div>
+          </div>
+        </div>
+        ${previaCfgBox("")}
+      </div>`;
+  }
   function cfgModulos() {
     const t = S.config.telas, jor = curso(S.config.jornada);
     const mods = jor ? jor.modulos : [];
@@ -2782,6 +2804,8 @@ export function montar(app: HTMLElement) {
       corpo = cfgPerfil();
     } else if (aba === "menu") {
       corpo = cfgMenu();
+    } else if (aba === "aulas") {
+      corpo = cfgAulas();
     } else if (aba === "aparencia") {
       corpo = cfgAparencia();
     } else if (aba === "versiculos") {
@@ -4485,6 +4509,7 @@ export function montar(app: HTMLElement) {
     else if (aba === "perfil") Object.assign(msg, { ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim() || "Seu perfil", saudacao: (t.perfSaud || "").trim() || "{nome_completo}", imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
     else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
     else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
+    else if (aba === "aulas") { const pt = PARTES_AULA.find((x) => x.k === ui.prevEst.foco); Object.assign(msg, { ir: "aula-exemplo", estiloAula: ui.prevEst.aula === undefined ? S.config.estiloAula : ui.prevEst.aula, foco: pt ? pt.sel.split(",")[0].trim() : "", abaAula: pt?.aba || "" }); }
     else return;
     fr.contentWindow?.postMessage(JSON.parse(JSON.stringify(msg)), location.origin);
   }
@@ -5768,6 +5793,32 @@ export function montar(app: HTMLElement) {
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
+      case "estilo-aula": {
+        const pt = PARTES_AULA.find((x) => x.k === d.v); if (!pt || !el) return;
+        const base = S.config.estiloAula || {};
+        ui.prevEst.foco = pt.k; mandarPreviaCfg();
+        abrirSeletorEstilo({
+          ancora: el, titulo: pt.nome, partes: [{ k: pt.k, nome: pt.nome, tipo: pt.tipo, exemplo: pt.k === "play" ? "▶" : pt.nome.replace(/^Botões? /, "") }], valor: base[pt.k] ? { [pt.k]: base[pt.k] } : null,
+          aoMudar: (e) => { ui.prevEst.aula = limparEstilo({ ...base, [pt.k]: e?.[pt.k] }); mandarPreviaCfg(); },
+          aoFechar: () => { ui.prevEst.aula = undefined; mandarPreviaCfg(); },
+          aoSalvar: async (e) => {
+            const novo = limparEstilo({ ...base, [pt.k]: e?.[pt.k] });
+            const r = await supabase.from("configuracoes").update({ estilo_aula: novo }).not("id", "is", null).select("id");
+            if (r.error) { toast(motivo(r.error)); return false; }
+            S.config.estiloAula = novo;
+            void executar(async () => { await registrar(null, "Mudou o estilo das aulas: " + pt.nome); return "Estilo de " + pt.nome + " salvo. Vale para todas as aulas."; });
+            return true;
+          },
+        });
+        return;
+      }
+      case "estilo-aula-limpar":
+        confirmar({ titulo: "Voltar a tela da aula ao padrão?", texto: "Todas as cores, contornos e sombras escolhidos para as aulas saem. Dá para escolher de novo depois.", rotulo: "Voltar ao padrão" }, async () => {
+          falhou(await supabase.from("configuracoes").update({ estilo_aula: null }).not("id", "is", null).select("id"));
+          await registrar(null, "Voltou o estilo das aulas ao padrão");
+          return "A tela da aula voltou ao padrão.";
+        });
+        return;
       case "estilo-cat": case "estilo-mod": {
         const ehCat = a === "estilo-cat", x = ehCat ? S.catsAba.find((y) => y.id === d.id) : acharModulo(d.id!)?.m;
         if (!x || !el) return;
