@@ -173,10 +173,11 @@ export function abrirSeletorEstilo(o: Opcoes) {
   function fechar(salvou: boolean) {
     if (!aberto) return;
     aberto = null;
-    if (!salvou && JSON.stringify(est) !== inicial) o.aoMudar(limparEstilo(JSON.parse(inicial)));
+    // Primeiro some da tela (nada pode ficar cobrindo o painel), depois avisa quem abriu.
     caixa.remove(); fundoClique.remove();
     removeEventListener("resize", posicionar); document.removeEventListener("keydown", tecla, true);
-    o.aoFechar?.();
+    try { if (!salvou && JSON.stringify(est) !== inicial) o.aoMudar(limparEstilo(JSON.parse(inicial))); } catch { /* a prévia se ajeita no próximo envio */ }
+    try { o.aoFechar?.(); } catch { /* idem */ }
   }
   const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); fechar(false); } };
 

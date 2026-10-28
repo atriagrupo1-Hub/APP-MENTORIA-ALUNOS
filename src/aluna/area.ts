@@ -24,7 +24,9 @@ export function montar(raiz: HTMLElement) {
   const PREVIA_PAINEL = PREVIA && window.parent !== window;
   if (PREVIA) {
     document.documentElement.classList.add("modo-previa");
-    window.addEventListener("message", (ev) => {
+    // Um erro na prévia nunca pode deixar o app de dentro travado: redesenha e segue.
+    window.addEventListener("message", (ev) => { try { tratarPrevia(ev); } catch (e) { console.error("prévia", e); try { render(); } catch { /* */ } } });
+    const tratarPrevia = (ev) => {
       if (ev.origin !== location.origin || !D || !D.inicio) return;
       const m = ev.data || {};
       // As outras abas de Configurações: o que está sendo editado entra por cima do salvo, e a tela vai para onde se mexe.
@@ -68,7 +70,7 @@ export function montar(raiz: HTMLElement) {
       I.destaques = m.banner === "card" ? I._destOrig : [];
       render();
       if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
-    });
+    };
   }
   // Estilos sendo editados no painel (prévia), por cima dos salvos: { cat: {id: estilo}, mod: {id: estilo} }.
   let PREV_EST = { cat: {}, mod: {} };
