@@ -845,7 +845,7 @@ export function montar(app: HTMLElement) {
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
-    posicionarCel(); mandarPreviaCfg();
+    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document);
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -2725,6 +2725,10 @@ export function montar(app: HTMLElement) {
           <div class="cfg-info">${IC_EQ.info}<span>Aqui você define quais botões aparecem no menu inferior, o nome, o ícone, a cor e a ordem. As alterações aparecem na área da aluna quando você clica em Salvar alterações.</span></div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Botões do menu ${dicaCampo(`Os botões da barra de baixo do app (no computador, no alto). Dá para mudar o nome, o ícone, a cor quando está ativo, esconder e arrastar para mudar a ordem. Início e Perfil ficam sempre. "Adicionar botão" cria um botão que abre um link.`, "cfg.bot-es-do-menu")}</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
+            <div class="cfg-mbtodos">
+              <span class="cfg-aul-tx"><b>Cor de todos os botões</b><small>Escolha uma cor e ela vai para todos os botões de uma vez. Depois dá para mudar um por um, abaixo.</small></span>
+              <label class="cfg-corbt cfg-corlivre" title="Cor de todos os botões" style="background:${h(M.cores.ativo)}"><input type="color" value="${h(M.botoes.every((b) => (b.cor || M.cores.ativo) === (M.botoes[0]?.cor || M.cores.ativo)) ? M.botoes[0]?.cor || M.cores.ativo : M.cores.ativo)}" data-mb-cor-todos="1" aria-label="Cor de todos os botões" /></label>
+            </div>
             <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id), cor = b.cor || M.cores.ativo; return `
               <div class="cfg-orl cfg-mbl" draggable="true" data-arrasta="mb:${i}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -4590,6 +4594,46 @@ export function montar(app: HTMLElement) {
   // Se o celular desenhado mudar de tamanho (tela, fontes, imagens), o app de dentro acompanha na hora.
   let celObservado: HTMLElement | null = null;
   const celRO = new ResizeObserver(() => posicionarCel());
+  /*
+   * Código de cada cor do painel (#RRGGBB) à vista: dá para copiar com um toque
+   * e também colar um código para usar a mesma cor em outro lugar.
+   */
+  const IC_COPIAR = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>`;
+  function codigoDe(inp: HTMLInputElement): HTMLElement | null {
+    const ancora = inp.closest(".cfg-hex") || inp.closest("label") || inp;
+    const prox = ancora.nextElementSibling as HTMLElement | null;
+    return prox && prox.classList.contains("cor-cod") ? prox : null;
+  }
+  function atualizarCodigoCor(inp: HTMLInputElement) {
+    const c = codigoDe(inp)?.querySelector<HTMLInputElement>("input"); if (c && document.activeElement !== c) c.value = inp.value.toUpperCase();
+  }
+  function codigosDeCor(raiz: ParentNode = document) {
+    raiz.querySelectorAll<HTMLInputElement>('input[type="color"]').forEach((inp) => {
+      if (inp.closest(".se-caixa")) return;
+      if (codigoDe(inp)) { atualizarCodigoCor(inp); return; }
+      const ancora = inp.closest(".cfg-hex") || inp.closest("label") || inp;
+      const caixa = document.createElement("span"); caixa.className = "cor-cod";
+      caixa.innerHTML = `<input value="${inp.value.toUpperCase()}" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar outro)" data-cor-cod="1" /><button type="button" data-copiar-cor="1" title="Copiar o código da cor" aria-label="Copiar o código da cor">${IC_COPIAR}</button>`;
+      ancora.after(caixa);
+    });
+  }
+  // Copiar o código; colar um código válido muda a cor de verdade (como se tivesse escolhido no quadro).
+  document.addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLElement>("[data-copiar-cor]"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const v = b.parentElement?.querySelector<HTMLInputElement>("input")?.value || "";
+    void navigator.clipboard?.writeText(v).then(() => toast("Código " + v + " copiado.")).catch(() => toast("Não deu para copiar. Selecione o código e copie."));
+  }, true);
+  document.addEventListener("input", (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.type === "color") { atualizarCodigoCor(t); return; }
+    if (!t.dataset?.corCod) return;
+    let x = t.value.trim(); if (x && !x.startsWith("#")) x = "#" + x;
+    if (!/^#[0-9a-f]{6}$/i.test(x)) return;
+    const caixa = t.closest(".cor-cod"); let ant = caixa?.previousElementSibling as HTMLElement | null;
+    const cor = ant?.matches('input[type="color"]') ? (ant as HTMLInputElement) : ant?.querySelector<HTMLInputElement>('input[type="color"]'); if (!cor) return;
+    cor.value = x.toLowerCase(); cor.dispatchEvent(new Event("input", { bubbles: true })); cor.dispatchEvent(new Event("change", { bubbles: true }));
+  }, true);
   /** O app da prévia abre na versão que está sendo configurada (0103). */
   const srcPrevia = () => "/?previa=1" + (versaoCfg === "geral" ? "&versao=geral" : "");
   function posicionarCel() {
@@ -6693,6 +6737,12 @@ export function montar(app: HTMLElement) {
     if (t.closest?.("#cfgMenu")) {
       const M = menuRascunho();
       if (t.dataset.mbRot !== undefined) { const b = M.botoes[Number(t.dataset.mbRot)]; if (b) b.rotulo = t.value; }
+      else if (t.dataset.mbCorTodos) {
+        M.botoes.forEach((b) => { b.cor = t.value; });
+        (t.parentElement as HTMLElement).style.background = t.value;
+        document.querySelectorAll<HTMLInputElement>("#cfgMenu input[data-mb-cor]").forEach((x) => { x.value = t.value; (x.parentElement as HTMLElement).style.background = t.value; atualizarCodigoCor(x); });
+        ui.sujo = { f: "cfg-menu", id: "" };
+      }
       else if (t.dataset.mbCor !== undefined) { const b = M.botoes[Number(t.dataset.mbCor)]; if (b) b.cor = t.value; (t.parentElement as HTMLElement).style.background = t.value; }
       else if (t.dataset.mbCores) { M.cores[t.dataset.mbCores] = t.value; const i = t.parentElement as HTMLElement; i.style.background = t.value; const bb = i.nextElementSibling; if (bb) bb.textContent = t.value.toUpperCase(); }
       else if (t.name === "mbEstilo" && t.checked) M.estilo = t.value;
