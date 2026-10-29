@@ -3600,3 +3600,7 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
   .cfg-previa .cfg-pvfundo { padding: 6px; }
 }
 .cfg-versao-dir .cfg-salvar-topo { min-height: 46px !important; padding: 0 24px !important; font-size: 15px !important; border-radius: 8px !important; }
+/* Escolhas lado a lado (Texto | Logo, Onde aparece…): no mesmo padrão dos botões das abas, sem o marrom. */
+.cfg-seg { gap: 6px; padding: 4px; border: 1px solid var(--linha-suave); border-radius: 10px; background: var(--aa-cartao); overflow: visible; }
+.cfg-seg span { min-height: 40px; font-size: 14px; font-weight: 600; color: var(--texto); border: 1px solid transparent; border-radius: 8px; }
+.cfg-seg input:checked + span { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); border-color: #c9a25c; }
