@@ -3569,3 +3569,8 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .cfg-logo-bts { display: inline-flex; gap: 8px; }
 .cfg-logo-op small { flex-basis: 100%; color: var(--texto-2); }
 .cfg-logo-prev > img { width: auto !important; height: auto !important; max-width: 164px !important; max-height: 54px !important; }
+.cfg-op[data-marca="texto"] .cfg-2 { grid-template-columns: 1fr; gap: 10px; }
+.cfg-marca-l { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.cfg-marca-l > .cfg-c { flex: 1 1 220px; }
+.cfg-marca-est { display: inline-flex; align-items: center; gap: 8px; }
+.cfg-marca-est select { min-width: 170px; }

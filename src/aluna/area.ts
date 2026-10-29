@@ -12,7 +12,7 @@
 import "./area.css";
 import { supabase } from "../data/supabase";
 import * as api from "../data/api";
-import { aplicarAparencia } from "../data/aparencia";
+import { aplicarAparencia, carregarFonte } from "../data/aparencia";
 import { popNotif, SINO } from "../data/notif";
 import { cssDaAula, cssDaNotif, cssDoInicio, cssDoPerfil, cssVisual, limparEstilo } from "../data/estilo";
 
@@ -62,6 +62,7 @@ export function montar(raiz: HTMLElement) {
       PREV_INICIO = "estiloInicio" in m ? limparEstilo(m.estiloInicio) : undefined;
       if (!I._destOrig) I._destOrig = I.destaques || [];
       I.marca = { titulo: m.titulo || "", sub: m.sub || "", logo: m.marcaLogo || "" };
+      if (m.topo) I.topo = m.topo;
       I.fraseRetorno = m.frase || "";
       if (m.saudacao) I.saudacao = m.saudacao;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
@@ -409,11 +410,7 @@ export function montar(raiz: HTMLElement) {
     if (!telas[S.tela]) S.tela = "inicio";
     const n = navAtual();
     app.innerHTML = `
-      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" || (GERAL && (S.tela === "inicio" || S.tela === "meus" || S.tela === "novos")) ? "" : `<header class="topo"><div class="pagina">
-        <button class="marca marca-alunos" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
-        <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
-        <button class="av-topo${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
-      </div></header>`}
+      ${S.tela === "aula" || S.tela === "modulo" || S.tela === "presente" || S.tela === "opcao" || S.tela === "leitor" || S.tela === "cursoPres" ? "" : topoApp(n)}
       <main>${telas[S.tela]()}</main>
       ${S.tela === "leitor" ? "" : navBase(n)}`;
   }
@@ -593,7 +590,24 @@ export function montar(raiz: HTMLElement) {
     }).join("");
   }
   // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
-  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; if (m.logo) return `<img class="marca-logo" src="${h(m.logo)}" alt="${h(m.titulo || "")}" />`; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`; };
+  /*
+   * Topo do app (0105), igual em todas as telas e nas duas versões: à esquerda a foto,
+   * a saudação (editável no painel) e o nome da aluna (do cadastro); no meio a marca
+   * (texto com cor e fonte próprias, ou logo); à direita a busca e os avisos.
+   */
+  function topoApp(n) {
+    const T = (D && D.inicio && D.inicio.topo) || {}, N = NOTIF(), aviso = !!(N && N.ativo && !S.notifOn && !PREVIA);
+    return `<header class="topo topo-novo"><div class="pagina">
+        <button class="av-topo ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
+        <div class="ig-ola tp-ola">${(T.saudacao || "").trim() ? `<span class="tp-saud">${h(T.saudacao.trim())},</span>` : ""}<b class="tp-nome">${h((S.nome || "").trim() || "Aluna")}</b></div>
+        <button class="marca marca-alunos tp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
+        <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
+        <div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button><button class="ig-bt" data-a="${aviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${aviso ? "<i></i>" : ""}</button></div>
+      </div></header>`;
+  }
+  /** Estilo (cor e fonte) do título e do subtítulo da marca, escolhidos no painel. */
+  const estiloMarca = (cor, fonte) => { if (fonte) carregarFonte(fonte); const r = []; if (/^#[0-9a-f]{6}$/i.test(cor || "")) r.push("color:" + cor); if (fonte && /^[A-Za-z ]{2,40}$/.test(fonte)) r.push(`font-family:'${fonte}', Georgia, serif`); return r.length ? ` style="${r.join(";")}"` : ""; };
+  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; if (m.logo) return `<img class="marca-logo" src="${h(m.logo)}" alt="${h(m.titulo || "")}" />`; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : (() => { const e = ((D && D.inicio && D.inicio.topo) || {}).estilo || {}; return `${m.titulo ? `<b${estiloMarca(e.tituloCor, e.tituloFonte)}>${h(m.titulo)}</b>` : ""}${m.sub ? `<span${estiloMarca(e.subCor, e.subFonte)}>${h(m.sub)}</span>` : ""}`; })(); };
   /*
    * Início da versão geral (0103), no desenho "AION — Tela Inicial": topo com a
    * aluna e a marca, um carrossel de destaques, atalhos para as categorias e uma
@@ -662,12 +676,6 @@ export function montar(raiz: HTMLElement) {
     const dois = (k) => String(k).padStart(2, "0");
     return `
     <div class="ig">
-      <header class="ig-topo">
-        <button class="ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
-        <div class="ig-ola"><span>${h(String((D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}").split("{nome}")[0].replace(/[,\s]+$/, "") || "Bem-vindo(a)")},</span><b>${h(primeiro || "aluna")}</b></div>
-        <div class="ig-marca">${m.logo ? `<img src="${h(m.logo)}" alt="${h(m.titulo || "")}" />` : APAR && APAR.logo ? `<img src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`}</div>
-        <div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button>${n && n.ativo ? `<button class="ig-bt" data-a="${sinoAviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${sinoAviso ? "<i></i>" : ""}</button>` : ""}</div>
-      </header>
       ${slides.length ? `
       <section class="ig-hero" aria-label="Destaques">
         <div class="ig-trilho" data-ig-trilho>${slides.map((sd, k) => `
@@ -696,7 +704,7 @@ export function montar(raiz: HTMLElement) {
     </div>`;
   }
   /** Cabeçalho das telas da versão geral (Meus Cursos, Novos). */
-  const cabIg = (tit, sub) => `<header class="ig-topo ig-topo-tela"><div class="ig-ola"><b class="ig-tela-tit">${h(tit)}</b>${sub ? `<span>${h(sub)}</span>` : ""}</div><div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button></div></header>`;
+  const cabIg = (tit, sub) => `<div class="ig-topo ig-topo-tela"><div class="ig-ola"><b class="ig-tela-tit">${h(tit)}</b>${sub ? `<span>${h(sub)}</span>` : ""}</div></div>`;
   /** Meus Cursos (versão geral): só o que está liberado para ela. */
   function telaMeus() {
     const meus = PRESENTES().filter((x) => cursoLiberado(x.curso));
@@ -718,6 +726,7 @@ export function montar(raiz: HTMLElement) {
     const achar = () => {
       const q = norm(inp.value.trim()); if (q.length < 2) { res.innerHTML = ""; return; }
       const out = [];
+      MODS().forEach((md, mi) => md.aulas.forEach((au, ai) => { if (norm(au.titulo).includes(q)) out.push(`<button data-a="aula" data-m="${mi}" data-i="${ai}"><b>${h(au.titulo)}</b><em>${h(md.rot)} ${md.num}</em></button>`); }));
       for (const x of PRESENTES()) {
         if (norm(x.curso.nome).includes(q)) out.push(`<button ${ehEbook(x.curso) ? 'data-a="ebook"' : 'data-a="curso-pres"'} data-v="${x.ci}-${x.i}"><b>${h(x.curso.nome)}</b><em>${h(x.c.nome)}</em></button>`);
         x.curso.itens.forEach((t, j) => { if (norm(t.titulo).includes(q)) out.push(`<button data-a="presente" data-v="${x.ci}-${x.i}-${j}"><b>${h(t.titulo)}</b><em>${h(x.curso.nome)}</em></button>`); });
