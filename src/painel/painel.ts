@@ -18,7 +18,7 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { cssFundo, FONTES_APP, limparEstilo, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
+import { chaveMenu, cssFundo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -2747,7 +2747,8 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Botões do menu ${dicaCampo(`Os botões da barra de baixo do app (no computador, no alto). Dá para mudar o nome, o ícone, a cor quando está ativo, esconder e arrastar para mudar a ordem. Início e Perfil ficam sempre. "Adicionar botão" cria um botão que abre um link.`, "cfg.bot-es-do-menu")}</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
             <div class="cfg-mbtodos">
-              <span class="cfg-aul-tx"><b>Cor de todos os botões</b><small>Escolha uma cor e ela vai para todos os botões de uma vez. Depois dá para mudar um por um, abaixo.</small></span>
+              <span class="cfg-aul-tx"><b>Todos os botões</b><small>Cor quando o botão está aberto e o Estilo do texto (fonte, tamanho, cor…) de todos de uma vez. Depois dá para mudar um por um, abaixo.</small></span>
+              ${botaoEstiloTexto("est:mbtodos", "Texto de todos os botões do menu")}
               <label class="cfg-corbt cfg-corlivre" title="Cor de todos os botões" style="background:${h(M.cores.ativo)}"><input type="color" value="${h(M.botoes.every((b) => (b.cor || M.cores.ativo) === (M.botoes[0]?.cor || M.cores.ativo)) ? M.botoes[0]?.cor || M.cores.ativo : M.cores.ativo)}" data-mb-cor-todos="1" aria-label="Cor de todos os botões" /></label>
             </div>
             <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id), cor = b.cor || M.cores.ativo; return `
@@ -2758,10 +2759,12 @@ export function montar(app: HTMLElement) {
                 <input class="campo cfg-mbrot" value="${h(b.rotulo)}" maxlength="18" data-mb-rot="${i}" aria-label="Nome do botão ${i + 1}" />
                 <span class="est3"><button type="button" class="cfg-icbt" data-a="estado-menu" data-v="mbic:${i}" title="Ícone" aria-label="Ícone do botão">${IC_APP[b.icone || "inicio"] || IC_APP.inicio}</button>${ui.estMenu === "mbic:" + i ? `<span class="est3-menu cfg-icmenu" role="menu">${Object.keys(IC_APP).map((k) => `<button type="button" role="menuitem" data-a="mb-icone" data-id="${i}" data-v="${k}" title="${NOME_IC_APP[k]}" aria-label="${NOME_IC_APP[k]}">${IC_APP[k]}</button>`).join("")}</span>` : ""}</span>
                 <label class="cfg-corbt cfg-corlivre" title="Cor quando o botão está ativo" style="background:${h(cor)}"><input type="color" value="${h(cor)}" data-mb-cor="${i}" aria-label="Cor do botão" /></label>
+                ${botaoEstiloTexto("est:" + chaveMenu(b.id), "Botão " + b.rotulo)}
                 <button type="button" class="cfg-vis${b.visivel !== false ? " on" : ""}" data-a="mb-vis" data-v="${i}" aria-pressed="${b.visivel !== false}" ${fixo ? 'disabled title="Início e Perfil ficam sempre no menu"' : ""}><i></i>${b.visivel !== false ? "Visível" : "Oculto"}</button>
                 <button type="button" class="al-botao pequeno" data-a="mb-editar" data-v="${i}">${IC_EQ.lapis}Editar</button>
                 ${b.url ? `<button type="button" class="cfg-lixo" data-a="mb-remover" data-v="${i}" aria-label="Excluir ${h(b.rotulo)}">${IC_MOD.lixo}</button>` : `<span class="cfg-lixo vazio" title="Botão do app: use Visível para esconder"></span>`}
               </div>`; }).join("")}</div>
+            <div class="cfg-ordem cfg-mbbarra">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "menu"))}</div>
           </div>
           <div class="cfg-bloco">
             <h3>Estilo do menu ${dicaCampo(`O visual da barra de baixo do app: escura, clara, com moldura (flutuando com borda) ou minimalista (transparente).`, "cfg.estilo-do-menu")}</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
@@ -4595,7 +4598,7 @@ export function montar(app: HTMLElement) {
     else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim(), presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
     else if (aba === "versiculos") Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, foco: (PARTES_INICIO.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), vers: { titulo: t.vTitulo ?? "Versículo de hoje", exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
     else if (aba === "perfil") Object.assign(msg, { estiloNotif: ui.prevEst.notif === undefined ? S.config.estiloNotif : ui.prevEst.notif, estiloPerfil: ui.prevEst.perfil === undefined ? S.config.estiloPerfil : ui.prevEst.perfil, foco: (PARTES_PERFIL.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim(), saudacao: (t.perfSaud || "").trim(), imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
-    else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
+    else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
     else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
     else if (aba === "aulas") { const pt = PARTES_AULA.find((x) => x.k === ui.prevEst.foco); Object.assign(msg, { ir: "aula-exemplo", estiloAula: ui.prevEst.aula === undefined ? S.config.estiloAula : ui.prevEst.aula, foco: pt ? pt.sel.split(",")[0].trim() : "", abaAula: pt?.aba || "" }); }
     else return;
@@ -4931,7 +4934,7 @@ export function montar(app: HTMLElement) {
         aoMudar: (t) => por(t.cor), aoCancelar: () => por(ini), aoAplicar: (t) => { por(t.cor); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); } });
       return;
     }
-    const k = chave.replace(/^est:/, ""), pt = PARTES_INICIO.find((x) => x.k === k); if (!pt) return;
+    const k = chave.replace(/^est:/, ""), pt = PARTES_INICIO.find((x) => x.k === k) || partesMenu(menuRascunho().botoes).find((x) => x.k === k); if (!pt) return;
     const base = S.config.estiloInicio || {}, atual = estInicioAgora()[k];
     const val = txtDe(atual);
     // Título, subtítulo e divisória já tinham cor e fonte guardadas em outro lugar: começam por elas.
@@ -4939,11 +4942,11 @@ export function montar(app: HTMLElement) {
     if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
     const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false, alinha: "left" };
     const vista = vistaNaPrevia(pt.sel, reserva);
-    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui", verstit: (inp("vTitulo")?.value || "").trim() || "Versículo de hoje", verstexto: versHoje() ? "“" + (versHoje()!.texto.length > 34 ? versHoje()!.texto.slice(0, 32) + "…" : versHoje()!.texto) + "”" : "Mensagem do dia", versrefe: versHoje()?.ref || "Referência" };
-    const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; atualizarPreviaCfg(); };
+    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui", mbtodos: "Início  Módulos  Perfil", ...Object.fromEntries(menuRascunho().botoes.map((b) => [chaveMenu(b.id), b.rotulo || "Botão"])), verstit: (inp("vTitulo")?.value || "").trim() || "Versículo de hoje", verstexto: versHoje() ? "“" + (versHoje()!.texto.length > 34 ? versHoje()!.texto.slice(0, 32) + "…" : versHoje()!.texto) + "”" : "Mensagem do dia", versrefe: versHoje()?.ref || "Referência" };
+    const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; if (ui.cfgAba === "inicio") atualizarPreviaCfg(); else mandarPreviaCfg(); };
     janelaEstilo({ nome: pt.nome, texto: textos[k] || pt.nome, val, vista, volta: botao,
       aoMudar: por,
-      aoCancelar: () => { ui.prevEst.inicio = undefined; ui.prevEst.foco = ""; atualizarPreviaCfg(); },
+      aoCancelar: () => { ui.prevEst.inicio = undefined; ui.prevEst.foco = ""; if (ui.cfgAba === "inicio") atualizarPreviaCfg(); else mandarPreviaCfg(); },
       aoAplicar: (t) => {
         const novo = limparEstilo({ ...base, [k]: visualDe(base[k], t) });
         const extra: Record<string, unknown> = {};

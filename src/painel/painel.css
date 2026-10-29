@@ -3850,3 +3850,15 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cfg-vlista > .cfg-vtab { margin: 0; border: 0; }
 .cfg-vtodas { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--linha-suave); }
 .cfg-vtodas > span { margin-right: auto; font-size: 13px; color: var(--texto-2); }
+/* Menu inferior: cada botão com "Aa Estilo" sem estourar a linha. */
+.cfg-mbl { gap: 8px !important; }
+.cfg-mbl .cfg-est-bt { min-width: 0; height: 40px; padding: 0 10px; gap: 6px; flex: none; }
+.cfg-mbl .cfg-mbrot { min-width: 80px !important; }
+.cfg-mbtodos .cfg-est-bt { flex: none; }
+.cfg-mbbarra { margin-top: 10px; }
+.cfg-mbl .cfg-vis { font-size: 0 !important; gap: 0 !important; }
+.cfg-mbl .cfg-vis i { margin: 0; }
+.cfg-mbl .cor-cod { width: auto; }
+.cfg-mbl .cfg-vis { width: auto !important; min-width: 0 !important; padding: 0 !important; }
+.cfg-mbl .cfg-lixo { width: 36px !important; min-width: 36px !important; }
+.cfg-mbl .cfg-lixo.vazio { width: 0 !important; min-width: 0 !important; }

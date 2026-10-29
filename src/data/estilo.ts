@@ -165,6 +165,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "mentoriacard", nome: "Card do módulo (dentro de “Sua mentoria”)", desc: "O card do módulo, com a capa, o título e o botão, dentro do card “Sua mentoria”.", tipo: "card", sel: ".mt-bloco .mh-card, .mt-bloco .heroi" },
   { k: "comece", nome: "Texto do card da mentoria", desc: "O texto dentro do card “Sua mentoria”, em cima do card do módulo.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
+  { k: "mbtodos", nome: "Texto de todos os botões do menu", desc: "Os nomes dos botões do menu de baixo (todos de uma vez).", tipo: "texto", sel: ".nav-base button, .nav-base .nb-link" },
   { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },
   { k: "menuicone", nome: "Ícones do menu", desc: "Os ícones dos botões que não estão abertos.", tipo: "texto", sel: ".nav-base button:not([aria-current]) svg, .nav-base .nb-link svg", svg: true },
   { k: "menuativo", nome: "Botão aberto do menu", desc: "Nome e ícone da tela em que a aluna está.", tipo: "texto", sel: ".nav-base button[aria-current=\"page\"], .nav-base button[aria-current=\"page\"] svg", svg: true },
@@ -224,5 +225,15 @@ export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): st
 }
 export const cssDaAula = (e: Estilo | null | undefined) => cssDaTela(PARTES_AULA, e);
 export const cssDoInicio = (e: Estilo | null | undefined) => cssDaTela(PARTES_INICIO, e);
+/** Chave do estilo de um botão do menu de baixo (um por botão, guardado junto do estilo do Início). */
+export const chaveMenu = (id: string) => ("mb" + id.toLowerCase().replace(/[^a-z]/g, "")).slice(0, 12);
+/** As partes "um botão do menu" (o texto de cada botão), montadas a partir dos botões configurados. */
+export function partesMenu(botoes: Array<{ id: string; rotulo?: string; url?: string }> | null | undefined): ParteTela[] {
+  const limpo = (x: string) => x.replace(/["\\]/g, "");
+  return (botoes || []).filter((b) => b && typeof b.id === "string").map((b) => ({
+    k: chaveMenu(b.id), nome: "Botão " + (b.rotulo || "do menu"), desc: "", tipo: "texto" as const,
+    sel: b.url ? `.nav-base a.nb-link[href="${limpo(b.url)}"]` : `.nav-base [data-v="${limpo(b.id)}"]`,
+  }));
+}
 export const cssDoPerfil = (e: Estilo | null | undefined) => cssDaTela(PARTES_PERFIL, e);
 export const cssDaNotif = (e: Estilo | null | undefined) => cssDaTela(PARTES_NOTIF, e);
