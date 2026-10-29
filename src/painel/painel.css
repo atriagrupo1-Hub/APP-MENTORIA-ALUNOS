@@ -3862,3 +3862,9 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cfg-mbl .cfg-vis { width: auto !important; min-width: 0 !important; padding: 0 !important; }
 .cfg-mbl .cfg-lixo { width: 36px !important; min-width: 36px !important; }
 .cfg-mbl .cfg-lixo.vazio { width: 0 !important; min-width: 0 !important; }
+/* Menu inferior: Cores em cima (4 lado a lado) e Tamanho dos ícones embaixo, sem sobrepor. */
+.cfg-mbcores { display: block; }
+.cfg-mbcores > div + div { margin-top: 22px; }
+.cfg-mbcores .cfg-cores4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.cfg-mbcores .cfg-cores4 > * { min-width: 0; }
+@media (max-width: 900px) { .cfg-mbcores .cfg-cores4 { grid-template-columns: 1fr 1fr; } }

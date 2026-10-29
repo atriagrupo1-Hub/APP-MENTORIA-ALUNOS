@@ -2770,7 +2770,7 @@ export function montar(app: HTMLElement) {
             <h3>Estilo do menu ${dicaCampo(`O visual da barra de baixo do app: escura, clara, com moldura (flutuando com borda) ou minimalista (transparente).`, "cfg.estilo-do-menu")}</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
             <div class="cfg-estilos cfg-e4">${[["padrao", "Padrão (escuro)"], ["claro", "Claro"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]].map(([k, t]) => `<label class="cfg-est"><input type="radio" name="mbEstilo" value="${k}" ${M.estilo === k ? "checked" : ""} /><span class="cfg-est-cx cfg-mbest mbe-${k}">${["inicio", "modulos", "presentes", "perfil"].map((x, j) => `<i class="${j === 0 ? "on" : ""}">${IC_APP[x]}</i>`).join("")}</span><em>${t}</em></label>`).join("")}</div>
           </div>
-          <div class="cfg-bloco cfg-2l">
+          <div class="cfg-bloco cfg-mbcores">
             <div><h3>Cores ${dicaCampo(`As cores da barra de baixo: o fundo, o ícone dos botões não selecionados, o do botão selecionado e o texto.`, "cfg.cores")}</h3><p class="cfg-sub">Personalize as cores da barra inferior.</p>
               <div class="cfg-cores4">${[["fundo", "Fundo"], ["inativo", "Ícone inativo"], ["ativo", "Ícone ativo"], ["texto", "Texto"]].map(([k, t]) => `<label class="cfg-c"><span>${t}</span><span class="cfg-hex"><i style="background:${h(M.cores[k])}"><input type="color" value="${h(M.cores[k])}" data-mb-cores="${k}" aria-label="${t}" /></i><b>${h(M.cores[k].toUpperCase())}</b></span></label>`).join("")}</div>
             </div>
