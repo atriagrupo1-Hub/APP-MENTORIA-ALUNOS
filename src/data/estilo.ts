@@ -16,7 +16,11 @@ export type Visual = {
   sombra?: { n: number; cor: string } | null;
   tam?: "p" | "m" | "g" | null;
   forma?: "quadrado" | "arredondado" | "redondo" | null;
+  /** Só para textos: uma das FONTES_APP. */
+  fonte?: string | null;
 };
+/** As fontes que o painel oferece para os textos do app (carregadas do Google Fonts). */
+export const FONTES_APP = ["Cinzel", "Cormorant Garamond", "Playfair Display", "Lora", "EB Garamond", "Libre Baskerville", "Marcellus", "Lato", "Montserrat", "Inter", "Poppins", "Raleway", "Open Sans", "Nunito"];
 export type Estilo = Partial<Record<string, Visual>>;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -33,6 +37,7 @@ export function limparVisual(v: unknown): Visual | null {
   if (o.sombra && hex(o.sombra.cor)) out.sombra = { n: Math.max(0, Math.min(4, Math.round(Number(o.sombra.n) || 0))), cor: hex(o.sombra.cor) };
   if (["p", "m", "g"].includes(o.tam)) out.tam = o.tam;
   if (["quadrado", "arredondado", "redondo"].includes(o.forma)) out.forma = o.forma;
+  if (FONTES_APP.includes(o.fonte)) out.fonte = o.fonte;
   return Object.keys(out).length ? out : null;
 }
 export function limparEstilo(e: unknown): Estilo | null {
@@ -102,9 +107,11 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "topo", nome: "Faixa do topo", desc: "A barra de cima, com o nome e a foto.", tipo: "card", sel: ".topo" },
   { k: "marca", nome: "Nome no topo", desc: "A linha grande (ex.: Mentoria).", tipo: "texto", sel: ".topo .marca b" },
   { k: "marcasub", nome: "Subtítulo no topo", desc: "A linha pequena (ex.: Área de alunos).", tipo: "texto", sel: ".topo .marca span" },
+  { k: "toposaud", nome: "Texto de saudação (topo)", desc: "O texto pequeno antes do nome, junto da foto.", tipo: "texto", sel: ".tp-saud" },
+  { k: "toponome", nome: "Nome da aluna (topo)", desc: "O nome ao lado da foto.", tipo: "texto", sel: ".tp-nome" },
   { k: "foto", nome: "Contorno da foto", desc: "O círculo da foto no canto de cima.", tipo: "capa", sel: ".topo .av-topo" },
   { k: "ola", nome: "Card de boas-vindas", desc: "O bloco com a saudação e a mensagem.", tipo: "card", sel: ".pa-ola" },
-  { k: "saudacao", nome: "Saudação", desc: "“Bem-vindo(a), nome”.", tipo: "texto", sel: ".pa-nome" },
+  { k: "saudacao", nome: "Texto inicial", desc: "A frase grande antes do versículo (ex.: “Bem-vindo(a), nome”).", tipo: "texto", sel: ".pa-nome" },
   { k: "mensagem", nome: "Mensagem de boas-vindas", desc: "O texto embaixo da saudação.", tipo: "texto", sel: ".pa-intro" },
   { k: "vers", nome: "Card do versículo", desc: "Fundo, contorno e sombra da caixa do versículo.", tipo: "card", sel: ".pa .vers" },
   { k: "verstexto", nome: "Texto do versículo", desc: "", tipo: "texto", sel: ".pa .vers-txt" },
@@ -150,7 +157,7 @@ export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): st
   if (!e) return "";
   return partes.map((p) => {
     const v = e[p.k]; if (!v) return "";
-    if (p.tipo === "texto") return v.texto ? `${p.sel}{color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}}` : "";
+    if (p.tipo === "texto") { const r = [v.texto ? `color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}` : "", v.fonte && !p.svg ? `font-family:'${v.fonte}', Georgia, serif !important` : ""].filter(Boolean).join(";"); return r ? `${p.sel}{${r}}` : ""; }
     const css = cssVisual(v, p.tipo === "capa" ? "capa" : p.tipo);
     return css ? `${p.sel}{${css}}${v.fundo && p.extra ? p.extra : ""}` : "";
   }).join("\n");
