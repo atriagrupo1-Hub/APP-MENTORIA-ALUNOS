@@ -42,7 +42,7 @@ export function montar(raiz: HTMLElement) {
         if (m.menu) I.menu = m.menu;
         if (m.apar) { APAR = m.apar; aplicarAparencia(m.apar, (c) => (c && (c.startsWith("data:") || c.startsWith("blob:")) ? c : api.urlDaCapa(c) || "")); }
         PREV_AULA = "estiloAula" in m ? limparEstilo(m.estiloAula) : undefined;
-        PREV_INICIO = undefined;
+        PREV_INICIO = "estiloInicio" in m ? limparEstilo(m.estiloInicio) : undefined;
         PREV_PERFIL = "estiloPerfil" in m ? limparEstilo(m.estiloPerfil) : undefined;
         PREV_NOTIF = "estiloNotif" in m ? limparEstilo(m.estiloNotif) : undefined;
         if (m.ir === "aula-exemplo") {
@@ -557,8 +557,8 @@ export function montar(raiz: HTMLElement) {
     const dia = Math.floor((HOJE - new Date(HOJE.getFullYear(), 0, 0)) / 864e5);
     const [txt, ref] = vs[dia % vs.length];
     return `
-          <figure class="vers v-${h(V.estilo || "caixa")} v-fundo-${h(V.fundo || "escuro")} v-${h(V.fonte || "serifa")} v-${h(V.tamanho || "medio")}${V.cores ? " v-cores" : ""}" aria-label="Versículo de hoje"${V.cores ? ` style="${["texto", "borda", "fundo"].filter((k) => /^#[0-9a-f]{6}$/i.test(V.cores[k] || "")).map((k) => "--v-" + k + ":" + V.cores[k]).join(";")}"` : ""}>
-            <p class="vers-rot"><span aria-hidden="true"></span>Versículo de hoje<span aria-hidden="true"></span></p>
+          <figure class="vers v-${h(V.estilo || "caixa")} v-fundo-${h(V.fundo || "escuro")} v-${h(V.fonte || "serifa")} v-${h(V.tamanho || "medio")}${V.cores ? " v-cores" : ""}" aria-label="${h((typeof V.titulo === "string" ? V.titulo : "Versículo de hoje").trim() || "Mensagem de destaque")}"${V.cores ? ` style="${["texto", "borda", "fundo"].filter((k) => /^#[0-9a-f]{6}$/i.test(V.cores[k] || "")).map((k) => "--v-" + k + ":" + V.cores[k]).join(";")}"` : ""}>
+            ${(typeof V.titulo === "string" ? V.titulo : "Versículo de hoje").trim() ? `<p class="vers-rot"><span aria-hidden="true"></span>${h((typeof V.titulo === "string" ? V.titulo : "Versículo de hoje").trim())}<span aria-hidden="true"></span></p>` : ""}
             <blockquote class="vers-txt serif">“${h(txt)}”</blockquote>
             ${V.referencia === false ? "" : `<figcaption class="vers-ref">${h(ref)}</figcaption>`}
           </figure>`;
