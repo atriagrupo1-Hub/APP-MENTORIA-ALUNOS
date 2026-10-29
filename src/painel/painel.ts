@@ -6717,7 +6717,7 @@ export function montar(app: HTMLElement) {
    * clique passar (CSS) e ela fecha ao clicar fora (menos enquanto se edita o texto dela),
    * para nunca ficar na frente de um campo que se quer selecionar ou copiar.
    */
-  const fecharAjudas = (manter?: Element | null) => document.querySelectorAll<HTMLDetailsElement>("details.ajuda-amarela[open]").forEach((d) => { if (d !== manter && !d.contains(document.activeElement)) d.open = false; });
+  const fecharAjudas = (manter?: Element | null) => document.querySelectorAll<HTMLDetailsElement>("details.ajuda-amarela[open]").forEach((d) => { const ed = document.activeElement; if (d !== manter && !(ed && d.contains(ed) && ed.matches("input, textarea, [contenteditable]"))) d.open = false; });
   document.addEventListener("pointerdown", (e) => fecharAjudas((e.target as HTMLElement).closest?.("details.ajuda-amarela")), true);
   app.addEventListener("mousedown", (e) => {
     apertou = { x: e.clientX, y: e.clientY };

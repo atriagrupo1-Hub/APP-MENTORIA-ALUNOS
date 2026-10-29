@@ -3556,3 +3556,6 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 /* A caixinha do "?" não segura o clique: o mouse chega no campo que está embaixo (selecionar, copiar, apagar). */
 .ajuda-amarela-txt, .ajuda-pop { pointer-events: none; }
 .ajuda-amarela-txt :is(button, a, input, textarea, select, [contenteditable]), .ajuda-pop :is(button, a, input, textarea, select, [contenteditable]) { pointer-events: auto; }
+/* Texto selecionado bem visível no painel (antes era branco transparente: no fundo claro a seleção não aparecia). */
+.casca ::selection, .casca::selection, body ::selection, input::selection, textarea::selection { background: #f2c94c !important; color: #1a1306 !important; }
+[data-tema="escuro"] .casca ::selection, [data-tema="escuro"] input::selection, [data-tema="escuro"] textarea::selection { background: #c9a25c !important; color: #0b0905 !important; }
