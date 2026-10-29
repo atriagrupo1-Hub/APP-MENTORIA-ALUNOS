@@ -948,7 +948,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div>${ui.tab === "layout" ? "" : `<p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p>`}</div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div>${ui.tab === "layout" ? "" : `<p class="contagem">${h(SUB_ABA[ui.tab] || cont)}</p>`}</div><span style="flex:1"></span>${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -2904,6 +2904,7 @@ export function montar(app: HTMLElement) {
       <div class="cfg-versao" role="group" aria-label="Versão do app">
         <span class="cfg-versao-seg">${([["mentoria", "Versão mentoria", "Para quem tem a mentoria"], ["geral", "Versão geral", "Para quem só tem outros produtos"]] as const).map(([k, t, d]) => `<button type="button" data-a="cfg-versao" data-v="${k}" aria-pressed="${versaoCfg === k}" title="${d}">${k === "mentoria" ? IC_CFG.modulos : IC_CFG.inicio}${t}</button>`).join("")}</span>
         <span class="cfg-versao-rot">Qual versão do app você está configurando ${dicaCampo(`O app tem duas versões. A versão mentoria é a de quem tem acesso à mentoria (a de sempre). A versão geral é a de quem só tem outros produtos: sem Módulos e sem “Sua mentoria”, com o Início mostrando os conteúdos dela. Quem decide é o acesso da aluna: dar a mentoria para ela em Alunas muda o app dela para a versão mentoria; tirar, volta para a geral. Cada versão tem as suas cores, textos, menu, Perfil e aparência.`, "cfg.versoes")}</span>
+        <span class="cfg-versao-dir">${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ACAO_ABA.config}</span>
       </div>
       <div class="cfg-abas" role="tablist">${ABAS_CFG.filter(([k]) => versaoCfg !== "geral" || (k !== "modulos" && k !== "aulas")).map(([k, t]) => `<button type="button" role="tab" data-a="cfg-aba" data-v="${k}" aria-selected="${aba === k}">${IC_CFG[k]}${t}</button>`).join("")}${ehDono() && Object.values(S.ajudas).some((x) => x.removida) ? `<button type="button" class="link cfg-aj-rest" data-a="ajudas-restaurar">Restaurar interrogações removidas (${Object.values(S.ajudas).filter((x) => x.removida).length})</button>` : ""}</div>
       ${corpo}
