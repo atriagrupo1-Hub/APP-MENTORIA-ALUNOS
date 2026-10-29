@@ -176,6 +176,8 @@ export type Produto = {
   /** Categoria (Configurações → Presentes) e o estilo dela (0098). */
   catAbaId?: string | null;
   catEstilo?: Record<string, unknown> | null;
+  /** Nome da categoria (Presentes) em que o produto está. */
+  catTitulo?: string | null;
   modulos: Modulo[];
   presentes: Presente[];
   /** Conteúdo pendurado direto no produto, sem módulo nem item. */
