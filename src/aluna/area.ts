@@ -14,7 +14,7 @@ import { supabase } from "../data/supabase";
 import * as api from "../data/api";
 import { aplicarAparencia, carregarFonte } from "../data/aparencia";
 import { popNotif, SINO } from "../data/notif";
-import { cssDaAula, cssDaNotif, cssDoInicio, cssDoPerfil, cssVisual, limparEstilo } from "../data/estilo";
+import { cssDaAula, cssDaNotif, cssDaTela, cssDoInicio, cssDoPerfil, cssVisual, limparEstilo, partesMenu } from "../data/estilo";
 
 export function montar(raiz: HTMLElement) {
   raiz.innerHTML = `<div id="app"></div><div id="camada"></div>`;
@@ -86,6 +86,7 @@ export function montar(raiz: HTMLElement) {
   function aplicarEstiloAula() {
     const css = cssDaAula(PREV_AULA !== undefined ? PREV_AULA : limparEstilo(D && D.inicio && D.inicio.estiloAula))
       + "\n" + cssDoInicio(PREV_INICIO !== undefined ? PREV_INICIO : limparEstilo(D && D.inicio && D.inicio.estiloInicio))
+      + "\n" + cssDaTela(partesMenu(MENU().botoes), PREV_INICIO !== undefined ? PREV_INICIO : limparEstilo(D && D.inicio && D.inicio.estiloInicio))
       + "\n" + cssDoPerfil(PREV_PERFIL !== undefined ? PREV_PERFIL : limparEstilo(D && D.inicio && D.inicio.estiloPerfil))
       + "\n" + cssDaNotif(PREV_NOTIF !== undefined ? PREV_NOTIF : limparEstilo(D && D.inicio && D.inicio.estiloNotif));
     if (!estiloAulaEl) { if (!css) return; estiloAulaEl = document.createElement("style"); estiloAulaEl.id = "estilo-aula"; document.head.append(estiloAulaEl); }
