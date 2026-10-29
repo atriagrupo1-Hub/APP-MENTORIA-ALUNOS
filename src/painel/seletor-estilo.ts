@@ -239,7 +239,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
       ${o.partes.length > 1 ? `<div class="se-partes" role="tablist">${o.partes.map((p) => `<button type="button" role="tab" data-se="parte" data-v="${p.k}" aria-selected="${p.k === parte}">${h(p.nome)}${est[p.k] && Object.keys(est[p.k]!).length ? "<i></i>" : ""}</button>`).join("")}</div>` : ""}
       <div class="se-rolo">
         <div class="se-amostra">${amostra()}</div>
-        ${t === "card" ? secoesCard(v) : `
+        ${t === "card" || t === "botao" ? secoesCard(v) : `
         ${soCor ? `<div class="se-sec"><span class="se-rot">Cor</span>
           <div class="se-chips">${chip("texto", v.texto || "#f1e6c9", v.texto ? "Cor escolhida" : "Cor do app (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
           ${cor("texto")}
@@ -267,9 +267,9 @@ export function abrirSeletorEstilo(o: Opcoes) {
           ${v.sombra && v.sombra.n ? `<div class="se-chips">${chip("sombra", v.sombra.cor, "Cor da sombra")}<button type="button" class="se-lnk" data-se="tirar" data-v="sombra">Usar a do app</button></div>${cor("sombra")}` : ""}
         </div>
         <div class="se-sec"><span class="se-rot">Formato dos cantos</span>
-          <div class="se-seg">${[["quadrado", "Quadrado"], ["arredondado", "Arredondado"], ["redondo", t === "botao" ? "Redondo" : "Bem arredondado"]].map(([k, n]) => `<button type="button" data-se="forma" data-v="${k}" aria-pressed="${v.forma === k}"><i class="se-forma se-f-${k}"></i>${n}</button>`).join("")}</div>
+          <div class="se-seg">${[["quadrado", "Quadrado"], ["arredondado", "Arredondado"], ["redondo", (t as string) === "botao" ? "Redondo" : "Bem arredondado"]].map(([k, n]) => `<button type="button" data-se="forma" data-v="${k}" aria-pressed="${v.forma === k}"><i class="se-forma se-f-${k}"></i>${n}</button>`).join("")}</div>
         </div>`}
-        ${t === "botao" ? `<div class="se-sec"><span class="se-rot">Tamanho</span>
+        ${(t as string) === "botao" ? `<div class="se-sec"><span class="se-rot">Tamanho</span>
           <div class="se-seg">${[["p", "Menor"], ["m", "Normal"], ["g", "Maior"]].map(([k, n]) => `<button type="button" data-se="tam" data-v="${k}" aria-pressed="${(v.tam || "m") === k}">${n}</button>`).join("")}</div></div>` : ""}
         `}
       </div>
