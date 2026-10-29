@@ -159,6 +159,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "versref", nome: "“Versículo de hoje” e referência", desc: "", tipo: "texto", sel: ".pa .vers-rot, .pa .vers-ref" },
   { k: "mentoria", nome: "Card “Sua mentoria”", desc: "O bloco que envolve a mentoria (os cards dos módulos ficam em Módulos).", tipo: "card", sel: ".pa .mt-bloco" },
   { k: "mentoriatx", nome: "Textos de “Sua mentoria”", desc: "“Sua mentoria”, o nome e “Comece por aqui”.", tipo: "texto", sel: ".pa .mt-rot, .pa .mt-tit, .pa .mt-passo" },
+  { k: "mentoriacard", nome: "Card da aula (dentro de “Sua mentoria”)", desc: "O card com a capa, o título e o botão, dentro do card “Sua mentoria”.", tipo: "card", sel: ".mt-bloco .mh-card, .mt-bloco .heroi" },
   { k: "comece", nome: "Texto “Comece por aqui”", desc: "O texto em cima da primeira aula, dentro do card “Sua mentoria”.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
   { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },

@@ -2852,7 +2852,7 @@ export function montar(app: HTMLElement) {
             ${linha(`<label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>`, "est:mensagem", "Mensagem de boas-vindas")}
           </div>
           <div class="cfg-bloco cfg-bloco-mt">
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "mentoria"))}</div>
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "mentoria" || x.k === "mentoriacard"))}</div>
             ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto “Comece por aqui” ${dicaCampo(`O texto em cima da primeira aula, dentro do card “Sua mentoria”, para a aluna que ainda não começou. Vazio: não aparece.`, "cfg.texto-comece")}</span><input class="campo" name="inicioComece" value="${h(v.comece)}" maxlength="40" placeholder="Ex.: Comece por aqui" /></label>`, "est:comece", "Texto “Comece por aqui”")}
           </div>
           <div class="cfg-bloco">
@@ -2875,7 +2875,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Cores da tela inicial ${dicaCampo(`As cores, contornos e sombras do que é fixo no Início: a faixa do topo, o nome e a foto, a saudação, a mensagem, o versículo, o card “Sua mentoria” e o menu de baixo. Os cards dos módulos são configurados na aba Módulos. Toque em Estilo; o celular mostra na hora e vai até a parte. Só grava quando você aperta Salvar no seletor.`, "cfg.cores-inicio")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${botaoLimparEstilo("inicio")}</div>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k !== "mentoria" && x.k !== "comece"))}
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => !["mentoria", "mentoriacard", "comece"].includes(x.k)))}
               <div class="cfg-orl cfg-aul">
                 <span class="cfg-aul-tx"><b>Nomes e ícones do menu de baixo</b><small>Trocar “Início”, “Módulos”… e escolher outro ícone para cada botão.</small></span>
                 <button type="button" class="se-abre" data-a="cfg-aba" data-v="menu">${IC_CFG.menu}Abrir</button>
