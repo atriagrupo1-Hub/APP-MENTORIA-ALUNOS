@@ -87,7 +87,7 @@ export function montar(raiz: HTMLElement) {
       + "\n" + cssDoPerfil(PREV_PERFIL !== undefined ? PREV_PERFIL : limparEstilo(D && D.inicio && D.inicio.estiloPerfil))
       + "\n" + cssDaNotif(PREV_NOTIF !== undefined ? PREV_NOTIF : limparEstilo(D && D.inicio && D.inicio.estiloNotif));
     if (!estiloAulaEl) { if (!css) return; estiloAulaEl = document.createElement("style"); estiloAulaEl.id = "estilo-aula"; document.head.append(estiloAulaEl); }
-    if (estiloAulaEl.textContent !== css) estiloAulaEl.textContent = css;
+    if (estiloAulaEl.textContent !== css) { estiloAulaEl.textContent = css; for (const m of css.matchAll(/font-family:'([^']+)'/g)) carregarFonte(m[1]); }
   }
   const estCat = (curso) => { const p = PREV_EST.cat || {}; return curso.catAbaId && curso.catAbaId in p ? limparEstilo(p[curso.catAbaId]) : curso.estilo; };
   const estMod = (md) => { const p = PREV_EST.mod || {}; return md.id in p ? limparEstilo(p[md.id]) : md.estilo; };
@@ -842,7 +842,8 @@ export function montar(raiz: HTMLElement) {
     if (!d.exibir) return "";
     const ok = (c) => /^#[0-9a-f]{6}$/i.test(c || "");
     const st = (ok(d.linha) ? `--mt-linha:${d.linha}8c;` : "") + (ok(d.cor) ? `--mt-cor:${d.cor};` : "");
-    return `<div class="mt-divisor" role="separator"${st ? ` style="${st}"` : ""}><span>${h(d.texto || "Também para você")}</span></div>`;
+    const fo = d.fonte && /^[A-Za-z ]{2,40}$/.test(d.fonte) ? d.fonte : ""; if (fo) carregarFonte(fo);
+    return `<div class="mt-divisor" role="separator"${st ? ` style="${st}"` : ""}><span${fo ? ` style="font-family:'${fo}', Georgia, serif"` : ""}>${h(d.texto || "Também para você")}</span></div>`;
   }
   /** Como o painel configurou as telas (Configurações → Módulos e Presentes). */
   const TELAS = () => (D && D.inicio && D.inicio.telas) || {};

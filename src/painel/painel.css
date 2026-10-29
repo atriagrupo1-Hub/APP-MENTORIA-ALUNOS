@@ -3638,7 +3638,7 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .fc-cod { font-family: ui-monospace, Menlo, monospace; font-size: 15px; letter-spacing: .04em; }
 .fc-pe { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 .fc-pe button { min-height: 42px; }
-.fc-pop { position: fixed; z-index: 2; padding: 8px; color: var(--texto); background: var(--aa-cartao, #fff); border: 1px solid var(--linha); border-radius: 12px; box-shadow: 0 18px 44px -8px rgba(0, 0, 0, .35); animation: fcPop .12s ease-out; }
+.fc-pop { position: fixed; z-index: 200; padding: 8px; color: var(--texto); background: var(--aa-cartao, #fff); border: 1px solid var(--linha); border-radius: 12px; box-shadow: 0 18px 44px -8px rgba(0, 0, 0, .35); animation: fcPop .12s ease-out; }
 @keyframes fcPop { from { opacity: 0; transform: translateY(-4px); } }
 .fc-busca { position: relative; margin-bottom: 6px; }
 .fc-busca svg { position: absolute; left: 11px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); fill: none; stroke: var(--texto-2); stroke-width: 2; stroke-linecap: round; pointer-events: none; }
@@ -3661,3 +3661,14 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .fc-hex { flex: 1; min-height: 38px !important; font-family: ui-monospace, Menlo, monospace !important; letter-spacing: .04em; }
 .fc-rot-p { margin: 12px 0 8px; }
 .fc-prontas { margin-top: 0; grid-template-columns: repeat(11, 1fr); }
+
+/* Botões "Fonte e cor" embaixo de cada texto do Início. */
+.cfg-fc-l { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cfg-fc-div { align-items: center; align-self: end; }
+.fc-abre-cor { width: 30px !important; height: 30px !important; border-radius: 8px !important; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2); }
+.fc-am-linha { display: flex; align-items: center; gap: 14px; padding: 0 22px; }
+.fc-am-linha i { flex: 1; height: 1px; }
+.fc-am-linha span { flex: none; font-size: 15px !important; letter-spacing: .14em !important; text-transform: uppercase; color: #b8b0a2; }
+.se-rot-f { margin-top: 14px; }
+.se-fonte { margin-top: 2px; }
+.se-chip[aria-expanded="true"] { border-color: #c9a25c; box-shadow: 0 0 0 3px rgba(201, 162, 92, .2); }

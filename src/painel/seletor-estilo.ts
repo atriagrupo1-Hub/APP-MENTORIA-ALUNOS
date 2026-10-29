@@ -7,9 +7,11 @@
  * Nada é gravado sozinho: cada mudança vai para `aoMudar` (prévia ao vivo) e
  * só "Salvar" chama `aoSalvar`. Cancelar (ou Esc, ou clicar fora) desfaz.
  */
-import { cssFundo, cssVisual, limparEstilo, SOMBRAS, type Estilo, type Visual } from "../data/estilo";
+import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, flutuanteDe } from "./flutuante";
+import { carregarFonte } from "../data/aparencia";
+import { cssFundo, cssVisual, FONTES_APP, limparEstilo, SOMBRAS, type Estilo, type Visual } from "../data/estilo";
 
-export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string };
+export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string; fonte?: boolean };
 type Opcoes = {
   ancora: HTMLElement;
   titulo: string;
@@ -20,23 +22,9 @@ type Opcoes = {
   aoFechar?: () => void;
 };
 
-export const PRONTAS = ["#d4af37", "#c9a25c", "#f2d27a", "#8a6a2f", "#ffffff", "#f6eed7", "#b9b9b9", "#3a3a3a", "#0b0b0d", "#000000",
-  "#8e6cc9", "#c7b0f0", "#4a78c2", "#7fa8e8", "#2f9c98", "#5fc7c2", "#4f9a5a", "#8fc27e", "#b8352d", "#e07a8a", "#ff6a00", "#ff1f8f"];
 const DEGRADES: [string, string, number][] = [["#f2d27a", "#a8812f", 180], ["#d4af37", "#5a3d16", 135], ["#c7b0f0", "#4b2a8a", 135], ["#7fa8e8", "#1d3a6e", 135], ["#5fc7c2", "#13504d", 135], ["#e07a8a", "#5a1626", 135], ["#1c1430", "#08060d", 135], ["#2a2a2a", "#000000", 180]];
 
 const h = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-export function hsvParaHex(hh: number, s: number, v: number) {
-  const f = (n: number) => { const k = (n + hh / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
-  return "#" + [f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
-}
-export function hexParaHsv(c: string): [number, number, number] {
-  const r = parseInt(c.slice(1, 3), 16) / 255, g = parseInt(c.slice(3, 5), 16) / 255, b = parseInt(c.slice(5, 7), 16) / 255;
-  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
-  let hh = 0;
-  if (d) hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-  return [(hh * 60 + 360) % 360, mx ? d / mx : 0, mx];
-}
-
 let aberto: { fechar: (salvou: boolean) => void } | null = null;
 export const seletorAberto = () => !!aberto;
 export function fecharSeletorEstilo() { aberto?.fechar(false); }
@@ -48,7 +36,6 @@ export function abrirSeletorEstilo(o: Opcoes) {
   let parte = o.partes[0].k;
   // Qual cor o quadro está editando agora: fundo.a, fundo.b, texto, borda ou sombra.
   let alvo = "fundo.a";
-  let hsv: [number, number, number] = [40, 0.6, 0.8];
   let salvando = false;
 
   const caixa = document.createElement("div");
@@ -78,7 +65,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
 
   function amostra() {
     const v = est[parte], t = tipo();
-    if (t === "texto") return `<span class="se-am se-am-txt" style="color:${v?.texto || "#f1e6c9"}"><b>Aa</b> Título e texto${o.partes.length === 1 && /cone/i.test(o.titulo) ? " · ✦ ▶ ☰" : ""}</span>`;
+    if (t === "texto") return `<span class="se-am se-am-txt" style="color:${v?.texto || "#f1e6c9"}${v?.fonte ? `;font-family:'${v.fonte}', Georgia, serif` : ""}"><b>Aa</b> Título e texto${o.partes.length === 1 && /cone/i.test(o.titulo) ? " · ✦ ▶ ☰" : ""}</span>`;
     const css = cssVisual(v, t).replace(/ !important/g, "");
     if (t === "capa") return `<span class="se-am se-am-capa" style="${h(css)}"><i></i></span>`;
     if (t === "card") return `<span class="se-am se-am-card" style="${h(css)}"><b>Título do card</b><em>Texto do card</em></span>`;
@@ -93,18 +80,10 @@ export function abrirSeletorEstilo(o: Opcoes) {
     if (soCor) alvo = "texto";
     else if (!temFundo && alvo.startsWith("fundo")) alvo = "borda";
     if (alvo === "texto" && !temFundo && !soCor) alvo = "borda";
-    hsv = hexParaHsv(corDoAlvo());
-    const corAgora = corDoAlvo();
-    const sec = alvo.startsWith("fundo") ? "fundo" : alvo;
-    // O quadro de cor aparece logo embaixo do item que está sendo editado.
-    const cor = (k: string) => (k === sec ? `
-        <div class="se-cor">
-          <span class="se-rot se-rot2">Escolha a cor <em>(${alvo === "fundo.a" ? (f?.t === "degrade" ? "cor 1 do degradê" : "preenchimento") : alvo === "fundo.b" ? "cor 2 do degradê" : alvo === "texto" ? "texto" : alvo === "borda" ? "contorno" : "sombra"})</em></span>
-          <div class="se-sv" data-se-sv style="background:${hsvParaHex(hsv[0], 1, 1)}"><i style="left:${hsv[1] * 100}%;top:${(1 - hsv[2]) * 100}%"></i></div>
-          <div class="se-hue" data-se-hue><i style="left:${(hsv[0] / 360) * 100}%"></i></div>
-          <div class="se-hexl"><span class="se-hexam" style="background:${corAgora}"></span><input class="campo se-hex" value="${corAgora.toUpperCase()}" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar outro)" data-se="hex" /><button type="button" class="se-gota" data-se="copiar" title="Copiar o código da cor" aria-label="Copiar o código da cor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button>${"EyeDropper" in window ? `<button type="button" class="se-gota" data-se="gota" title="Pegar uma cor da tela"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg></button>` : ""}</div>
-          <div class="se-prontas">${PRONTAS.map((c) => `<button type="button" data-se="pronta" data-v="${c}" title="${c.toUpperCase()}" style="background:${c}"${c === corAgora ? ' class="on"' : ""}></button>`).join("")}</div>
-        </div>` : "");
+    // A cor abre flutuando presa ao botão da cor (o seletor não cresce).
+    const cor = (_k: string) => "";
+    const SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+    const parteAtual = o.partes.find((p) => p.k === parte);
     caixa.innerHTML = `
       <div class="se-cab"><b>${h(o.titulo)}</b><button type="button" class="se-x" data-se="cancelar" aria-label="Fechar">✕</button></div>
       ${o.partes.length > 1 ? `<div class="se-partes" role="tablist">${o.partes.map((p) => `<button type="button" role="tab" data-se="parte" data-v="${p.k}" aria-selected="${p.k === parte}">${h(p.nome)}${est[p.k] && Object.keys(est[p.k]!).length ? "<i></i>" : ""}</button>`).join("")}</div>` : ""}
@@ -112,7 +91,8 @@ export function abrirSeletorEstilo(o: Opcoes) {
         <div class="se-amostra">${amostra()}</div>
         ${soCor ? `<div class="se-sec"><span class="se-rot">Cor</span>
           <div class="se-chips">${chip("texto", v.texto || "#f1e6c9", v.texto ? "Cor escolhida" : "Cor do app (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
-          ${cor("texto")}</div>` : ""}
+          ${cor("texto")}
+          ${parteAtual?.fonte ? `<span class="se-rot se-rot-f">Fonte</span><button type="button" class="fc-sel se-fonte" data-se="fonte" aria-haspopup="listbox" aria-expanded="false"><span class="fc-sel-t"${v.fonte ? ` style="font-family:'${v.fonte}', Georgia, serif"` : ""}>${h(v.fonte || "Fonte do app (padrão)")}</span>${SETA}</button>` : ""}</div>` : ""}
         ${temFundo ? `
         <div class="se-sec"><span class="se-rot">Preenchimento</span>
           <div class="se-seg">${[["padrao", "Padrão do app"], ["cor", "Cor sólida"], ["degrade", "Degradê"]].map(([k, n]) => `<button type="button" data-se="fundo-tipo" data-v="${k}" aria-pressed="${(f ? f.t : "padrao") === k}">${n}</button>`).join("")}</div>
@@ -150,13 +130,8 @@ export function abrirSeletorEstilo(o: Opcoes) {
   }
   /** Atualiza só a amostra e o quadro (sem redesenhar tudo, para o arrasto ficar liso). */
   function leve() {
-    const c = corDoAlvo();
     const am = caixa.querySelector(".se-amostra"); if (am) am.innerHTML = amostra();
-    const sv = caixa.querySelector<HTMLElement>("[data-se-sv]"); if (sv) { sv.style.background = hsvParaHex(hsv[0], 1, 1); const i = sv.querySelector("i")!; i.style.left = hsv[1] * 100 + "%"; i.style.top = (1 - hsv[2]) * 100 + "%"; }
-    const hu = caixa.querySelector<HTMLElement>("[data-se-hue] i"); if (hu) hu.style.left = (hsv[0] / 360) * 100 + "%";
-    const hx = caixa.querySelector<HTMLInputElement>(".se-hex"); if (hx && document.activeElement !== hx) hx.value = c.toUpperCase();
-    const ha = caixa.querySelector<HTMLElement>(".se-hexam"); if (ha) ha.style.background = c;
-    const ch = caixa.querySelector<HTMLElement>(`.se-chip[data-v="${alvo}"] i`); if (ch) ch.style.background = c;
+    const ch = caixa.querySelector<HTMLElement>(`.se-chip[data-v="${alvo}"] i`); if (ch) ch.style.background = corDoAlvo();
     mudou();
   }
   function posicionar() {
@@ -173,7 +148,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
   }
   function fechar(salvou: boolean) {
     if (!aberto) return;
-    aberto = null;
+    aberto = null; fecharFlutuante(false);
     // Primeiro some da tela (nada pode ficar cobrindo o painel), depois avisa quem abriu.
     caixa.remove(); fundoClique.remove();
     removeEventListener("resize", posicionar); document.removeEventListener("keydown", tecla, true);
@@ -182,19 +157,11 @@ export function abrirSeletorEstilo(o: Opcoes) {
   }
   const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); fechar(false); } };
 
-  // Arrastar no quadro de cor e na barra de matiz.
-  function arrastar(e: PointerEvent, el: HTMLElement, fn: (x: number, y: number) => void) {
-    const mover = (ev: PointerEvent) => { const r = el.getBoundingClientRect(); fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height))); };
-    mover(e);
-    const solta = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", solta); };
-    addEventListener("pointermove", mover); addEventListener("pointerup", solta);
+  /** Abre o seletor de cor flutuante preso ao botão da cor que está sendo editada. */
+  function abrirCor() {
+    const g = caixa.querySelector<HTMLElement>(`.se-chip[data-v="${alvo}"]`); if (!g) return;
+    abrirQuadroCor(g, { cor: corDoAlvo(), aoMudar: (c) => { porCor(c); leve(); } });
   }
-  caixa.addEventListener("pointerdown", (e) => {
-    const t = e.target as HTMLElement;
-    const sv = t.closest<HTMLElement>("[data-se-sv]"), hu = t.closest<HTMLElement>("[data-se-hue]");
-    if (sv) { e.preventDefault(); arrastar(e, sv, (x, y) => { hsv = [hsv[0], x, 1 - y]; porCor(hsvParaHex(...hsv)); leve(); }); }
-    else if (hu) { e.preventDefault(); arrastar(e, hu, (x) => { hsv = [x * 359.9, hsv[1], hsv[2]]; porCor(hsvParaHex(...hsv)); leve(); }); }
-  });
   caixa.addEventListener("click", (e) => {
     const b = (e.target as HTMLElement).closest<HTMLElement>("[data-se]"); if (!b) return;
     const a = b.dataset.se!, val = b.dataset.v || "", v = V();
@@ -202,11 +169,20 @@ export function abrirSeletorEstilo(o: Opcoes) {
       case "cancelar": fechar(false); return;
       case "parte": parte = val; alvo = tipo() === "texto" ? "texto" : tipo() === "capa" ? "borda" : "fundo.a"; break;
       case "alvo":
+        if (flutuanteDe(b)) { fecharFlutuante(); return; }
         alvo = val;
         // Escolher uma cor que ainda não existe já liga essa parte com uma cor de partida.
         if (val === "texto" && !v.texto) v.texto = "#ffffff";
         if (val === "borda" && !v.borda) v.borda = { cor: "#d4af37", w: 2 };
-        mudou(); break;
+        mudou(); desenhar(); posicionar(); abrirCor(); return;
+      case "fonte":
+        abrirListaFontes(b, {
+          fontes: FONTES_APP, atual: v.fonte || "", padrao: "Fonte do app (padrão)",
+          aoPrevia: (x) => { const s2 = caixa.querySelector<HTMLElement>(".se-am-txt"); if (s2) s2.style.fontFamily = x ? `'${x}', Georgia, serif` : v.fonte ? `'${v.fonte}', Georgia, serif` : ""; },
+          aoEscolher: (x) => { if (x) v.fonte = x; else delete v.fonte; mudou(); desenhar(); posicionar(); caixa.querySelector<HTMLElement>(".se-fonte")?.focus(); },
+        });
+        FONTES_APP.forEach(carregarFonte);
+        return;
       case "fundo-tipo":
         if (val === "padrao") { delete v.fundo; alvo = "texto"; }
         else if (val === "cor") { v.fundo = { t: "cor", a: v.fundo?.a || "#d4af37" }; alvo = "fundo.a"; }
@@ -225,11 +201,6 @@ export function abrirSeletorEstilo(o: Opcoes) {
         return;
       }
       case "restaurar": delete est[parte]; alvo = tipo() === "texto" ? "texto" : tipo() === "capa" ? "borda" : "fundo.a"; mudou(); break;
-      case "gota": {
-        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
-        void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) { porCor(r.sRGBHex.toLowerCase()); mudou(); desenhar(); posicionar(); } }).catch(() => {});
-        return;
-      }
       case "salvar": {
         if (salvando) return;
         salvando = true; desenhar();
@@ -244,7 +215,6 @@ export function abrirSeletorEstilo(o: Opcoes) {
     const t = e.target as HTMLInputElement, v = V();
     if (t.dataset.se === "ang" && v.fundo) { v.fundo.ang = Number(t.value); (t.nextElementSibling as HTMLElement).textContent = t.value + "°"; leve(); }
     if (t.dataset.se === "bw" && v.borda) { v.borda.w = Number(t.value); (t.nextElementSibling as HTMLElement).textContent = Number(t.value) ? t.value + " px" : "Sem"; leve(); }
-    if (t.dataset.se === "hex") { let x = t.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { porCor(x.toLowerCase()); hsv = hexParaHsv(x.toLowerCase()); leve(); } }
   });
   fundoClique.addEventListener("pointerdown", () => fechar(false));
   addEventListener("resize", posicionar);
