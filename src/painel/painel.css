@@ -3589,3 +3589,14 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .pv-real .pv-ilha { width: 58px; height: 19px; top: 8px; }
 .pv-real .pv-status { padding: 0 14px 0 22px; }
 .pv-real .pv-status span { gap: 3px; }
+/* Configurações: sem o cabeçalho da página; o Salvar fica na barra das versões, à direita. Sobra altura para o celular. */
+.cfg-versao-dir { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; }
+.cfg-versao-dir .cfg-salvar-topo { min-height: 46px; padding: 0 22px; }
+.cfg2 .cfg-versao { margin-top: 4px; }
+.cfg2 .cfg-abas { margin-bottom: 12px; }
+@media (min-width: 1025px) {
+  .cfg-previa .cfg-pvcab { margin-bottom: 8px; }
+  .cfg-previa .cfg-pvnota { display: none; }
+  .cfg-previa .cfg-pvfundo { padding: 6px; }
+}
+.cfg-versao-dir .cfg-salvar-topo { min-height: 46px !important; padding: 0 24px !important; font-size: 15px !important; border-radius: 8px !important; }
