@@ -2366,7 +2366,7 @@ export function montar(app: HTMLElement) {
   const tituloCfg = (nomeT: string, nomeE: string, valor: string, est: string, ajuda: string) => `
           <div class="cfg-bloco">
             <div class="cfg-2">
-              <label class="cfg-c"><span><b class="cfg-l">Título da seção ${dicaCampo(`O nome que aparece no alto desta tela no app da aluna. O estilo do título escolhe se ele fica numa caixa (Padrão), com moldura dupla ou sem caixa (Minimalista).`, "cfg.titulo-secao")}</b>${ajuda}</span><input class="campo" name="${nomeT}" value="${h(valor)}" maxlength="40" required /></label>
+              <label class="cfg-c"><span><b class="cfg-l">Título da seção ${dicaCampo(`O nome que aparece no alto desta tela no app da aluna. O estilo do título escolhe se ele fica numa caixa (Padrão), com moldura dupla ou sem caixa (Minimalista).`, "cfg.titulo-secao")}</b>${ajuda}</span><input class="campo" name="${nomeT}" value="${h(valor)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>
               <label class="cfg-c"><span>Estilo do título</span><span class="cfg-sel-aa"><i>Aa</i><select class="campo" name="${nomeE}">${EST_TIT.map(([k, t]) => `<option value="${k}" ${est === k ? "selected" : ""}>${t}</option>`).join("")}</select></span></label>
             </div>
           </div>`;
@@ -2621,8 +2621,8 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <h3>Nome e apresentação ${dicaCampo(`O título acima do nome na tela Perfil e a saudação. Na saudação, {nome} vira o primeiro nome da aluna e {nome_completo} o nome inteiro.`, "cfg.nome-e-apresenta-o")}</h3><p class="cfg-sub">Personalize como o nome da aluna será exibido.</p>
             <div class="cfg-2">
-              <label class="cfg-c"><span>Título da seção</span><input class="campo" name="perfTitulo" value="${h(t.perfTitulo)}" maxlength="40" required /></label>
-              <label class="cfg-c"><span>Saudação</span><input class="campo" name="perfSaud" value="${h(t.perfSaud)}" maxlength="60" required /><small>Use {nome} para o primeiro nome da aluna ou {nome_completo} para o nome inteiro.</small></label>
+              <label class="cfg-c"><span>Título da seção</span><input class="campo" name="perfTitulo" value="${h(t.perfTitulo)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>
+              <label class="cfg-c"><span>Saudação</span><input class="campo" name="perfSaud" value="${h(t.perfSaud)}" maxlength="60" placeholder="Vazio: não aparece no app" /><small>Use {nome} para o primeiro nome da aluna ou {nome_completo} para o nome inteiro.</small></label>
             </div>
           </div>
           <div class="cfg-bloco">
@@ -2842,7 +2842,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco">
             <h3>Saudação ${dicaCampo(`A frase grande do topo do Início, com o nome da aluna. Escreva {nome} onde deve entrar o primeiro nome dela. Ex.: "Bem-vinda, {nome}!" ou "Que bom te ver, {nome}".`, "cfg.saudacao")}</h3><p class="cfg-sub">A frase grande do topo do Início. {nome} vira o primeiro nome da aluna.</p>
-            <label class="cfg-c"><span>Texto</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" required placeholder="Bem-vindo(a), {nome}" /></label>
+            <label class="cfg-c"><span>Texto</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" placeholder="Vazio: não aparece no app" /></label>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas ${dicaCampo(`Frase que aparece no Início, logo abaixo de "Bem-vindo(a)", para a aluna que já começou as aulas. Quem ainda não começou vê "Comece por aqui". "Usar modelo" coloca um texto pronto para você ajustar.`, "cfg.mensagem-de-boas-vindas")}</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
@@ -4595,10 +4595,10 @@ export function montar(app: HTMLElement) {
     const t = valoresTelas(document.querySelector<HTMLFormElement>("#cfgTelas"));
     const hex = (x: string) => (/^#[0-9a-f]{6}$/i.test(x || "") ? x.toLowerCase() : "");
     const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio", estilos: ui.prevEst };
-    if (aba === "modulos") Object.assign(msg, { ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim() || "Todos os módulos", modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho } });
-    else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim() || "Presentes", presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
+    if (aba === "modulos") Object.assign(msg, { ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim(), modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho } });
+    else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim(), presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
     else if (aba === "versiculos") Object.assign(msg, { vers: { exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
-    else if (aba === "perfil") Object.assign(msg, { estiloNotif: ui.prevEst.notif === undefined ? S.config.estiloNotif : ui.prevEst.notif, estiloPerfil: ui.prevEst.perfil === undefined ? S.config.estiloPerfil : ui.prevEst.perfil, foco: (PARTES_PERFIL.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim() || "Seu perfil", saudacao: (t.perfSaud || "").trim() || "{nome_completo}", imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
+    else if (aba === "perfil") Object.assign(msg, { estiloNotif: ui.prevEst.notif === undefined ? S.config.estiloNotif : ui.prevEst.notif, estiloPerfil: ui.prevEst.perfil === undefined ? S.config.estiloPerfil : ui.prevEst.perfil, foco: (PARTES_PERFIL.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim(), saudacao: (t.perfSaud || "").trim(), imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
     else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
     else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
     else if (aba === "aulas") { const pt = PARTES_AULA.find((x) => x.k === ui.prevEst.foco); Object.assign(msg, { ir: "aula-exemplo", estiloAula: ui.prevEst.aula === undefined ? S.config.estiloAula : ui.prevEst.aula, foco: pt ? pt.sel.split(",")[0].trim() : "", abaAula: pt?.aba || "" }); }
@@ -6321,15 +6321,15 @@ export function montar(app: HTMLElement) {
         }
         if (form.dataset.tela === "perfil") {
           void executar(async () => {
-            falhou(await cfgUpdate({ perfil_titulo: (tv.perfTitulo || "").trim() || "Seu perfil", perfil_saudacao: (tv.perfSaud || "").trim() || "{nome_completo}", perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout, notif: notifDoForm(tv) }));
+            falhou(await cfgUpdate({ perfil_titulo: (tv.perfTitulo || "").trim(), perfil_saudacao: (tv.perfSaud || "").trim(), perfil_imagem: tv.perfImagem, perfil_texto: (tv.perfTexto || "").trim() || null, perfil_layout: tv.perfLayout, notif: notifDoForm(tv) }));
             await registrar(null, "Mudou as configurações do Perfil da área de membros");
             return "Configurações do Perfil salvas.";
           });
           return;
         }
         const linha = mod
-          ? { modulos_titulo: (tv.modTitulo || "").trim() || "Todos os módulos", modulos_titulo_estilo: tv.modTitEstilo, modulos_progresso: tv.modProgresso !== "nao", modulos_layout: tv.modLayout, modulos_tamanho: tv.modTamanho }
-          : { presentes_titulo: (tv.presTitulo || "").trim() || "Presentes", presentes_titulo_estilo: tv.presTitEstilo, presentes_layout: tv.presLayout, presentes_estilo: tv.presEstilo };
+          ? { modulos_titulo: (tv.modTitulo || "").trim(), modulos_titulo_estilo: tv.modTitEstilo, modulos_progresso: tv.modProgresso !== "nao", modulos_layout: tv.modLayout, modulos_tamanho: tv.modTamanho }
+          : { presentes_titulo: (tv.presTitulo || "").trim(), presentes_titulo_estilo: tv.presTitEstilo, presentes_layout: tv.presLayout, presentes_estilo: tv.presEstilo };
         void executar(async () => {
           falhou(await cfgUpdate(linha));
           await registrar(null, "Mudou as configurações de " + (mod ? "Módulos" : "Presentes") + " da área de membros");
@@ -6342,7 +6342,7 @@ export function montar(app: HTMLElement) {
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
-          falhou(await cfgUpdate({ inicio_saudacao: (vv.saudacao || "").trim() || "Bem-vindo(a), {nome}", marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), marca_tipo: vv.marcaTipo, marca_logo: vv.marcaLogo || null, topo_saudacao: vv.topoSaud.trim(), topo_estilo: { tituloCor: vv.tCor, tituloFonte: vv.tFonte, subCor: vv.sCor, subFonte: vv.sFonte }, frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }));
+          falhou(await cfgUpdate({ inicio_saudacao: (vv.saudacao || "").trim(), marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), marca_tipo: vv.marcaTipo, marca_logo: vv.marcaLogo || null, topo_saudacao: vv.topoSaud.trim(), topo_estilo: { tituloCor: vv.tCor, tituloFonte: vv.tFonte, subCor: vv.sCor, subFonte: vv.sFonte }, frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }));
           delete previas["cfg-banner"];
           setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");
