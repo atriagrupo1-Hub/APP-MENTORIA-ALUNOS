@@ -600,11 +600,24 @@ export function montar(raiz: HTMLElement) {
     const T = (D && D.inicio && D.inicio.topo) || {}, N = NOTIF(), aviso = !!(N && N.ativo && !S.notifOn && !PREVIA);
     return `<header class="topo topo-novo"><div class="pagina">
         <button class="av-topo ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
-        <div class="ig-ola tp-ola">${(T.saudacao || "").trim() ? `<span class="tp-saud">${h(T.saudacao.trim())},</span>` : ""}<b class="tp-nome">${h((S.nome || "").trim() || "Aluna")}</b></div>
+        <div class="ig-ola tp-ola">${saudTopo(T.saudacao)}</div>
         <button class="marca marca-alunos tp-marca" data-a="ir" data-v="inicio" aria-label="Ir para o início">${marcaTopo()}</button>
         <nav class="nav-topo" aria-label="Principal">${NAVL().map(([id, t]) => id.startsWith("link:") ? `<a href="${h(id.slice(5))}" target="_blank" rel="noopener">${h(t)}</a>` : `<button data-a="ir" data-v="${id}" ${n === id ? 'aria-current="page"' : ""}>${h(t)}</button>`).join("")}</nav>
         <div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button><button class="ig-bt" data-a="${aviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${aviso ? "<i></i>" : ""}</button></div>
       </div></header>`;
+  }
+  /**
+   * Saudação do topo: o nome só entra onde a equipe escreveu {nome} (primeiro nome) ou
+   * {nome_completo}. O que vem antes do nome fica pequeno em cima; o nome (e o resto), grande embaixo.
+   */
+  function saudTopo(txt) {
+    const t = String(txt ?? "").trim(); if (!t) return "";
+    const completo = (S.nome || "").trim(), primeiro = completo.split(/\s+/)[0] || "";
+    const m = t.match(/\{nome(_completo)?\}/);
+    if (!m) return `<b class="tp-nome">${h(t)}</b>`;
+    const antes = t.slice(0, m.index).trim(), depois = t.slice(m.index + m[0].length);
+    const nomeTxt = (m[1] ? completo : primeiro) + depois.replace(/\{nome_completo\}/g, completo).replace(/\{nome\}/g, primeiro);
+    return `${antes ? `<span class="tp-saud">${h(antes)}</span>` : ""}<b class="tp-nome">${h(nomeTxt.trim())}</b>`;
   }
   /** Estilo (cor e fonte) do título e do subtítulo da marca, escolhidos no painel. */
   const estiloMarca = (cor, fonte) => { if (fonte) carregarFonte(fonte); const r = []; if (/^#[0-9a-f]{6}$/i.test(cor || "")) r.push("color:" + cor); if (fonte && /^[A-Za-z ]{2,40}$/.test(fonte)) r.push(`font-family:'${fonte}', Georgia, serif`); return r.length ? ` style="${r.join(";")}"` : ""; };

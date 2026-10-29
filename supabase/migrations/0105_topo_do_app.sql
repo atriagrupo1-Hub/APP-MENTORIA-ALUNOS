@@ -5,3 +5,5 @@ alter table public.configuracoes add column if not exists topo_saudacao text not
 alter table public.configuracoes add column if not exists topo_estilo jsonb;
 alter table public.configuracoes drop constraint if exists configuracoes_topo_valido;
 alter table public.configuracoes add constraint configuracoes_topo_valido check (char_length(topo_saudacao) <= 40 and (topo_estilo is null or (jsonb_typeof(topo_estilo) = 'object' and octet_length(topo_estilo::text) <= 2000)));
+-- O nome entra onde estiver {nome} (primeiro nome) ou {nome_completo}; sem isso, não aparece.
+alter table public.configuracoes alter column topo_saudacao set default 'Bem-vindo(a), {nome_completo}';

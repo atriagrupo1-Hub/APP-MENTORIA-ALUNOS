@@ -843,7 +843,7 @@ export async function dadosDoInicio(geral = false): Promise<{ topo: { saudacao: 
     versao: geral ? "geral" : "mentoria",
     aparencia: (d?.aparencia ?? null) as Record<string, unknown> | null,
     // Cabeçalho (0104): texto ou logo; com logo escolhida, a imagem vai no lugar do título.
-    topo: { saudacao: typeof d?.topo_saudacao === "string" ? d.topo_saudacao : "Bem-vindo(a)", estilo: (d?.topo_estilo && typeof d.topo_estilo === "object" ? d.topo_estilo : {}) as Record<string, string> },
+    topo: { saudacao: typeof d?.topo_saudacao === "string" ? d.topo_saudacao : "Bem-vindo(a), {nome_completo}", estilo: (d?.topo_estilo && typeof d.topo_estilo === "object" ? d.topo_estilo : {}) as Record<string, string> },
     marca: { titulo: d?.marca_titulo ?? "", sub: d?.marca_sub ?? "", logo: d?.marca_tipo === "logo" && d?.marca_logo ? urlDaCapa(d.marca_logo) ?? "" : "" },
     fraseRetorno: d?.frase_retorno ?? "",
     saudacao: d?.inicio_saudacao ?? "Bem-vindo(a), {nome}",
