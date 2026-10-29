@@ -278,7 +278,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, vers_titulo, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -444,7 +444,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
       telas: { modTitulo: cd.modulos_titulo ?? "Todos os módulos", modTitEstilo: cd.modulos_titulo_estilo ?? "padrao", modProgresso: cd.modulos_progresso === false ? "nao" : "sim", modLayout: cd.modulos_layout ?? "padrao", modTamanho: cd.modulos_tamanho ?? "medio", modFormato: cd.modulos_formato === "cima" ? "cima" : "lado", presTitulo: cd.presentes_titulo ?? "Presentes", presTitEstilo: cd.presentes_titulo_estilo ?? "padrao", presLayout: cd.presentes_layout ?? "grandes", presEstilo: cd.presentes_estilo ?? "padrao",
         perfTitulo: cd.perfil_titulo ?? "Seu perfil", perfSaud: cd.perfil_saudacao ?? "{nome_completo}", perfImagem: cd.perfil_imagem ?? "nenhum", perfTexto: cd.perfil_texto ?? "", perfLayout: cd.perfil_layout ?? "padrao",
-        vExibir: cd.vers_exibir === false ? "nao" : "sim", vEstilo: cd.vers_estilo ?? "caixa", vPosicao: cd.vers_posicao ?? "mensagem", vRef: cd.vers_referencia === false ? "nao" : "sim", vFundo: cd.vers_fundo ?? "escuro", vFonte: cd.vers_fonte ?? "serifa", vTamanho: cd.vers_tamanho ?? "medio",
+        vExibir: cd.vers_exibir === false ? "nao" : "sim", vEstilo: cd.vers_estilo ?? "caixa", vPosicao: cd.vers_posicao ?? "mensagem", vRef: cd.vers_referencia === false ? "nao" : "sim", vFundo: cd.vers_fundo ?? "escuro", vFonte: cd.vers_fonte ?? "serifa", vTamanho: cd.vers_tamanho ?? "medio", vTitulo: typeof cd.vers_titulo === "string" ? cd.vers_titulo : "Versículo de hoje",
         vCorTexto: (cd.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cd.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cd.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cd.perfil_botoes) ? (cd.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cd.aparencia as Aparencia | null) ?? null,
@@ -537,7 +537,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", versAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2317,7 +2317,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Versículos"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Mensagem de destaque"], ["aparencia", "Aparência"]];
   /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
   const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
@@ -2506,16 +2506,16 @@ export function montar(app: HTMLElement) {
   };
   const tipoBt = (b: BotaoPerfil) => (b.url ? "link" : BT_PERFIL[b.id] ? b.id : "link");
   const SEL = (nome: string, atual: string, ops: [string, string][]) => `<select class="campo" name="${nome}">${ops.map(([k, t]) => `<option value="${k}" ${atual === k ? "selected" : ""}>${t}</option>`).join("")}</select>`;
-  const corCampo = (nome: string, valor: string, padrao: string, rot: string) => `<label class="cfg-c"><span>${rot}</span><span class="cfg-hex"><i style="background:${h(valor || padrao)}"><input type="color" value="${h(valor || padrao)}" data-hex="${nome}" aria-label="${rot}" /></i><input class="cfg-hexin" name="${nome}" value="${h((valor || padrao).toUpperCase())}" maxlength="7" aria-label="${rot} (código)" /></span></label>`;
   function cfgVersiculos() {
     const t = S.config.telas, hoje = versHoje();
+    const linhaV = (campo: string, chave: string, nome: string) => `<div class="cfg-linha-est">${campo}${botaoEstiloTexto(chave, nome)}</div>`;
     return `
       <div class="cfg-grade">
         <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="versiculos">
-          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Versículos</h2><p>Gerencie os versículos exibidos no Início, em sequência, para as alunas.</p></div></div>
-          <div class="cfg-info cfg-vexib"><span class="cfg-ok">✓</span><span><b>Exibir versículo do dia</b><em>Ativa ou desativa a exibição do versículo no aplicativo.</em></span><label class="cfg-chave"><input type="checkbox" name="vExibir" ${t.vExibir !== "nao" ? "checked" : ""} /><i></i><span class="cfg-chtxt">${t.vExibir !== "nao" ? "Ativado" : "Desativado"}</span></label></div>
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.versiculos}</span><div><h2>Mensagem de destaque</h2><p>A mensagem do dia no Início (um versículo ou frase), em sequência, para as alunas.</p></div></div>
+          <div class="cfg-info cfg-vexib"><span class="cfg-ok">✓</span><span><b>Exibir a mensagem de destaque</b><em>Ativa ou desativa a mensagem do dia no aplicativo.</em></span><label class="cfg-chave"><input type="checkbox" name="vExibir" ${t.vExibir !== "nao" ? "checked" : ""} /><i></i><span class="cfg-chtxt">${t.vExibir !== "nao" ? "Ativado" : "Desativado"}</span></label></div>
           <div class="cfg-bloco">
-            <h3>Configurações de exibição ${dicaCampo(`Como o versículo do dia aparece no Início: em caixa ou só o texto, onde fica (no topo, abaixo da mensagem ou depois da mentoria), com ou sem a referência e a cor do fundo da caixa.`, "cfg.configura-es-de-exibi-o")}</h3><p class="cfg-sub">Escolha como o versículo será exibido na tela inicial.</p>
+            <h3>Configurações de exibição ${dicaCampo(`Como a mensagem do dia aparece no Início: em caixa ou só o texto, onde fica (no topo, abaixo da mensagem ou depois da mentoria), com ou sem a referência e a cor do fundo da caixa.`, "cfg.configura-es-de-exibi-o")}</h3><p class="cfg-sub">Escolha como a mensagem será exibida na tela inicial.</p>
             <div class="cfg-4">
               <label class="cfg-c"><span>Estilo de exibição</span>${SEL("vEstilo", t.vEstilo, [["caixa", "Destaque (caixa)"], ["simples", "Simples (só o texto)"]])}</label>
               <label class="cfg-c"><span>Posição</span>${SEL("vPosicao", t.vPosicao, [["topo", "No topo do Início"], ["mensagem", "Abaixo da mensagem"], ["depois", "Depois da mentoria"]])}</label>
@@ -2523,21 +2523,19 @@ export function montar(app: HTMLElement) {
               <div class="cfg-c"><span>Fundo da caixa</span><div class="cfg-seg">${[["claro", "Claro"], ["escuro", "Escuro"], ["transparente", "Transparente"]].map(([k, tt]) => `<label><input type="radio" name="vFundo" value="${k}" ${t.vFundo === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
             </div>
           </div>
+          <input type="hidden" name="vFonte" value="${h(t.vFonte)}" /><input type="hidden" name="vTamanho" value="${h(t.vTamanho)}" /><input type="hidden" name="vCorTexto" value="${h(t.vCorTexto)}" /><input type="hidden" name="vCorBorda" value="${h(t.vCorBorda)}" /><input type="hidden" name="vCorFundo" value="${h(t.vCorFundo)}" />
           <div class="cfg-bloco">
-            <h3>Estilo visual ${dicaCampo(`O acabamento visual deste bloco no app: o padrão, uma versão com borda mais marcada ou uma versão minimalista, mais limpa.`, "cfg.estilo-visual")}</h3><p class="cfg-sub">Personalize a aparência da caixa do versículo.</p>
-            <div class="cfg-5">
-              <label class="cfg-c"><span>Fonte do texto</span>${SEL("vFonte", t.vFonte, [["serifa", "Serifada (Padrão)"], ["sem-serifa", "Sem serifa"]])}</label>
-              <label class="cfg-c"><span>Tamanho do texto</span>${SEL("vTamanho", t.vTamanho, [["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]])}</label>
-              ${corCampo("vCorTexto", t.vCorTexto, "#f6eed7", "Cor do texto")}
-              ${corCampo("vCorBorda", t.vCorBorda, "#d4af37", "Cor da borda")}
-              ${corCampo("vCorFundo", t.vCorFundo, "#0b0b0b", "Cor do fundo")}
-            </div>
-            <button type="button" class="link" data-a="v-cores-padrao">Voltar às cores padrão</button>
+            <h3>Estilo da mensagem ${dicaCampo(`A fonte, o estilo, o tamanho, o alinhamento e a cor de cada texto (botão Estilo), e a borda, a sombra e o fundo da caixa. O celular ao lado mostra na hora.`, "cfg.estilo-mensagem")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado mostra na hora.</p>
+            ${linhaV(`<label class="cfg-c"><span class="cfg-rot-aj">Título (em cima da mensagem) ${dicaCampo(`O texto pequeno em cima da mensagem, por exemplo “Versículo de hoje” ou “Mensagem do dia”. Vazio: não aparece.`, "cfg.vers-titulo")}</span><input class="campo" name="vTitulo" value="${h(t.vTitulo ?? "Versículo de hoje")}" maxlength="40" placeholder="Ex.: Versículo de hoje" /></label>`, "est:verstit", "Título da mensagem de destaque")}
+            ${linhaV(`<span class="cfg-c cfg-c-so"><span>Texto da mensagem</span><em>A frase do dia (vem da lista abaixo).</em></span>`, "est:verstexto", "Texto da mensagem")}
+            ${linhaV(`<span class="cfg-c cfg-c-so"><span>Referência</span><em>O texto embaixo da mensagem (ex.: Provérbios 18:21).</em></span>`, "est:versrefe", "Referência")}
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "vers"))}</div>
           </div>
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Lista de versículos ${dicaCampo(`Os versículos que aparecem um por dia no Início, em sequência, voltando ao primeiro depois do último. Os ocultos ficam guardados e não entram na sequência. "Hoje" marca o que está aparecendo agora.`, "cfg.lista-de-vers-culos")}</h3><p class="cfg-sub">Gerencie os versículos que aparecerão em sequência para as alunas. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar versículo</button></div>
+            <div class="cfg-blcab"><div><h3>Lista de mensagens ${dicaCampo(`As mensagens que aparecem uma por dia no Início, em sequência, voltando ao primeiro depois do último. As ocultas ficam guardadas e não entram na sequência. "Hoje" marca o que está aparecendo agora.`, "cfg.lista-de-vers-culos")}</h3><p class="cfg-sub">As mensagens que aparecem em sequência, uma por dia. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar mensagem</button></div>
+            <details class="cfg-vlista"${ui.versAberta ? " open" : ""}><summary><span class="cfg-vlista-t">${ui.versAberta ? "Fechar a lista" : "Abrir a lista"} <em>(${p(S.versiculos.length, "mensagem", "mensagens")})</em></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
             <div class="cfg-vtab">
-              <div class="cfg-vcab"><span></span><span>#</span><span>Texto do versículo</span><span>Referência</span><span>Ordem</span><span>Visível</span><span>Ações</span></div>
+              <div class="cfg-vcab"><span></span><span>#</span><span>Texto da mensagem</span><span>Referência</span><span>Ordem</span><span>Visível</span><span>Ações</span></div>
               ${S.versiculos.map((x, i) => `
               <div class="cfg-vlin${x.visivel ? "" : " oculto"}${hoje && hoje.id === x.id ? " hoje" : ""}" draggable="true" data-arrasta="vers:${x.id}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2547,8 +2545,9 @@ export function montar(app: HTMLElement) {
                 <span class="cfg-vord"><button type="button" data-a="vers-sobe" data-id="${x.id}" ${i === 0 ? "disabled" : ""} aria-label="Subir">↑</button><button type="button" data-a="vers-desce" data-id="${x.id}" ${i === S.versiculos.length - 1 ? "disabled" : ""} aria-label="Descer">↓</button></span>
                 <button type="button" class="cfg-vis${x.visivel ? " on" : ""}" data-a="vers-vis" data-id="${x.id}" aria-pressed="${x.visivel}" aria-label="Visível"><i></i></button>
                 <span class="cfg-vac"><button type="button" class="al-botao pequeno" data-a="vers-modal" data-id="${x.id}" title="Editar" aria-label="Editar">${IC_EQ.lapis}Editar</button><button type="button" class="cfg-lixo" data-a="vers-remover" data-id="${x.id}" aria-label="Excluir">${IC_MOD.lixo}</button></span>
-              </div>`).join("") || `<p class="cfg-sub" style="padding:12px">Nenhum versículo. Sem nenhum, o Início não mostra o quadro.</p>`}
+              </div>`).join("") || `<p class="cfg-sub" style="padding:12px">Nenhuma mensagem. Sem nenhuma, o Início não mostra o quadro.</p>`}
             </div>
+            </details>
           </div>
         </form>
         ${previaCfgBox(previaVers(t))}
@@ -2876,7 +2875,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Cores da tela inicial ${dicaCampo(`As cores, contornos e sombras do que é fixo no Início: a faixa do topo, o nome e a foto, a saudação, a mensagem, o versículo, o card “Sua mentoria” e o menu de baixo. Os cards dos módulos são configurados na aba Módulos. Toque em Estilo; o celular mostra na hora e vai até a parte. Só grava quando você aperta Salvar no seletor.`, "cfg.cores-inicio")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${botaoLimparEstilo("inicio")}</div>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => !["mentoria", "mentoriacard", "comece"].includes(x.k)))}
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => !["mentoria", "mentoriacard", "comece", "verstit", "versrefe"].includes(x.k)))}
               <div class="cfg-orl cfg-aul">
                 <span class="cfg-aul-tx"><b>Nomes e ícones do menu de baixo</b><small>Trocar “Início”, “Módulos”… e escolher outro ícone para cada botão.</small></span>
                 <button type="button" class="se-abre" data-a="cfg-aba" data-v="menu">${IC_CFG.menu}Abrir</button>
@@ -4608,7 +4607,7 @@ export function montar(app: HTMLElement) {
     const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio", estilos: ui.prevEst };
     if (aba === "modulos") Object.assign(msg, { ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim(), modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho, modFormato: t.modFormato } });
     else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim(), presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
-    else if (aba === "versiculos") Object.assign(msg, { vers: { exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
+    else if (aba === "versiculos") Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, foco: (PARTES_INICIO.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), vers: { titulo: t.vTitulo ?? "Versículo de hoje", exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
     else if (aba === "perfil") Object.assign(msg, { estiloNotif: ui.prevEst.notif === undefined ? S.config.estiloNotif : ui.prevEst.notif, estiloPerfil: ui.prevEst.perfil === undefined ? S.config.estiloPerfil : ui.prevEst.perfil, foco: (PARTES_PERFIL.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim(), saudacao: (t.perfSaud || "").trim(), imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
     else if (aba === "menu") { const M = menuRascunho(); Object.assign(msg, { menu: { botoes: M.botoes.map((b) => ({ ...b, rotulo: b.rotulo.trim() || "Botão" })), estilo: M.estilo, cores: M.cores, tamanho: M.tamanho } }); }
     else if (aba === "aparencia") Object.assign(msg, { apar: aparRascunho() });
@@ -4928,8 +4927,13 @@ export function montar(app: HTMLElement) {
   }
   /** Abre a janela certa para cada botão "Fonte e cor" do Início. */
   /** Abre a janela Estilo certa para cada botão do Início. */
+  // Lista da Mensagem de destaque: abre e fecha (fica como a pessoa deixou enquanto o painel está aberto).
+  document.addEventListener("toggle", (e) => {
+    const d = e.target as HTMLDetailsElement; if (!d.matches?.("details.cfg-vlista")) return;
+    ui.versAberta = d.open; const t = d.querySelector(".cfg-vlista-t"); if (t?.firstChild) t.firstChild.textContent = (d.open ? "Fechar a lista" : "Abrir a lista") + " ";
+  }, true);
   function abrirFonteCor(chave: string, botao: HTMLElement) {
-    const f = document.querySelector<HTMLFormElement>("#cfgInicio"); if (!f) return;
+    const f = botao.closest<HTMLFormElement>("form"); if (!f) return;
     const inp = (n: string) => f.querySelector<HTMLInputElement>(`[name="${n}"]`);
     // Divisória (seção de baixo): continua com a janela "Fonte e cor" de antes; grava com o formulário.
     const porCampos = (titulo: string, amostra: string, nCor: string, nFonte: string | null, padrao: { cor: string; fonte: string }, corApp: string) => {
@@ -4948,7 +4952,7 @@ export function montar(app: HTMLElement) {
     if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
     const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false, alinha: "left" };
     const vista = vistaNaPrevia(pt.sel, reserva);
-    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui" };
+    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui", verstit: (inp("vTitulo")?.value || "").trim() || "Versículo de hoje", verstexto: versHoje() ? "“" + (versHoje()!.texto.length > 34 ? versHoje()!.texto.slice(0, 32) + "…" : versHoje()!.texto) + "”" : "Mensagem do dia", versrefe: versHoje()?.ref || "Referência" };
     const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; atualizarPreviaCfg(); };
     janelaEstilo({ nome: pt.nome, texto: textos[k] || pt.nome, val, vista, volta: botao,
       aoMudar: por,
@@ -5270,8 +5274,8 @@ export function montar(app: HTMLElement) {
       const novo = m.id === "novo", x = novo ? null : S.versiculos.find((y) => y.id === m.id);
       corpo = `
       <form data-f="${novo ? "vers-add" : "vers-salvar"}" ${x ? `data-id="${x.id}"` : ""} class="eq-form pbt-form">
-        ${cabModal(novo ? IC_EQ.mais : IC_EQ.lapis, novo ? "Adicionar versículo" : "Editar versículo", "Aparece um por dia no Início, em sequência.")}
-        <label class="eq-campo"><span>Texto do versículo</span><textarea class="campo" name="texto" rows="4" required>${h(x?.texto ?? "")}</textarea></label>
+        ${cabModal(novo ? IC_EQ.mais : IC_EQ.lapis, novo ? "Adicionar mensagem" : "Editar mensagem", "Aparece uma por dia no Início, em sequência.")}
+        <label class="eq-campo"><span>Texto da mensagem</span><textarea class="campo" name="texto" rows="4" required>${h(x?.texto ?? "")}</textarea></label>
         <label class="eq-campo"><span>Referência</span><input class="campo" name="ref" value="${h(x?.ref ?? "")}" placeholder="Ex.: Salmos 23:1" required /></label>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
@@ -6618,9 +6622,9 @@ export function montar(app: HTMLElement) {
           const cores = { texto: hex(tv.vCorTexto), borda: hex(tv.vCorBorda), fundo: hex(tv.vCorFundo) };
           const iguais = cores.texto === pad.texto && cores.borda === pad.borda && cores.fundo === pad.fundo;
           void executar(async () => {
-            falhou(await cfgUpdate({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores }));
-            await registrar(null, "Mudou a exibição dos versículos da área de membros");
-            return "Configurações dos versículos salvas.";
+            falhou(await cfgUpdate({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores, vers_titulo: (tv.vTitulo ?? "").trim() }));
+            await registrar(null, "Mudou a Mensagem de destaque da área de membros");
+            return "Mensagem de destaque salva.";
           });
           return;
         }
