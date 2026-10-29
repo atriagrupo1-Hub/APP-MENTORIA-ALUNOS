@@ -9,7 +9,7 @@
  */
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, flutuanteDe } from "./flutuante";
 import { carregarFontes } from "../data/aparencia";
-import { cssFundo, cssVisual, FONTES_APP, limparEstilo, SOMBRAS, type Estilo, type Visual } from "../data/estilo";
+import { cssFundo, cssVisual, ESTILOS_BORDA, FONTES_APP, limparEstilo, SOMBRAS, type BordaEst, type Estilo, type Visual } from "../data/estilo";
 
 export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string; fonte?: boolean };
 type Opcoes = {
@@ -74,6 +74,82 @@ export function abrirSeletorEstilo(o: Opcoes) {
   const chip = (k: string, cor: string, rot: string, vazio = false) =>
     `<button type="button" class="se-chip${alvo === k ? " on" : ""}${vazio ? " vazio" : ""}" data-se="alvo" data-v="${k}" title="Editar: ${rot}"><i style="background:${vazio ? "transparent" : cor}"></i>${rot}</button>`;
 
+  // ——— Card (editor novo, no modelo do Elementor): começa pela Borda ———
+  const LAPIS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>`;
+  const REFAZ = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>`;
+  const nomeBorda = (k: string) => ESTILOS_BORDA.find(([x]) => x === k)?.[1] || "";
+  function resumoBorda(v: Visual) {
+    const r: string[] = [];
+    if (v.bordaEst) r.push(v.bordaEst.estilo === "none" ? "Oculta" : `${nomeBorda(v.bordaEst.estilo)} · ${new Set(v.bordaEst.w).size === 1 ? v.bordaEst.w[0] + " px" : v.bordaEst.w.join("/") + " px"} · ${v.bordaEst.cor.toUpperCase()}`);
+    if (v.raio) r.push("cantos " + (new Set(v.raio).size === 1 ? v.raio[0] + " px" : v.raio.join("/") + " px"));
+    return r.length ? r.join(" · ") : "Padrão do app";
+  }
+  function secoesCard(v: Visual) {
+    const mexido = !!(v.bordaEst || v.raio);
+    return `<div class="se-sec se-row">
+        <span class="se-row-t"><b>Borda</b><small data-se-resumo>${h(resumoBorda(v))}</small></span>
+        <span class="se-row-bts"><button type="button" class="se-ic" data-se="borda-rest" title="Voltar a borda ao padrão" aria-label="Voltar a borda ao padrão"${mexido ? "" : " disabled"}>${REFAZ}</button><button type="button" class="se-ic" data-se="borda-ed" title="Editar a borda" aria-label="Editar a borda" aria-haspopup="dialog" aria-expanded="false">${LAPIS}</button></span>
+      </div>`;
+  }
+  /** Painel flutuante da Borda: estilo, largura, cor e cantos. */
+  let painelBorda: HTMLElement | null = null;
+  function fecharBorda() {
+    if (!painelBorda) return;
+    painelBorda.remove(); painelBorda = null; fecharFlutuante(false);
+    removeEventListener("pointerdown", foraBorda, true); removeEventListener("keydown", teclaBorda, true);
+    caixa.querySelector('[data-se="borda-ed"]')?.setAttribute("aria-expanded", "false");
+  }
+  const foraBorda = (e: PointerEvent) => { const t = e.target as HTMLElement; if (painelBorda && !painelBorda.contains(t) && !t.closest(".fc-pop, [data-se='borda-ed']")) fecharBorda(); };
+  const teclaBorda = (e: KeyboardEvent) => { if (e.key === "Escape" && painelBorda && !document.querySelector(".fc-pop")) { e.stopImmediatePropagation(); e.preventDefault(); fecharBorda(); } };
+  function abrirBorda(g: HTMLElement) {
+    if (painelBorda) { fecharBorda(); return; }
+    const v = V();
+    const el = document.createElement("div"); el.className = "se-pop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Borda");
+    const lados = ["Topo", "Direita", "Baixo", "Esquerda"], cantos = ["Topo esq.", "Topo dir.", "Baixo dir.", "Baixo esq."];
+    const quatro = (nome: string, rot: string[], val: number[], dis = false) => `<div class="se-4">${rot.map((r, i) => `<label><input class="campo" type="number" min="0" max="${nome === "w" ? 20 : 200}" inputmode="numeric" data-sb="${nome}" data-i="${i}" value="${val[i]}"${dis ? " disabled" : ""} /><span>${r}</span></label>`).join("")}</div>`;
+    const pintar = () => {
+      const b = v.bordaEst, ativo = !!b && b.estilo !== "none";
+      el.innerHTML = `
+        <label class="se-pop-l"><span>Estilo de borda</span><select class="campo" data-sb="estilo"><option value=""${b ? "" : " selected"}>Padrão do app</option>${ESTILOS_BORDA.map(([k, n]) => `<option value="${k}"${b?.estilo === k ? " selected" : ""}>${n}</option>`).join("")}</select></label>
+        <div class="se-pop-b${ativo ? "" : " off"}">
+          <span class="se-pop-r">Largura (px)</span>${quatro("w", lados, b?.w || [1, 1, 1, 1], !ativo)}
+          <div class="se-pop-l se-pop-cor"><span>Cor</span><span><button type="button" class="se-pop-bola" data-sb="cor" style="background:${b?.cor || "#d4af37"}" aria-label="Cor da borda" aria-haspopup="dialog" aria-expanded="false"${ativo ? "" : " disabled"}></button><input class="campo se-pop-hex" data-sb="hex" maxlength="7" spellcheck="false" value="${(b?.cor || "#d4af37").toUpperCase()}"${ativo ? "" : " disabled"} /></span></div>
+        </div>
+        <span class="se-pop-r">Arredondar cantos (px)</span>${quatro("r", cantos, v.raio || [0, 0, 0, 0])}`;
+    };
+    const aplicarB = () => {
+      leve();
+      const rs = caixa.querySelector("[data-se-resumo]"); if (rs) rs.textContent = resumoBorda(v);
+      const rb = caixa.querySelector<HTMLButtonElement>('[data-se="borda-rest"]'); if (rb) rb.disabled = !(v.bordaEst || v.raio);
+    };
+    el.addEventListener("change", (e) => {
+      const t = e.target as HTMLSelectElement;
+      if (t.dataset.sb === "estilo") {
+        if (!t.value) delete v.bordaEst;
+        else v.bordaEst = { estilo: t.value as BordaEst["estilo"], w: v.bordaEst?.w || [1, 1, 1, 1], cor: v.bordaEst?.cor || "#d4af37" };
+        pintar(); aplicarB();
+      }
+    });
+    el.addEventListener("input", (e) => {
+      const t = e.target as HTMLInputElement, sb = t.dataset.sb, i = Number(t.dataset.i);
+      const n = Math.max(0, Math.min(sb === "w" ? 20 : 200, Math.round(Number(t.value) || 0)));
+      if (sb === "w" && v.bordaEst) { v.bordaEst.w[i] = n; aplicarB(); }
+      else if (sb === "r") { const r = v.raio || [0, 0, 0, 0]; r[i] = n; v.raio = r; aplicarB(); }
+      else if (sb === "hex" && v.bordaEst) { let x = t.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { v.bordaEst.cor = x.toLowerCase(); el.querySelector<HTMLElement>(".se-pop-bola")!.style.background = v.bordaEst.cor; aplicarB(); } }
+    });
+    el.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('[data-sb="cor"]'); if (!b || !v.bordaEst) return;
+      abrirQuadroCor(b, { cor: v.bordaEst.cor, aoMudar: (c) => { if (!v.bordaEst) return; v.bordaEst.cor = c; b.style.background = c; const hx = el.querySelector<HTMLInputElement>(".se-pop-hex"); if (hx) hx.value = c.toUpperCase(); aplicarB(); } });
+    });
+    pintar(); document.body.append(el); painelBorda = el; g.setAttribute("aria-expanded", "true");
+    // Abre ao lado do seletor, alinhado ao lápis, sem cobrir o seletor.
+    const r = g.getBoundingClientRect(), c = caixa.getBoundingClientRect(), W = 320, H = el.offsetHeight;
+    let x = c.left - W - 10; if (x < 8) x = Math.min(innerWidth - W - 8, c.right + 10);
+    Object.assign(el.style, { width: W + "px", left: x + "px", top: Math.max(8, Math.min(innerHeight - H - 8, r.top - 20)) + "px" });
+    addEventListener("pointerdown", foraBorda, true); addEventListener("keydown", teclaBorda, true);
+    el.querySelector<HTMLElement>("select")?.focus();
+  }
+
   function desenhar() {
     const v = V(), t = tipo(), f = v.fundo;
     const temFundo = t !== "capa" && t !== "texto", soCor = t === "texto";
@@ -89,6 +165,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
       ${o.partes.length > 1 ? `<div class="se-partes" role="tablist">${o.partes.map((p) => `<button type="button" role="tab" data-se="parte" data-v="${p.k}" aria-selected="${p.k === parte}">${h(p.nome)}${est[p.k] && Object.keys(est[p.k]!).length ? "<i></i>" : ""}</button>`).join("")}</div>` : ""}
       <div class="se-rolo">
         <div class="se-amostra">${amostra()}</div>
+        ${t === "card" ? secoesCard(v) : `
         ${soCor ? `<div class="se-sec"><span class="se-rot">Cor</span>
           <div class="se-chips">${chip("texto", v.texto || "#f1e6c9", v.texto ? "Cor escolhida" : "Cor do app (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
           ${cor("texto")}
@@ -120,6 +197,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
         </div>`}
         ${t === "botao" ? `<div class="se-sec"><span class="se-rot">Tamanho</span>
           <div class="se-seg">${[["p", "Menor"], ["m", "Normal"], ["g", "Maior"]].map(([k, n]) => `<button type="button" data-se="tam" data-v="${k}" aria-pressed="${(v.tam || "m") === k}">${n}</button>`).join("")}</div></div>` : ""}
+        `}
       </div>
       <div class="se-pe">
         <button type="button" class="se-lnk" data-se="restaurar">Restaurar padrão</button>
@@ -148,7 +226,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
   }
   function fechar(salvou: boolean) {
     if (!aberto) return;
-    aberto = null; fecharFlutuante(false);
+    aberto = null; fecharBorda(); fecharFlutuante(false);
     // Primeiro some da tela (nada pode ficar cobrindo o painel), depois avisa quem abriu.
     caixa.remove(); fundoClique.remove();
     removeEventListener("resize", posicionar); document.removeEventListener("keydown", tecla, true);
@@ -175,6 +253,8 @@ export function abrirSeletorEstilo(o: Opcoes) {
         if (val === "texto" && !v.texto) v.texto = "#ffffff";
         if (val === "borda" && !v.borda) v.borda = { cor: "#d4af37", w: 2 };
         mudou(); desenhar(); posicionar(); abrirCor(); return;
+      case "borda-ed": abrirBorda(b); return;
+      case "borda-rest": fecharBorda(); delete v.bordaEst; delete v.raio; mudou(); break;
       case "fonte":
         abrirListaFontes(b, {
           fontes: FONTES_APP, atual: v.fonte || "", padrao: "Fonte do app (padrão)",
