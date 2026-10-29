@@ -23,6 +23,7 @@ export type Visual = {
   italico?: boolean | null;
   px?: number | null;
   sombraTxt?: { cor: string; blur: number; op: number } | null;
+  alinha?: "left" | "center" | "right" | "justify" | null;
 };
 /** As fontes que o painel oferece para os textos do app (carregadas do Google Fonts). */
 export const FONTES_APP = ["Cinzel", "Cormorant Garamond", "Playfair Display", "Lora", "EB Garamond", "Libre Baskerville", "Marcellus", "Lato", "Montserrat", "Inter", "Poppins", "Raleway", "Open Sans", "Nunito"];
@@ -45,6 +46,7 @@ export function limparVisual(v: unknown): Visual | null {
   if (FONTES_APP.includes(o.fonte)) out.fonte = o.fonte;
   if (o.peso === "normal" || o.peso === "negrito") out.peso = o.peso;
   if (typeof o.italico === "boolean") out.italico = o.italico;
+  if (["left", "center", "right", "justify"].includes(o.alinha)) out.alinha = o.alinha;
   if (Number.isFinite(Number(o.px)) && o.px !== null && o.px !== "") out.px = Math.max(8, Math.min(72, Math.round(Number(o.px))));
   if (o.sombraTxt && hex(o.sombraTxt.cor)) out.sombraTxt = { cor: hex(o.sombraTxt.cor), blur: Math.max(0, Math.min(30, Math.round(Number(o.sombraTxt.blur) || 0))), op: Math.max(0, Math.min(100, Math.round(Number(o.sombraTxt.op) || 0))) };
   return Object.keys(out).length ? out : null;
@@ -127,6 +129,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "versref", nome: "“Versículo de hoje” e referência", desc: "", tipo: "texto", sel: ".pa .vers-rot, .pa .vers-ref" },
   { k: "mentoria", nome: "Card “Sua mentoria”", desc: "O bloco que envolve a mentoria (os cards dos módulos ficam em Módulos).", tipo: "card", sel: ".pa .mt-bloco" },
   { k: "mentoriatx", nome: "Textos de “Sua mentoria”", desc: "“Sua mentoria”, o nome e “Comece por aqui”.", tipo: "texto", sel: ".pa .mt-rot, .pa .mt-tit, .pa .mt-passo" },
+  { k: "comece", nome: "Texto “Comece por aqui”", desc: "O texto em cima da primeira aula, dentro do card “Sua mentoria”.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
   { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },
   { k: "menuicone", nome: "Ícones do menu", desc: "Os ícones dos botões que não estão abertos.", tipo: "texto", sel: ".nav-base button:not([aria-current]) svg, .nav-base .nb-link svg", svg: true },
@@ -170,6 +173,7 @@ function cssTexto(p: ParteTela, v: Visual): string {
     if (v.peso) r.push(`font-weight:${v.peso === "negrito" ? 700 : 400} !important`);
     if (typeof v.italico === "boolean") r.push(`font-style:${v.italico ? "italic" : "normal"} !important`);
     if (v.px) r.push(`font-size:${v.px}px !important`);
+    if (v.alinha) r.push(`text-align:${v.alinha} !important`);
     if (v.sombraTxt) r.push(`text-shadow:0 1px ${v.sombraTxt.blur}px ${rgba(v.sombraTxt.cor, v.sombraTxt.op / 100)} !important`);
   }
   return r.length ? `${p.sel}{${r.join(";")}}` : "";
