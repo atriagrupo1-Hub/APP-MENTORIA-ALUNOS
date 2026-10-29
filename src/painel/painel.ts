@@ -18,9 +18,9 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { cssFundo, FONTES_APP, limparEstilo, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
+import { cssFundo, FONTES_APP, limparEstilo, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
-import { abrirListaFontes, abrirQuadroCor, fecharFlutuante } from "./flutuante";
+import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
@@ -2822,24 +2822,22 @@ export function montar(app: HTMLElement) {
     const aba = ui.cfgAba;
     let corpo = "";
     if (aba === "inicio") {
-      const v = valoresInicio(), E = estInicioAgora(), fcE = (k: string, rot = "Fonte e cor") => botaoFonteCor("est:" + k, E[k]?.texto || "", E[k]?.fonte || "", rot), est: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
+      const v = valoresInicio(), est: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
+      // Cada texto: o campo e, na frente, o botão compacto "Aa Estilo".
+      const linha = (campo: string, chave: string, nome: string) => `<div class="cfg-linha-est">${campo}${botaoEstiloTexto(chave, nome)}</div>`;
       corpo = `
       <div class="cfg-grade">
         <form data-f="cfg-inicio" class="cfg-painel cfg-form" id="cfgInicio">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
             <h3>Cabeçalho ${dicaCampo(`O topo de todas as telas do app (nas duas versões). À esquerda: a foto da aluna, o texto antes do nome (ex.: "Bem-vindo(a)") e o nome dela, que vem do cadastro. No meio: a marca, em Texto (título e subtítulo, cada um com cor e fonte; vazio não aparece) ou Logo. À direita: a busca e os avisos.`, "cfg.cabecalho")}</h3><p class="cfg-sub">O topo de todas as telas da área de membros.</p>
-<div class="cfg-saud-l">            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Texto de saudação (no alto, junto da foto) ${dicaCampo(`Aparece no alto de todas as telas, ao lado da foto da aluna, pequeno em cima do nome. Ex.: "Olá,". Vazio: não aparece.`, "cfg.texto-saudacao")}</span><input class="campo" name="topoSaudA" value="${h(partirSaud(v.topoSaud)[0])}" maxlength="24" placeholder="Ex.: Olá," /></label><button type="button" class="se-abre" data-a="fonte-cor" data-v="est:toposaud" aria-label="Estilo da saudação: fonte e cor"><i class="fc-abre-cor" data-fc-am="est:toposaud" style="background:${h(E.toposaud?.texto || "#d4b170")}"></i>Estilo</button></div>
-            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Nome da aluna ${dicaCampo(`O nome que aparece grande, embaixo da saudação. Escreva {nome} para o primeiro nome ou {nome_completo} para o nome inteiro (vem do cadastro). Vazio: o nome não aparece.`, "cfg.texto-saudacao-nome")}</span><input class="campo" name="topoSaudB" value="${h(partirSaud(v.topoSaud)[1])}" maxlength="15" placeholder="Ex.: {nome_completo}" /></label>
-            <div class="cfg-fc-l">${fcE("toponome", "Nome: fonte e cor")}</div>
+            ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto de saudação (no alto, junto da foto) ${dicaCampo(`Aparece no alto de todas as telas, ao lado da foto da aluna, pequeno em cima do nome. Ex.: "Olá,". Vazio: não aparece.`, "cfg.texto-saudacao")}</span><input class="campo" name="topoSaudA" value="${h(partirSaud(v.topoSaud)[0])}" maxlength="24" placeholder="Ex.: Olá," /></label>`, "est:toposaud", "Texto de saudação")}
+            ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Nome da aluna ${dicaCampo(`O nome que aparece grande, embaixo da saudação. Escreva {nome} para o primeiro nome ou {nome_completo} para o nome inteiro (vem do cadastro). Vazio: o nome não aparece.`, "cfg.texto-saudacao-nome")}</span><input class="campo" name="topoSaudB" value="${h(partirSaud(v.topoSaud)[1])}" maxlength="15" placeholder="Ex.: {nome_completo}" /></label>`, "est:toponome", "Nome da aluna")}
             <div class="cfg-seg cfg-marca-seg">${[["texto", "Texto"], ["logo", "Logo"]].map(([k, t]) => `<label><input type="radio" name="marcaTipo" value="${k}" ${v.marcaTipo === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
             <div class="cfg-op" data-marca="texto"${v.marcaTipo === "texto" ? "" : " hidden"}>
-              <div class="cfg-2">
-                <div class="cfg-marca-l"><label class="cfg-c"><span>Título (em cima)</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" placeholder="Vazio: não aparece no app" /></label>
-                  <span class="cfg-marca-est"><input type="hidden" name="tCor" value="${h(v.tCor)}" /><input type="hidden" name="tFonte" value="${h(v.tFonte)}" />${botaoFonteCor("t", v.tCor, v.tFonte)}</span></div>
-                <div class="cfg-marca-l"><label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>
-                  <span class="cfg-marca-est"><input type="hidden" name="sCor" value="${h(v.sCor)}" /><input type="hidden" name="sFonte" value="${h(v.sFonte)}" />${botaoFonteCor("s", v.sCor, v.sFonte)}</span></div>
-              </div>
+              <input type="hidden" name="tCor" value="${h(v.tCor)}" /><input type="hidden" name="tFonte" value="${h(v.tFonte)}" /><input type="hidden" name="sCor" value="${h(v.sCor)}" /><input type="hidden" name="sFonte" value="${h(v.sFonte)}" />
+              ${linha(`<label class="cfg-c"><span>Título (em cima)</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" placeholder="Vazio: não aparece no app" /></label>`, "est:marca", "Título")}
+              ${linha(`<label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>`, "est:marcasub", "Subtítulo")}
             </div>
             <div class="cfg-op cfg-logo-op" data-marca="logo"${v.marcaTipo === "logo" ? "" : " hidden"}>
               <input type="hidden" name="marcaLogo" value="${h(v.marcaLogo)}" />
@@ -2847,13 +2845,11 @@ export function montar(app: HTMLElement) {
               <span class="cfg-logo-bts"><button type="button" class="al-botao pequeno" data-a="cfg-logo-img">${IC_PF.up}${v.marcaLogo ? "Trocar logo" : "Enviar logo"}</button>${v.marcaLogo ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-logo-tirar">${IC_MOD.lixo}Remover</button>` : ""}</span>
               <small>PNG com fundo transparente fica melhor. Aparece no lugar do título, no alto de todas as telas.</small>
             </div>
-            <label class="cfg-c cfg-texto-ini"><span class="cfg-rot-aj">Texto inicial (antes do versículo) ${dicaCampo(`A frase grande no começo do Início, antes do versículo. Escreva {nome} onde entra o primeiro nome da aluna ou {nome_completo} para o nome inteiro. Ex.: "Bem-vindo(a), {nome}". Vazio: não aparece.`, "cfg.texto-inicial")}</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" placeholder="Ex.: Bem-vindo(a), {nome}" /></label>
-            <div class="cfg-fc-l">${fcE("saudacao")}</div>
+            <div class="cfg-texto-ini">${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto inicial (antes do versículo) ${dicaCampo(`A frase grande no começo do Início, antes do versículo. Escreva {nome} onde entra o primeiro nome da aluna ou {nome_completo} para o nome inteiro. Ex.: "Bem-vindo(a), {nome}". Vazio: não aparece.`, "cfg.texto-inicial")}</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" placeholder="Ex.: Bem-vindo(a), {nome}" /></label>`, "est:saudacao", "Texto inicial")}</div>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas ${dicaCampo(`Frase que aparece no Início, logo abaixo de "Bem-vindo(a)", para a aluna que já começou as aulas. Quem ainda não começou vê "Comece por aqui". "Usar modelo" coloca um texto pronto para você ajustar.`, "cfg.mensagem-de-boas-vindas")}</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
-            <label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>
-            <div class="cfg-fc-l">${fcE("mensagem")}</div>
+            ${linha(`<label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>`, "est:mensagem", "Mensagem de boas-vindas")}
           </div>
           <div class="cfg-bloco">
             <h3>Banners ou destaques ${dicaCampo(`O que aparece no Início abaixo da mensagem: nada, uma imagem, um vídeo de boas-vindas (link do Cloudflare Stream) ou os cartões de Destaques do Início, que são editados em Categorias.`, "cfg.banners-ou-destaques")}</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
@@ -2868,10 +2864,9 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Divisória “${h(v.divTexto)}” ${dicaCampo(`A linha com texto que separa a sua mentoria dos outros conteúdos no Início da aluna. Escolha o texto, a cor do texto e a cor das linhas, ou desligue para não aparecer.`, "cfg.divisoria")}</h3><p class="cfg-sub">O separador antes dos outros conteúdos do Início.</p></div><label class="cfg-chave"><input type="checkbox" name="divExibir" ${v.divExibir ? "checked" : ""} /><i></i>Exibir</label></div>
-            <div class="cfg-2">
-              <label class="cfg-c"><span>Texto</span><input class="campo" name="divTexto" value="${h(v.divTexto)}" maxlength="40" /></label>
-              <div class="cfg-fc-l cfg-fc-div"><input type="hidden" name="divCor" value="${h(v.divCor)}" /><input type="hidden" name="divFonte" value="${h(v.divFonte)}" /><input type="hidden" name="divLinha" value="${h(v.divLinha)}" />${botaoFonteCor("div", v.divCor, v.divFonte, "Texto: fonte e cor")}${botaoFonteCor("divlinha", v.divLinha, "", "Cor das linhas", true)}</div>
-            </div>
+            <input type="hidden" name="divCor" value="${h(v.divCor)}" /><input type="hidden" name="divFonte" value="${h(v.divFonte)}" /><input type="hidden" name="divLinha" value="${h(v.divLinha)}" />
+            ${linha(`<label class="cfg-c"><span>Texto</span><input class="campo" name="divTexto" value="${h(v.divTexto)}" maxlength="40" /></label>`, "est:divisor", "Texto da divisória")}
+            <div class="cfg-linha-cor"><span>Linhas</span>${botaoSoCor("divlinha", v.divLinha, "Cor das linhas")}</div>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Cores da tela inicial ${dicaCampo(`As cores, contornos e sombras do que é fixo no Início: a faixa do topo, o nome e a foto, a saudação, a mensagem, o versículo, o card “Sua mentoria” e o menu de baixo. Os cards dos módulos são configurados na aba Módulos. Toque em Estilo; o celular mostra na hora e vai até a parte. Só grava quando você aperta Salvar no seletor.`, "cfg.cores-inicio")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${botaoLimparEstilo("inicio")}</div>
@@ -4678,124 +4673,210 @@ export function montar(app: HTMLElement) {
   }, true);
   const PADRAO_MARCA = { t: { cor: "#e8be63", fonte: "Cinzel" }, s: { cor: "#8f949c", fonte: "Cinzel" } };
   const ffam = (x: string) => `'${x}', Georgia, serif`;
-  /** Botão "Fonte e cor" (ou só "Cor"), com a amostrinha "Aa" na cor e na fonte atuais. */
-  function botaoFonteCor(chave: string, cor: string, fonte: string, rot = "Fonte e cor", soCor = false) {
-    if (fonte) carregarFonte(fonte);
-    const am = soCor ? `<i class="fc-abre-cor" data-fc-am="${chave}" style="background:${h(cor || "#d4b170")}"></i>` : `<i data-fc-am="${chave}" style="color:${h(cor || "#f1e6c9")};${fonte ? `font-family:${h(ffam(fonte))}` : ""}">Aa</i>`;
-    return `<button type="button" class="fc-abre" data-a="fonte-cor" data-v="${chave}" title="${h(rot)}">${am}${h(rot)}</button>`;
-  }
+  /** Botão compacto "Aa Estilo", na frente de cada texto do Início. */
+  const botaoEstiloTexto = (chave: string, nome: string) => `<button type="button" class="cfg-est-bt" data-a="fonte-cor" data-v="${chave}" aria-haspopup="dialog" aria-expanded="false" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
+  /** Botão compacto só de cor (ex.: as linhas da divisória). */
+  const botaoSoCor = (chave: string, cor: string, rot: string) => `<button type="button" class="cfg-est-bt" data-a="fonte-cor" data-v="${chave}" aria-haspopup="dialog" aria-expanded="false"><i data-fc-am="${chave}" style="background:${h(cor || "#d4b170")}"></i>${h(rot)}</button>`;
   /** O estilo do Início que vale agora (o que está em prévia ou o salvo). */
   const estInicioAgora = (): Estilo => (ui.prevEst.inicio ?? S.config.estiloInicio) || {};
-  type OpFonteCor = {
-    titulo: string; amostra: string; cor: string; fonte: string | null; corApp: string;
-    padrao: { cor: string; fonte: string }; volta: HTMLElement;
-    aoMudar: (cor: string, fonte: string) => void; aoCancelar: () => void; aoSalvar: (cor: string, fonte: string) => void;
+  /** Cores usadas nesta sessão (só memória da página; nada vai para o navegador). */
+  let coresRecentes: string[] = [];
+  type Txt = { cor: string; fonte: string; peso: "" | "normal" | "negrito"; italico: boolean | null; px: number | null; sombra: { cor: string; blur: number; op: number } | null };
+  type Vista = { cor: string; fonte: string; px: number; negrito: boolean; italico: boolean };
+  const txtDe = (x: Visual | undefined): Txt => ({ cor: x?.texto || "", fonte: x?.fonte || "", peso: x?.peso || "", italico: typeof x?.italico === "boolean" ? x.italico : null, px: x?.px ?? null, sombra: x?.sombraTxt || null });
+  const visualDe = (base: Visual | undefined, t: Txt): Visual => ({ ...(base || {}), texto: t.cor || null, fonte: t.fonte || null, peso: t.peso || null, italico: t.italico, px: t.px, sombraTxt: t.sombra });
+  const rgbHex = (c: string) => { const m = c.match(/\d+(\.\d+)?/g); return m && m.length >= 3 ? "#" + m.slice(0, 3).map((x) => Math.round(Number(x)).toString(16).padStart(2, "0")).join("") : ""; };
+  /** Como o texto aparece hoje no celular da prévia (para mostrar o "padrão" de verdade). */
+  function vistaNaPrevia(sel: string, reserva: Vista): Vista {
+    try {
+      const fr = document.querySelector<HTMLIFrameElement>(".cel-real iframe, #cfgCel iframe"), d = fr?.contentDocument;
+      const el = d?.querySelector<HTMLElement>(sel.split(",")[0].trim()); if (!el || !d?.defaultView) return reserva;
+      const cs = d.defaultView.getComputedStyle(el);
+      return { cor: rgbHex(cs.color) || reserva.cor, fonte: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim() || reserva.fonte, px: Math.round(parseFloat(cs.fontSize)) || reserva.px, negrito: Number(cs.fontWeight) >= 600, italico: cs.fontStyle === "italic" };
+    } catch { return reserva; }
+  }
+  type OpEstilo = {
+    nome: string; texto: string; val: Txt; vista: Vista; soCor?: boolean; volta: HTMLElement;
+    aoMudar: (t: Txt) => void; aoCancelar: () => void; aoAplicar: (t: Txt) => void;
   };
   /**
-   * Janela "Fonte e cor", no modelo dos editores de texto (Figma, Canva, Webflow): tamanho fixo;
-   * a lista de fontes e o seletor de cor abrem flutuando por cima, presos ao campo clicado.
-   * Cor ou fonte vazia = a do app. `fonte: null` = só cor. O celular muda enquanto escolhe.
+   * Janela "Estilo" de um texto (modelo dos editores: Canva, Figma, Elementor): fonte, estilo da
+   * fonte, tamanho, cor (quadro + matiz + código + conta-gotas + recentes) e sombra do texto.
+   * Abre presa ao botão, ao lado, sem cobrir a prévia; tamanho fixo. A prévia muda na hora.
    */
-  function janelaFonteCor(o: OpFonteCor) {
+  function janelaEstilo(o: OpEstilo) {
     fecharFlutuante(false);
-    let cor = o.cor, fonte = o.fonte ?? "";
-    const comFonte = o.fonte !== null;
+    document.querySelector(".ej-fundo")?.remove();
+    const v: Txt = JSON.parse(JSON.stringify(o.val)), V = o.vista;
     carregarFontes(FONTES_APP);
     const SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
     const GOTA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg>`;
-    const fundo = document.createElement("div"); fundo.className = "fc-fundo";
-    fundo.innerHTML = `<div class="fc-caixa" role="dialog" aria-modal="true" aria-label="${h(o.titulo)}">
-        <div class="fc-cab"><b>${h(o.titulo)}</b><span><button type="button" class="fc-ic" data-fc="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button><button type="button" class="fc-ic" data-fc="cancelar" title="Fechar sem salvar" aria-label="Fechar">✕</button></span></div>
-        <div class="fc-amostra${comFonte ? "" : " fc-am-linha"}">${comFonte ? `<span>${h(o.amostra)}</span>` : `<i></i><span>${h(o.amostra)}</span><i></i>`}</div>
-        ${comFonte ? `<span class="fc-rot">Fonte</span>
-        <button type="button" class="fc-sel" data-fc="lista" aria-haspopup="listbox" aria-expanded="false"><span class="fc-sel-t"></span>${SETA}</button>` : ""}
-        <span class="fc-rot">Cor</span>
-        <div class="fc-cor"><button type="button" class="fc-sel fc-sel-cor" data-fc="quadro" aria-haspopup="dialog" aria-expanded="false" title="Abrir o seletor de cor"><i class="fc-bola"></i><span class="fc-cod"></span>${SETA}</button><button type="button" class="fc-ic" data-fc="copiar" title="Copiar o código da cor" aria-label="Copiar o código da cor">${IC_COPIAR}</button>${"EyeDropper" in window ? `<button type="button" class="fc-ic" data-fc="gota" title="Pegar uma cor da tela" aria-label="Pegar uma cor da tela">${GOTA}</button>` : ""}</div>
-        <div class="fc-pe"><button type="button" class="al-botao" data-fc="cancelar">Cancelar</button><button type="button" class="al-botao-ouro" data-fc="salvar">Salvar</button></div>
-      </div>`;
-    const caixa = fundo.querySelector<HTMLElement>(".fc-caixa")!;
-    const q = (s: string) => fundo.querySelector<HTMLElement>(s);
-    const corVista = () => cor || o.corApp;
-    /** Atualiza só o que mudou: o card nunca é redesenhado nem muda de tamanho. */
-    const pintar = (previa: string | null = null) => {
-      const f2 = previa ?? fonte;
-      if (comFonte) {
-        const am = q(".fc-amostra span")!; am.style.color = corVista(); am.style.fontFamily = f2 ? ffam(f2) : "";
-        const st = q(".fc-sel-t")!; st.textContent = fonte || "Fonte do app (padrão)"; st.style.fontFamily = fonte ? ffam(fonte) : "";
-      } else fundo.querySelectorAll<HTMLElement>(".fc-amostra i").forEach((x) => { x.style.background = corVista(); });
-      q(".fc-bola")!.style.background = corVista(); const cd = q(".fc-cod")!; cd.textContent = cor ? cor.toUpperCase() : "Cor do app (padrão)"; cd.classList.toggle("pd", !cor);
+    const temGota = "EyeDropper" in window, so = !!o.soCor;
+    const fundo = document.createElement("div"); fundo.className = "ej-fundo";
+    const caixa = document.createElement("div"); caixa.className = "ej-caixa"; caixa.setAttribute("role", "dialog"); caixa.setAttribute("aria-label", "Estilo: " + o.nome);
+    caixa.innerHTML = `
+      <div class="ej-cab"><div><b>${so ? "" : "Estilo: "}${h(o.nome)}</b><small>${so ? "Escolha a cor." : `Personalize a fonte, o estilo e a cor do texto “${h(o.texto)}”.`}</small></div>
+        <span><button type="button" class="ej-ic" data-ej="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button><button type="button" class="ej-ic" data-ej="cancelar" title="Fechar sem aplicar" aria-label="Fechar">✕</button></span></div>
+      <div class="ej-amostra${so ? " linha" : ""}">${so ? `<i></i><span>${h(o.texto)}</span><i></i>` : `<span>${h(o.texto)}</span>`}</div>
+      ${so ? "" : `<span class="ej-rot">Fonte</span>
+      <button type="button" class="fc-sel ej-fonte" data-ej="fonte" aria-haspopup="listbox" aria-expanded="false"><span class="fc-sel-t"></span>${SETA}</button>
+      <span class="ej-rot">Estilo da fonte</span>
+      <div class="ej-seg"><button type="button" data-ej="normal">Normal</button><button type="button" data-ej="negrito"><b>Negrito</b> (B)</button><button type="button" data-ej="italico"><i>Itálico</i> (I)</button></div>
+      <span class="ej-rot">Tamanho</span>
+      <div class="ej-tam"><input type="range" min="8" max="48" step="1" data-ej="px" aria-label="Tamanho" /><em></em></div>`}
+      <span class="ej-rot">${so ? "Cor" : "Cor do texto"}</span>
+      <div class="ej-cor">
+        <div class="ej-sv" data-ej-sv><i></i></div>
+        <div class="ej-hue" data-ej-hue><i></i></div>
+        <div class="ej-cor-d">
+          <div class="ej-hexl"><input class="campo ej-hex" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar)" />${temGota ? `<button type="button" class="ej-ic" data-ej="gota" title="Pegar uma cor da tela" aria-label="Pegar uma cor da tela">${GOTA}</button>` : ""}</div>
+          <span class="ej-rot2">Cores recentes</span>
+          <div class="ej-rec"></div>
+        </div>
+      </div>
+      ${so ? "" : `<div class="ej-sombra">
+        <label class="ej-sw"><span>Sombra do texto <em>(opcional)</em></span><input type="checkbox" role="switch" data-ej="sombra" /><i></i></label>
+        <div class="ej-sgrid">
+          <div><span>Cor da sombra</span><div class="ej-scor"><button type="button" class="ej-sbola" data-ej="scor" aria-label="Cor da sombra" aria-haspopup="dialog" aria-expanded="false"></button><input class="campo ej-shex" maxlength="7" spellcheck="false" aria-label="Código da cor da sombra" /></div></div>
+          <div><span>Desfoque</span><div class="ej-mini"><input type="range" min="0" max="30" data-ej="blur" aria-label="Desfoque" /><em></em></div></div>
+          <div><span>Opacidade</span><div class="ej-mini"><input type="range" min="0" max="100" data-ej="op" aria-label="Opacidade" /><em></em></div></div>
+        </div>
+      </div>`}
+      <div class="ej-pe"><button type="button" class="al-botao-ouro ej-aplicar" data-ej="aplicar">Aplicar</button><button type="button" class="al-botao ej-cancelar" data-ej="cancelar">Cancelar</button></div>`;
+    const q = <T extends HTMLElement = HTMLElement>(s: string) => caixa.querySelector<T>(s);
+    const corV = () => v.cor || V.cor, negV = () => (v.peso ? v.peso === "negrito" : V.negrito), itaV = () => (v.italico ?? V.italico);
+    let hsv = hexParaHsv(corV());
+    const SOMBRA_INI = { cor: "#000000", blur: 8, op: 40 };
+    const rgba = (c: string, a: number) => `rgba(${parseInt(c.slice(1, 3), 16)},${parseInt(c.slice(3, 5), 16)},${parseInt(c.slice(5, 7), 16)},${a})`;
+    function pintar(previaFonte: string | null = null) {
+      const am = q(".ej-amostra span")!, f2 = previaFonte ?? (v.fonte || V.fonte);
+      if (so) caixa.querySelectorAll<HTMLElement>(".ej-amostra i").forEach((x) => { x.style.background = corV(); });
+      else {
+        Object.assign(am.style, { color: corV(), fontFamily: f2 ? ffam(f2) : "", fontWeight: negV() ? "700" : "400", fontStyle: itaV() ? "italic" : "normal", fontSize: Math.min(40, v.px ?? V.px) + "px", textShadow: v.sombra ? `0 1px ${v.sombra.blur}px ${rgba(v.sombra.cor, v.sombra.op / 100)}` : "none" });
+        const st = q(".fc-sel-t")!; st.textContent = v.fonte || `${V.fonte || "Fonte do app"} (padrão)`; st.style.fontFamily = ffam(v.fonte || V.fonte);
+        q('[data-ej="normal"]')!.setAttribute("aria-pressed", String(!negV() && !itaV()));
+        q('[data-ej="negrito"]')!.setAttribute("aria-pressed", String(negV()));
+        q('[data-ej="italico"]')!.setAttribute("aria-pressed", String(itaV()));
+        const r = q<HTMLInputElement>('[data-ej="px"]')!; r.value = String(v.px ?? V.px); r.style.setProperty("--p", ((Number(r.value) - 8) / 40) * 100 + "%");
+        q(".ej-tam em")!.textContent = (v.px ?? V.px) + " px" + (v.px == null ? " · padrão" : "");
+        const sb = v.sombra || SOMBRA_INI, on = !!v.sombra;
+        q<HTMLInputElement>('[data-ej="sombra"]')!.checked = on; q(".ej-sgrid")!.classList.toggle("off", !on);
+        caixa.querySelectorAll<HTMLInputElement>(".ej-sgrid input, .ej-sgrid button").forEach((x) => { x.disabled = !on; });
+        q(".ej-sbola")!.style.background = sb.cor; const sh = q<HTMLInputElement>(".ej-shex")!; if (document.activeElement !== sh) sh.value = sb.cor.toUpperCase();
+        const bl = q<HTMLInputElement>('[data-ej="blur"]')!; bl.value = String(sb.blur); bl.style.setProperty("--p", (sb.blur / 30) * 100 + "%"); bl.nextElementSibling!.textContent = sb.blur + " px";
+        const op = q<HTMLInputElement>('[data-ej="op"]')!; op.value = String(sb.op); op.style.setProperty("--p", sb.op + "%"); op.nextElementSibling!.textContent = sb.op + "%";
+      }
+      const sv = q("[data-ej-sv]")!; sv.style.background = hsvParaHex(hsv[0], 1, 1);
+      const p = sv.querySelector("i")!; p.style.left = hsv[1] * 100 + "%"; p.style.top = (1 - hsv[2]) * 100 + "%";
+      q("[data-ej-hue] i")!.style.top = (hsv[0] / 360) * 100 + "%";
+      const hx = q<HTMLInputElement>(".ej-hex")!; if (document.activeElement !== hx) hx.value = corV().toUpperCase();
+      const rec = [...new Set([...coresRecentes, corV(), "#d4af37", "#f1e6c9", "#ffffff", "#8f949c", "#000000"])].slice(0, 5);
+      q(".ej-rec")!.innerHTML = rec.map((c) => `<button type="button" data-ej="rec" data-v="${c}" title="${c.toUpperCase()}" aria-label="${c.toUpperCase()}" style="background:${c}"${c === corV() ? ' class="on"' : ""}></button>`).join("");
+    }
+    const mudar = () => { pintar(); o.aoMudar(v); };
+    const porCor = (c: string, deHsv = false) => { v.cor = c; if (!deHsv) hsv = hexParaHsv(c); mudar(); };
+    const posicionar = () => {
+      const r = o.volta.getBoundingClientRect(), W = Math.min(440, innerWidth - 24), H = Math.min(caixa.scrollHeight, innerHeight - 24);
+      caixa.style.width = W + "px"; caixa.style.maxHeight = innerHeight - 24 + "px";
+      let x = r.left - W - 14; if (x < 12) x = Math.min(innerWidth - W - 12, r.right + 14);
+      const y = Math.max(12, Math.min(innerHeight - H - 12, r.top + r.height / 2 - H / 2));
+      Object.assign(caixa.style, { left: Math.max(12, x) + "px", top: y + "px" });
     };
-    const mudar = () => { pintar(); o.aoMudar(cor, fonte); };
-    const fechar = (salvar: boolean) => {
+    const fechar = (aplicar: boolean) => {
       fecharFlutuante(false);
-      document.removeEventListener("keydown", tecla, true); o.volta.focus();
-      fundo.classList.add("saindo"); setTimeout(() => fundo.remove(), 140);
-      if (salvar) o.aoSalvar(cor, fonte); else o.aoCancelar();
+      document.removeEventListener("keydown", tecla, true); removeEventListener("resize", posicionar);
+      o.volta.setAttribute("aria-expanded", "false"); o.volta.focus();
+      fundo.classList.add("saindo"); caixa.classList.add("saindo"); setTimeout(() => { fundo.remove(); caixa.remove(); }, 140);
+      if (aplicar) { if (v.cor) coresRecentes = [v.cor, ...coresRecentes.filter((c) => c !== v.cor)].slice(0, 6); o.aoAplicar(v); } else o.aoCancelar();
     };
     const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); fechar(false); } };
-    fundo.addEventListener("pointerdown", (e) => { if (e.target === fundo) fechar(false); });
-    caixa.addEventListener("click", (e) => {
-      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]"); if (!b) return;
-      const a = b.dataset.fc;
-      if (a === "lista") abrirListaFontes(b, { fontes: FONTES_APP, atual: fonte, padrao: "Fonte do app (padrão)", aoPrevia: (x) => pintar(x), aoEscolher: (x) => { fonte = x; mudar(); } });
-      else if (a === "quadro") abrirQuadroCor(b, { cor: corVista(), aoMudar: (c) => { cor = c; mudar(); } });
-      else if (a === "padrao") { fecharFlutuante(false); cor = o.padrao.cor; fonte = comFonte ? o.padrao.fonte : ""; mudar(); }
-      else if (a === "copiar") { void navigator.clipboard?.writeText(corVista().toUpperCase()).then(() => toast("Código " + corVista().toUpperCase() + " copiado.")); }
-      else if (a === "gota") {
-        fecharFlutuante(false);
-        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
-        void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) { cor = r.sRGBHex.toLowerCase(); mudar(); } }).catch(() => {});
-      }
-      else if (a === "cancelar") fechar(false);
-      else if (a === "salvar") fechar(true);
+    fundo.addEventListener("pointerdown", () => fechar(false));
+    const arrastar = (e: PointerEvent, alvo: HTMLElement, fn: (x: number, y: number) => void) => {
+      e.preventDefault();
+      const mover = (ev: PointerEvent) => { const r = alvo.getBoundingClientRect(); fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height))); };
+      mover(e);
+      const solta = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", solta); };
+      addEventListener("pointermove", mover); addEventListener("pointerup", solta);
+    };
+    caixa.addEventListener("pointerdown", (e) => {
+      const t = e.target as HTMLElement, sv = t.closest<HTMLElement>("[data-ej-sv]"), hu = t.closest<HTMLElement>("[data-ej-hue]");
+      if (sv) arrastar(e, sv, (x, y) => { hsv = [hsv[0], x, 1 - y]; porCor(hsvParaHex(...hsv), true); });
+      else if (hu) arrastar(e, hu, (_x, y) => { hsv = [y * 359.9, hsv[1], hsv[2]]; porCor(hsvParaHex(...hsv), true); });
     });
-    document.addEventListener("keydown", tecla, true);
-    pintar(); document.body.append(fundo); q(".fc-sel")?.focus();
+    caixa.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-ej]"); if (!b) return;
+      const a = b.dataset.ej;
+      if (a === "fonte") abrirListaFontes(b, { fontes: FONTES_APP, atual: v.fonte, padrao: `${V.fonte || "Fonte do app"} (padrão)`, aoPrevia: (x) => pintar(x === null ? null : x || V.fonte), aoEscolher: (x) => { v.fonte = x; mudar(); } });
+      else if (a === "normal") { v.peso = "normal"; v.italico = false; mudar(); }
+      else if (a === "negrito") { v.peso = negV() ? "normal" : "negrito"; mudar(); }
+      else if (a === "italico") { v.italico = !itaV(); mudar(); }
+      else if (a === "rec") porCor(b.dataset.v!);
+      else if (a === "scor" && v.sombra) abrirQuadroCor(b, { cor: v.sombra.cor, aoMudar: (c) => { if (v.sombra) { v.sombra.cor = c; mudar(); } } });
+      else if (a === "padrao") { fecharFlutuante(false); Object.assign(v, { cor: "", fonte: "", peso: "", italico: null, px: null, sombra: null }); hsv = hexParaHsv(corV()); mudar(); }
+      else if (a === "gota") {
+        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+        void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) porCor(r.sRGBHex.toLowerCase()); }).catch(() => {});
+      }
+      else if (a === "aplicar") fechar(true);
+      else if (a === "cancelar") fechar(false);
+    });
+    caixa.addEventListener("input", (e) => {
+      const t = e.target as HTMLInputElement, a = t.dataset.ej;
+      if (a === "px") { v.px = Number(t.value); mudar(); }
+      else if (a === "sombra") { v.sombra = t.checked ? { ...SOMBRA_INI } : null; mudar(); }
+      else if (a === "blur" && v.sombra) { v.sombra.blur = Number(t.value); mudar(); }
+      else if (a === "op" && v.sombra) { v.sombra.op = Number(t.value); mudar(); }
+      else if (t.classList.contains("ej-hex") || t.classList.contains("ej-shex")) {
+        let x = t.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (!/^#[0-9a-f]{6}$/i.test(x)) return;
+        if (t.classList.contains("ej-hex")) porCor(x.toLowerCase()); else if (v.sombra) { v.sombra.cor = x.toLowerCase(); mudar(); }
+      }
+    });
+    document.addEventListener("keydown", tecla, true); addEventListener("resize", posicionar);
+    o.volta.setAttribute("aria-expanded", "true");
+    pintar(); document.body.append(fundo, caixa); posicionar();
+    q(".ej-fonte, .ej-hex")?.focus();
   }
-  /** Atualiza a amostrinha "Aa" do botão que abriu a janela. */
-  function amostraBotao(chave: string, cor: string, fonte: string) {
-    const am = document.querySelector<HTMLElement>(`[data-fc-am="${chave}"]`); if (!am) return;
-    if (am.classList.contains("fc-abre-cor")) { am.style.background = cor || "#d4b170"; return; }
-    am.style.color = cor || "#f1e6c9"; am.style.fontFamily = fonte ? ffam(fonte) : "";
-  }
-  /** Abre a janela certa para cada botão "Fonte e cor" do Início. */
+  /** Abre a janela Estilo certa para cada botão do Início. */
   function abrirFonteCor(chave: string, botao: HTMLElement) {
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"); if (!f) return;
     const inp = (n: string) => f.querySelector<HTMLInputElement>(`[name="${n}"]`);
-    const salvarForm = () => { ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); };
-    // Campos do formulário (título/subtítulo do cabeçalho e a divisória): grava com o formulário.
-    const porCampos = (titulo: string, amostra: string, nCor: string, nFonte: string | null, padrao: { cor: string; fonte: string }, corApp: string) => {
-      const cI = inp(nCor)!, fI = nFonte ? inp(nFonte) : null, ini = { cor: cI.value, fonte: fI?.value ?? "" };
-      const por = (c: string, x: string) => { cI.value = c; if (fI) fI.value = x; amostraBotao(chave, c, x); atualizarPreviaCfg(); };
-      janelaFonteCor({ titulo, amostra, cor: ini.cor, fonte: fI ? ini.fonte : null, corApp, padrao, volta: botao,
-        aoMudar: por, aoCancelar: () => por(ini.cor, ini.fonte), aoSalvar: (c, x) => { por(c, x); salvarForm(); } });
-    };
-    if (chave === "t" || chave === "s") {
-      const nome = chave === "t" ? "título" : "subtítulo";
-      const tx = (inp(chave === "t" ? "marcaTitulo" : "marcaSub")?.value || "").trim() || nome;
-      porCampos("Fonte e cor do " + nome, tx, chave + "Cor", chave + "Fonte", PADRAO_MARCA[chave], PADRAO_MARCA[chave].cor);
+    if (chave === "divlinha") {
+      const cI = inp("divLinha")!, ini = cI.value;
+      const por = (c: string) => { cI.value = c || "#d4b170"; const am = document.querySelector<HTMLElement>('[data-fc-am="divlinha"]'); if (am) am.style.background = cI.value; atualizarPreviaCfg(); };
+      janelaEstilo({ nome: "Cor das linhas da divisória", texto: (inp("divTexto")?.value || "").trim() || "Também para você", val: { cor: ini, fonte: "", peso: "", italico: null, px: null, sombra: null }, vista: { cor: "#d4b170", fonte: "", px: 12, negrito: false, italico: false }, soCor: true, volta: botao,
+        aoMudar: (t) => por(t.cor), aoCancelar: () => por(ini), aoAplicar: (t) => { por(t.cor); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); } });
       return;
     }
-    if (chave === "div") { porCampos("Fonte e cor do texto da divisória", (inp("divTexto")?.value || "").trim() || "Também para você", "divCor", "divFonte", { cor: "#b8b0a2", fonte: "" }, "#b8b0a2"); return; }
-    if (chave === "divlinha") { porCampos("Cor das linhas da divisória", (inp("divTexto")?.value || "").trim() || "Também para você", "divLinha", null, { cor: "#d4b170", fonte: "" }, "#d4b170"); return; }
-    // Textos do Início com estilo próprio (estilo_inicio): grava na hora, como o seletor de Estilo.
     const k = chave.replace(/^est:/, ""), pt = PARTES_INICIO.find((x) => x.k === k); if (!pt) return;
-    const base = S.config.estiloInicio || {}, atual = estInicioAgora()[k] || {};
-    const amostras: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 60) || "Mensagem de boas-vindas" };
-    const por = (c: string, x: string) => {
-      const v = { ...(base[k] || {}), texto: c || null, fonte: x || null };
-      ui.prevEst.inicio = limparEstilo({ ...base, [k]: v }); ui.prevEst.foco = k; amostraBotao(chave, c, x); atualizarPreviaCfg();
-    };
-    janelaFonteCor({ titulo: "Fonte e cor: " + pt.nome, amostra: amostras[k] || pt.nome, cor: atual.texto || "", fonte: atual.fonte || "", corApp: "#f1e6c9", padrao: { cor: "", fonte: "" }, volta: botao,
+    const base = S.config.estiloInicio || {}, atual = estInicioAgora()[k];
+    const val = txtDe(atual);
+    // Título, subtítulo e divisória já tinham cor e fonte guardadas em outro lugar: começam por elas.
+    const hid: Record<string, [string, string]> = { marca: ["tCor", "tFonte"], marcasub: ["sCor", "sFonte"], divisor: ["divCor", "divFonte"] };
+    if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
+    const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false };
+    const vista = vistaNaPrevia(pt.sel, reserva);
+    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você" };
+    const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; atualizarPreviaCfg(); };
+    janelaEstilo({ nome: pt.nome, texto: textos[k] || pt.nome, val, vista, volta: botao,
       aoMudar: por,
-      aoCancelar: () => { ui.prevEst.inicio = undefined; ui.prevEst.foco = ""; amostraBotao(chave, atual.texto || "", atual.fonte || ""); atualizarPreviaCfg(); },
-      aoSalvar: (c, x) => {
-        const novo = limparEstilo({ ...base, [k]: { ...(base[k] || {}), texto: c || null, fonte: x || null } });
+      aoCancelar: () => { ui.prevEst.inicio = undefined; ui.prevEst.foco = ""; atualizarPreviaCfg(); },
+      aoAplicar: (t) => {
+        const novo = limparEstilo({ ...base, [k]: visualDe(base[k], t) });
+        const extra: Record<string, unknown> = {};
+        if (hid[k]) {
+          const pd = k === "marca" ? PADRAO_MARCA.t : k === "marcasub" ? PADRAO_MARCA.s : { cor: "#b8b0a2", fonte: "" };
+          const c = t.cor || pd.cor, fo = t.fonte || pd.fonte;
+          const ci = inp(hid[k][0]), fi = inp(hid[k][1]); if (ci) ci.value = c; if (fi) fi.value = fo;
+          if (k === "divisor") extra.inicio_divisor = { ...S.config.divisor, texto: (inp("divTexto")?.value || "").trim() || S.config.divisor.texto, cor: c, fonte: fo || null };
+          else { const te = { ...S.config.topoEstilo, ...(k === "marca" ? { tituloCor: c, tituloFonte: fo } : { subCor: c, subFonte: fo }) }; extra.topo_estilo = te; }
+        }
         void executar(async () => {
-          falhou(await cfgUpdate({ estilo_inicio: novo }));
+          falhou(await cfgUpdate({ estilo_inicio: novo, ...extra }));
           S.config.estiloInicio = novo; ui.prevEst.inicio = undefined; ui.prevEst.foco = "";
-          await registrar(null, "Mudou a fonte e a cor da tela inicial: " + pt.nome);
-          return "Fonte e cor de " + pt.nome + " salvas.";
+          if (extra.topo_estilo) S.config.topoEstilo = extra.topo_estilo as Record<string, string>;
+          if (extra.inicio_divisor) S.config.divisor = divisorDe(extra.inicio_divisor);
+          await registrar(null, "Mudou o estilo da tela inicial: " + pt.nome);
+          return "Estilo de " + pt.nome + " aplicado.";
         });
       } });
   }

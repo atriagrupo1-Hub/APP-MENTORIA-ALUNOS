@@ -18,6 +18,11 @@ export type Visual = {
   forma?: "quadrado" | "arredondado" | "redondo" | null;
   /** Só para textos: uma das FONTES_APP. */
   fonte?: string | null;
+  /** Só para textos: peso, itálico, tamanho (px) e sombra do texto. */
+  peso?: "normal" | "negrito" | null;
+  italico?: boolean | null;
+  px?: number | null;
+  sombraTxt?: { cor: string; blur: number; op: number } | null;
 };
 /** As fontes que o painel oferece para os textos do app (carregadas do Google Fonts). */
 export const FONTES_APP = ["Cinzel", "Cormorant Garamond", "Playfair Display", "Lora", "EB Garamond", "Libre Baskerville", "Marcellus", "Lato", "Montserrat", "Inter", "Poppins", "Raleway", "Open Sans", "Nunito"];
@@ -38,6 +43,10 @@ export function limparVisual(v: unknown): Visual | null {
   if (["p", "m", "g"].includes(o.tam)) out.tam = o.tam;
   if (["quadrado", "arredondado", "redondo"].includes(o.forma)) out.forma = o.forma;
   if (FONTES_APP.includes(o.fonte)) out.fonte = o.fonte;
+  if (o.peso === "normal" || o.peso === "negrito") out.peso = o.peso;
+  if (typeof o.italico === "boolean") out.italico = o.italico;
+  if (Number.isFinite(Number(o.px)) && o.px !== null && o.px !== "") out.px = Math.max(8, Math.min(72, Math.round(Number(o.px))));
+  if (o.sombraTxt && hex(o.sombraTxt.cor)) out.sombraTxt = { cor: hex(o.sombraTxt.cor), blur: Math.max(0, Math.min(30, Math.round(Number(o.sombraTxt.blur) || 0))), op: Math.max(0, Math.min(100, Math.round(Number(o.sombraTxt.op) || 0))) };
   return Object.keys(out).length ? out : null;
 }
 export function limparEstilo(e: unknown): Estilo | null {
@@ -109,6 +118,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "marcasub", nome: "Subtítulo no topo", desc: "A linha pequena (ex.: Área de alunos).", tipo: "texto", sel: ".topo .marca span" },
   { k: "toposaud", nome: "Texto de saudação (topo)", desc: "O texto pequeno antes do nome, junto da foto.", tipo: "texto", sel: ".tp-saud" },
   { k: "toponome", nome: "Nome da aluna (topo)", desc: "O nome ao lado da foto.", tipo: "texto", sel: ".tp-nome" },
+  { k: "divisor", nome: "Texto da divisória", desc: "O texto entre as linhas antes dos outros conteúdos.", tipo: "texto", sel: ".mt-divisor span" },
   { k: "foto", nome: "Contorno da foto", desc: "O círculo da foto no canto de cima.", tipo: "capa", sel: ".topo .av-topo" },
   { k: "ola", nome: "Card de boas-vindas", desc: "O bloco com a saudação e a mensagem.", tipo: "card", sel: ".pa-ola" },
   { k: "saudacao", nome: "Texto inicial", desc: "A frase grande antes do versículo (ex.: “Bem-vindo(a), nome”).", tipo: "texto", sel: ".pa-nome" },
@@ -152,12 +162,25 @@ export const PARTES_NOTIF: ParteTela[] = [
   { k: "depois", nome: "Botão pequeno (agora não)", desc: "", tipo: "botao", sel: ".np-fundo .np-depois" },
 ];
 
+/** O CSS de uma parte de texto: cor, fonte, peso, itálico, tamanho e sombra. */
+function cssTexto(p: ParteTela, v: Visual): string {
+  const r: string[] = [];
+  if (v.texto) r.push(`color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}`);
+  if (!p.svg) {
+    if (v.fonte) r.push(`font-family:'${v.fonte}', Georgia, serif !important`);
+    if (v.peso) r.push(`font-weight:${v.peso === "negrito" ? 700 : 400} !important`);
+    if (typeof v.italico === "boolean") r.push(`font-style:${v.italico ? "italic" : "normal"} !important`);
+    if (v.px) r.push(`font-size:${v.px}px !important`);
+    if (v.sombraTxt) r.push(`text-shadow:0 1px ${v.sombraTxt.blur}px ${rgba(v.sombraTxt.cor, v.sombraTxt.op / 100)} !important`);
+  }
+  return r.length ? `${p.sel}{${r.join(";")}}` : "";
+}
 /** O CSS de uma tela (aula ou início) com o estilo escolhido (vazio = visual padrão). */
 export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): string {
   if (!e) return "";
   return partes.map((p) => {
     const v = e[p.k]; if (!v) return "";
-    if (p.tipo === "texto") { const r = [v.texto ? `color:${v.texto} !important${p.svg ? `;stroke:${v.texto} !important` : ""}` : "", v.fonte && !p.svg ? `font-family:'${v.fonte}', Georgia, serif !important` : ""].filter(Boolean).join(";"); return r ? `${p.sel}{${r}}` : ""; }
+    if (p.tipo === "texto") return cssTexto(p, v);
     const css = cssVisual(v, p.tipo === "capa" ? "capa" : p.tipo);
     return css ? `${p.sel}{${css}}${v.fundo && p.extra ? p.extra : ""}` : "";
   }).join("\n");
