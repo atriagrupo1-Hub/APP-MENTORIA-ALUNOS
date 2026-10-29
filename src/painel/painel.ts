@@ -2772,7 +2772,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco cfg-mbcores">
             <div><h3>Cores ${dicaCampo(`As cores da barra de baixo: o fundo, o ícone dos botões não selecionados, o do botão selecionado e o texto.`, "cfg.cores")}</h3><p class="cfg-sub">Personalize as cores da barra inferior.</p>
-              <div class="cfg-cores4">${[["fundo", "Fundo"], ["inativo", "Ícone inativo"], ["ativo", "Ícone ativo"], ["texto", "Texto"]].map(([k, t]) => `<label class="cfg-c"><span>${t}</span><span class="cfg-hex"><i style="background:${h(M.cores[k])}"><input type="color" value="${h(M.cores[k])}" data-mb-cores="${k}" aria-label="${t}" /></i><b>${h(M.cores[k].toUpperCase())}</b></span></label>`).join("")}</div>
+              <div class="cfg-cores4">${[["fundo", "Fundo"], ["inativo", "Ícone inativo"], ["ativo", "Ícone ativo"], ["texto", "Texto"]].map(([k, t]) => `<div class="cfg-c"><span>${t}</span><button type="button" class="cfg-est-bt cfg-mbcor" data-a="fonte-cor" data-v="mbcor:${k}" aria-haspopup="dialog" aria-expanded="false" aria-label="${t}: escolher a cor"><i data-fc-am="mbcor:${k}" style="background:${h(M.cores[k])}"></i><b data-mbcod="${k}">${h(M.cores[k].toUpperCase())}</b></button></div>`).join("")}</div>
             </div>
             <div><h3>Tamanho dos ícones ${dicaCampo(`O tamanho dos ícones da barra de baixo do app.`, "cfg.tamanho-dos-cones")}</h3><p class="cfg-sub">Ajuste o tamanho dos ícones do menu.</p>
               <div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, t]) => `<label class="cfg-tam"><input type="radio" name="mbTamanho" value="${k}" ${M.tamanho === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
@@ -4927,6 +4927,19 @@ export function montar(app: HTMLElement) {
         aoMudar: por, aoCancelar: () => por(ini.cor, ini.fonte), aoSalvar: (c, x) => { por(c, x); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); } });
     };
     if (chave === "div") { porCampos("Fonte e cor do texto da divisória", (inp("divTexto")?.value || "").trim() || "Também para você", "divCor", "divFonte", { cor: "#b8b0a2", fonte: "" }, "#b8b0a2"); return; }
+    // Menu inferior: as 4 cores da barra (fundo, ícone inativo, ícone ativo, texto) com a janela de cor do padrão novo.
+    if (chave.startsWith("mbcor:")) {
+      const k = chave.slice(6), M = menuRascunho(), ini = M.cores[k], nomes: Record<string, string> = { fundo: "Fundo do menu", inativo: "Ícone inativo", ativo: "Ícone ativo", texto: "Texto do menu" };
+      const por = (c: string, mexeu = true) => {
+        M.cores[k] = c || ini; if (mexeu) ui.sujo = { f: "cfg-menu", id: "" };
+        const am = document.querySelector<HTMLElement>(`[data-fc-am="${chave}"]`); if (am) am.style.background = M.cores[k];
+        const cd = document.querySelector<HTMLElement>(`[data-mbcod="${k}"]`); if (cd) cd.textContent = M.cores[k].toUpperCase();
+        redesenharMenuCfg();
+      };
+      janelaEstilo({ nome: nomes[k] || "Cor do menu", texto: "Início  Módulos  Perfil", val: { cor: ini, fonte: "", peso: "", italico: null, px: null, sombra: null, alinha: "" }, vista: { cor: ini, fonte: "", px: 12, negrito: false, italico: false, alinha: "center" }, soCor: true, volta: botao,
+        aoMudar: (t) => por(t.cor), aoCancelar: () => por(ini, false), aoAplicar: (t) => por(t.cor) });
+      return;
+    }
     if (chave === "divlinha") {
       const cI = inp("divLinha")!, ini = cI.value;
       const por = (c: string) => { cI.value = c || "#d4b170"; const am = document.querySelector<HTMLElement>('[data-fc-am="divlinha"]'); if (am) am.style.background = cI.value; atualizarPreviaCfg(); };
