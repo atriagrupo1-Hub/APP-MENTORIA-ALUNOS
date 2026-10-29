@@ -118,7 +118,6 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "marcasub", nome: "Subtítulo no topo", desc: "A linha pequena (ex.: Área de alunos).", tipo: "texto", sel: ".topo .marca span" },
   { k: "toposaud", nome: "Texto de saudação (topo)", desc: "O texto pequeno antes do nome, junto da foto.", tipo: "texto", sel: ".tp-saud" },
   { k: "toponome", nome: "Nome da aluna (topo)", desc: "O nome ao lado da foto.", tipo: "texto", sel: ".tp-nome" },
-  { k: "divisor", nome: "Texto da divisória", desc: "O texto entre as linhas antes dos outros conteúdos.", tipo: "texto", sel: ".mt-divisor span" },
   { k: "foto", nome: "Contorno da foto", desc: "O círculo da foto no canto de cima.", tipo: "capa", sel: ".topo .av-topo" },
   { k: "ola", nome: "Card de boas-vindas", desc: "O bloco com a saudação e a mensagem.", tipo: "card", sel: ".pa-ola" },
   { k: "saudacao", nome: "Texto inicial", desc: "A frase grande antes do versículo (ex.: “Bem-vindo(a), nome”).", tipo: "texto", sel: ".pa-nome" },
