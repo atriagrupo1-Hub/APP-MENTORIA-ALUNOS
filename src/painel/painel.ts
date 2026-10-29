@@ -2318,6 +2318,8 @@ export function montar(app: HTMLElement) {
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
   const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Versículos"], ["aparencia", "Aparência"]];
+  /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
+  const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
   function valoresInicio(f?: HTMLFormElement | null) {
     const c = S.config;
@@ -2325,7 +2327,7 @@ export function montar(app: HTMLElement) {
     if (!f) return { topoSaud: c.topoSaud, tCor: c.topoEstilo.tituloCor || "#e8be63", tFonte: c.topoEstilo.tituloFonte || "Cinzel", sCor: c.topoEstilo.subCor || "#8f949c", sFonte: c.topoEstilo.subFonte || "Cinzel", marcaTipo: c.marcaTipo, marcaLogo: c.marcaLogo, saudacao: c.saudacao, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo, divExibir: dv.exibir, divTexto: dv.texto, divCor: dv.cor, divFonte: dv.fonte, divLinha: dv.linha };
     const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
     const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
-    return { topoSaud: g("topoSaud"), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
+    return { topoSaud: [g("topoSaudA").trim(), g("topoSaudB").trim()].filter(Boolean).join(" "), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
@@ -2824,7 +2826,8 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
             <h3>Cabeçalho ${dicaCampo(`O topo de todas as telas do app (nas duas versões). À esquerda: a foto da aluna, o texto antes do nome (ex.: "Bem-vindo(a)") e o nome dela, que vem do cadastro. No meio: a marca, em Texto (título e subtítulo, cada um com cor e fonte; vazio não aparece) ou Logo. À direita: a busca e os avisos.`, "cfg.cabecalho")}</h3><p class="cfg-sub">O topo de todas as telas da área de membros.</p>
-            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Texto de saudação (no alto, junto da foto) ${dicaCampo(`Aparece no alto de todas as telas, ao lado da foto da aluna. Escreva {nome} onde entra o primeiro nome dela ou {nome_completo} para o nome inteiro (o nome vem do cadastro). Sem {nome} ou {nome_completo}, o nome não aparece. O que vem antes do nome fica pequeno em cima; o nome fica grande embaixo. Ex.: "Olá, {nome}". Vazio: não aparece nada.`, "cfg.texto-saudacao")}</span><input class="campo" name="topoSaud" value="${h(v.topoSaud)}" maxlength="40" placeholder="Ex.: Olá, {nome}" /></label>
+            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Texto de saudação (no alto, junto da foto) ${dicaCampo(`Aparece no alto de todas as telas, ao lado da foto da aluna, pequeno em cima do nome. Ex.: "Olá,". Vazio: não aparece.`, "cfg.texto-saudacao")}</span><input class="campo" name="topoSaudA" value="${h(partirSaud(v.topoSaud)[0])}" maxlength="24" placeholder="Ex.: Olá," /></label>
+            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Nome da aluna ${dicaCampo(`O nome que aparece grande, embaixo da saudação. Escreva {nome} para o primeiro nome ou {nome_completo} para o nome inteiro (vem do cadastro). Vazio: o nome não aparece.`, "cfg.texto-saudacao-nome")}</span><input class="campo" name="topoSaudB" value="${h(partirSaud(v.topoSaud)[1])}" maxlength="15" placeholder="Ex.: {nome_completo}" /></label>
             <div class="cfg-fc-l">${fcE("toposaud", "Saudação: fonte e cor")}${fcE("toponome", "Nome: fonte e cor")}</div>
             <div class="cfg-seg cfg-marca-seg">${[["texto", "Texto"], ["logo", "Logo"]].map(([k, t]) => `<label><input type="radio" name="marcaTipo" value="${k}" ${v.marcaTipo === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
             <div class="cfg-op" data-marca="texto"${v.marcaTipo === "texto" ? "" : " hidden"}>
@@ -4774,7 +4777,7 @@ export function montar(app: HTMLElement) {
     // Textos do Início com estilo próprio (estilo_inicio): grava na hora, como o seletor de Estilo.
     const k = chave.replace(/^est:/, ""), pt = PARTES_INICIO.find((x) => x.k === k); if (!pt) return;
     const base = S.config.estiloInicio || {}, atual = estInicioAgora()[k] || {};
-    const amostras: Record<string, string> = { toposaud: (inp("topoSaud")?.value || "").split(/\{nome(?:_completo)?\}/)[0].trim() || "Olá,", toponome: "Maria Silva", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 60) || "Mensagem de boas-vindas" };
+    const amostras: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 60) || "Mensagem de boas-vindas" };
     const por = (c: string, x: string) => {
       const v = { ...(base[k] || {}), texto: c || null, fonte: x || null };
       ui.prevEst.inicio = limparEstilo({ ...base, [k]: v }); ui.prevEst.foco = k; amostraBotao(chave, c, x); atualizarPreviaCfg();
