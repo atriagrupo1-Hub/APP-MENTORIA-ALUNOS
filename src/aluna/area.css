@@ -1581,3 +1581,12 @@ html[data-tema="claro"] .topo-novo .tp-nome { color: #1a1206; }
 html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; border-color: rgba(0,0,0,.12); }
 .topo-novo .tp-marca span { max-width: 118px; white-space: normal; }
 .topo-novo .tp-marca { max-width: 38%; }
+.topo-novo .pagina { gap: 6px; padding-left: 12px; padding-right: 12px; }
+.topo-novo .av-topo { width: 42px; height: 42px; }
+.topo-novo .tp-saud { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.topo-novo .tp-nome { font-size: 15px; }
+.topo-novo .tp-marca { max-width: 36%; flex: 0 1 auto; min-width: 0; }
+.topo-novo .tp-marca b { font-size: clamp(15px, 4.6vw, 22px); letter-spacing: .08em; }
+.topo-novo .ig-bts { gap: 6px; }
+.topo-novo .ig-bt { width: 34px; height: 34px; }
+@media (min-width: 600px) { .topo-novo .tp-marca b { letter-spacing: .14em; } }
