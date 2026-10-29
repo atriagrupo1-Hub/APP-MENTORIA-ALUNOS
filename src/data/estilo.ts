@@ -165,6 +165,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "mentoriacard", nome: "Card do módulo (dentro de “Sua mentoria”)", desc: "O card do módulo, com a capa, o título e o botão, dentro do card “Sua mentoria”.", tipo: "card", sel: ".mt-bloco .mh-card, .mt-bloco .heroi" },
   { k: "comece", nome: "Texto do card da mentoria", desc: "O texto dentro do card “Sua mentoria”, em cima do card do módulo.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
+  { k: "mbaberto", nome: "Botão aberto do menu", desc: "Fundo, linha e cantos do botão da tela em que a aluna está.", tipo: "card", sel: ".nav-base button[aria-current=\"page\"]", extra: ".nav-base button[aria-current=\"page\"]::before{display:none !important}" },
   { k: "mbtodos", nome: "Texto de todos os botões do menu", desc: "Os nomes dos botões do menu de baixo (todos de uma vez).", tipo: "texto", sel: ".nav-base button, .nav-base .nb-link" },
   { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },
   { k: "menuicone", nome: "Ícones do menu", desc: "Os ícones dos botões que não estão abertos.", tipo: "texto", sel: ".nav-base button:not([aria-current]) svg, .nav-base .nb-link svg", svg: true },

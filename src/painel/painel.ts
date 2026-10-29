@@ -2764,7 +2764,7 @@ export function montar(app: HTMLElement) {
                 <button type="button" class="cfg-vis${b.visivel !== false ? " on" : ""}" data-a="mb-vis" data-v="${i}" aria-pressed="${b.visivel !== false}" ${fixo ? 'disabled title="Início e Perfil ficam sempre no menu"' : ""}><i></i>${b.visivel !== false ? "Visível" : "Oculto"}</button>
                 ${b.url ? `<button type="button" class="cfg-lixo" data-a="mb-remover" data-v="${i}" aria-label="Excluir ${h(b.rotulo)}">${IC_MOD.lixo}</button>` : `<span class="cfg-lixo vazio" title="Botão do app: use Visível para esconder"></span>`}
               </div>`; }).join("")}</div>
-            <div class="cfg-ordem cfg-mbbarra">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "menu"))}</div>
+            <div class="cfg-ordem cfg-mbbarra">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "menu" || x.k === "mbaberto"))}</div>
           </div>
           <div class="cfg-bloco">
             <h3>Estilo do menu ${dicaCampo(`O visual da barra de baixo do app: escura, clara, com moldura (flutuando com borda) ou minimalista (transparente).`, "cfg.estilo-do-menu")}</h3><p class="cfg-sub">Escolha o estilo visual da barra inferior.</p>
