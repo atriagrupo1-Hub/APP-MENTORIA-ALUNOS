@@ -2823,10 +2823,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
             <h3>Cabeçalho ${dicaCampo(`O topo de todas as telas do app (nas duas versões). À esquerda: a foto da aluna, o texto antes do nome (ex.: "Bem-vindo(a)") e o nome dela, que vem do cadastro. No meio: a marca, em Texto (título e subtítulo, cada um com cor e fonte; vazio não aparece) ou Logo. À direita: a busca e os avisos.`, "cfg.cabecalho")}</h3><p class="cfg-sub">O topo de todas as telas da área de membros.</p>
-            <div class="cfg-2 cfg-textos-topo">
-              <label class="cfg-c"><span>Texto de saudação (no alto, junto da foto)</span><input class="campo" name="topoSaud" value="${h(v.topoSaud)}" maxlength="40" placeholder="Ex.: Olá, {nome}" /><small>{nome} = primeiro nome da aluna · {nome_completo} = nome inteiro. Sem isso, o nome não aparece.</small></label>
-              <label class="cfg-c"><span>Texto inicial (antes do versículo)</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" placeholder="Ex.: Bem-vindo(a), {nome}" /><small>A frase grande do Início. Vazio: não aparece.</small></label>
-            </div>
+            <label class="cfg-c cfg-textos-topo"><span class="cfg-rot-aj">Texto de saudação (no alto, junto da foto) ${dicaCampo(`Aparece no alto de todas as telas, ao lado da foto da aluna. Escreva {nome} onde entra o primeiro nome dela ou {nome_completo} para o nome inteiro (o nome vem do cadastro). Sem {nome} ou {nome_completo}, o nome não aparece. O que vem antes do nome fica pequeno em cima; o nome fica grande embaixo. Ex.: "Olá, {nome}". Vazio: não aparece nada.`, "cfg.texto-saudacao")}</span><input class="campo" name="topoSaud" value="${h(v.topoSaud)}" maxlength="40" placeholder="Ex.: Olá, {nome}" /></label>
             <div class="cfg-seg cfg-marca-seg">${[["texto", "Texto"], ["logo", "Logo"]].map(([k, t]) => `<label><input type="radio" name="marcaTipo" value="${k}" ${v.marcaTipo === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
             <div class="cfg-op" data-marca="texto"${v.marcaTipo === "texto" ? "" : " hidden"}>
               <div class="cfg-2">
@@ -2842,6 +2839,7 @@ export function montar(app: HTMLElement) {
               <span class="cfg-logo-bts"><button type="button" class="al-botao pequeno" data-a="cfg-logo-img">${IC_PF.up}${v.marcaLogo ? "Trocar logo" : "Enviar logo"}</button>${v.marcaLogo ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-logo-tirar">${IC_MOD.lixo}Remover</button>` : ""}</span>
               <small>PNG com fundo transparente fica melhor. Aparece no lugar do título, no alto de todas as telas.</small>
             </div>
+            <label class="cfg-c cfg-texto-ini"><span class="cfg-rot-aj">Texto inicial (antes do versículo) ${dicaCampo(`A frase grande no começo do Início, antes do versículo. Escreva {nome} onde entra o primeiro nome da aluna ou {nome_completo} para o nome inteiro. Ex.: "Bem-vindo(a), {nome}". Vazio: não aparece.`, "cfg.texto-inicial")}</span><input class="campo" name="saudacao" value="${h(v.saudacao)}" maxlength="60" placeholder="Ex.: Bem-vindo(a), {nome}" /></label>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Mensagem de boas-vindas ${dicaCampo(`Frase que aparece no Início, logo abaixo de "Bem-vindo(a)", para a aluna que já começou as aulas. Quem ainda não começou vê "Comece por aqui". "Usar modelo" coloca um texto pronto para você ajustar.`, "cfg.mensagem-de-boas-vindas")}</h3><p class="cfg-sub">Aparece no Início, embaixo do nome, para a aluna que já começou as aulas.</p></div><button type="button" class="al-botao pequeno" data-a="cfg-modelo">${IC_CFG.modelo}Usar modelo</button></div>
