@@ -1593,3 +1593,6 @@ html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; bo
 
 /* Com o topo novo valendo em todas as telas, o Início geral não repete o espaço da barra do celular. */
 .ig { padding-top: 6px; }
+.pa-banner-vazio { display: grid; place-items: center; border-style: dashed; background: repeating-linear-gradient(135deg, rgba(212,177,112,.06) 0 10px, transparent 10px 20px), #0b0a08; }
+.pa-banner-vazio span { display: grid; gap: 4px; text-align: center; font-size: 15px; font-weight: 600; color: #e8cf98; }
+.pa-banner-vazio small { font-size: 12px; font-weight: 400; color: rgba(232,207,152,.7); }

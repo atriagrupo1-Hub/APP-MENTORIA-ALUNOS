@@ -4583,12 +4583,15 @@ export function montar(app: HTMLElement) {
    * desenho, para não recarregar quando o painel redesenha.
    */
   let celReal: HTMLDivElement | null = null, celPronto = false;
+  let bannerEnviado = "";
   function mandarPreviaInicio(v = valoresInicio(document.querySelector<HTMLFormElement>("#cfgInicio"))) {
     const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
+    // Trocou a opção de Banners ou destaques: o celular rola até ela para mostrar a mudança.
+    const irBanner = !!bannerEnviado && bannerEnviado !== v.banner; bannerEnviado = v.banner;
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
     const pt = PARTES_INICIO.find((x) => x.k === ui.prevEst.foco);
     const logoUrl = v.marcaTipo === "logo" && v.marcaLogo ? previas["cfg-logo"] || urlDaCapa(v.marcaLogo) : "";
-    try { fr.contentWindow?.postMessage({ tipo: "previa-inicio", marcaLogo: logoUrl, topo: { saudacao: v.topoSaud, estilo: { tituloCor: v.tCor, tituloFonte: v.tFonte, subCor: v.sCor, subFonte: v.sFonte } }, estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha, fonte: v.divFonte } }, location.origin); } catch { /* idem */ }
+    try { fr.contentWindow?.postMessage({ tipo: "previa-inicio", marcaLogo: logoUrl, topo: { saudacao: v.topoSaud, estilo: { tituloCor: v.tCor, tituloFonte: v.tFonte, subCor: v.sCor, subFonte: v.sFonte } }, estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, irBanner, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha, fonte: v.divFonte } }, location.origin); } catch { /* idem */ }
   }
   /** Manda para o app da prévia o que está sendo editado na aba aberta de Configurações (ainda sem salvar). */
   function mandarPreviaCfg() {
