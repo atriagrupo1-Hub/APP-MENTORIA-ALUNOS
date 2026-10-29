@@ -828,9 +828,9 @@ export function montar(raiz: HTMLElement) {
         ${versNo("mensagem")}
       </section>
       ${bannerInicio()}
-      <p class="pa-rot mt-passo mt-passo-fora" id="h-cont-rot">Continue de onde parou</p>
       <section class="mt-bloco" aria-labelledby="h-cont-rot">
         ${cabMentoria}
+        <p class="pa-rot mt-passo" id="h-cont-rot">Continue de onde parou</p>
         ${heroi}
       </section>
       ${versNo("depois")}
