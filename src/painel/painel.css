@@ -3672,3 +3672,8 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .se-rot-f { margin-top: 14px; }
 .se-fonte { margin-top: 2px; }
 .se-chip[aria-expanded="true"] { border-color: #c9a25c; box-shadow: 0 0 0 3px rgba(201, 162, 92, .2); }
+
+/* Saudação do topo: campo e o botão Estilo na frente dele. */
+.cfg-saud-l { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 14px; }
+.cfg-saud-l > label { flex: 1; min-width: 0; margin-bottom: 0 !important; }
+.cfg-saud-l > .se-abre { flex: none; height: 44px; }
