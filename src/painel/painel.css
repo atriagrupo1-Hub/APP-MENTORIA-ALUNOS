@@ -3406,7 +3406,7 @@ html[data-tema="claro"] { --eq-azul-txt: #1d3a6b; --eq-azul-fundo: #e9eef7; --eq
 [data-tema="escuro"] .mp-capa-h:empty, [data-tema="escuro"] .mp-capa-v:empty, [data-tema="escuro"] .ea-capa-img.sem { background: #1d1a15 !important; border-color: #4a3f2c; }
 /* Todo texto do painel pode ser selecionado e copiado, inclusive dentro dos campos (Safari e Chrome). */
 body, .casca, .casca *:not([class*="alca"]):not(img) { -webkit-user-select: text !important; user-select: text !important; }
-input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !important; user-select: text !important; -webkit-user-drag: none; }
+input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !important; user-select: text !important; }
 /* Configurações (telas largas): rola só o formulário; a prévia fica parada e o celular rola por dentro. */
 @media (min-width: 1025px) {
   .cfg-grade { align-items: stretch; margin-bottom: 0; min-height: 420px; }
@@ -3553,3 +3553,6 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 @media (max-width: 700px) { .cfg-versao-seg button { flex: 1 1 140px; } }
 /* Alunas: separar alunos da mentoria e alunos gerais (0103). */
 .al-grupos { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 12px; }
+/* A caixinha do "?" não segura o clique: o mouse chega no campo que está embaixo (selecionar, copiar, apagar). */
+.ajuda-amarela-txt, .ajuda-pop { pointer-events: none; }
+.ajuda-amarela-txt :is(button, a, input, textarea, select, [contenteditable]), .ajuda-pop :is(button, a, input, textarea, select, [contenteditable]) { pointer-events: auto; }

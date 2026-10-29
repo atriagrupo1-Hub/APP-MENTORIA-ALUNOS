@@ -6712,6 +6712,13 @@ export function montar(app: HTMLElement) {
   // Arrastar só vale enquanto o botão está apertado na alça: soltou, tudo volta a ser selecionável.
   const soltarArrasto = () => setTimeout(() => app.querySelectorAll<HTMLElement>('[draggable="true"]').forEach((el) => { if (el.tagName !== "BUTTON") el.draggable = false; }), 0);
   document.addEventListener("mouseup", soltarArrasto); document.addEventListener("dragend", soltarArrasto);
+  /*
+   * Caixinha amarela do "?": aberta, ela fica por cima dos campos. O texto dela deixa o
+   * clique passar (CSS) e ela fecha ao clicar fora (menos enquanto se edita o texto dela),
+   * para nunca ficar na frente de um campo que se quer selecionar ou copiar.
+   */
+  const fecharAjudas = (manter?: Element | null) => document.querySelectorAll<HTMLDetailsElement>("details.ajuda-amarela[open]").forEach((d) => { if (d !== manter && !d.contains(document.activeElement)) d.open = false; });
+  document.addEventListener("pointerdown", (e) => fecharAjudas((e.target as HTMLElement).closest?.("details.ajuda-amarela")), true);
   app.addEventListener("mousedown", (e) => {
     apertou = { x: e.clientX, y: e.clientY };
     const alca = (e.target as HTMLElement).closest?.('[class*="alca"]');
@@ -6723,6 +6730,14 @@ export function montar(app: HTMLElement) {
     const arrastou = Math.abs(e.clientX - apertou.x) + Math.abs(e.clientY - apertou.y) > 6;
     const sel = getSelection(); if (arrastou && sel && !sel.isCollapsed && String(sel).trim() && !alvo.closest("input, textarea, select")) return;
     if (ui.buscaAberta && !alvo.closest(".busca-geral")) { ui.buscaAberta = false; atualizarBusca(); }
+    // Clique dentro de um campo de texto (inclusive ao terminar de selecionar com o mouse): nunca redesenha a tela,
+    // senão o campo é trocado e a seleção some. Menus abertos só fecham, sem redesenhar.
+    if (alvo.closest("input, textarea, select, [contenteditable='true']") && !alvo.closest("[data-a]")) {
+      if (ui.estMenu && !alvo.closest(".est3")) { ui.estMenu = ""; app.querySelectorAll(".est3-menu").forEach((x) => x.remove()); }
+      if (ui.menu && !alvo.closest(".menu-pop")) { ui.menu = null; app.querySelectorAll(".menu-pop").forEach((x) => x.remove()); }
+      if (ui.ajuda && !alvo.closest(".ajuda-pop")) { ui.ajuda = null; app.querySelectorAll(".ajuda-pop").forEach((x) => x.remove()); }
+      return;
+    }
     const b = alvo.closest<HTMLElement>("[data-a]");
     const solto = !b || (b as HTMLButtonElement).disabled;
     if (ui.estMenu && !alvo.closest(".est3")) { ui.estMenu = ""; render(); if (solto) return; }
