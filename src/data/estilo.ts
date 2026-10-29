@@ -9,6 +9,8 @@
  */
 
 export type Fundo = { t: "cor" | "degrade"; a: string; b?: string; ang?: number };
+export const ESTILOS_BORDA = [["none", "Oculto"], ["solid", "Sólido"], ["dotted", "Pontilhado"], ["dashed", "Tracejado"], ["double", "Duplo"], ["groove", "Ranhurado"], ["ridge", "Cume"], ["inset", "Inserir"], ["outset", "Saliente"]] as const;
+export type BordaEst = { estilo: (typeof ESTILOS_BORDA)[number][0]; w: [number, number, number, number]; cor: string };
 export type Visual = {
   fundo?: Fundo | null;
   texto?: string | null;
@@ -16,6 +18,10 @@ export type Visual = {
   sombra?: { n: number; cor: string } | null;
   tam?: "p" | "m" | "g" | null;
   forma?: "quadrado" | "arredondado" | "redondo" | null;
+  /** Borda completa (editor de card): estilo, largura de cada lado (topo, direita, baixo, esquerda) e cor. */
+  bordaEst?: BordaEst | null;
+  /** Cantos arredondados em px: topo-esquerdo, topo-direito, baixo-direito, baixo-esquerdo. */
+  raio?: [number, number, number, number] | null;
   /** Só para textos: uma das FONTES_APP. */
   fonte?: string | null;
   /** Só para textos: peso, itálico, tamanho (px) e sombra do texto. */
@@ -43,6 +49,10 @@ export function limparVisual(v: unknown): Visual | null {
   if (o.sombra && hex(o.sombra.cor)) out.sombra = { n: Math.max(0, Math.min(4, Math.round(Number(o.sombra.n) || 0))), cor: hex(o.sombra.cor) };
   if (["p", "m", "g"].includes(o.tam)) out.tam = o.tam;
   if (["quadrado", "arredondado", "redondo"].includes(o.forma)) out.forma = o.forma;
+  const lados = (x: unknown, max: number) => (Array.isArray(x) && x.length === 4 ? x.map((n) => Math.max(0, Math.min(max, Math.round(Number(n) || 0)))) as [number, number, number, number] : null);
+  const be = o.bordaEst;
+  if (be && ESTILOS_BORDA.some(([k]) => k === be.estilo)) { const w = lados(be.w, 20); if (w) out.bordaEst = { estilo: be.estilo, w, cor: hex(be.cor) || "#d4af37" }; }
+  const rr = lados(o.raio, 200); if (rr) out.raio = rr;
   if (FONTES_APP.includes(o.fonte)) out.fonte = o.fonte;
   if (o.peso === "normal" || o.peso === "negrito") out.peso = o.peso;
   if (typeof o.italico === "boolean") out.italico = o.italico;
@@ -84,6 +94,12 @@ export function cssVisual(v: Visual | null | undefined, tipo: "card" | "botao" |
   if (v.sombra) imp("box-shadow", cssSombra(v.sombra));
   if (v.forma) imp("border-radius", tipo === "card" && v.forma === "redondo" ? "28px" : RAIO[v.forma]);
   if (v.tam && tipo === "botao") imp("zoom", ZOOM[v.tam]);
+  // Borda completa e cantos (editor novo) valem por cima do contorno e do formato simples.
+  if (v.bordaEst) {
+    if (v.bordaEst.estilo === "none") imp("border-style", "none");
+    else { imp("border-style", v.bordaEst.estilo); imp("border-width", v.bordaEst.w.map((n) => n + "px").join(" ")); imp("border-color", v.bordaEst.cor); }
+  }
+  if (v.raio) imp("border-radius", v.raio.map((n) => n + "px").join(" "));
   return r.join(";");
 }
 
