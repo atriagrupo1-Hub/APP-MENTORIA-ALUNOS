@@ -61,7 +61,7 @@ export function montar(raiz: HTMLElement) {
       PREV_AULA = undefined; PREV_PERFIL = undefined; PREV_NOTIF = undefined;
       PREV_INICIO = "estiloInicio" in m ? limparEstilo(m.estiloInicio) : undefined;
       if (!I._destOrig) I._destOrig = I.destaques || [];
-      I.marca = { titulo: m.titulo || "", sub: m.sub || "" };
+      I.marca = { titulo: m.titulo || "", sub: m.sub || "", logo: m.marcaLogo || "" };
       I.fraseRetorno = m.frase || "";
       if (m.saudacao) I.saudacao = m.saudacao;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
@@ -593,7 +593,7 @@ export function montar(raiz: HTMLElement) {
     }).join("");
   }
   // "Mentoria" / "Área de Alunos": painel → Configurações gerais.
-  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`; };
+  const marcaTopo = () => { const m = (D && D.inicio && D.inicio.marca) || {}; if (m.logo) return `<img class="marca-logo" src="${h(m.logo)}" alt="${h(m.titulo || "")}" />`; return APAR && APAR.logo ? `<img class="marca-logo" src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`; };
   /*
    * Início da versão geral (0103), no desenho "AION — Tela Inicial": topo com a
    * aluna e a marca, um carrossel de destaques, atalhos para as categorias e uma
@@ -665,7 +665,7 @@ export function montar(raiz: HTMLElement) {
       <header class="ig-topo">
         <button class="ig-av${S.foto ? " com-foto" : ""}" data-a="perfil-av" aria-label="Abrir o seu perfil" style="--c:${S.corNome}">${avTopo()}</button>
         <div class="ig-ola"><span>${h(String((D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}").split("{nome}")[0].replace(/[,\s]+$/, "") || "Bem-vindo(a)")},</span><b>${h(primeiro || "aluna")}</b></div>
-        <div class="ig-marca">${APAR && APAR.logo ? `<img src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`}</div>
+        <div class="ig-marca">${m.logo ? `<img src="${h(m.logo)}" alt="${h(m.titulo || "")}" />` : APAR && APAR.logo ? `<img src="${h(api.urlDaCapa(APAR.logo) || "")}" alt="${h(m.titulo || "")}" />` : `${m.titulo ? `<b>${h(m.titulo)}</b>` : ""}${m.sub ? `<span>${h(m.sub)}</span>` : ""}`}</div>
         <div class="ig-bts"><button class="ig-bt" data-a="ig-busca" aria-label="Buscar">${IG.busca}</button>${n && n.ativo ? `<button class="ig-bt" data-a="${sinoAviso ? "notif-ativar" : "perfil-av"}" aria-label="Avisos">${IG.sino}${sinoAviso ? "<i></i>" : ""}</button>` : ""}</div>
       </header>
       ${slides.length ? `
