@@ -136,7 +136,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; marcaTipo: string; marcaLogo: string; topoSaud: string; topoEstilo: Record<string, string>; fraseRetorno: string; saudacao: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; estiloAula: Estilo | null; estiloInicio: Estilo | null; estiloPerfil: Estilo | null; estiloNotif: Estilo | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string; fonte: string } };
+  config: { marcaTitulo: string; marcaSub: string; marcaTipo: string; marcaLogo: string; topoSaud: string; topoEstilo: Record<string, string>; fraseRetorno: string; saudacao: string; comece: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; estiloAula: Estilo | null; estiloInicio: Estilo | null; estiloPerfil: Estilo | null; estiloNotif: Estilo | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string; fonte: string } };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -278,7 +278,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -441,7 +441,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
-    config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
+    config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
       telas: { modTitulo: cd.modulos_titulo ?? "Todos os módulos", modTitEstilo: cd.modulos_titulo_estilo ?? "padrao", modProgresso: cd.modulos_progresso === false ? "nao" : "sim", modLayout: cd.modulos_layout ?? "padrao", modTamanho: cd.modulos_tamanho ?? "medio", presTitulo: cd.presentes_titulo ?? "Presentes", presTitEstilo: cd.presentes_titulo_estilo ?? "padrao", presLayout: cd.presentes_layout ?? "grandes", presEstilo: cd.presentes_estilo ?? "padrao",
         perfTitulo: cd.perfil_titulo ?? "Seu perfil", perfSaud: cd.perfil_saudacao ?? "{nome_completo}", perfImagem: cd.perfil_imagem ?? "nenhum", perfTexto: cd.perfil_texto ?? "", perfLayout: cd.perfil_layout ?? "padrao",
         vExibir: cd.vers_exibir === false ? "nao" : "sim", vEstilo: cd.vers_estilo ?? "caixa", vPosicao: cd.vers_posicao ?? "mensagem", vRef: cd.vers_referencia === false ? "nao" : "sim", vFundo: cd.vers_fundo ?? "escuro", vFonte: cd.vers_fonte ?? "serifa", vTamanho: cd.vers_tamanho ?? "medio",
@@ -519,7 +519,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", marcaTipo: "texto", marcaLogo: "", topoSaud: "Bem-vindo(a), {nome_completo}", topoEstilo: {}, fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
+  let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", marcaTipo: "texto", marcaLogo: "", topoSaud: "Bem-vindo(a), {nome_completo}", topoEstilo: {}, fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", comece: "Comece por aqui", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -2324,10 +2324,10 @@ export function montar(app: HTMLElement) {
   function valoresInicio(f?: HTMLFormElement | null) {
     const c = S.config;
     const dv = c.divisor;
-    if (!f) return { topoSaud: c.topoSaud, tCor: c.topoEstilo.tituloCor || "#e8be63", tFonte: c.topoEstilo.tituloFonte || "Cinzel", sCor: c.topoEstilo.subCor || "#8f949c", sFonte: c.topoEstilo.subFonte || "Cinzel", marcaTipo: c.marcaTipo, marcaLogo: c.marcaLogo, saudacao: c.saudacao, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo, divExibir: dv.exibir, divTexto: dv.texto, divCor: dv.cor, divFonte: dv.fonte, divLinha: dv.linha };
+    if (!f) return { topoSaud: c.topoSaud, tCor: c.topoEstilo.tituloCor || "#e8be63", tFonte: c.topoEstilo.tituloFonte || "Cinzel", sCor: c.topoEstilo.subCor || "#8f949c", sFonte: c.topoEstilo.subFonte || "Cinzel", marcaTipo: c.marcaTipo, marcaLogo: c.marcaLogo, saudacao: c.saudacao, comece: c.comece, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo, divExibir: dv.exibir, divTexto: dv.texto, divCor: dv.cor, divFonte: dv.fonte, divLinha: dv.linha };
     const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
     const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
-    return { topoSaud: [g("topoSaudA").trim(), g("topoSaudB").trim()].filter(Boolean).join(" "), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
+    return { topoSaud: [g("topoSaudA").trim(), g("topoSaudB").trim()].filter(Boolean).join(" "), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), comece: g("inicioComece"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
@@ -2853,6 +2853,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco cfg-bloco-mt">
             <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "mentoria"))}</div>
+            ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto “Comece por aqui” ${dicaCampo(`O texto em cima da primeira aula, dentro do card “Sua mentoria”, para a aluna que ainda não começou. Vazio: não aparece.`, "cfg.texto-comece")}</span><input class="campo" name="inicioComece" value="${h(v.comece)}" maxlength="40" placeholder="Ex.: Comece por aqui" /></label>`, "est:comece", "Texto “Comece por aqui”")}
           </div>
           <div class="cfg-bloco">
             <h3>Banners ou destaques ${dicaCampo(`O que aparece no Início abaixo da mensagem: nada, uma imagem, um vídeo de boas-vindas (link do Cloudflare Stream) ou os cartões de Destaques do Início, que são editados em Categorias.`, "cfg.banners-ou-destaques")}</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
@@ -2874,7 +2875,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Cores da tela inicial ${dicaCampo(`As cores, contornos e sombras do que é fixo no Início: a faixa do topo, o nome e a foto, a saudação, a mensagem, o versículo, o card “Sua mentoria” e o menu de baixo. Os cards dos módulos são configurados na aba Módulos. Toque em Estilo; o celular mostra na hora e vai até a parte. Só grava quando você aperta Salvar no seletor.`, "cfg.cores-inicio")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${botaoLimparEstilo("inicio")}</div>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k !== "mentoria"))}
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k !== "mentoria" && x.k !== "comece"))}
               <div class="cfg-orl cfg-aul">
                 <span class="cfg-aul-tx"><b>Nomes e ícones do menu de baixo</b><small>Trocar “Início”, “Módulos”… e escolher outro ícone para cada botão.</small></span>
                 <button type="button" class="se-abre" data-a="cfg-aba" data-v="menu">${IC_CFG.menu}Abrir</button>
@@ -4594,7 +4595,7 @@ export function montar(app: HTMLElement) {
     const img = v.banner === "imagem" && v.img ? previas["cfg-banner"] || urlDaCapa(v.img) : "";
     const pt = PARTES_INICIO.find((x) => x.k === ui.prevEst.foco);
     const logoUrl = v.marcaTipo === "logo" && v.marcaLogo ? previas["cfg-logo"] || urlDaCapa(v.marcaLogo) : "";
-    try { fr.contentWindow?.postMessage({ tipo: "previa-inicio", marcaLogo: logoUrl, topo: { saudacao: v.topoSaud, estilo: { tituloCor: v.tCor, tituloFonte: v.tFonte, subCor: v.sCor, subFonte: v.sFonte } }, estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, irBanner, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha, fonte: v.divFonte } }, location.origin); } catch { /* idem */ }
+    try { fr.contentWindow?.postMessage({ tipo: "previa-inicio", marcaLogo: logoUrl, topo: { saudacao: v.topoSaud, estilo: { tituloCor: v.tCor, tituloFonte: v.tFonte, subCor: v.sCor, subFonte: v.sFonte } }, estiloInicio: JSON.parse(JSON.stringify(ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio)), foco: pt ? pt.sel.split(",")[0].trim() : "", saudacao: v.saudacao, comece: v.comece, titulo: v.titulo, sub: v.sub, frase: v.frase, banner: v.banner, imagem: img, video: api.uidStream(v.video), estilo: v.estilo, irBanner, divisor: { exibir: v.divExibir, texto: v.divTexto.trim() || "Também para você", cor: v.divCor, linha: v.divLinha, fonte: v.divFonte } }, location.origin); } catch { /* idem */ }
   }
   /** Manda para o app da prévia o que está sendo editado na aba aberta de Configurações (ainda sem salvar). */
   function mandarPreviaCfg() {
@@ -4686,10 +4687,11 @@ export function montar(app: HTMLElement) {
   const estInicioAgora = (): Estilo => (ui.prevEst.inicio ?? S.config.estiloInicio) || {};
   /** Cores usadas nesta sessão (só memória da página; nada vai para o navegador). */
   let coresRecentes: string[] = [];
-  type Txt = { cor: string; fonte: string; peso: "" | "normal" | "negrito"; italico: boolean | null; px: number | null; sombra: { cor: string; blur: number; op: number } | null };
-  type Vista = { cor: string; fonte: string; px: number; negrito: boolean; italico: boolean };
-  const txtDe = (x: Visual | undefined): Txt => ({ cor: x?.texto || "", fonte: x?.fonte || "", peso: x?.peso || "", italico: typeof x?.italico === "boolean" ? x.italico : null, px: x?.px ?? null, sombra: x?.sombraTxt || null });
-  const visualDe = (base: Visual | undefined, t: Txt): Visual => ({ ...(base || {}), texto: t.cor || null, fonte: t.fonte || null, peso: t.peso || null, italico: t.italico, px: t.px, sombraTxt: t.sombra });
+  type Alinha = "left" | "center" | "right" | "justify";
+  type Txt = { cor: string; fonte: string; peso: "" | "normal" | "negrito"; italico: boolean | null; px: number | null; sombra: { cor: string; blur: number; op: number } | null; alinha: Alinha | "" };
+  type Vista = { cor: string; fonte: string; px: number; negrito: boolean; italico: boolean; alinha: Alinha };
+  const txtDe = (x: Visual | undefined): Txt => ({ cor: x?.texto || "", fonte: x?.fonte || "", peso: x?.peso || "", italico: typeof x?.italico === "boolean" ? x.italico : null, px: x?.px ?? null, sombra: x?.sombraTxt || null, alinha: x?.alinha || "" });
+  const visualDe = (base: Visual | undefined, t: Txt): Visual => ({ ...(base || {}), texto: t.cor || null, fonte: t.fonte || null, peso: t.peso || null, italico: t.italico, px: t.px, sombraTxt: t.sombra, alinha: t.alinha || null });
   const rgbHex = (c: string) => { const m = c.match(/\d+(\.\d+)?/g); return m && m.length >= 3 ? "#" + m.slice(0, 3).map((x) => Math.round(Number(x)).toString(16).padStart(2, "0")).join("") : ""; };
   /** Como o texto aparece hoje no celular da prévia (para mostrar o "padrão" de verdade). */
   function vistaNaPrevia(sel: string, reserva: Vista): Vista {
@@ -4697,7 +4699,7 @@ export function montar(app: HTMLElement) {
       const fr = document.querySelector<HTMLIFrameElement>(".cel-real iframe, #cfgCel iframe"), d = fr?.contentDocument;
       const el = d?.querySelector<HTMLElement>(sel.split(",")[0].trim()); if (!el || !d?.defaultView) return reserva;
       const cs = d.defaultView.getComputedStyle(el);
-      return { cor: rgbHex(cs.color) || reserva.cor, fonte: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim() || reserva.fonte, px: Math.round(parseFloat(cs.fontSize)) || reserva.px, negrito: Number(cs.fontWeight) >= 600, italico: cs.fontStyle === "italic" };
+      return { cor: rgbHex(cs.color) || reserva.cor, fonte: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim() || reserva.fonte, px: Math.round(parseFloat(cs.fontSize)) || reserva.px, negrito: Number(cs.fontWeight) >= 600, italico: cs.fontStyle === "italic", alinha: (({ center: "center", right: "right", end: "right", justify: "justify" } as Record<string, Alinha>)[cs.textAlign] || "left") };
     } catch { return reserva; }
   }
   type OpEstilo = {
@@ -4727,6 +4729,8 @@ export function montar(app: HTMLElement) {
       <button type="button" class="fc-sel ej-fonte" data-ej="fonte" aria-haspopup="listbox" aria-expanded="false"><span class="fc-sel-t"></span>${SETA}</button>
       <span class="ej-rot">Estilo da fonte</span>
       <div class="ej-seg"><button type="button" data-ej="normal">Normal</button><button type="button" data-ej="negrito"><b>Negrito</b> (B)</button><button type="button" data-ej="italico"><i>Itálico</i> (I)</button></div>
+      <span class="ej-rot">Alinhamento</span>
+      <div class="ej-alinha" role="group" aria-label="Alinhamento">${([["left", "À esquerda", "M4 6h16M4 10h10M4 14h16M4 18h10"], ["center", "No centro", "M4 6h16M7 10h10M4 14h16M7 18h10"], ["right", "À direita", "M4 6h16M10 10h10M4 14h16M10 18h10"], ["justify", "Justificado", "M4 6h16M4 10h16M4 14h16M4 18h16"]] as const).map(([k, n, d]) => `<button type="button" data-ej="alinha" data-v="${k}" title="${n}" aria-label="${n}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg></button>`).join("")}</div>
       <span class="ej-rot">Tamanho</span>
       <div class="ej-tam"><input type="range" min="8" max="48" step="1" data-ej="px" aria-label="Tamanho" /><em></em></div>`}
       <span class="ej-rot">${so ? "Cor" : "Cor do texto"}</span>
@@ -4762,6 +4766,8 @@ export function montar(app: HTMLElement) {
         q('[data-ej="normal"]')!.setAttribute("aria-pressed", String(!negV() && !itaV()));
         q('[data-ej="negrito"]')!.setAttribute("aria-pressed", String(negV()));
         q('[data-ej="italico"]')!.setAttribute("aria-pressed", String(itaV()));
+        caixa.querySelectorAll<HTMLElement>('[data-ej="alinha"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === (v.alinha || V.alinha))));
+        am.style.textAlign = v.alinha || V.alinha;
         const r = q<HTMLInputElement>('[data-ej="px"]')!; r.value = String(v.px ?? V.px); r.style.setProperty("--p", ((Number(r.value) - 8) / 40) * 100 + "%");
         q(".ej-tam em")!.textContent = (v.px ?? V.px) + " px" + (v.px == null ? " · padrão" : "");
         const sb = v.sombra || SOMBRA_INI, on = !!v.sombra;
@@ -4815,9 +4821,10 @@ export function montar(app: HTMLElement) {
       else if (a === "normal") { v.peso = "normal"; v.italico = false; mudar(); }
       else if (a === "negrito") { v.peso = negV() ? "normal" : "negrito"; mudar(); }
       else if (a === "italico") { v.italico = !itaV(); mudar(); }
+      else if (a === "alinha") { v.alinha = b.dataset.v as Alinha; mudar(); }
       else if (a === "rec") porCor(b.dataset.v!);
       else if (a === "scor" && v.sombra) abrirQuadroCor(b, { cor: v.sombra.cor, aoMudar: (c) => { if (v.sombra) { v.sombra.cor = c; mudar(); } } });
-      else if (a === "padrao") { fecharFlutuante(false); Object.assign(v, { cor: "", fonte: "", peso: "", italico: null, px: null, sombra: null }); hsv = hexParaHsv(corV()); mudar(); }
+      else if (a === "padrao") { fecharFlutuante(false); Object.assign(v, { cor: "", fonte: "", peso: "", italico: null, px: null, sombra: null, alinha: "" }); hsv = hexParaHsv(corV()); mudar(); }
       else if (a === "gota") {
         const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
         void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) porCor(r.sRGBHex.toLowerCase()); }).catch(() => {});
@@ -4938,9 +4945,9 @@ export function montar(app: HTMLElement) {
     // Título, subtítulo e divisória já tinham cor e fonte guardadas em outro lugar: começam por elas.
     const hid: Record<string, [string, string]> = { marca: ["tCor", "tFonte"], marcasub: ["sCor", "sFonte"] };
     if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
-    const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false };
+    const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false, alinha: "left" };
     const vista = vistaNaPrevia(pt.sel, reserva);
-    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você" };
+    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui" };
     const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; atualizarPreviaCfg(); };
     janelaEstilo({ nome: pt.nome, texto: textos[k] || pt.nome, val, vista, volta: botao,
       aoMudar: por,
@@ -6639,7 +6646,7 @@ export function montar(app: HTMLElement) {
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
-          falhou(await cfgUpdate({ inicio_saudacao: (vv.saudacao || "").trim(), marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), marca_tipo: vv.marcaTipo, marca_logo: vv.marcaLogo || null, topo_saudacao: vv.topoSaud.trim(), topo_estilo: { tituloCor: vv.tCor, tituloFonte: vv.tFonte, subCor: vv.sCor, subFonte: vv.sFonte }, frase_retorno: vv.frase.trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha, fonte: vv.divFonte || null }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }));
+          falhou(await cfgUpdate({ inicio_saudacao: (vv.saudacao || "").trim(), marca_titulo: vv.titulo.trim(), marca_sub: vv.sub.trim(), marca_tipo: vv.marcaTipo, marca_logo: vv.marcaLogo || null, topo_saudacao: vv.topoSaud.trim(), topo_estilo: { tituloCor: vv.tCor, tituloFonte: vv.tFonte, subCor: vv.sCor, subFonte: vv.sFonte }, frase_retorno: vv.frase.trim(), inicio_comece: (vv.comece || "").trim(), inicio_divisor: { exibir: vv.divExibir, texto: vv.divTexto.trim() || "Também para você", cor: vv.divCor, linha: vv.divLinha, fonte: vv.divFonte || null }, inicio_banner: vv.banner, inicio_banner_imagem: vv.img || null, inicio_banner_video: vv.banner === "video" ? vv.video.trim() : (vv.video.trim() || null), inicio_estilo: vv.estilo, exibir_destaques: vv.banner === "card" }));
           delete previas["cfg-banner"];
           setTimeout(recarregarCel, 300);
           await registrar(null, "Mudou as configurações do Início da área de membros");

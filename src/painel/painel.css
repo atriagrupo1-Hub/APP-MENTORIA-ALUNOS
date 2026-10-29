@@ -3772,3 +3772,12 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ej-sgrid > div:first-child { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; }
 .ej-sgrid > div:first-child > span { margin: 0; }
 .ej-shex { flex: none; width: 110px !important; }
+.ej-amostra:not(.linha) { height: 72px; }
+.ej-amostra:not(.linha) span { width: 100%; }
+.ej-alinha { display: inline-flex; border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.ej-alinha button { width: 48px; height: 40px; display: grid; place-items: center; border: 0; border-left: 1px solid var(--linha); background: var(--aa-cartao, #fff); color: var(--texto); cursor: pointer; }
+.ej-alinha button:first-child { border-left: 0; }
+.ej-alinha button:hover { background: rgba(201, 162, 92, .1); }
+.ej-alinha button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); }
+.ej-alinha svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+.cfg-bloco-mt .cfg-linha-est { margin-top: 14px; }

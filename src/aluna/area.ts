@@ -65,6 +65,7 @@ export function montar(raiz: HTMLElement) {
       if (m.topo) I.topo = m.topo;
       I.fraseRetorno = m.frase || "";
       if (typeof m.saudacao === "string") I.saudacao = m.saudacao;
+      if (typeof m.comece === "string") I.comece = m.comece;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
       I.estilo = m.estilo || "padrao";
       if (m.divisor) I.divisor = m.divisor;
@@ -523,6 +524,8 @@ export function montar(raiz: HTMLElement) {
     if (b.tipo === "video" && b.video) return `<figure class="pa-banner pa-banner-video"><iframe src="https://iframe.videodelivery.net/${h(b.video)}" title="Vídeo de boas-vindas" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></figure>`;
     return "";
   }
+  /** "Comece por aqui" (Configurações → Início); vazio não aparece. */
+  const comeceTxt = () => { const c = D && D.inicio && D.inicio.comece; return typeof c === "string" ? c.trim() : "Comece por aqui"; };
   const estiloOla = () => { const e = D && D.inicio && D.inicio.estilo; return e === "moldura" || e === "minimalista" ? " pa-ola-" + e : ""; };
   /** Versículo do dia no lugar escolhido no painel (Configurações → Versículos: topo, mensagem ou depois). */
   const versNo = (onde) => { const V = (D && D.inicio && D.inicio.vers) || {}; return (V.posicao || "mensagem") === onde ? versiculoHoje() : ""; };
@@ -803,7 +806,7 @@ export function montar(raiz: HTMLElement) {
         ${bannerInicio()}
         <section class="mt-bloco" aria-labelledby="h-comece">
           ${cabMentoria}
-          <p class="pa-rot mt-passo" id="h-comece">Comece por aqui</p>
+          ${comeceTxt() ? `<p class="pa-rot mt-passo" id="h-comece">${h(comeceTxt())}</p>` : ""}
           <section class="ex-card ex-banner mh-card" aria-labelledby="h-m0">
             <button class="ex-img ex-img-banner" data-a="modulo" data-m="0" aria-label="Abrir o ${h(m0.rot)} ${m0.num}">${img(m0.capaH, m0.rot + " " + m0.num + " — " + titulo(m0.titulo))}</button>
             <div class="ex-info">
