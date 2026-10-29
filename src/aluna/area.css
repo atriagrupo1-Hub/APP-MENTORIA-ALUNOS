@@ -1596,3 +1596,17 @@ html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; bo
 .pa-banner-vazio { display: grid; place-items: center; border-style: dashed; background: repeating-linear-gradient(135deg, rgba(212,177,112,.06) 0 10px, transparent 10px 20px), #0b0a08; }
 .pa-banner-vazio span { display: grid; gap: 4px; text-align: center; font-size: 15px; font-weight: 600; color: #e8cf98; }
 .pa-banner-vazio small { font-size: 12px; font-weight: 400; color: rgba(232,207,152,.7); }
+
+/* Módulos com a capa em cima (Configurações → Módulos → Formato do card), igual ao card do Início. */
+.grade-mod .mod-bloco.mc.mc-cima { display: flex; flex-direction: column; padding: 0; }
+.mc-cima .mc-capa-h { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; background: #0b0a08; border: 0; cursor: pointer; }
+.mc-cima .mc-capa-h img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.mc-cima > .mc-info, .mc-cima .mc-top .mc-info { padding: 14px 14px 16px !important; gap: 8px !important; }
+.mc-cima .mc-cab { display: flex; flex-direction: column; gap: 6px; padding: 0; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.mc-cima .mc-rot { display: inline-flex; align-items: center; gap: 8px; }
+.mc-cima .mc-rot svg { width: 18px; height: 18px; }
+.mc-cima .mc-desc { margin: 0; font-size: 14px; line-height: 1.5; color: var(--texto-2); }
+.mc-cima .mc-ver-cheio { align-self: stretch; min-height: 46px; margin-top: 8px; font-size: 15px; border-radius: 6px; }
+.mc-cima.mc-tranc .mc-top { display: block; padding: 0; }
+.mc-cima.mc-tranc .mc-capa-h { cursor: inherit; }
+.mc-cima.mc-tranc .mc-capa-h, .mc-cima.mc-tranc .mc-info { filter: blur(3px) brightness(.45); }
