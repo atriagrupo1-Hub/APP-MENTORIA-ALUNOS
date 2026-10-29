@@ -19,7 +19,7 @@ import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { cssFundo, limparEstilo, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
-import { abrirSeletorEstilo } from "./seletor-estilo";
+import { abrirSeletorEstilo, hexParaHsv, hsvParaHex, PRONTAS } from "./seletor-estilo";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
@@ -4673,56 +4673,157 @@ export function montar(app: HTMLElement) {
    */
   const FONTES_MARCA = ["Cinzel", "Cormorant Garamond", "Playfair Display", "Lora", "EB Garamond", "Lato", "Montserrat", "Inter"];
   const PADRAO_MARCA = { t: { cor: "#e8be63", fonte: "Cinzel" }, s: { cor: "#8f949c", fonte: "Cinzel" } };
+  /**
+   * Fonte e cor do título/subtítulo, no modelo dos editores de texto (Figma, Canva, Webflow):
+   * o card tem tamanho fixo; a lista de fontes e o quadro de cor abrem flutuando por cima,
+   * presos ao campo que foi clicado, sem empurrar nada.
+   */
   function abrirFonteCor(k: "t" | "s", botao: HTMLElement) {
     const f = document.querySelector<HTMLFormElement>("#cfgInicio"); if (!f) return;
     const cI = f.querySelector<HTMLInputElement>(`input[name="${k}Cor"]`)!, fI = f.querySelector<HTMLInputElement>(`input[name="${k}Fonte"]`)!;
     const ini = { cor: cI.value, fonte: fI.value }; let cor = ini.cor || PADRAO_MARCA[k].cor, fonte = ini.fonte || PADRAO_MARCA[k].fonte;
     FONTES_MARCA.forEach((x) => carregarFonte(x));
     const nome = k === "t" ? "título" : "subtítulo";
-    const fundo = document.createElement("div"); fundo.className = "fc-fundo"; let lista = false;
-    const aplicar = () => {
-      cI.value = cor; fI.value = fonte;
-      const am = f.querySelector<HTMLElement>(`[data-fc-am="${k}"]`); if (am) { am.style.color = cor; am.style.fontFamily = `'${fonte}', Georgia, serif`; }
-      atualizarPreviaCfg();
-    };
-    const desenhar = () => {
-      fundo.innerHTML = `<div class="fc-caixa" role="dialog" aria-label="Fonte e cor do ${nome}">
-        <div class="fc-cab"><b>Fonte e cor do ${nome}</b><button type="button" class="fc-rest" data-fc="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button></div>
+    const texto = (f.querySelector<HTMLInputElement>(k === "t" ? 'input[name="marcaTitulo"]' : 'input[name="marcaSub"]')?.value || "").trim() || nome;
+    const ff = (x: string) => `'${x}', Georgia, serif`;
+    const SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+    const OK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>`;
+    const GOTA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg>`;
+    const temGota = "EyeDropper" in window;
+    const fundo = document.createElement("div"); fundo.className = "fc-fundo";
+    fundo.innerHTML = `<div class="fc-caixa" role="dialog" aria-modal="true" aria-label="Fonte e cor do ${nome}">
+        <div class="fc-cab"><b>Fonte e cor do ${nome}</b><span><button type="button" class="fc-ic" data-fc="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button><button type="button" class="fc-ic" data-fc="cancelar" title="Fechar sem salvar" aria-label="Fechar">✕</button></span></div>
+        <div class="fc-amostra"><span>${h(texto)}</span></div>
         <span class="fc-rot">Fonte</span>
-        <div class="fc-lista${lista ? " aberta" : ""}"><button type="button" class="fc-sel" data-fc="lista" aria-haspopup="listbox" aria-expanded="${lista}" style="font-family:'${fonte}', Georgia, serif">${fonte}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-          ${lista ? `<div class="fc-opcoes" role="listbox" aria-label="Fontes">${FONTES_MARCA.map((x) => `<button type="button" role="option" data-fc="fonte" data-v="${x}" aria-selected="${x === fonte}" style="font-family:'${x}', Georgia, serif">${x}</button>`).join("")}</div>` : ""}</div>
+        <button type="button" class="fc-sel" data-fc="lista" aria-haspopup="listbox" aria-expanded="false"><span class="fc-sel-t"></span>${SETA}</button>
         <span class="fc-rot">Cor</span>
-        <div class="fc-cor"><label class="fc-am" style="background:${cor}"><input type="color" value="${cor}" data-fc="cor" aria-label="Cor" /></label><input class="campo fc-hex" value="${cor.toUpperCase()}" maxlength="7" data-fc="hex" aria-label="Código da cor" /><button type="button" class="fc-cp" data-fc="copiar" title="Copiar o código">${IC_COPIAR}</button></div>
-        <div class="fc-amostra" style="color:${cor};font-family:'${fonte}', Georgia, serif">${h((f.querySelector<HTMLInputElement>(k === "t" ? 'input[name="marcaTitulo"]' : 'input[name="marcaSub"]')?.value || nome).trim() || nome)}</div>
+        <div class="fc-cor"><button type="button" class="fc-sel fc-sel-cor" data-fc="quadro" aria-haspopup="dialog" aria-expanded="false" title="Abrir o seletor de cor"><i class="fc-bola"></i><span class="fc-cod"></span>${SETA}</button><button type="button" class="fc-ic" data-fc="copiar" title="Copiar o código da cor" aria-label="Copiar o código da cor">${IC_COPIAR}</button>${temGota ? `<button type="button" class="fc-ic" data-fc="gota" title="Pegar uma cor da tela" aria-label="Pegar uma cor da tela">${GOTA}</button>` : ""}</div>
         <div class="fc-pe"><button type="button" class="al-botao" data-fc="cancelar">Cancelar</button><button type="button" class="al-botao-ouro" data-fc="salvar">Salvar</button></div>
       </div>`;
+    const caixa = fundo.querySelector<HTMLElement>(".fc-caixa")!;
+    const q = <T extends HTMLElement>(s: string) => fundo.querySelector<T>(s);
+    /** Atualiza só o que mudou: o card nunca é redesenhado nem muda de tamanho. */
+    const pintar = (previa = fonte) => {
+      const am = q(".fc-amostra span")!; am.style.color = cor; am.style.fontFamily = ff(previa);
+      const st = q(".fc-sel-t")!; st.textContent = fonte; st.style.fontFamily = ff(fonte);
+      q(".fc-bola")!.style.background = cor; q(".fc-cod")!.textContent = cor.toUpperCase();
     };
+    const aplicar = () => {
+      cI.value = cor; fI.value = fonte; pintar();
+      const am = f.querySelector<HTMLElement>(`[data-fc-am="${k}"]`); if (am) { am.style.color = cor; am.style.fontFamily = ff(fonte); }
+      atualizarPreviaCfg();
+    };
+
+    // ——— Camada flutuante (uma por vez), presa ao gatilho ———
+    let pop: HTMLElement | null = null, gatilho: HTMLElement | null = null, aoFecharPop: (() => void) | null = null;
+    const posicionarPop = () => {
+      if (!pop || !gatilho) return;
+      const r = gatilho.getBoundingClientRect(), alt = pop.offsetHeight, larg = Math.max(r.width, pop.dataset.larg ? Number(pop.dataset.larg) : 0);
+      const baixo = innerHeight - r.bottom - 12, cima = r.top - 12;
+      pop.style.width = larg + "px";
+      pop.style.left = Math.max(12, Math.min(r.left, innerWidth - larg - 12)) + "px";
+      pop.style.top = (alt <= baixo || baixo >= cima ? r.bottom + 6 : Math.max(12, r.top - 6 - alt)) + "px";
+    };
+    const fecharPop = (devolverFoco = true) => {
+      if (!pop) return;
+      pop.remove(); pop = null; aoFecharPop?.(); aoFecharPop = null;
+      gatilho?.setAttribute("aria-expanded", "false"); if (devolverFoco) gatilho?.focus(); gatilho = null;
+    };
+    const abrirPop = (g: HTMLElement, el: HTMLElement, aoFechar?: () => void) => {
+      fecharPop(false); pop = el; gatilho = g; aoFecharPop = aoFechar || null;
+      g.setAttribute("aria-expanded", "true"); fundo.append(el); posicionarPop();
+    };
+
+    // ——— Lista de fontes: busca, ✓ na atual, prévia ao passar o mouse, setas + Enter ———
+    function abrirFontes(g: HTMLElement) {
+      const el = document.createElement("div"); el.className = "fc-pop fc-pop-fontes";
+      el.innerHTML = `<div class="fc-busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg><input type="text" placeholder="Buscar fonte" aria-label="Buscar fonte" spellcheck="false" autocomplete="off" /></div>
+        <div class="fc-opcoes" role="listbox" aria-label="Fontes">${FONTES_MARCA.map((x) => `<button type="button" role="option" tabindex="-1" data-v="${x}" aria-selected="${x === fonte}"><span style="font-family:${ff(x)}">${x}</span><i>${OK}</i></button>`).join("")}<p class="fc-nada" hidden>Nenhuma fonte encontrada.</p></div>`;
+      const busca = el.querySelector<HTMLInputElement>("input")!, ops = () => [...el.querySelectorAll<HTMLButtonElement>(".fc-opcoes button:not([hidden])")];
+      let ativo = Math.max(0, FONTES_MARCA.indexOf(fonte));
+      const marcar = (i: number, rolar = true) => { const l = ops(); if (!l.length) return; ativo = (i + l.length) % l.length; l.forEach((b, n) => b.classList.toggle("ativo", n === ativo)); if (rolar) l[ativo].scrollIntoView({ block: "nearest" }); };
+      const escolher = (x: string) => { fonte = x; aplicar(); fecharPop(); };
+      busca.addEventListener("input", () => {
+        const t = busca.value.trim().toLowerCase();
+        el.querySelectorAll<HTMLButtonElement>(".fc-opcoes button").forEach((b) => { b.hidden = !!t && !b.dataset.v!.toLowerCase().includes(t); });
+        el.querySelector<HTMLElement>(".fc-nada")!.hidden = ops().length > 0; marcar(0);
+      });
+      busca.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); marcar(ativo + (e.key === "ArrowDown" ? 1 : -1)); pintar(ops()[ativo]?.dataset.v); }
+        else if (e.key === "Enter") { e.preventDefault(); const b = ops()[ativo]; if (b) escolher(b.dataset.v!); }
+      });
+      el.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>(".fc-opcoes button"); if (b) escolher(b.dataset.v!); });
+      el.addEventListener("pointerover", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>(".fc-opcoes button"); if (b) { marcar(ops().indexOf(b as HTMLButtonElement), false); pintar(b.dataset.v); } });
+      el.addEventListener("pointerleave", () => pintar());
+      abrirPop(g, el, () => pintar());
+      marcar(ativo); busca.focus();
+    }
+
+    // ——— Seletor de cor: quadro de saturação/brilho, matiz, código, conta-gotas e cores prontas ———
+    function abrirQuadro(g: HTMLElement) {
+      let hsv = hexParaHsv(cor);
+      const el = document.createElement("div"); el.className = "fc-pop fc-pop-cor"; el.dataset.larg = "280";
+      el.innerHTML = `<div class="se-sv fc-sv" style="background:${hsvParaHex(hsv[0], 1, 1)}"><i></i></div>
+        <div class="se-hue"><i></i></div>
+        <div class="fc-hexl"><i class="fc-bola"></i><input class="campo fc-hex" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar)" /></div>
+        <span class="fc-rot fc-rot-p">Cores prontas</span>
+        <div class="se-prontas fc-prontas">${PRONTAS.map((c) => `<button type="button" data-v="${c}" title="${c.toUpperCase()}" aria-label="${c.toUpperCase()}" style="background:${c}"></button>`).join("")}</div>`;
+      const sv = el.querySelector<HTMLElement>(".fc-sv")!, hu = el.querySelector<HTMLElement>(".se-hue")!, hx = el.querySelector<HTMLInputElement>(".fc-hex")!;
+      const mostrar = (deHex = false) => {
+        sv.style.background = hsvParaHex(hsv[0], 1, 1);
+        const p = sv.querySelector("i")!; p.style.left = hsv[1] * 100 + "%"; p.style.top = (1 - hsv[2]) * 100 + "%";
+        hu.querySelector("i")!.style.left = (hsv[0] / 360) * 100 + "%";
+        el.querySelector<HTMLElement>(".fc-bola")!.style.background = cor;
+        if (!deHex) hx.value = cor.toUpperCase();
+        el.querySelectorAll<HTMLElement>(".fc-prontas button").forEach((b) => b.classList.toggle("on", b.dataset.v === cor));
+      };
+      const porHsv = () => { cor = hsvParaHex(...hsv); aplicar(); mostrar(); };
+      const arrastar = (e: PointerEvent, alvo: HTMLElement, fn: (x: number, y: number) => void) => {
+        e.preventDefault();
+        const mover = (ev: PointerEvent) => { const r = alvo.getBoundingClientRect(); fn(Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (ev.clientY - r.top) / r.height))); };
+        mover(e);
+        const solta = () => { removeEventListener("pointermove", mover); removeEventListener("pointerup", solta); };
+        addEventListener("pointermove", mover); addEventListener("pointerup", solta);
+      };
+      sv.addEventListener("pointerdown", (e) => arrastar(e, sv, (x, y) => { hsv = [hsv[0], x, 1 - y]; porHsv(); }));
+      hu.addEventListener("pointerdown", (e) => arrastar(e, hu, (x) => { hsv = [x * 359.9, hsv[1], hsv[2]]; porHsv(); }));
+      hx.addEventListener("input", () => { let x = hx.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { cor = x.toLowerCase(); hsv = hexParaHsv(cor); aplicar(); mostrar(true); } });
+      hx.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fecharPop(); } });
+      el.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>(".fc-prontas button"); if (b) { cor = b.dataset.v!; hsv = hexParaHsv(cor); aplicar(); mostrar(); } });
+      abrirPop(g, el); mostrar();
+    }
+
     const fechar = (salvar: boolean) => {
+      fecharPop(false);
       if (!salvar) { cor = ini.cor; fonte = ini.fonte; aplicar(); }
-      fundo.remove(); document.removeEventListener("keydown", tecla, true); botao.focus();
+      fundo.remove(); document.removeEventListener("keydown", tecla, true); removeEventListener("resize", aoRedimensionar); botao.focus();
       if (salvar) { aplicar(); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); }
     };
-    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); if (lista) { lista = false; desenhar(); fundo.querySelector<HTMLElement>(".fc-sel")?.focus(); } else fechar(false); } };
-    fundo.addEventListener("click", (e) => {
-      if (e.target === fundo) { fechar(false); return; }
-      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]");
-      if (lista && b?.dataset.fc !== "fonte" && b?.dataset.fc !== "lista") { lista = false; desenhar(); if (!b) return; }
-      if (!b) return;
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); if (pop) fecharPop(); else fechar(false); } };
+    const aoRedimensionar = () => posicionarPop();
+    // Clicar fora da camada flutuante fecha só ela; clicar fora do card fecha o card.
+    fundo.addEventListener("pointerdown", (e) => {
+      const t = e.target as HTMLElement;
+      if (pop && !pop.contains(t) && !gatilho?.contains(t)) { fecharPop(false); if (!caixa.contains(t)) e.stopPropagation(); return; }
+      if (!pop && t === fundo) fechar(false);
+    });
+    caixa.addEventListener("scroll", () => fecharPop(false));
+    caixa.addEventListener("click", (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]"); if (!b) return;
       const a = b.dataset.fc;
-      if (a === "lista") { lista = !lista; desenhar(); if (lista) fundo.querySelector<HTMLElement>('.fc-opcoes [aria-selected="true"]')?.focus(); }
-      else if (a === "fonte") { fonte = b.dataset.v!; lista = false; aplicar(); desenhar(); fundo.querySelector<HTMLElement>(".fc-sel")?.focus(); }
-      else if (a === "padrao") { cor = PADRAO_MARCA[k].cor; fonte = PADRAO_MARCA[k].fonte; aplicar(); desenhar(); }
+      if (a === "lista" || a === "quadro") { if (pop && gatilho === b) fecharPop(); else if (a === "lista") abrirFontes(b); else abrirQuadro(b); }
+      else if (a === "padrao") { fecharPop(false); cor = PADRAO_MARCA[k].cor; fonte = PADRAO_MARCA[k].fonte; aplicar(); }
       else if (a === "copiar") { void navigator.clipboard?.writeText(cor.toUpperCase()).then(() => toast("Código " + cor.toUpperCase() + " copiado.")); }
+      else if (a === "gota") {
+        fecharPop(false);
+        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+        void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) { cor = r.sRGBHex.toLowerCase(); aplicar(); } }).catch(() => {});
+      }
       else if (a === "cancelar") fechar(false);
       else if (a === "salvar") fechar(true);
     });
-    fundo.addEventListener("input", (e) => {
-      const t = e.target as HTMLInputElement;
-      if (t.dataset.fc === "cor") { cor = t.value.toLowerCase(); (t.parentElement as HTMLElement).style.background = cor; const hx = fundo.querySelector<HTMLInputElement>(".fc-hex"); if (hx) hx.value = cor.toUpperCase(); const am = fundo.querySelector<HTMLElement>(".fc-amostra"); if (am) am.style.color = cor; aplicar(); }
-      if (t.dataset.fc === "hex") { let x = t.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { cor = x.toLowerCase(); const c = fundo.querySelector<HTMLInputElement>('[data-fc="cor"]'); if (c) { c.value = cor; (c.parentElement as HTMLElement).style.background = cor; } const am = fundo.querySelector<HTMLElement>(".fc-amostra"); if (am) am.style.color = cor; aplicar(); } }
-    });
-    document.addEventListener("keydown", tecla, true);
-    desenhar(); document.body.append(fundo);
+    document.addEventListener("keydown", tecla, true); addEventListener("resize", aoRedimensionar);
+    pintar(); document.body.append(fundo); q<HTMLElement>(".fc-sel")?.focus();
   }
   /** O app da prévia abre na versão que está sendo configurada (0103). */
   const srcPrevia = () => "/?previa=1" + (versaoCfg === "geral" ? "&versao=geral" : "");
