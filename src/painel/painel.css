@@ -3780,7 +3780,7 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ej-alinha button:hover { background: rgba(201, 162, 92, .1); }
 .ej-alinha button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); }
 .ej-alinha svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
-.cfg-bloco-mt .cfg-linha-est { margin-top: 14px; }
+.cfg-bloco-mt .cfg-linha-est { margin-top: 0; }
 
 /* ——— Editor de card: linha "Borda" (↺ e ✎) e o painel flutuante da borda ——— */
 .se-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

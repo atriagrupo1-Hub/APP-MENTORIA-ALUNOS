@@ -2853,8 +2853,8 @@ export function montar(app: HTMLElement) {
             ${linha(`<label class="cfg-c"><span>Texto</span><textarea class="campo" name="fraseRetorno" rows="3" maxlength="200">${h(v.frase)}</textarea></label>`, "est:mensagem", "Mensagem de boas-vindas")}
           </div>
           <div class="cfg-bloco cfg-bloco-mt">
+            ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto do card da mentoria ${dicaCampo(`O texto dentro do card “Sua mentoria”, em cima do card do módulo, para a aluna que ainda não começou (ex.: “Comece por aqui”). Vazio: não aparece.`, "cfg.texto-comece")}</span><input class="campo" name="inicioComece" value="${h(v.comece)}" maxlength="40" placeholder="Ex.: Comece por aqui" /></label>`, "est:comece", "Texto do card da mentoria")}
             <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "mentoria" || x.k === "mentoriacard"))}</div>
-            ${linha(`<label class="cfg-c"><span class="cfg-rot-aj">Texto “Comece por aqui” ${dicaCampo(`O texto em cima da primeira aula, dentro do card “Sua mentoria”, para a aluna que ainda não começou. Vazio: não aparece.`, "cfg.texto-comece")}</span><input class="campo" name="inicioComece" value="${h(v.comece)}" maxlength="40" placeholder="Ex.: Comece por aqui" /></label>`, "est:comece", "Texto “Comece por aqui”")}
           </div>
           <div class="cfg-bloco">
             <h3>Banners ou destaques ${dicaCampo(`O que aparece no Início abaixo da mensagem: nada, uma imagem, um vídeo de boas-vindas (link do Cloudflare Stream) ou os cartões de Destaques do Início, que são editados em Categorias.`, "cfg.banners-ou-destaques")}</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>

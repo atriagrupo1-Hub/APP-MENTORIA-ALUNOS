@@ -160,7 +160,7 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "mentoria", nome: "Card “Sua mentoria”", desc: "O bloco que envolve a mentoria (os cards dos módulos ficam em Módulos).", tipo: "card", sel: ".pa .mt-bloco" },
   { k: "mentoriatx", nome: "Textos de “Sua mentoria”", desc: "“Sua mentoria”, o nome e “Comece por aqui”.", tipo: "texto", sel: ".pa .mt-rot, .pa .mt-tit, .pa .mt-passo" },
   { k: "mentoriacard", nome: "Card do módulo (dentro de “Sua mentoria”)", desc: "O card do módulo, com a capa, o título e o botão, dentro do card “Sua mentoria”.", tipo: "card", sel: ".mt-bloco .mh-card, .mt-bloco .heroi" },
-  { k: "comece", nome: "Texto “Comece por aqui”", desc: "O texto em cima da primeira aula, dentro do card “Sua mentoria”.", tipo: "texto", sel: "#h-comece" },
+  { k: "comece", nome: "Texto do card da mentoria", desc: "O texto dentro do card “Sua mentoria”, em cima do card do módulo.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
   { k: "menutexto", nome: "Nomes do menu", desc: "Início, Módulos… (os que não estão abertos).", tipo: "texto", sel: ".nav-base button:not([aria-current]), .nav-base .nb-link" },
   { k: "menuicone", nome: "Ícones do menu", desc: "Os ícones dos botões que não estão abertos.", tipo: "texto", sel: ".nav-base button:not([aria-current]) svg, .nav-base .nb-link svg", svg: true },
