@@ -2863,14 +2863,13 @@ export function montar(app: HTMLElement) {
           <input type="hidden" name="estilo" value="${h(v.estilo)}" />
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Divisória “${h(v.divTexto)}” ${dicaCampo(`A linha com texto que separa a sua mentoria dos outros conteúdos no Início da aluna. Escolha o texto, a cor do texto e a cor das linhas, ou desligue para não aparecer.`, "cfg.divisoria")}</h3><p class="cfg-sub">O separador antes dos outros conteúdos do Início.</p></div><label class="cfg-chave"><input type="checkbox" name="divExibir" ${v.divExibir ? "checked" : ""} /><i></i>Exibir</label></div>
-            <div class="cfg-2">
-              <label class="cfg-c"><span>Texto</span><input class="campo" name="divTexto" value="${h(v.divTexto)}" maxlength="40" /></label>
-              <div class="cfg-fc-l cfg-fc-div"><input type="hidden" name="divCor" value="${h(v.divCor)}" /><input type="hidden" name="divFonte" value="${h(v.divFonte)}" /><input type="hidden" name="divLinha" value="${h(v.divLinha)}" />${botaoFonteCor("div", v.divCor, v.divFonte, "Texto: fonte e cor")}${botaoFonteCor("divlinha", v.divLinha, "", "Cor das linhas", true)}</div>
-            </div>
+            <input type="hidden" name="divCor" value="${h(v.divCor)}" /><input type="hidden" name="divFonte" value="${h(v.divFonte)}" /><input type="hidden" name="divLinha" value="${h(v.divLinha)}" />
+            ${linha(`<label class="cfg-c"><span>Texto</span><input class="campo" name="divTexto" value="${h(v.divTexto)}" maxlength="40" /></label>`, "est:divisor", "Texto da divisória")}
+            <div class="cfg-linha-cor"><span>Linhas</span><button type="button" class="cfg-est-bt" data-a="fonte-cor" data-v="divlinha" aria-haspopup="dialog" aria-expanded="false"><i data-fc-am="divlinha" style="background:${h(v.divLinha || "#d4b170")}"></i>Cor das linhas</button></div>
           </div>
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Cores da tela inicial ${dicaCampo(`As cores, contornos e sombras do que é fixo no Início: a faixa do topo, o nome e a foto, a saudação, a mensagem, o versículo, o card “Sua mentoria” e o menu de baixo. Os cards dos módulos são configurados na aba Módulos. Toque em Estilo; o celular mostra na hora e vai até a parte. Só grava quando você aperta Salvar no seletor.`, "cfg.cores-inicio")}</h3><p class="cfg-sub">Toque em Estilo em cada parte. O celular ao lado vai até ela.</p></div>${botaoLimparEstilo("inicio")}</div>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => !["mentoria", "mentoriacard", "comece", "verstit", "versrefe"].includes(x.k)))}
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => !["mentoria", "mentoriacard", "comece", "verstit", "versrefe", "divisor"].includes(x.k)))}
               <div class="cfg-orl cfg-aul">
                 <span class="cfg-aul-tx"><b>Nomes e ícones do menu de baixo</b><small>Trocar “Início”, “Módulos”… e escolher outro ícone para cada botão.</small></span>
                 <button type="button" class="se-abre" data-a="cfg-aba" data-v="menu">${IC_CFG.menu}Abrir</button>
@@ -4843,11 +4842,6 @@ export function montar(app: HTMLElement) {
     pintar(); document.body.append(fundo, caixa); posicionar();
     q(".ej-fonte, .ej-hex")?.focus();
   }
-  function botaoFonteCor(chave: string, cor: string, fonte: string, rot = "Fonte e cor", soCor = false) {
-    if (fonte) carregarFonte(fonte);
-    const am = soCor ? `<i class="fc-abre-cor" data-fc-am="${chave}" style="background:${h(cor || "#d4b170")}"></i>` : `<i data-fc-am="${chave}" style="color:${h(cor || "#f1e6c9")};${fonte ? `font-family:${h(ffam(fonte))}` : ""}">Aa</i>`;
-    return `<button type="button" class="fc-abre" data-a="fonte-cor" data-v="${chave}" title="${h(rot)}">${am}${h(rot)}</button>`;
-  }
   type OpFonteCor = {
     titulo: string; amostra: string; cor: string; fonte: string | null; corApp: string;
     padrao: { cor: string; fonte: string }; volta: HTMLElement;
@@ -4938,12 +4932,18 @@ export function montar(app: HTMLElement) {
         aoMudar: por, aoCancelar: () => por(ini.cor, ini.fonte), aoSalvar: (c, x) => { por(c, x); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); } });
     };
     if (chave === "div") { porCampos("Fonte e cor do texto da divisória", (inp("divTexto")?.value || "").trim() || "Também para você", "divCor", "divFonte", { cor: "#b8b0a2", fonte: "" }, "#b8b0a2"); return; }
-    if (chave === "divlinha") { porCampos("Cor das linhas da divisória", (inp("divTexto")?.value || "").trim() || "Também para você", "divLinha", null, { cor: "#d4b170", fonte: "" }, "#d4b170"); return; }
+    if (chave === "divlinha") {
+      const cI = inp("divLinha")!, ini = cI.value;
+      const por = (c: string) => { cI.value = c || "#d4b170"; const am = document.querySelector<HTMLElement>('[data-fc-am="divlinha"]'); if (am) am.style.background = cI.value; atualizarPreviaCfg(); };
+      janelaEstilo({ nome: "Cor das linhas da divisória", texto: (inp("divTexto")?.value || "").trim() || "Também para você", val: { cor: ini, fonte: "", peso: "", italico: null, px: null, sombra: null, alinha: "" }, vista: { cor: "#d4b170", fonte: "", px: 12, negrito: false, italico: false, alinha: "center" }, soCor: true, volta: botao,
+        aoMudar: (t) => por(t.cor), aoCancelar: () => por(ini), aoAplicar: (t) => { por(t.cor); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); } });
+      return;
+    }
     const k = chave.replace(/^est:/, ""), pt = PARTES_INICIO.find((x) => x.k === k); if (!pt) return;
     const base = S.config.estiloInicio || {}, atual = estInicioAgora()[k];
     const val = txtDe(atual);
     // Título, subtítulo e divisória já tinham cor e fonte guardadas em outro lugar: começam por elas.
-    const hid: Record<string, [string, string]> = { marca: ["tCor", "tFonte"], marcasub: ["sCor", "sFonte"] };
+    const hid: Record<string, [string, string]> = { marca: ["tCor", "tFonte"], marcasub: ["sCor", "sFonte"], divisor: ["divCor", "divFonte"] };
     if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
     const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false, alinha: "left" };
     const vista = vistaNaPrevia(pt.sel, reserva);
