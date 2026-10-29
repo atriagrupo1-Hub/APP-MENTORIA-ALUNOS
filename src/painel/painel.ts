@@ -2828,9 +2828,9 @@ export function montar(app: HTMLElement) {
             <div class="cfg-op" data-marca="texto"${v.marcaTipo === "texto" ? "" : " hidden"}>
               <div class="cfg-2">
                 <div class="cfg-marca-l"><label class="cfg-c"><span>Título (em cima)</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" placeholder="Vazio: não aparece no app" /></label>
-                  <span class="cfg-marca-est"><label class="cfg-ncor" title="Cor do título"><input type="color" name="tCor" value="${h(v.tCor)}" /></label><select class="campo" name="tFonte" aria-label="Fonte do título">${[["Cinzel", "Cinzel"], ["Cormorant Garamond", "Cormorant Garamond"], ["Playfair Display", "Playfair Display"], ["Lora", "Lora"], ["EB Garamond", "EB Garamond"], ["Lato", "Lato"], ["Montserrat", "Montserrat"], ["Inter", "Inter"]].map(([k, t]) => `<option value="${k}"${v.tFonte === k ? " selected" : ""}>${t}</option>`).join("")}</select></span></div>
+                  <span class="cfg-marca-est"><input type="hidden" name="tCor" value="${h(v.tCor)}" /><input type="hidden" name="tFonte" value="${h(v.tFonte)}" /><button type="button" class="fc-abre" data-a="fonte-cor" data-v="t" title="Escolher a fonte e a cor do título"><i data-fc-am="t" style="color:${h(v.tCor)};font-family:'${h(v.tFonte)}', Georgia, serif">Aa</i>Fonte e cor</button></span></div>
                 <div class="cfg-marca-l"><label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>
-                  <span class="cfg-marca-est"><label class="cfg-ncor" title="Cor do subtítulo"><input type="color" name="sCor" value="${h(v.sCor)}" /></label><select class="campo" name="sFonte" aria-label="Fonte do subtítulo">${[["Cinzel", "Cinzel"], ["Cormorant Garamond", "Cormorant Garamond"], ["Playfair Display", "Playfair Display"], ["Lora", "Lora"], ["EB Garamond", "EB Garamond"], ["Lato", "Lato"], ["Montserrat", "Montserrat"], ["Inter", "Inter"]].map(([k, t]) => `<option value="${k}"${v.sFonte === k ? " selected" : ""}>${t}</option>`).join("")}</select></span></div>
+                  <span class="cfg-marca-est"><input type="hidden" name="sCor" value="${h(v.sCor)}" /><input type="hidden" name="sFonte" value="${h(v.sFonte)}" /><button type="button" class="fc-abre" data-a="fonte-cor" data-v="s" title="Escolher a fonte e a cor do subtítulo"><i data-fc-am="s" style="color:${h(v.sCor)};font-family:'${h(v.sFonte)}', Georgia, serif">Aa</i>Fonte e cor</button></span></div>
               </div>
             </div>
             <div class="cfg-op cfg-logo-op" data-marca="logo"${v.marcaTipo === "logo" ? "" : " hidden"}>
@@ -4666,6 +4666,60 @@ export function montar(app: HTMLElement) {
     const cor = ant?.matches('input[type="color"]') ? (ant as HTMLInputElement) : ant?.querySelector<HTMLInputElement>('input[type="color"]'); if (!cor) return;
     cor.value = x.toLowerCase(); cor.dispatchEvent(new Event("input", { bubbles: true })); cor.dispatchEvent(new Event("change", { bubbles: true }));
   }, true);
+  /*
+   * Painelzinho "Fonte e cor" do título/subtítulo do cabeçalho: abre na frente da tela,
+   * escolhe a fonte (cada uma escrita nela mesma) e a cor (com o código), ↺ volta ao
+   * padrão, Cancelar desfaz e Salvar grava. O celular da prévia muda enquanto escolhe.
+   */
+  const FONTES_MARCA = ["Cinzel", "Cormorant Garamond", "Playfair Display", "Lora", "EB Garamond", "Lato", "Montserrat", "Inter"];
+  const PADRAO_MARCA = { t: { cor: "#e8be63", fonte: "Cinzel" }, s: { cor: "#8f949c", fonte: "Cinzel" } };
+  function abrirFonteCor(k: "t" | "s", botao: HTMLElement) {
+    const f = document.querySelector<HTMLFormElement>("#cfgInicio"); if (!f) return;
+    const cI = f.querySelector<HTMLInputElement>(`input[name="${k}Cor"]`)!, fI = f.querySelector<HTMLInputElement>(`input[name="${k}Fonte"]`)!;
+    const ini = { cor: cI.value, fonte: fI.value }; let cor = ini.cor || PADRAO_MARCA[k].cor, fonte = ini.fonte || PADRAO_MARCA[k].fonte;
+    FONTES_MARCA.forEach((x) => carregarFonte(x));
+    const nome = k === "t" ? "título" : "subtítulo";
+    const fundo = document.createElement("div"); fundo.className = "fc-fundo";
+    const aplicar = () => {
+      cI.value = cor; fI.value = fonte;
+      const am = f.querySelector<HTMLElement>(`[data-fc-am="${k}"]`); if (am) { am.style.color = cor; am.style.fontFamily = `'${fonte}', Georgia, serif`; }
+      atualizarPreviaCfg();
+    };
+    const desenhar = () => {
+      fundo.innerHTML = `<div class="fc-caixa" role="dialog" aria-label="Fonte e cor do ${nome}">
+        <div class="fc-cab"><b>Fonte e cor do ${nome}</b><button type="button" class="fc-rest" data-fc="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button></div>
+        <span class="fc-rot">Fonte</span>
+        <div class="fc-fontes">${FONTES_MARCA.map((x) => `<button type="button" data-fc="fonte" data-v="${x}" aria-pressed="${x === fonte}" style="font-family:'${x}', Georgia, serif">${x}</button>`).join("")}</div>
+        <span class="fc-rot">Cor</span>
+        <div class="fc-cor"><label class="fc-am" style="background:${cor}"><input type="color" value="${cor}" data-fc="cor" aria-label="Cor" /></label><input class="campo fc-hex" value="${cor.toUpperCase()}" maxlength="7" data-fc="hex" aria-label="Código da cor" /><button type="button" class="fc-cp" data-fc="copiar" title="Copiar o código">${IC_COPIAR}</button></div>
+        <div class="fc-amostra" style="color:${cor};font-family:'${fonte}', Georgia, serif">${h((f.querySelector<HTMLInputElement>(k === "t" ? 'input[name="marcaTitulo"]' : 'input[name="marcaSub"]')?.value || nome).trim() || nome)}</div>
+        <div class="fc-pe"><button type="button" class="al-botao" data-fc="cancelar">Cancelar</button><button type="button" class="al-botao-ouro" data-fc="salvar">Salvar</button></div>
+      </div>`;
+    };
+    const fechar = (salvar: boolean) => {
+      if (!salvar) { cor = ini.cor; fonte = ini.fonte; aplicar(); }
+      fundo.remove(); document.removeEventListener("keydown", tecla, true); botao.focus();
+      if (salvar) { aplicar(); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); }
+    };
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); fechar(false); } };
+    fundo.addEventListener("click", (e) => {
+      if (e.target === fundo) { fechar(false); return; }
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]"); if (!b) return;
+      const a = b.dataset.fc;
+      if (a === "fonte") { fonte = b.dataset.v!; aplicar(); desenhar(); }
+      else if (a === "padrao") { cor = PADRAO_MARCA[k].cor; fonte = PADRAO_MARCA[k].fonte; aplicar(); desenhar(); }
+      else if (a === "copiar") { void navigator.clipboard?.writeText(cor.toUpperCase()).then(() => toast("Código " + cor.toUpperCase() + " copiado.")); }
+      else if (a === "cancelar") fechar(false);
+      else if (a === "salvar") fechar(true);
+    });
+    fundo.addEventListener("input", (e) => {
+      const t = e.target as HTMLInputElement;
+      if (t.dataset.fc === "cor") { cor = t.value.toLowerCase(); (t.parentElement as HTMLElement).style.background = cor; const hx = fundo.querySelector<HTMLInputElement>(".fc-hex"); if (hx) hx.value = cor.toUpperCase(); const am = fundo.querySelector<HTMLElement>(".fc-amostra"); if (am) am.style.color = cor; aplicar(); }
+      if (t.dataset.fc === "hex") { let x = t.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { cor = x.toLowerCase(); const c = fundo.querySelector<HTMLInputElement>('[data-fc="cor"]'); if (c) { c.value = cor; (c.parentElement as HTMLElement).style.background = cor; } const am = fundo.querySelector<HTMLElement>(".fc-amostra"); if (am) am.style.color = cor; aplicar(); } }
+    });
+    document.addEventListener("keydown", tecla, true);
+    desenhar(); document.body.append(fundo);
+  }
   /** O app da prévia abre na versão que está sendo configurada (0103). */
   const srcPrevia = () => "/?previa=1" + (versaoCfg === "geral" ? "&versao=geral" : "");
   function posicionarCel() {
@@ -6024,6 +6078,7 @@ export function montar(app: HTMLElement) {
         void executar(async () => { falhou(await supabase.from("categorias_aba").update({ publicado: pub }).eq("id", x.id).select("id").single()); await registrar(null, (pub ? "Mostrou" : "Ocultou") + " a categoria " + x.nome, ["catx", x.id]); return x.nome + (pub ? " visível." : " oculta."); });
         return;
       }
+      case "fonte-cor": abrirFonteCor(d.v === "s" ? "s" : "t", el!); return;
       case "cfg-banner-img": arquivoBanner.click(); return;
       case "cfg-logo-img": arquivoLogo.click(); return;
       case "cfg-logo-tirar": { const f = document.querySelector<HTMLFormElement>("#cfgInicio"); const x = f?.querySelector<HTMLInputElement>('input[name="marcaLogo"]'); if (x) { x.value = ""; delete previas["cfg-logo"]; ui.sujo = { f: "cfg-inicio", id: "" }; const pv = f?.querySelector("[data-logo-prev]"); if (pv) pv.innerHTML = "<em>Nenhuma logo enviada</em>"; el.remove(); atualizarPreviaCfg(); } return; }
