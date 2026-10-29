@@ -466,12 +466,31 @@ export function montar(raiz: HTMLElement) {
     const aberto = !!(S.verAulas || {})[m];
     const COR = md.cor, E = estMod(md);
     const meta = `<p class="mc-meta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>${t ? p(t, "aula", "aulas") : "Aula será adicionada em breve"}</span></p>`;
+    // Formato "capa em cima" (Configurações → Módulos), só na tela Módulos: igual ao card do Início.
+    const cima = !irModulo && TELAS().modFormato === "cima";
+    const rotIc = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`;
+    if (cima && !e.fech) return `
+    <div class="mod-bloco mc mc-cima"${est(E, "card", "card", "--mc:" + COR)}>
+      <button class="mc-capa-h"${est(E, "capa", "capa")} data-a="modulo" data-m="${m}" aria-label="Abrir o ${h(md.rot)} ${md.num}">${img(md.capaH || md.capa, "")}</button>
+      <div class="mc-info">
+        <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">${rotIc}${h(md.rot)} ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
+        ${md.intro ? `<p class="mc-desc">${h(md.intro)}</p>` : ""}
+        ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
+        ${t ? `<button class="ex-botao mc-ver-cheio ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}</button>` : `<p class="mc-meta">Aula será adicionada em breve</p>`}
+      </div>
+    ${!t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
+      <button class="la-item${ea.fech ? " fechada" : ""}"${est(E, "aulas", "card")} data-a="aula" data-m="${m}" data-i="${i}">
+        <span class="la-capa">${img(x.capa, "")}<span class="la-ic">${ea.fech ? '<span class="cadeado"></span>' : feita(m, i) ? "✓" : ""}</span></span>
+        <span class="la-info"><b>${h(md.rot)} ${md.num} · ${h(lA(md, i))}</b><span>${h(x.titulo)}</span>${ea.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(ea.txt)}</span>` : `<em>${feita(m, i) ? "Concluída" : "Disponível"}</em>`}</span>
+        ${ea.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}Assistir</span>`}
+      </button>`; }).join("")}</div></div>`}
+    </div>`;
     if (e.fech) {
       const msg = msgModFechado(m);
       return `
-    <div class="mod-bloco mc mc-tranc"${est(E, "card", "card", "--mc:" + COR)}>
+    <div class="mod-bloco mc mc-tranc${cima ? " mc-cima" : ""}"${est(E, "card", "card", "--mc:" + COR)}>
       <button class="mc-top" data-a="modulo" data-m="${m}" aria-label="${h(md.rot)} ${md.num}, ${h(titulo(md.titulo))}. Bloqueado. ${h(msg)}.">
-        <span class="mc-capa" aria-hidden="true"${est(E, "capa", "capa")}>${img(md.capa, "")}</span>
+        <span class="${cima ? "mc-capa-h" : "mc-capa"}" aria-hidden="true"${est(E, "capa", "capa")}>${img(cima ? md.capaH || md.capa : md.capa, "")}</span>
         <span class="mc-info" aria-hidden="true">
           <span class="mc-rot">${h(md.rot)} ${md.num}</span>
           <b class="mc-tit serif">${h(titulo(md.titulo))}</b>
@@ -858,7 +877,7 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="pagina">
       ${(t.modTitulo ?? "Todos os módulos") ? `<h1 class="todos-mod serif tit-${h(t.modTitEstilo || "padrao")}">${h(t.modTitulo ?? "Todos os módulos")}</h1>` : ""}
-      <div class="grade-mod gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
+      <div class="grade-mod gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modFormato === "cima" ? " gm-cima" : ""}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
     </div>`;
   }
 
