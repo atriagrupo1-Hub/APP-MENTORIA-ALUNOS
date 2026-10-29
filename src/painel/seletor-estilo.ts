@@ -20,16 +20,16 @@ type Opcoes = {
   aoFechar?: () => void;
 };
 
-const PRONTAS = ["#d4af37", "#c9a25c", "#f2d27a", "#8a6a2f", "#ffffff", "#f6eed7", "#b9b9b9", "#3a3a3a", "#0b0b0d", "#000000",
+export const PRONTAS = ["#d4af37", "#c9a25c", "#f2d27a", "#8a6a2f", "#ffffff", "#f6eed7", "#b9b9b9", "#3a3a3a", "#0b0b0d", "#000000",
   "#8e6cc9", "#c7b0f0", "#4a78c2", "#7fa8e8", "#2f9c98", "#5fc7c2", "#4f9a5a", "#8fc27e", "#b8352d", "#e07a8a", "#ff6a00", "#ff1f8f"];
 const DEGRADES: [string, string, number][] = [["#f2d27a", "#a8812f", 180], ["#d4af37", "#5a3d16", 135], ["#c7b0f0", "#4b2a8a", 135], ["#7fa8e8", "#1d3a6e", 135], ["#5fc7c2", "#13504d", 135], ["#e07a8a", "#5a1626", 135], ["#1c1430", "#08060d", 135], ["#2a2a2a", "#000000", 180]];
 
 const h = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
-function hsvParaHex(hh: number, s: number, v: number) {
+export function hsvParaHex(hh: number, s: number, v: number) {
   const f = (n: number) => { const k = (n + hh / 60) % 6; return v - v * s * Math.max(0, Math.min(k, 4 - k, 1)); };
   return "#" + [f(5), f(3), f(1)].map((x) => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
 }
-function hexParaHsv(c: string): [number, number, number] {
+export function hexParaHsv(c: string): [number, number, number] {
   const r = parseInt(c.slice(1, 3), 16) / 255, g = parseInt(c.slice(3, 5), 16) / 255, b = parseInt(c.slice(5, 7), 16) / 255;
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
   let hh = 0;
