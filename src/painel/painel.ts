@@ -2317,7 +2317,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["versiculos", "Mensagem de destaque"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["menu", "Menu inferior"], ["aparencia", "Aparência"]];
   /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
   const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
