@@ -1561,3 +1561,23 @@ html:has(.ig) .nav-base button[aria-current="page"]::before { display: none; }
 .ig-busca-res { display: flex; flex-direction: column; gap: 8px; max-height: 50vh; margin-top: 12px; overflow-y: auto; }
 .ig-busca-res button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 14px; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; background: #0b0b0e; color: #fff; font: inherit; text-align: left; cursor: pointer; }
 .ig-busca-res em { font-style: normal; font-size: 12.5px; color: rgba(226,232,240,.6); }
+
+/* ---------- Topo do app (0105): igual em todas as telas e nas duas versões ---------- */
+.topo.topo-novo { background: #000; border-bottom: 1px solid rgba(212,177,112,.16); }
+.topo-novo .pagina { display: flex; align-items: center; gap: 8px; min-height: 70px; padding-top: calc(6px + env(safe-area-inset-top)); padding-bottom: 6px; }
+.topo-novo .av-topo { margin-left: 0; width: 46px; height: 46px; border: 1.5px solid rgba(233,196,120,.62); background: #050505; color: #e4c179; font: 600 18px/1 "Cinzel", Georgia, serif; }
+.topo-novo .tp-ola { flex: 1; min-width: 0; }
+.topo-novo .tp-saud { font-size: 11.5px; color: #c9a05a; }
+.topo-novo .tp-nome { margin-top: 2px; overflow: hidden; font-size: 16px; font-weight: 700; color: #fff; text-overflow: ellipsis; white-space: nowrap; }
+.topo-novo .tp-marca { flex: none; align-items: center; gap: 3px; max-width: 42%; padding: 0 2px; text-align: center; cursor: pointer; }
+.topo-novo .tp-marca b { font: 400 22px/1.1 "Cinzel", Georgia, serif; letter-spacing: .14em; color: #e8be63; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.topo-novo .tp-marca span { font: 400 7.5px/1.5 "Cinzel", Georgia, serif; letter-spacing: .24em; text-transform: uppercase; color: rgba(226,232,240,.55); }
+.topo-novo .tp-marca .marca-logo { max-height: 42px; max-width: 140px; }
+.topo-novo .nav-topo { margin-left: 12px; }
+.topo-novo .ig-bts { margin-left: auto; }
+@media (min-width: 900px) { .topo-novo .tp-ola { flex: 0 1 220px; } .topo-novo .tp-marca { margin: 0 auto; } }
+html[data-tema="claro"] .topo.topo-novo { background: #fbf7ef; }
+html[data-tema="claro"] .topo-novo .tp-nome { color: #1a1206; }
+html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; border-color: rgba(0,0,0,.12); }
+.topo-novo .tp-marca span { max-width: 118px; white-space: normal; }
+.topo-novo .tp-marca { max-width: 38%; }
