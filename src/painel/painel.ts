@@ -840,6 +840,8 @@ export function montar(app: HTMLElement) {
     // Os painéis laterais rolam por dentro: redesenhar não pode jogá-los de volta ao topo.
     const rolagem = new Map<string, number>();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => rolagem.set(x.dataset.rolagem!, x.scrollTop));
+    // Configurações: o formulário rola por dentro; redesenhar (abrir um menu de ícones, trocar uma opção) não o devolve ao topo.
+    const cfgAntes = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"), cfgId = cfgAntes?.id || "", cfgTop = cfgAntes?.scrollTop || 0, janTop = window.scrollY;
     app.innerHTML = carregando ? carregandoTela() : eu ? painel() : login();
     document.body.classList.toggle("aa-trava", !!app.querySelector(".aa-painel"));
     ajustarListaLateral();
@@ -847,6 +849,7 @@ export function montar(app: HTMLElement) {
     soltarTexto();
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
+    if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
     posicionarCel(); mandarPreviaCfg(); codigosDeCor(document);
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
