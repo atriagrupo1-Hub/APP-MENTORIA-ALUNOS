@@ -42,6 +42,7 @@ export function montar(raiz: HTMLElement) {
         if (m.menu) I.menu = m.menu;
         if (m.apar) { APAR = m.apar; aplicarAparencia(m.apar, (c) => (c && (c.startsWith("data:") || c.startsWith("blob:")) ? c : api.urlDaCapa(c) || "")); }
         PREV_AULA = "estiloAula" in m ? limparEstilo(m.estiloAula) : undefined;
+        if (m.ir !== "cursos-exemplo") S.soCursos = false;
         PREV_INICIO = "estiloInicio" in m ? limparEstilo(m.estiloInicio) : undefined;
         PREV_PERFIL = "estiloPerfil" in m ? limparEstilo(m.estiloPerfil) : undefined;
         PREV_NOTIF = "estiloNotif" in m ? limparEstilo(m.estiloNotif) : undefined;
@@ -50,8 +51,10 @@ export function montar(raiz: HTMLElement) {
           if (S.tela !== "aula") { S.previaIr = m.ir; camada.innerHTML = ""; const k = Math.max(0, MODS().findIndex((x) => x.aulas.length)); if (MODS()[k]) acao("aula", { m: k, i: 0 }); }
           if (m.abaAula && S.abaAula !== m.abaAula) S.abaAula = m.abaAula;
         } else if (m.ir === "cursos-exemplo") {
+          // Na prévia de Configurações → Cursos, só os cursos de verdade aparecem.
+          S.soCursos = true;
           // Configurações → Cursos: abre uma categoria que tenha curso (não e-book) liberado, para ver o card.
-          if (S.previaIr !== m.ir) { S.previaIr = m.ir; camada.innerHTML = ""; const ci = CATS().findIndex((c) => c.cursos.some((x) => x.itens.length && !ehEbook(x) && cursoLiberado(x))); if (ci >= 0) acao("categoria", { v: ci }); setTimeout(() => { const cc = document.querySelector(".cur-card"); if (cc) cc.scrollIntoView({ block: "center" }); }, 60); }
+          if (S.previaIr !== m.ir) { S.previaIr = m.ir; camada.innerHTML = ""; const ci = CATS().findIndex((c) => c.cursos.some((x) => x.ehCurso)); if (ci >= 0) acao("categoria", { v: ci }); setTimeout(() => scrollTo(0, 0), 60); }
         } else if (m.ir && m.ir !== S.previaIr) { S.previaIr = m.ir; camada.innerHTML = ""; acao("ir", { v: m.ir }); }
         render();
         if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
@@ -193,7 +196,7 @@ export function montar(raiz: HTMLElement) {
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
-          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
+          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", ehCurso: ehCursoDeVerdade(x), capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, criado: a.criadoEm || "", titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
@@ -1335,6 +1338,14 @@ export function montar(raiz: HTMLElement) {
   /* ---------- presentes ---------- */
   const DESC_CAT = { "Mestres espirituais": "Coleção de vídeos gravados e escondidos em VHS, que nunca foram ao ar na internet.", "Lançamentos": "As novidades da mentoria, assim que saem.", "Frequências": "Áudios para ouvir e meditar no seu tempo.", "Ebooks": "Leituras para aprofundar a sua jornada.", "Documentários": "Histórias e conteúdos para assistir com calma." };
   const TIPO_CAT = { "Lançamentos": "Vídeo", "Frequências": "Áudio", "Ebooks": "Leitura", "Documentários": "Documentário", "Mestres espirituais": "Vídeo" };
+  /**
+   * Curso de verdade (Categoria → Curso → Módulos → Aulas). Os produtos antigos que fazem o papel de
+   * categoria em Presentes têm o mesmo nome da categoria (Mestres espirituais, Documentários…) e não entram.
+   */
+  function ehCursoDeVerdade(x) {
+    const n = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+    return !!x.catTitulo && n(x.catTitulo) !== n(x.titulo);
+  }
   const CATS = () => (D ? D.cats : []);
   const ehEbook = (curso) => !curso.itens.length && curso.conteudos.some((x) => x.url || x.arquivoPath);
   const cursoLiberado = (curso) => curso.liberadoDireto || curso.itens.some((x) => aulaAdmin(x.id));
@@ -1414,7 +1425,7 @@ export function montar(raiz: HTMLElement) {
       <div class="barra-aula"><button class="voltar voltar-btn" data-a="ir" data-v="presentes" aria-label="Voltar para Presentes">${ICONES.seta_esq}Voltar</button></div>
       <h1 class="todos-mod serif">${h(c.nome)}</h1>
       <p class="apoio" style="margin-top:-6px">${h(DESC_CAT[c.nome] || "")}</p>
-      ${c.cursos.length ? `<div class="grade-mod">${c.cursos.map((x, i) => cartaoCurso(ci, i, x, c.nome)).join("")}</div>` : `<div class="vazio">Em breve, conteúdos nesta categoria.</div>`}
+      ${c.cursos.length ? `<div class="grade-mod">${c.cursos.map((x, i) => (S.soCursos && !x.ehCurso ? "" : cartaoCurso(ci, i, x, c.nome))).join("")}</div>` : `<div class="vazio">Em breve, conteúdos nesta categoria.</div>`}
     </div>`;
   }
   function cartaoCurso(ci, i, curso, cat) {
@@ -1425,7 +1436,7 @@ export function montar(raiz: HTMLElement) {
     const tipo = (TIPO_CAT[cat] || "conteúdo").toLowerCase();
     const plural = ebook ? "Leitura" : freq ? p(curso.itens.length, "frequência", "frequências") : curso.itens.length ? p(curso.itens.length, tipo, tipo + "s") : "Será adicionado em breve";
     const meta = `<p class="mc-meta"><span>${ebook ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`}${h(plural)}</span></p>`;
-    if (!cursoLiberado(curso)) {
+    if (!cursoLiberado(curso) && !(curso.ehCurso && PREVIA_PAINEL)) {
       // Igual ao print: imagem embaçada com o cadeado nítido e "Em breve, só para você"; não abre.
       const tp = tipoDoCurso({ nome: cat }, curso);
       const cls = { mestres: "mestres", freq: "pres", video: "doc" }[tp];
@@ -1458,10 +1469,10 @@ export function montar(raiz: HTMLElement) {
         </div>
       </div>
     </div>`;
-    // Card do curso (Configurações → Cursos): capa deitada, texto em cima, nome, descrição, progresso e o botão que abre o curso.
-    if (curso.itens.length) {
+    // Card do curso (Configurações → Cursos): só para curso de verdade (não para as categorias antigas de Presentes).
+    if (curso.ehCurso) {
       const T = TELAS(), rot = (typeof T.curRotulo === "string" ? T.curRotulo : "Curso completo").trim(), bt = (typeof T.curBotao === "string" ? T.curBotao : "Ver curso").trim() || "Ver curso";
-      const feitos = curso.itens.filter((x) => feitaId(x.id)).length, pct = Math.round((feitos / curso.itens.length) * 100);
+      const feitos = curso.itens.filter((x) => feitaId(x.id)).length, pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
       return `
     <article class="cur-card" style="--mc:${COR}">
       <button class="cur-capa" data-a="curso-pres" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
