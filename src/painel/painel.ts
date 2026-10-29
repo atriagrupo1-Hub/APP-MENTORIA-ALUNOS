@@ -2327,7 +2327,7 @@ export function montar(app: HTMLElement) {
     if (!f) return { topoSaud: c.topoSaud, tCor: c.topoEstilo.tituloCor || "#e8be63", tFonte: c.topoEstilo.tituloFonte || "Cinzel", sCor: c.topoEstilo.subCor || "#8f949c", sFonte: c.topoEstilo.subFonte || "Cinzel", marcaTipo: c.marcaTipo, marcaLogo: c.marcaLogo, saudacao: c.saudacao, comece: c.comece, titulo: c.marcaTitulo, sub: c.marcaSub, frase: c.fraseRetorno, banner: c.banner, img: c.bannerImg, video: c.bannerVideo, estilo: c.estilo, divExibir: dv.exibir, divTexto: dv.texto, divCor: dv.cor, divFonte: dv.fonte, divLinha: dv.linha };
     const g = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
     const marcado = (n: string) => f.querySelector<HTMLInputElement>(`input[name="${n}"]:checked`)?.value ?? "";
-    return { topoSaud: [g("topoSaudA").trim(), g("topoSaudB").trim()].filter(Boolean).join(" "), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), comece: g("inicioComece"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || "padrao" , divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
+    return { topoSaud: [g("topoSaudA").trim(), g("topoSaudB").trim()].filter(Boolean).join(" "), tCor: g("tCor"), tFonte: g("tFonte"), sCor: g("sCor"), sFonte: g("sFonte"), marcaTipo: marcado("marcaTipo") === "logo" ? "logo" : "texto", marcaLogo: g("marcaLogo"), saudacao: g("saudacao"), comece: g("inicioComece"), titulo: g("marcaTitulo"), sub: g("marcaSub"), frase: g("fraseRetorno"), banner: marcado("banner") || "nenhum", img: g("bannerImg"), video: g("bannerVideo"), estilo: marcado("estilo") || g("estilo") || "padrao", divExibir: !!f.querySelector<HTMLInputElement>('input[name="divExibir"]')?.checked, divTexto: g("divTexto"), divCor: g("divCor") || dv.cor, divFonte: g("divFonte"), divLinha: g("divLinha") || dv.linha };
   }
   /** A prévia do Início da aluna, com o que está no formulário (dados reais do painel). */
   function previaInicio(v: ReturnType<typeof valoresInicio>) {
@@ -2820,7 +2820,7 @@ export function montar(app: HTMLElement) {
     const aba = ui.cfgAba;
     let corpo = "";
     if (aba === "inicio") {
-      const v = valoresInicio(), est: [string, string][] = [["padrao", "Padrão"], ["moldura", "Com moldura"], ["minimalista", "Minimalista"]];
+      const v = valoresInicio();
       // Cada texto: o campo e, na frente, o botão compacto "Aa Estilo".
       const linha = (campo: string, chave: string, nome: string) => `<div class="cfg-linha-est">${campo}${botaoEstiloTexto(chave, nome)}</div>`;
       corpo = `
@@ -2860,10 +2860,7 @@ export function montar(app: HTMLElement) {
             <div class="cfg-op" data-op="video"${v.banner === "video" ? "" : " hidden"}><label class="cfg-c"><span>Link do vídeo (Cloudflare Stream)</span><input class="campo" name="bannerVideo" value="${h(v.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label><small>O vídeo precisa estar liberado para tocar sem assinatura no Cloudflare Stream.</small></div>
             <div class="cfg-op" data-op="card"${v.banner === "card" ? "" : " hidden"}><small>Mostra os cartões de Destaques do Início (editados em Categorias).</small></div>
           </div>
-          <div class="cfg-bloco">
-            <h3>Estilo da seção ${dicaCampo(`O visual do bloco de boas-vindas no Início: Padrão (como é hoje), Com moldura (uma borda dourada em volta) ou Minimalista (sem fundo, mais limpo).`, "cfg.estilo-da-se-o")}</h3><p class="cfg-sub">Escolha o estilo visual da mensagem.</p>
-            <div class="cfg-estilos">${est.map(([k, t]) => `<label class="cfg-est"><input type="radio" name="estilo" value="${k}" ${v.estilo === k ? "checked" : ""} /><span class="cfg-est-cx est-${k}"><i>${IC_CFG.img}</i><span><b></b><b></b><b></b></span></span><em>${t}</em></label>`).join("")}</div>
-          </div>
+          <input type="hidden" name="estilo" value="${h(v.estilo)}" />
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Divisória “${h(v.divTexto)}” ${dicaCampo(`A linha com texto que separa a sua mentoria dos outros conteúdos no Início da aluna. Escolha o texto, a cor do texto e a cor das linhas, ou desligue para não aparecer.`, "cfg.divisoria")}</h3><p class="cfg-sub">O separador antes dos outros conteúdos do Início.</p></div><label class="cfg-chave"><input type="checkbox" name="divExibir" ${v.divExibir ? "checked" : ""} /><i></i>Exibir</label></div>
             <div class="cfg-2">
