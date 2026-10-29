@@ -18,7 +18,7 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { chaveMenu, cssFundo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
+import { chaveMenu, comModulosDaBase, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -435,7 +435,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   // Duas versões do app (0103): a versão geral guarda só o que muda, por cima da mentoria.
   const cfgBase = (cfgIni.data ?? {}) as Record<string, any>;
   const geralRaw = (cfgBase.versao_geral && typeof cfgBase.versao_geral === "object" ? cfgBase.versao_geral : {}) as Record<string, unknown>;
-  const cd: Record<string, any> = versaoCfg === "geral" ? { ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia } : cfgBase;
+  const cd: Record<string, any> = versaoCfg === "geral" ? comModulosDaBase({ ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia }, cfgBase) : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
     catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
@@ -698,7 +698,18 @@ export function montar(app: HTMLElement) {
   async function cfgUpdate(obj: Record<string, unknown>) {
     if (versaoCfg !== "geral") return supabase.from("configuracoes").update(obj).not("id", "is", null).select("id");
     const dir: Record<string, unknown> = {}, vg: Record<string, unknown> = { ...S.geralRaw };
-    for (const [k, v] of Object.entries(obj)) (k === "capa_guia" || k === "produto_jornada" ? dir : vg)[k] = v;
+    // Módulos valem para as duas versões: o que é de módulos vai sempre para a base.
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === "capa_guia" || k === "produto_jornada" || k.startsWith("modulos_")) dir[k] = v;
+      else if (k === "estilo_inicio") {
+        const e = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
+        const mods = Object.fromEntries(Object.entries(e).filter(([x]) => ehChaveModulo(x))), resto = Object.fromEntries(Object.entries(e).filter(([x]) => !ehChaveModulo(x)));
+        const { data: b } = await supabase.from("configuracoes").select("estilo_inicio").maybeSingle();
+        const eb = (b?.estilo_inicio && typeof b.estilo_inicio === "object" ? b.estilo_inicio : {}) as Record<string, unknown>;
+        dir.estilo_inicio = limparEstilo({ ...Object.fromEntries(Object.entries(eb).filter(([x]) => !ehChaveModulo(x))), ...mods });
+        if (Object.keys(resto).length) vg.estilo_inicio = resto; else delete vg.estilo_inicio;
+      } else vg[k] = v;
+    }
     S.geralRaw = vg;
     return supabase.from("configuracoes").update({ ...dir, versao_geral: vg }).not("id", "is", null).select("id");
   }

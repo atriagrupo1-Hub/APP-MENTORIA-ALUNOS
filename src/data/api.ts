@@ -1,4 +1,5 @@
 import { notifDe, type NotifCfg } from "./notif";
+import { comModulosDaBase } from "./estilo";
 import {
   chavePublica,
   enderecoEntrar,
@@ -838,7 +839,7 @@ export async function dadosDoInicio(geral = false): Promise<{ topo: { saudacao: 
   const base = (cfg.data ?? {}) as Record<string, any>;
   const vg = base.versao_geral && typeof base.versao_geral === "object" ? base.versao_geral : {};
   // Menu: a versão geral tem os botões dela (Início, Meus Cursos, Novos, Perfil); o da mentoria não vale para ela.
-  const d = (geral ? { ...base, menu_botoes: null, ...vg } : base) as Record<string, any>;
+  const d = (geral ? comModulosDaBase({ ...base, menu_botoes: null, ...vg }, base) : base) as Record<string, any>;
   return {
     versao: geral ? "geral" : "mentoria",
     aparencia: (d?.aparencia ?? null) as Record<string, unknown> | null,
