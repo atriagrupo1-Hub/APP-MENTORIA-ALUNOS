@@ -3795,6 +3795,7 @@ export function montar(app: HTMLElement) {
     const IC_EXP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
     return `
       <div class="cs-config" data-form-de="formCurso">
+        <div class="cs-col">
         <form id="formCurso" data-f="curso-config" class="cs-cartao cs-form">
           <h3>Informações do curso</h3>
           <label class="cs-campo"><span>Nome do curso</span><input class="campo" name="nome" value="${h(c.nome)}" required /></label>
@@ -3809,13 +3810,6 @@ export function montar(app: HTMLElement) {
           <input type="hidden" name="capa" value="${h(c.capa)}" />
           <div class="cs-salvar"><button class="al-botao-ouro">Salvar alterações</button></div>
         </form>
-        <div class="cs-col">
-          <section class="cs-cartao">
-            <h3>Capa do curso ${dicaCampo(AJ.capaCurso)}</h3>
-            <span class="e3-caixa${cls3(estado3(c.visivel, c.bloq))}"><span class="cs-capa-ed" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>${selo3(estado3(c.visivel, c.bloq))}</span>
-            <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
-            <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
-          </section>
           <section class="cs-cartao ea-config cs-config-est">
             <h3>Configurações</h3>
             <div class="mp-config">
@@ -3830,6 +3824,25 @@ export function montar(app: HTMLElement) {
             <button type="button" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
             <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
             <button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Apagar curso</button>
+          </section>
+        </div>
+        <div class="cs-col cs-col-prev">
+          <section class="cs-cartao cs-prev-curso">
+            <h3>Capa do curso ${dicaCampo(AJ.capaCurso)}</h3>
+            <p class="cs-nota" style="margin:-6px 0 12px">Como o card do curso fica no celular da aluna. Muda enquanto você edita.</p>
+            <div class="cc-cel"><article class="cc-card${estado3(c.visivel, c.bloq) === "ativo" ? "" : " cc-off"}">
+              <span class="cc-capa" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+              <div class="cc-info">
+                <p class="cc-rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>Curso completo</p>
+                <b class="cc-tit" data-cc="nome">${h(c.nome)}</b>
+                <p class="cc-desc" data-cc="descricao"${c.descricao ? "" : " hidden"}>${h(c.descricao)}</p>
+                <div class="cc-prog"><span><i style="width:38%"></i></span><em>38%</em></div>
+                <span class="cc-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>Ver curso</b><i aria-hidden="true">›</i></span>
+              </div>
+            </article></div>
+            <p class="cs-nota cc-nota">O progresso (38%) é só um exemplo: cada aluna vê o dela.</p>
+            <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
+            <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
           </section>
         </div>
       </div>`;
@@ -7120,6 +7133,8 @@ export function montar(app: HTMLElement) {
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
+    // Sobre o curso: o card de prévia acompanha o nome e a descrição enquanto escreve.
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     const t = e.target as HTMLInputElement;
     if (t.dataset?.hex) { const f = t.closest("form"); const tx = f?.querySelector<HTMLInputElement>(`input[name="${t.dataset.hex}"]`); if (tx) tx.value = t.value.toUpperCase(); (t.parentElement as HTMLElement).style.background = t.value; }
     if (t.classList?.contains("cfg-hexin") && /^#[0-9a-f]{6}$/i.test(t.value)) { const c = t.parentElement?.querySelector<HTMLInputElement>("input[data-hex]"); if (c) { c.value = t.value.toLowerCase(); (c.parentElement as HTMLElement).style.background = t.value; } }
