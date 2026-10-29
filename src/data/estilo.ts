@@ -165,12 +165,18 @@ export const PARTES_INICIO: ParteTela[] = [
   { k: "mentoriacard", nome: "Card do módulo (dentro de “Sua mentoria”)", desc: "O card do módulo, com a capa, o título e o botão, dentro do card “Sua mentoria”.", tipo: "card", sel: ".mt-bloco .mh-card, .mt-bloco .heroi" },
   { k: "comece", nome: "Texto do card da mentoria", desc: "O texto dentro do card “Sua mentoria”, em cima do card do módulo.", tipo: "texto", sel: "#h-comece" },
   { k: "menu", nome: "Menu de baixo", desc: "Fundo, contorno e sombra da barra de baixo.", tipo: "card", sel: ".nav-base" },
-  { k: "modcard", nome: "Card do módulo (todos)", desc: "Borda, sombra e fundo de todos os cards da tela Módulos.", tipo: "card", sel: "html .grade-mod .mod-bloco.mc" },
-  { k: "modbotao", nome: "Botão “Ver aulas” (todos)", desc: "Borda, sombra e fundo do botão de todos os módulos.", tipo: "botao", sel: "html .grade-mod .mc-ver, html .grade-mod .mc-ver-cheio, html .grade-mod .mc-ver-grande" },
-  { k: "modbotaotx", nome: "Texto do botão “Ver aulas”", desc: "", tipo: "texto", sel: "html .grade-mod .mc-ver, html .grade-mod .mc-ver-cheio, html .grade-mod .mc-ver-grande" },
-  { k: "modrot", nome: "Rótulo do módulo (ex.: Módulo 1)", desc: "", tipo: "texto", sel: "html .grade-mod .mc-rot" },
-  { k: "modtitulo", nome: "Título do módulo", desc: "", tipo: "texto", sel: "html .grade-mod .mc-tit" },
-  { k: "moddesc", nome: "Texto do módulo", desc: "A descrição e o número de aulas.", tipo: "texto", sel: "html .grade-mod .mc-desc, html .grade-mod .mc-meta" },
+  { k: "curcard", nome: "Card do curso", desc: "Borda, sombra e fundo de todos os cards de curso.", tipo: "card", sel: "html .cur-card" },
+  { k: "curbotao", nome: "Botão do curso", desc: "Borda, sombra e fundo do botão de todos os cursos.", tipo: "botao", sel: "html .cur-card .cur-bt" },
+  { k: "curbotaotx", nome: "Texto do botão do curso", desc: "", tipo: "texto", sel: "html .cur-card .cur-bt" },
+  { k: "currot", nome: "Texto em cima do nome do curso", desc: "", tipo: "texto", sel: "html .cur-card .cur-rot" },
+  { k: "curtitulo", nome: "Nome do curso", desc: "", tipo: "texto", sel: "html .cur-card .cur-tit" },
+  { k: "curdesc", nome: "Descrição do curso", desc: "", tipo: "texto", sel: "html .cur-card .cur-desc" },
+  { k: "modcard", nome: "Card do módulo (todos)", desc: "Borda, sombra e fundo de todos os cards da tela Módulos.", tipo: "card", sel: "html .grade-mod.gm-modulos .mod-bloco.mc" },
+  { k: "modbotao", nome: "Botão “Ver aulas” (todos)", desc: "Borda, sombra e fundo do botão de todos os módulos.", tipo: "botao", sel: "html .grade-mod.gm-modulos .mc-ver, html .grade-mod.gm-modulos .mc-ver-cheio, html .grade-mod.gm-modulos .mc-ver-grande" },
+  { k: "modbotaotx", nome: "Texto do botão “Ver aulas”", desc: "", tipo: "texto", sel: "html .grade-mod.gm-modulos .mc-ver, html .grade-mod.gm-modulos .mc-ver-cheio, html .grade-mod.gm-modulos .mc-ver-grande" },
+  { k: "modrot", nome: "Rótulo do módulo (ex.: Módulo 1)", desc: "", tipo: "texto", sel: "html .grade-mod.gm-modulos .mc-rot" },
+  { k: "modtitulo", nome: "Título do módulo", desc: "", tipo: "texto", sel: "html .grade-mod.gm-modulos .mc-tit" },
+  { k: "moddesc", nome: "Texto do módulo", desc: "A descrição e o número de aulas.", tipo: "texto", sel: "html .grade-mod.gm-modulos .mc-desc, html .grade-mod.gm-modulos .mc-meta" },
   { k: "modtit", nome: "Título da tela Módulos", desc: "O nome no alto da tela Módulos (ex.: Todos os módulos).", tipo: "texto", sel: ".todos-mod" },
   { k: "mbaberto", nome: "Botão aberto do menu", desc: "Fundo, linha e cantos do botão da tela em que a aluna está.", tipo: "card", sel: ".nav-base button[aria-current=\"page\"]", extra: ".nav-base button[aria-current=\"page\"]::before{display:none !important}" },
   { k: "mbtodos", nome: "Texto de todos os botões do menu", desc: "Os nomes dos botões do menu de baixo (todos de uma vez).", tipo: "texto", sel: ".nav-base button, .nav-base .nb-link" },
@@ -234,11 +240,11 @@ export function cssDaTela(partes: ParteTela[], e: Estilo | null | undefined): st
 export const cssDaAula = (e: Estilo | null | undefined) => cssDaTela(PARTES_AULA, e);
 export const cssDoInicio = (e: Estilo | null | undefined) => cssDaTela(PARTES_INICIO, e);
 /** Estilos dos módulos (chaves "mod…"): valem para todos os módulos de todos os produtos, nas duas versões. */
-export const ehChaveModulo = (k: string) => /^mod/.test(k);
+export const ehChaveModulo = (k: string) => /^(mod|cur)/.test(k);
 /** Junta a configuração das duas versões mantendo o que é de módulos sempre o da base (comum às duas). */
 export function comModulosDaBase(d: Record<string, any>, base: Record<string, any>): Record<string, any> {
   const out = { ...d };
-  for (const [k, v] of Object.entries(base)) if (k.startsWith("modulos_")) out[k] = v;
+  for (const [k, v] of Object.entries(base)) if (k.startsWith("modulos_") || k.startsWith("cursos_")) out[k] = v;
   const eb = base.estilo_inicio && typeof base.estilo_inicio === "object" ? base.estilo_inicio : {};
   const mods = Object.fromEntries(Object.entries(eb).filter(([k]) => ehChaveModulo(k)));
   const ed = out.estilo_inicio && typeof out.estilo_inicio === "object" ? out.estilo_inicio : {};

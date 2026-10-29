@@ -49,6 +49,9 @@ export function montar(raiz: HTMLElement) {
           // Configurações → Aulas: uma aula de exemplo (a primeira com vídeo), e o celular vai até a parte que está sendo mexida.
           if (S.tela !== "aula") { S.previaIr = m.ir; camada.innerHTML = ""; const k = Math.max(0, MODS().findIndex((x) => x.aulas.length)); if (MODS()[k]) acao("aula", { m: k, i: 0 }); }
           if (m.abaAula && S.abaAula !== m.abaAula) S.abaAula = m.abaAula;
+        } else if (m.ir === "cursos-exemplo") {
+          // Configurações → Cursos: abre uma categoria que tenha curso (não e-book) liberado, para ver o card.
+          if (S.previaIr !== m.ir) { S.previaIr = m.ir; camada.innerHTML = ""; const ci = CATS().findIndex((c) => c.cursos.some((x) => x.itens.length && !ehEbook(x) && cursoLiberado(x))); if (ci >= 0) acao("categoria", { v: ci }); setTimeout(() => { const cc = document.querySelector(".cur-card"); if (cc) cc.scrollIntoView({ block: "center" }); }, 60); }
         } else if (m.ir && m.ir !== S.previaIr) { S.previaIr = m.ir; camada.innerHTML = ""; acao("ir", { v: m.ir }); }
         render();
         if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
@@ -878,7 +881,7 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="pagina">
       ${(t.modTitulo ?? "Todos os módulos") ? `<h1 class="todos-mod serif tit-${h(t.modTitEstilo || "padrao")}">${h(t.modTitulo ?? "Todos os módulos")}</h1>` : ""}
-      <div class="grade-mod gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modFormato === "cima" ? " gm-cima" : ""}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
+      <div class="grade-mod gm-modulos gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modFormato === "cima" ? " gm-cima" : ""}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
     </div>`;
   }
 
@@ -1455,6 +1458,22 @@ export function montar(raiz: HTMLElement) {
         </div>
       </div>
     </div>`;
+    // Card do curso (Configurações → Cursos): capa deitada, texto em cima, nome, descrição, progresso e o botão que abre o curso.
+    if (curso.itens.length) {
+      const T = TELAS(), rot = (typeof T.curRotulo === "string" ? T.curRotulo : "Curso completo").trim(), bt = (typeof T.curBotao === "string" ? T.curBotao : "Ver curso").trim() || "Ver curso";
+      const feitos = curso.itens.filter((x) => feitaId(x.id)).length, pct = Math.round((feitos / curso.itens.length) * 100);
+      return `
+    <article class="cur-card" style="--mc:${COR}">
+      <button class="cur-capa" data-a="curso-pres" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
+      <div class="cur-info">
+        ${rot ? `<p class="cur-rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>${h(rot)}</p>` : ""}
+        <button class="cur-cab" data-a="curso-pres" data-v="${key}"><b class="cur-tit serif">${h(curso.nome)}</b></button>
+        ${curso.descricao ? `<p class="cur-desc">${h(curso.descricao)}</p>` : ""}
+        <div class="cur-prog" aria-label="${pct}% concluído"><span><i style="width:${pct}%"></i></span><em>${pct}%</em></div>
+        <button class="cur-bt" data-a="curso-pres" data-v="${key}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${h(bt)}</b><i aria-hidden="true">›</i></button>
+      </div>
+    </article>`;
+    }
     const aberto = !!(S.verCurso || {})[key];
     return `
     <div class="mod-bloco mc" style="--mc:${COR}">

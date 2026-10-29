@@ -1610,3 +1610,25 @@ html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; bo
 .mc-cima.mc-tranc .mc-top { display: block; padding: 0; }
 .mc-cima.mc-tranc .mc-capa-h { cursor: inherit; }
 .mc-cima.mc-tranc .mc-capa-h, .mc-cima.mc-tranc .mc-info { filter: blur(3px) brightness(.45); }
+
+/* Card do curso (Configurações → Cursos): capa deitada, texto em cima, nome, descrição, progresso e botão. */
+.grade-mod > .cur-card { margin-bottom: 16px; }
+.cur-card { overflow: hidden; color: var(--texto, #f1e6c9); background: #0d0c0e; border: 1.5px solid #c9a25c; border-radius: 16px; box-shadow: 0 0 0 4px rgba(201,162,92,.1), 0 18px 40px -18px rgba(230,184,90,.45); }
+.cur-capa { display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; overflow: hidden; background: linear-gradient(160deg, #2a2116, #0c0a07 65%); border: 0; cursor: pointer; }
+.cur-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cur-info { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; }
+.cur-rot { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; color: #d4b170; }
+.cur-rot svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.cur-cab { padding: 0; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+.cur-tit { display: block; font-size: 24px; font-weight: 600; line-height: 1.15; color: #fff; overflow-wrap: anywhere; }
+.cur-desc { margin: 0; font-size: 14px; line-height: 1.45; color: var(--texto-2, rgba(241,230,201,.7)); }
+.cur-prog { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.cur-prog span { flex: 1; height: 6px; border-radius: 99px; background: #26231f; overflow: hidden; }
+.cur-prog i { display: block; height: 100%; border-radius: inherit; background: #d4b170; }
+.cur-prog em { font-style: normal; font-size: 13px; color: var(--texto-2, rgba(241,230,201,.75)); }
+.cur-bt { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; margin-top: 6px; padding: 0 16px; font: inherit; color: #1a1206; background: linear-gradient(180deg, #e8c88a 0%, #c9a15c 55%, #a47a3c 100%); border: 1px solid #dcbb7e; border-radius: 8px; box-shadow: inset 0 1px 0 rgba(255,246,214,.7); cursor: pointer; }
+.cur-bt svg { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.cur-bt b { flex: 1; text-align: center; font-size: 16px; }
+.cur-bt i { font-style: normal; font-size: 22px; line-height: 1; }
+html[data-tema="claro"] .cur-card { background: #fff; color: #1a1206; }
+html[data-tema="claro"] .cur-tit { color: #1a1206; }
