@@ -3574,3 +3574,18 @@ input, textarea, select, [contenteditable="true"] { -webkit-user-select: text !i
 .cfg-marca-l > .cfg-c { flex: 1 1 220px; }
 .cfg-marca-est { display: inline-flex; align-items: center; gap: 8px; }
 .cfg-marca-est select { min-width: 170px; }
+/* Celular da prévia como um de verdade: a barra de cima (hora, sinal, bateria, ilha) e o app logo abaixo. */
+.pv-celular.pv-real { display: flex; flex-direction: column; background: #0d0d0f; }
+.pv-real .pv-status { position: relative; flex: none; display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 20px 0 26px; background: #000; color: #fff; border-radius: 30px 30px 0 0; }
+.pv-real .pv-status b { font: 600 13px/1 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; letter-spacing: -.01em; }
+.pv-real .pv-status span { display: inline-flex; align-items: center; gap: 4px; }
+.pv-real .pv-status svg { height: 10px; width: auto; fill: currentColor; }
+.pv-real .pv-status svg:last-child { height: 11px; }
+.pv-real .pv-ilha { position: absolute; left: 50%; top: 7px; width: 74px; height: 21px; transform: translateX(-50%); border-radius: 12px; background: #050505; box-shadow: inset 0 0 0 1px #1a1a1a; }
+.pv-celular.pv-real .pv-status + .pv-real-alvo { flex: 1; min-height: 0; height: auto; border-radius: 0 0 30px 30px; }
+.pv-real .pv-status svg:nth-child(1) { width: 16px; height: 10px; }
+.pv-real .pv-status svg:nth-child(2) { width: 14px; height: 10px; }
+.pv-real .pv-status svg:nth-child(3) { width: 24px; height: 11px; }
+.pv-real .pv-ilha { width: 58px; height: 19px; top: 8px; }
+.pv-real .pv-status { padding: 0 14px 0 22px; }
+.pv-real .pv-status span { gap: 3px; }

@@ -2790,9 +2790,11 @@ export function montar(app: HTMLElement) {
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
             <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
-          ${extra}<div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia"><div class="pv-real-alvo" id="cfgCel"></div></div></div>
+          ${extra}<div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia">${ui.cfgPrevia === "celular" ? BARRA_CEL : ""}<div class="pv-real-alvo" id="cfgCel"></div></div></div>
           <p class="cfg-pvnota">É o app de verdade, com o que está publicado e o que você mudou aqui (ainda sem salvar). Role com o mouse dentro do celular.</p>
         </aside>`;
+  /** A barra de cima de um celular de verdade (hora, sinal, wi-fi, bateria e a ilha), por cima da prévia. */
+  const BARRA_CEL = `<div class="pv-status" aria-hidden="true"><b>9:41</b><i class="pv-ilha"></i><span><svg viewBox="0 0 18 12"><path style="fill:#fff" d="M1 8h1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zm5-2.5h1a1 1 0 0 1 1 1V11a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6.5a1 1 0 0 1 1-1zM11 3h1a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm5-3h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1V1a1 1 0 0 1 1-1z"/></svg><svg viewBox="0 0 16 12"><path d="M8 11.5l2.2-2.6a3.3 3.3 0 0 0-4.4 0z"/><path d="M3.6 6.6a6.4 6.4 0 0 1 8.8 0l-1.3 1.5a4.4 4.4 0 0 0-6.2 0z"/><path d="M1.2 3.9a9.8 9.8 0 0 1 13.6 0l-1.3 1.5a7.8 7.8 0 0 0-11 0z"/></svg><svg viewBox="0 0 27 12"><rect x="0.5" y="0.5" width="23" height="11" rx="3.2" fill="none" stroke="currentColor" opacity=".45"/><rect x="2.2" y="2.2" width="19.6" height="7.6" rx="2"/><rect x="24.6" y="3.8" width="2" height="4.4" rx="1" opacity=".45"/></svg></span></div>`;
   /** Moldura comum da prévia (topo com o nome, rolagem e o menu do app). */
   function pvTela(ativo: string, miolo: string) {
     const abasApp = [["inicio", "Início"], ["modulos", "Módulos"], ...S.cats.filter((k) => k.pub && !S.cursos.some((c) => c.id === S.config.jornada && c.cat === k.id)).map((k) => [k.icone === "presentes" ? "presentes" : "modulos", k.nome]), ["perfil", "Perfil"]].slice(0, 5);
@@ -2877,7 +2879,7 @@ export function montar(app: HTMLElement) {
         <aside class="cfg-previa">
           <div class="cfg-pvcab"><div><h2>Prévia no app</h2><p>Veja como ficará para a aluna.</p></div>
             <span class="cfg-pvbts">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="cfg-previa" data-v="${k}" aria-pressed="${ui.cfgPrevia === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
-          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia"><div class="pv-real-alvo" id="cfgCel"></div></div></div>
+          <div class="cfg-pvfundo"><div class="pv-${ui.cfgPrevia} pv-real" id="cfgPrevia">${ui.cfgPrevia === "celular" ? BARRA_CEL : ""}<div class="pv-real-alvo" id="cfgCel"></div></div></div>
           <p class="cfg-pvnota">É o app de verdade, com o que está publicado agora e o que você mudou aqui. Role com o mouse dentro do celular. Mostra a sua conta da equipe, então tudo aparece liberado.</p>
         </aside>
       </div>`;
@@ -4685,8 +4687,8 @@ export function montar(app: HTMLElement) {
     // Fixo na tela, em cima do celular desenhado; o que sai da área que rola fica cortado.
     let pai = alvo.parentElement; while (pai && pai !== document.body && !/(auto|scroll)/.test(getComputedStyle(pai).overflowY)) pai = pai.parentElement;
     const c = pai && pai !== document.body ? pai.getBoundingClientRect() : { top: 0, bottom: innerHeight, left: 0, right: innerWidth };
-    const corte = `inset(${Math.max(0, c.top - r.top)}px ${Math.max(0, r.right - c.right)}px ${Math.max(0, r.bottom - c.bottom)}px ${Math.max(0, c.left - r.left)}px round 30px)`;
-    Object.assign(celReal.style, { display: "block", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", clipPath: corte });
+    const corte = `inset(${Math.max(0, c.top - r.top)}px ${Math.max(0, r.right - c.right)}px ${Math.max(0, r.bottom - c.bottom)}px ${Math.max(0, c.left - r.left)}px round ${comp ? "6px" : "0 0 30px 30px"})`;
+    Object.assign(celReal.style, { borderRadius: comp ? "6px" : "0 0 30px 30px", display: "block", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", clipPath: corte });
     const fr = celReal.querySelector("iframe")!;
     Object.assign(fr.style, { width: W + "px", height: r.height / k + "px", transform: `scale(${k})` });
   }

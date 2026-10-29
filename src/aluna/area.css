@@ -1590,3 +1590,6 @@ html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; bo
 .topo-novo .ig-bts { gap: 6px; }
 .topo-novo .ig-bt { width: 34px; height: 34px; }
 @media (min-width: 600px) { .topo-novo .tp-marca b { letter-spacing: .14em; } }
+
+/* Com o topo novo valendo em todas as telas, o Início geral não repete o espaço da barra do celular. */
+.ig { padding-top: 6px; }
