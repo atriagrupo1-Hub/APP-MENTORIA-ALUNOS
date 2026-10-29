@@ -70,7 +70,8 @@ export function montar(raiz: HTMLElement) {
       if (m.divisor) I.divisor = m.divisor;
       I.destaques = m.banner === "card" ? I._destOrig : [];
       render();
-      if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
+      if (m.irBanner) { const alvo = document.querySelector(".pa-banner, [aria-labelledby^='h-dest-']"); if (alvo) alvo.scrollIntoView({ block: "center", behavior: "smooth" }); else scrollTo({ top: 0, behavior: "smooth" }); }
+      else if (m.foco && m.foco !== S.previaFoco) { S.previaFoco = m.foco; const alvo = document.querySelector(m.foco); if (alvo) alvo.scrollIntoView({ block: "center" }); }
     };
   }
   // Estilos sendo editados no painel (prévia), por cima dos salvos: { cat: {id: estilo}, mod: {id: estilo} }.
@@ -517,6 +518,8 @@ export function montar(raiz: HTMLElement) {
   function bannerInicio() {
     const b = (D && D.inicio && D.inicio.banner) || {};
     if (b.tipo === "imagem" && b.imagem) return `<figure class="pa-banner">${img(b.imagem, "")}</figure>`;
+    // Na prévia do painel, a opção escolhida sem conteúdo ainda aparece como um espaço reservado.
+    if (PREVIA && (b.tipo === "imagem" || b.tipo === "video") && !(b.tipo === "imagem" ? b.imagem : b.video)) return `<figure class="pa-banner pa-banner-vazio"><span>${b.tipo === "imagem" ? "Imagem do banner<small>Envie a imagem no painel</small>" : "Vídeo de boas-vindas<small>Cole o link do vídeo no painel</small>"}</span></figure>`;
     if (b.tipo === "video" && b.video) return `<figure class="pa-banner pa-banner-video"><iframe src="https://iframe.videodelivery.net/${h(b.video)}" title="Vídeo de boas-vindas" loading="lazy" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></figure>`;
     return "";
   }
