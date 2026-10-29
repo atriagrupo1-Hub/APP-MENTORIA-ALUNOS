@@ -4679,7 +4679,7 @@ export function montar(app: HTMLElement) {
     const ini = { cor: cI.value, fonte: fI.value }; let cor = ini.cor || PADRAO_MARCA[k].cor, fonte = ini.fonte || PADRAO_MARCA[k].fonte;
     FONTES_MARCA.forEach((x) => carregarFonte(x));
     const nome = k === "t" ? "título" : "subtítulo";
-    const fundo = document.createElement("div"); fundo.className = "fc-fundo";
+    const fundo = document.createElement("div"); fundo.className = "fc-fundo"; let lista = false;
     const aplicar = () => {
       cI.value = cor; fI.value = fonte;
       const am = f.querySelector<HTMLElement>(`[data-fc-am="${k}"]`); if (am) { am.style.color = cor; am.style.fontFamily = `'${fonte}', Georgia, serif`; }
@@ -4689,7 +4689,8 @@ export function montar(app: HTMLElement) {
       fundo.innerHTML = `<div class="fc-caixa" role="dialog" aria-label="Fonte e cor do ${nome}">
         <div class="fc-cab"><b>Fonte e cor do ${nome}</b><button type="button" class="fc-rest" data-fc="padrao" title="Voltar ao padrão" aria-label="Voltar ao padrão">${IC_REFAZ}</button></div>
         <span class="fc-rot">Fonte</span>
-        <div class="fc-fontes">${FONTES_MARCA.map((x) => `<button type="button" data-fc="fonte" data-v="${x}" aria-pressed="${x === fonte}" style="font-family:'${x}', Georgia, serif">${x}</button>`).join("")}</div>
+        <div class="fc-lista${lista ? " aberta" : ""}"><button type="button" class="fc-sel" data-fc="lista" aria-haspopup="listbox" aria-expanded="${lista}" style="font-family:'${fonte}', Georgia, serif">${fonte}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+          ${lista ? `<div class="fc-opcoes" role="listbox" aria-label="Fontes">${FONTES_MARCA.map((x) => `<button type="button" role="option" data-fc="fonte" data-v="${x}" aria-selected="${x === fonte}" style="font-family:'${x}', Georgia, serif">${x}</button>`).join("")}</div>` : ""}</div>
         <span class="fc-rot">Cor</span>
         <div class="fc-cor"><label class="fc-am" style="background:${cor}"><input type="color" value="${cor}" data-fc="cor" aria-label="Cor" /></label><input class="campo fc-hex" value="${cor.toUpperCase()}" maxlength="7" data-fc="hex" aria-label="Código da cor" /><button type="button" class="fc-cp" data-fc="copiar" title="Copiar o código">${IC_COPIAR}</button></div>
         <div class="fc-amostra" style="color:${cor};font-family:'${fonte}', Georgia, serif">${h((f.querySelector<HTMLInputElement>(k === "t" ? 'input[name="marcaTitulo"]' : 'input[name="marcaSub"]')?.value || nome).trim() || nome)}</div>
@@ -4701,12 +4702,15 @@ export function montar(app: HTMLElement) {
       fundo.remove(); document.removeEventListener("keydown", tecla, true); botao.focus();
       if (salvar) { aplicar(); ui.sujo = null; const bt = f.querySelector<HTMLButtonElement>('button:not([type="button"])'); f.requestSubmit(bt || undefined); }
     };
-    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); fechar(false); } };
+    const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); if (lista) { lista = false; desenhar(); fundo.querySelector<HTMLElement>(".fc-sel")?.focus(); } else fechar(false); } };
     fundo.addEventListener("click", (e) => {
       if (e.target === fundo) { fechar(false); return; }
-      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]"); if (!b) return;
+      const b = (e.target as HTMLElement).closest<HTMLElement>("[data-fc]");
+      if (lista && b?.dataset.fc !== "fonte" && b?.dataset.fc !== "lista") { lista = false; desenhar(); if (!b) return; }
+      if (!b) return;
       const a = b.dataset.fc;
-      if (a === "fonte") { fonte = b.dataset.v!; aplicar(); desenhar(); }
+      if (a === "lista") { lista = !lista; desenhar(); if (lista) fundo.querySelector<HTMLElement>('.fc-opcoes [aria-selected="true"]')?.focus(); }
+      else if (a === "fonte") { fonte = b.dataset.v!; lista = false; aplicar(); desenhar(); fundo.querySelector<HTMLElement>(".fc-sel")?.focus(); }
       else if (a === "padrao") { cor = PADRAO_MARCA[k].cor; fonte = PADRAO_MARCA[k].fonte; aplicar(); desenhar(); }
       else if (a === "copiar") { void navigator.clipboard?.writeText(cor.toUpperCase()).then(() => toast("Código " + cor.toUpperCase() + " copiado.")); }
       else if (a === "cancelar") fechar(false);
