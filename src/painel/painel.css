@@ -3868,3 +3868,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cfg-mbcores .cfg-cores4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .cfg-mbcores .cfg-cores4 > * { min-width: 0; }
 @media (max-width: 900px) { .cfg-mbcores .cfg-cores4 { grid-template-columns: 1fr 1fr; } }
+.cfg-mbcor { width: 100%; justify-content: flex-start; padding: 0 12px; }
+.cfg-mbcor i { width: 26px; height: 26px; }
+.cfg-mbcor b { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
