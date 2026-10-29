@@ -2819,10 +2819,10 @@ export function montar(app: HTMLElement) {
         <form data-f="cfg-inicio" class="cfg-painel cfg-form" id="cfgInicio">
           <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.inicio}</span><div><h2>Início</h2><p>Configure o que aparece na tela inicial da aluna.</p></div></div>
           <div class="cfg-bloco">
-            <h3>Nome no cabeçalho ${dicaCampo(`O nome que aparece no alto de todas as telas do app da aluna, à esquerda. O título é a linha grande; o subtítulo é a linha pequena embaixo. Se em Aparência houver um logo, o logo aparece no lugar.`, "cfg.nome-no-cabe-alho")}</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros.</p>
+            <h3>Nome no cabeçalho ${dicaCampo(`O nome que aparece no alto de todas as telas do app da aluna, à esquerda. O título é a linha grande; o subtítulo é a linha pequena embaixo. Se em Aparência houver um logo, o logo aparece no lugar.`, "cfg.nome-no-cabe-alho")}</h3><p class="cfg-sub">O que aparece no alto de todas as telas da área de membros. Deixe vazio para não aparecer.</p>
             <div class="cfg-2">
-              <label class="cfg-c"><span>Título</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" required /></label>
-              <label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" /></label>
+              <label class="cfg-c"><span>Título</span><input class="campo" name="marcaTitulo" value="${h(v.titulo)}" maxlength="30" placeholder="Vazio: não aparece no app" /></label>
+              <label class="cfg-c"><span>Subtítulo (embaixo, pequeno)</span><input class="campo" name="marcaSub" value="${h(v.sub)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>
             </div>
           </div>
           <div class="cfg-bloco">
@@ -6319,7 +6319,6 @@ export function montar(app: HTMLElement) {
       }
       case "cfg-inicio": {
         const vv = valoresInicio(form);
-        if (!vv.titulo.trim()) { toast("Preencha o título do cabeçalho."); return; }
         if (vv.banner === "imagem" && !vv.img) { toast("Envie a imagem do banner ou escolha outra opção."); return; }
         if (vv.banner === "video" && !api.uidStream(vv.video)) { toast("Coloque o link do vídeo do Cloudflare Stream (ou só o uid)."); return; }
         void executar(async () => {
