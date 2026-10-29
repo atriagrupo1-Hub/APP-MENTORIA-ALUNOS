@@ -64,7 +64,7 @@ export function montar(raiz: HTMLElement) {
       I.marca = { titulo: m.titulo || "", sub: m.sub || "", logo: m.marcaLogo || "" };
       if (m.topo) I.topo = m.topo;
       I.fraseRetorno = m.frase || "";
-      if (m.saudacao) I.saudacao = m.saudacao;
+      if (typeof m.saudacao === "string") I.saudacao = m.saudacao;
       I.banner = { tipo: m.banner || "card", imagem: m.imagem || "", video: m.video || "" };
       I.estilo = m.estilo || "padrao";
       if (m.divisor) I.divisor = m.divisor;
@@ -506,7 +506,8 @@ export function montar(raiz: HTMLElement) {
 
   /** Saudação do topo do Início (Configurações → Início): {nome} vira o primeiro nome da aluna. */
   const saudacaoIni = (primeiro) => {
-    const t = (D && D.inicio && D.inicio.saudacao) || "Bem-vindo(a), {nome}";
+    const t = (D && D.inicio && D.inicio.saudacao) ?? "Bem-vindo(a), {nome}";
+    if (!t.trim()) return "";
     const i = t.indexOf("{nome}");
     if (i < 0) return `<span class="pa-saud">${h(t)}</span>`;
     const antes = t.slice(0, i).trimEnd(), depois = t.slice(i + 6);
@@ -780,7 +781,7 @@ export function montar(raiz: HTMLElement) {
       <div class="pa">
         <section class="pa-ola${estiloOla()}">
           ${versNo("topo")}
-          <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
+          ${saudacaoIni(primeiro) ? `<h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>` : ""}
           ${versNo("mensagem")}
         </section>
         ${bannerInicio()}
@@ -806,7 +807,7 @@ export function montar(raiz: HTMLElement) {
     <div class="pa">
       <section class="pa-ola${estiloOla()}">
         ${versNo("topo")}
-        <h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>
+        ${saudacaoIni(primeiro) ? `<h1 class="pa-nome serif">${saudacaoIni(primeiro)}</h1>` : ""}
         ${D && D.inicio && D.inicio.fraseRetorno ? `<p class="pa-intro">${h(D.inicio.fraseRetorno)}</p>` : ""}
         ${versNo("mensagem")}
       </section>
@@ -836,7 +837,7 @@ export function montar(raiz: HTMLElement) {
     const t = TELAS();
     return `
     <div class="pagina">
-      <h1 class="todos-mod serif tit-${h(t.modTitEstilo || "padrao")}">${h(t.modTitulo || "Todos os módulos")}</h1>
+      ${(t.modTitulo ?? "Todos os módulos") ? `<h1 class="todos-mod serif tit-${h(t.modTitEstilo || "padrao")}">${h(t.modTitulo ?? "Todos os módulos")}</h1>` : ""}
       <div class="grade-mod gm-${h(t.modLayout || "padrao")} gm-${h(t.modTamanho || "medio")}${t.modProgresso === false ? " sem-prog" : ""}">${MODS().map((_, m) => linhaModulo(m)).join("") || `<div class="vazio">Os módulos aparecem aqui assim que forem liberados.</div>`}</div>
     </div>`;
   }
@@ -1347,15 +1348,15 @@ export function montar(raiz: HTMLElement) {
     // A configuração vale para a tela do botão Presentes (o primeiro botão com o ícone de presente).
     const t = TELAS(), ehPres = !aba || aba.icone === "presentes";
     const layout = ehPres ? t.presLayout || "grandes" : "grandes";
-    const titulo = ehPres && t.presTitulo ? t.presTitulo : aba ? aba.titulo : "Presentes";
+    const titulo = ehPres && typeof t.presTitulo === "string" ? t.presTitulo : aba ? aba.titulo : "Presentes";
     if (layout !== "grandes") return `
     <div class="pagina">
-      <h1 class="todos-mod serif tit-${h(t.presTitEstilo || "padrao")}">${h(titulo)}</h1>
+      ${titulo ? `<h1 class="todos-mod serif tit-${h(t.presTitEstilo || "padrao")}">${h(titulo)}</h1>` : ""}
       ${lista.length ? `<div class="pb-grade pb-${h(layout)} pb-est-${h(t.presEstilo || "padrao")}">${lista.map(botaoCategoria).join("")}</div>` : `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}
     </div>`;
     return `
     <div class="pagina">
-      <h1 class="todos-mod serif${ehPres ? " tit-" + h(t.presTitEstilo || "padrao") : ""}">${h(titulo)}</h1>
+      ${titulo ? `<h1 class="todos-mod serif${ehPres ? " tit-" + h(t.presTitEstilo || "padrao") : ""}">${h(titulo)}</h1>` : ""}
       ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button${est(estCat(x.curso), "botao", "botao")} data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
       <div class="cat-grade${ehPres ? " pg-est-" + h(t.presEstilo || "padrao") : ""}">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
     </div>`;
@@ -1772,13 +1773,13 @@ export function montar(raiz: HTMLElement) {
   function perfilConfigurado() {
     const P = (D && D.inicio && D.inicio.perfil) || { titulo: "Seu perfil", saudacao: "{nome_completo}", imagem: "nenhum", texto: "", layout: "padrao", botoes: [] };
     const primeiro = (S.nome || "").trim().split(/\s+/)[0] || "";
-    const saud = (P.saudacao || "{nome_completo}").replace(/\{nome_completo\}/g, S.nome || "").replace(/\{nome\}/g, primeiro);
+    const saud = (P.saudacao ?? "{nome_completo}").replace(/\{nome_completo\}/g, S.nome || "").replace(/\{nome\}/g, primeiro);
     const bts = (P.botoes && P.botoes.length ? P.botoes : [{ id: "configurar", rotulo: "Configurar", visivel: true }, { id: "onde_parei", rotulo: "Onde parei", visivel: true }, { id: "sair", rotulo: "Sair da área de membros", visivel: true }]).filter((b) => b.visivel !== false);
     const foto = P.imagem === "foto" ? `<div class="pf-foto-al"><button class="pf-foto-circ" data-a="escolher-foto" aria-label="Trocar sua foto">${S.foto ? `<img src="${h(S.foto)}" alt="" />` : `<span>${h((S.nome || "?").trim()[0] || "?")}</span>`}<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M4 8h3l2-2.5h6L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></i></button></div>`
       : P.imagem === "icone" ? `<div class="pf-foto-al"><span class="pf-foto-circ pf-icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6.5 8-6.5s7 2 8 6.5"/></svg></span></div>` : "";
     return `
       <div class="pf-al pf-al-${h(P.layout || "padrao")}">
-        <div class="ola"><p>${h(P.titulo || "Seu perfil")}</p><h1 class="serif">${h(saud)}</h1></div>
+        ${(P.titulo ?? "Seu perfil") || saud.trim() ? `<div class="ola">${(P.titulo ?? "Seu perfil") ? `<p>${h(P.titulo ?? "Seu perfil")}</p>` : ""}${saud.trim() ? `<h1 class="serif">${h(saud)}</h1>` : ""}</div>` : ""}
         ${foto}
         <div class="pf-al-bts">${bts.map((b) => {
           const ic = IC_PERFIL[b.id] || IC_PERFIL.link;
