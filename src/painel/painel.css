@@ -3895,3 +3895,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cc-bt b { flex: 1; text-align: center; font-size: 16px; }
 .cc-bt i { font-style: normal; font-size: 22px; line-height: 1; }
 .cc-nota { margin: 8px 0 12px !important; font-size: 12px !important; }
+.cfg-abas button { padding: 0 13px; gap: 8px; font-size: 14px; }

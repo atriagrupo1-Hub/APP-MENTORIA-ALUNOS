@@ -278,7 +278,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, vers_titulo, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, cursos_rotulo, cursos_botao, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, vers_titulo, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -442,7 +442,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
-      telas: { modTitulo: cd.modulos_titulo ?? "Todos os módulos", modTitEstilo: cd.modulos_titulo_estilo ?? "padrao", modProgresso: cd.modulos_progresso === false ? "nao" : "sim", modLayout: cd.modulos_layout ?? "padrao", modTamanho: cd.modulos_tamanho ?? "medio", modFormato: cd.modulos_formato === "cima" ? "cima" : "lado", presTitulo: cd.presentes_titulo ?? "Presentes", presTitEstilo: cd.presentes_titulo_estilo ?? "padrao", presLayout: cd.presentes_layout ?? "grandes", presEstilo: cd.presentes_estilo ?? "padrao",
+      telas: { modTitulo: cd.modulos_titulo ?? "Todos os módulos", modTitEstilo: cd.modulos_titulo_estilo ?? "padrao", modProgresso: cd.modulos_progresso === false ? "nao" : "sim", modLayout: cd.modulos_layout ?? "padrao", modTamanho: cd.modulos_tamanho ?? "medio", modFormato: cd.modulos_formato === "cima" ? "cima" : "lado", curRotulo: typeof cd.cursos_rotulo === "string" ? cd.cursos_rotulo : "Curso completo", curBotao: typeof cd.cursos_botao === "string" ? cd.cursos_botao : "Ver curso", presTitulo: cd.presentes_titulo ?? "Presentes", presTitEstilo: cd.presentes_titulo_estilo ?? "padrao", presLayout: cd.presentes_layout ?? "grandes", presEstilo: cd.presentes_estilo ?? "padrao",
         perfTitulo: cd.perfil_titulo ?? "Seu perfil", perfSaud: cd.perfil_saudacao ?? "{nome_completo}", perfImagem: cd.perfil_imagem ?? "nenhum", perfTexto: cd.perfil_texto ?? "", perfLayout: cd.perfil_layout ?? "padrao",
         vExibir: cd.vers_exibir === false ? "nao" : "sim", vEstilo: cd.vers_estilo ?? "caixa", vPosicao: cd.vers_posicao ?? "mensagem", vRef: cd.vers_referencia === false ? "nao" : "sim", vFundo: cd.vers_fundo ?? "escuro", vFonte: cd.vers_fonte ?? "serifa", vTamanho: cd.vers_tamanho ?? "medio", vTitulo: typeof cd.vers_titulo === "string" ? cd.vers_titulo : "Versículo de hoje",
         vCorTexto: (cd.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cd.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cd.vers_cores as Record<string, string> | null)?.fundo ?? "" },
@@ -700,7 +700,7 @@ export function montar(app: HTMLElement) {
     const dir: Record<string, unknown> = {}, vg: Record<string, unknown> = { ...S.geralRaw };
     // Módulos valem para as duas versões: o que é de módulos vai sempre para a base.
     for (const [k, v] of Object.entries(obj)) {
-      if (k === "capa_guia" || k === "produto_jornada" || k.startsWith("modulos_")) dir[k] = v;
+      if (k === "capa_guia" || k === "produto_jornada" || k.startsWith("modulos_") || k.startsWith("cursos_")) dir[k] = v;
       else if (k === "estilo_inicio") {
         const e = (v && typeof v === "object" ? v : {}) as Record<string, unknown>;
         const mods = Object.fromEntries(Object.entries(e).filter(([x]) => ehChaveModulo(x))), resto = Object.fromEntries(Object.entries(e).filter(([x]) => !ehChaveModulo(x)));
@@ -2318,6 +2318,7 @@ export function montar(app: HTMLElement) {
   const versHoje = () => { const i = versiculoDeHoje(); return i >= 0 ? versVisiveis()[i] : null; };
   const FRASE_MODELO = "Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.";
   const IC_CFG: Record<string, string> = {
+    cursos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M10 7.8v4.4l3.8-2.2z"/><path d="M7 20h10"/></svg>`,
     inicio: ICONE_MENU.inicio,
     modulos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>`,
     presentes: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M3 9h18M12 9v11M12 9c-1.5-3-6-4-6-1.5S10 9 12 9zm0 0c1.5-3 6-4 6-1.5S14 9 12 9z"/></svg>`,
@@ -2331,7 +2332,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["cursos", "Cursos"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"]];
   /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
   const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
@@ -2438,6 +2439,29 @@ export function montar(app: HTMLElement) {
             <div class="cfg-ordem">${linhasEstilo("aula", PARTES_AULA)}</div>
           </div>
         </div>
+        ${previaCfgBox("")}
+      </div>`;
+  }
+  /** Configurações → Cursos: o card de todos os cursos (capa deitada, texto em cima, nome, descrição, progresso e botão). */
+  function cfgCursos() {
+    const t = S.config.telas;
+    const linhaC = (campo: string, chave: string, nome: string) => `<div class="cfg-linha-est">${campo}${botaoEstiloTexto(chave, nome)}</div>`;
+    return `
+      <div class="cfg-grade">
+        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="cursos">
+          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.cursos}</span><div><h2>Cursos</h2><p>O card de todos os cursos: o que aparece dentro de cada categoria.</p></div></div>
+          <div class="cfg-bloco">
+            <h3>Textos do card ${dicaCampo(`O texto pequeno em cima do nome (ex.: "Curso completo") e o texto do botão (ex.: "Ver curso"). Valem para todos os cursos. Vazio: o texto de cima não aparece. O nome, a descrição e a capa de cada curso são editados no próprio curso, em Sobre o curso.`, "cfg.cursos-textos")}</h3><p class="cfg-sub">Valem para todos os cursos. Nome, descrição e capa ficam em cada curso.</p>
+            ${linhaC(`<label class="cfg-c"><span>Texto em cima do nome</span><input class="campo" name="curRotulo" value="${h(t.curRotulo ?? "Curso completo")}" maxlength="40" placeholder="Ex.: Curso completo" /></label>`, "est:currot", "Texto em cima do nome do curso")}
+            ${linhaC(`<span class="cfg-c cfg-c-so"><span>Nome do curso</span><em>Vem de cada curso.</em></span>`, "est:curtitulo", "Nome do curso")}
+            ${linhaC(`<span class="cfg-c cfg-c-so"><span>Descrição do curso</span><em>Vem de cada curso.</em></span>`, "est:curdesc", "Descrição do curso")}
+            ${linhaC(`<label class="cfg-c"><span>Texto do botão</span><input class="campo" name="curBotao" value="${h(t.curBotao ?? "Ver curso")}" maxlength="30" placeholder="Ex.: Ver curso" /></label>`, "est:curbotaotx", "Texto do botão do curso")}
+          </div>
+          <div class="cfg-bloco">
+            <h3>Card e botão ${dicaCampo(`Borda, sombra e fundo do card de todos os cursos e do botão.`, "cfg.cursos-card")}</h3><p class="cfg-sub">Toque em Estilo. O celular ao lado mostra na hora.</p>
+            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "curcard" || x.k === "curbotao"))}</div>
+          </div>
+        </form>
         ${previaCfgBox("")}
       </div>`;
   }
@@ -2895,6 +2919,8 @@ export function montar(app: HTMLElement) {
           <p class="cfg-pvnota">É o app de verdade, com o que está publicado agora e o que você mudou aqui. Role com o mouse dentro do celular. Mostra a sua conta da equipe, então tudo aparece liberado.</p>
         </aside>
       </div>`;
+    } else if (aba === "cursos") {
+      corpo = cfgCursos();
     } else if (aba === "modulos" || aba === "presentes") {
       corpo = aba === "modulos" ? cfgModulos() : cfgPresentes();
     } else if (aba === "perfil") {
@@ -4624,6 +4650,7 @@ export function montar(app: HTMLElement) {
     const hex = (x: string) => (/^#[0-9a-f]{6}$/i.test(x || "") ? x.toLowerCase() : "");
     const msg: Record<string, unknown> = { tipo: "previa-cfg", ir: "inicio", estilos: ui.prevEst };
     if (aba === "modulos") Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, foco: (PARTES_INICIO.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0].replace(/^html /, "") || "").trim(), ir: "modulos", telas: { modTitulo: (t.modTitulo || "").trim(), modTitEstilo: t.modTitEstilo, modProgresso: t.modProgresso !== "nao", modLayout: t.modLayout, modTamanho: t.modTamanho, modFormato: t.modFormato } });
+    else if (aba === "cursos") Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, foco: (PARTES_INICIO.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0].replace(/^html /, "") || "").trim(), ir: "cursos-exemplo", telas: { curRotulo: t.curRotulo ?? "Curso completo", curBotao: (t.curBotao ?? "").trim() || "Ver curso" } });
     else if (aba === "presentes") { const pb = presBotao(); Object.assign(msg, { ir: pb ? "aba:" + pb.id : "presentes", telas: { presTitulo: (t.presTitulo || "").trim(), presTitEstilo: t.presTitEstilo, presLayout: t.presLayout, presEstilo: t.presEstilo } }); }
     else if (aba === "versiculos") Object.assign(msg, { estiloInicio: ui.prevEst.inicio === undefined ? S.config.estiloInicio : ui.prevEst.inicio, foco: (PARTES_INICIO.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), vers: { titulo: t.vTitulo ?? "Versículo de hoje", exibir: t.vExibir !== "nao", estilo: t.vEstilo, posicao: t.vPosicao, referencia: t.vRef !== "nao", fundo: t.vFundo, fonte: t.vFonte, tamanho: t.vTamanho, cores: { texto: hex(t.vCorTexto) || "#f6eed7", borda: hex(t.vCorBorda) || "#d4af37", fundo: hex(t.vCorFundo) || "#0b0b0b" } } });
     else if (aba === "perfil") Object.assign(msg, { estiloNotif: ui.prevEst.notif === undefined ? S.config.estiloNotif : ui.prevEst.notif, estiloPerfil: ui.prevEst.perfil === undefined ? S.config.estiloPerfil : ui.prevEst.perfil, foco: (PARTES_PERFIL.find((x) => x.k === ui.prevEst.foco)?.sel.split(",")[0] || "").trim(), ir: ui.pvNotif ? "inicio" : "perfil", pop: ui.pvNotif, notif: notifDoForm(t), perfil: { titulo: (t.perfTitulo || "").trim(), saudacao: (t.perfSaud || "").trim(), imagem: t.perfImagem, texto: (t.perfTexto || "").trim(), layout: t.perfLayout, botoes: S.config.perfBotoes } });
@@ -4985,7 +5012,7 @@ export function montar(app: HTMLElement) {
     if (hid[k]) { if (!val.cor) val.cor = inp(hid[k][0])?.value || ""; if (!val.fonte) val.fonte = inp(hid[k][1])?.value || ""; }
     const reserva: Vista = { cor: "#f1e6c9", fonte: "Lato", px: 16, negrito: false, italico: false, alinha: "left" };
     const vista = vistaNaPrevia(pt.sel, reserva);
-    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui", mbtodos: "Início  Módulos  Perfil", modtit: (inp("modTitulo")?.value || "").trim() || "Todos os módulos", modrot: "Módulo 1", modtitulo: "Descobrindo o bloqueio", moddesc: "4 aulas · o texto do módulo", modbotaotx: "Ver aulas (4)", ...Object.fromEntries(menuRascunho().botoes.map((b) => [chaveMenu(b.id), b.rotulo || "Botão"])), verstit: (inp("vTitulo")?.value || "").trim() || "Versículo de hoje", verstexto: versHoje() ? "“" + (versHoje()!.texto.length > 34 ? versHoje()!.texto.slice(0, 32) + "…" : versHoje()!.texto) + "”" : "Mensagem do dia", versrefe: versHoje()?.ref || "Referência" };
+    const textos: Record<string, string> = { toposaud: (inp("topoSaudA")?.value || "").trim() || "Olá,", toponome: "Maria Silva", marca: (inp("marcaTitulo")?.value || "").trim() || "Título", marcasub: (inp("marcaSub")?.value || "").trim() || "Subtítulo", saudacao: (inp("saudacao")?.value || "").replace(/\{nome(?:_completo)?\}/g, "Maria").trim() || "Bem-vindo(a), Maria", mensagem: (inp("fraseRetorno")?.value || "").trim().slice(0, 40) || "Mensagem de boas-vindas", divisor: (inp("divTexto")?.value || "").trim() || "Também para você", comece: (inp("inicioComece")?.value || "").trim() || "Comece por aqui", mbtodos: "Início  Módulos  Perfil", modtit: (inp("modTitulo")?.value || "").trim() || "Todos os módulos", currot: (inp("curRotulo")?.value || "").trim() || "Curso completo", curtitulo: "O Despertar Espiritual", curdesc: "Entenda os princípios…", curbotaotx: (inp("curBotao")?.value || "").trim() || "Ver curso", modrot: "Módulo 1", modtitulo: "Descobrindo o bloqueio", moddesc: "4 aulas · o texto do módulo", modbotaotx: "Ver aulas (4)", ...Object.fromEntries(menuRascunho().botoes.map((b) => [chaveMenu(b.id), b.rotulo || "Botão"])), verstit: (inp("vTitulo")?.value || "").trim() || "Versículo de hoje", verstexto: versHoje() ? "“" + (versHoje()!.texto.length > 34 ? versHoje()!.texto.slice(0, 32) + "…" : versHoje()!.texto) + "”" : "Mensagem do dia", versrefe: versHoje()?.ref || "Referência" };
     const por = (t: Txt) => { ui.prevEst.inicio = limparEstilo({ ...base, [k]: visualDe(base[k], t) }); ui.prevEst.foco = k; if (ui.cfgAba === "inicio") atualizarPreviaCfg(); else mandarPreviaCfg(); };
     janelaEstilo({ nome: pt.nome, texto: textos[k] || pt.nome, val, vista, volta: botao,
       aoMudar: por,
@@ -6670,6 +6697,14 @@ export function montar(app: HTMLElement) {
             falhou(await cfgUpdate({ vers_exibir: tv.vExibir !== "nao", vers_estilo: tv.vEstilo, vers_posicao: tv.vPosicao, vers_referencia: tv.vRef !== "nao", vers_fundo: tv.vFundo, vers_fonte: tv.vFonte, vers_tamanho: tv.vTamanho, vers_cores: iguais ? null : cores, vers_titulo: (tv.vTitulo ?? "").trim() }));
             await registrar(null, "Mudou a Mensagem de destaque da área de membros");
             return "Mensagem de destaque salva.";
+          });
+          return;
+        }
+        if (form.dataset.tela === "cursos") {
+          void executar(async () => {
+            falhou(await cfgUpdate({ cursos_rotulo: (tv.curRotulo ?? "").trim(), cursos_botao: (tv.curBotao ?? "").trim() || "Ver curso" }));
+            await registrar(null, "Mudou o card dos cursos da área de membros");
+            return "Card dos cursos salvo.";
           });
           return;
         }
