@@ -3871,3 +3871,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cfg-mbcor { width: 100%; justify-content: flex-start; padding: 0 12px; }
 .cfg-mbcor i { width: 26px; height: 26px; }
 .cfg-mbcor b { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-weight: 600; letter-spacing: .03em; }
+.cfg-vlista > .cfg-ordem { padding: 10px; margin: 0; }

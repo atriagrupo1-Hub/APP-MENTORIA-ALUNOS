@@ -537,7 +537,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", versAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2441,17 +2441,13 @@ export function montar(app: HTMLElement) {
             <input type="hidden" name="modTitEstilo" value="${h(t.modTitEstilo)}" />
             <div class="cfg-linha-est"><label class="cfg-c"><span><b class="cfg-l">Título da seção ${dicaCampo(`O nome que aparece no alto da tela Módulos no app da aluna. O botão Estilo muda a fonte, o tamanho, o alinhamento, a cor e a sombra. Vazio: não aparece.`, "cfg.titulo-secao-mod")}</b><small>Nome que aparece no topo da tela de módulos.</small></span><input class="campo" name="modTitulo" value="${h(t.modTitulo)}" maxlength="40" placeholder="Vazio: não aparece no app" /></label>${botaoEstiloTexto("est:modtit", "Título da tela Módulos")}</div>
           </div>
+          <input type="hidden" name="modProgresso" value="${h(t.modProgresso)}" /><input type="hidden" name="modLayout" value="${h(t.modLayout)}" /><input type="hidden" name="modTamanho" value="${h(t.modTamanho)}" />
           <div class="cfg-bloco">
-            <div class="cfg-blcab"><div><h3>Cards dos módulos ${dicaCampo(`Os cartões que a aluna vê em Módulos, um por módulo da mentoria. "Exibir progresso" mostra a barra com quantas aulas ela já fez em cada módulo.`, "cfg.cards-dos-m-dulos")}</h3><p class="cfg-sub">Personalize a aparência dos cards que aparecem para a aluna.</p></div><label class="cfg-chave"><input type="checkbox" name="modProgresso" ${t.modProgresso !== "nao" ? "checked" : ""} /><i></i>Exibir progresso</label></div>
-            <div class="cfg-cards">${mods.map((m) => { const c = capaSite(m.capa); return `<span class="cfg-mcard">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}<small>${h(m.rot)} ${m.num}</small><b>${h(m.nome)}</b><em>${IC_CUR.camadas}${p(m.aulas.length, "aula", "aulas")}</em></span>`; }).join("") || `<p class="cfg-sub">A mentoria ainda não tem módulos.</p>`}</div>
-          </div>
-          <div class="cfg-bloco cfg-2l">
-            <div><h3>Layout dos cards ${dicaCampo(`O visual dos cartões dos módulos: Padrão, Com moldura (borda dupla) ou Minimalista (sem fundo e com borda fina).`, "cfg.layout-dos-cards")}</h3>${opcoesCfg("modLayout", t.modLayout, EST_TIT)}</div>
             <div class="cfg-formato"><h3>Formato do card ${dicaCampo(`Capa ao lado: a capa vertical do módulo à esquerda e o texto à direita (como era). Capa em cima: a capa horizontal em cima, depois "Módulo", o título, o texto e o botão Ver aulas largo, igual ao card do Início.`, "cfg.formato-card-mod")}</h3><div class="cfg-tams">${[["lado", "Capa ao lado"], ["cima", "Capa em cima"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modFormato" value="${k}" ${(t.modFormato || "lado") === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
-            <div><h3>Tamanho ${dicaCampo(`O tamanho da capa do módulo dentro do cartão: Pequeno, Médio ou Grande.`, "cfg.tamanho")}</h3><div class="cfg-tams">${[["pequeno", "Pequeno"], ["medio", "Médio"], ["grande", "Grande"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modTamanho" value="${k}" ${t.modTamanho === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
           </div>
           <div class="cfg-bloco">
             <h3>Ordem dos módulos ${dicaCampo(`A ordem em que os módulos aparecem para a aluna. Arraste pela alça (⋮⋮) para mudar. O status define se o módulo está ativo, bloqueado (aparece com cadeado) ou oculto (não aparece). O ⋮ abre o curso para editar.`, "cfg.ordem-dos-m-dulos")}</h3><p class="cfg-sub">Arraste para mudar a ordem que aparece no app.</p>
+            <details class="cfg-vlista" data-ui="modOrdemAberta"${ui.modOrdemAberta ? " open" : ""}><summary><span class="cfg-vlista-t">${ui.modOrdemAberta ? "Fechar a lista" : "Abrir a lista"} <em>(${p(mods.length, "módulo", "módulos")})</em></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
             <div class="cfg-ordem">${mods.map((m, i) => { const c = capaSite(m.capa); return `
               <div class="cfg-orl" draggable="true" data-arrasta="${m.id}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
@@ -2463,6 +2459,7 @@ export function montar(app: HTMLElement) {
                 ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo))}
                 <button type="button" class="eq-pts" data-a="cfg-mod-ir" data-id="${jor!.id}" title="Abrir o curso para editar" aria-label="Editar ${h(m.nome)}">${IC_EQ.pontos}</button>
               </div>`; }).join("")}</div>
+            </details>
           </div>
         </form>
         ${previaCfgBox(previaModulos(t))}
@@ -4917,7 +4914,8 @@ export function montar(app: HTMLElement) {
   // Lista da Mensagem de destaque: abre e fecha (fica como a pessoa deixou enquanto o painel está aberto).
   document.addEventListener("toggle", (e) => {
     const d = e.target as HTMLDetailsElement; if (!d.matches?.("details.cfg-vlista")) return;
-    ui.versAberta = d.open; const t = d.querySelector(".cfg-vlista-t"); if (t?.firstChild) t.firstChild.textContent = (d.open ? "Fechar a lista" : "Abrir a lista") + " ";
+    if (d.dataset.ui === "modOrdemAberta") ui.modOrdemAberta = d.open; else ui.versAberta = d.open;
+    const t = d.querySelector(".cfg-vlista-t"); if (t?.firstChild) t.firstChild.textContent = (d.open ? "Fechar a lista" : "Abrir a lista") + " ";
   }, true);
   function abrirFonteCor(chave: string, botao: HTMLElement) {
     const f = botao.closest<HTMLFormElement>("form"); if (!f) return;
