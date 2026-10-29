@@ -2532,6 +2532,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Lista de mensagens ${dicaCampo(`As mensagens que aparecem uma por dia no Início, em sequência, voltando ao primeiro depois do último. As ocultas ficam guardadas e não entram na sequência. "Hoje" marca o que está aparecendo agora.`, "cfg.lista-de-vers-culos")}</h3><p class="cfg-sub">As mensagens que aparecem em sequência, uma por dia. ${hoje ? "Hoje aparece: " + h(hoje.ref) + "." : ""}</p></div><button type="button" class="al-botao-ouro pequeno" data-a="vers-novo">${IC_EQ.mais}Adicionar mensagem</button></div>
             <details class="cfg-vlista"${ui.versAberta ? " open" : ""}><summary><span class="cfg-vlista-t">${ui.versAberta ? "Fechar a lista" : "Abrir a lista"} <em>(${p(S.versiculos.length, "mensagem", "mensagens")})</em></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
+            <div class="cfg-vtodas"><span>${S.versiculos.filter((y) => y.visivel).length} de ${S.versiculos.length} ativas</span><button type="button" class="al-botao pequeno" data-a="vers-todas" data-v="sim">Ativar todas</button><button type="button" class="al-botao pequeno" data-a="vers-todas" data-v="nao">Desativar todas</button></div>
             <div class="cfg-vtab">
               <div class="cfg-vcab"><span></span><span>#</span><span>Texto da mensagem</span><span>Referência</span><span>Ordem</span><span>Visível</span><span>Ações</span></div>
               ${S.versiculos.map((x, i) => `
@@ -5802,6 +5803,18 @@ export function montar(app: HTMLElement) {
         const x = S.versiculos.find((y) => y.id === d.id); if (!x) break;
         void executar(async () => { falhou(await supabase.from("versiculos").update({ visivel: !x.visivel }).eq("id", x.id).select("id").single()); return x.ref + (x.visivel ? " oculto." : " visível."); });
         return;
+      }
+      case "vers-todas": {
+        const ligar = d.v === "sim", ids = S.versiculos.filter((y) => y.visivel !== ligar).map((y) => y.id);
+        if (!ids.length) { toast(ligar ? "Todas as mensagens já estão ativas." : "Todas as mensagens já estão desativadas."); return; }
+        const trabalho = async (): Promise<Resultado> => {
+          falhou(await supabase.from("versiculos").update({ visivel: ligar }).in("id", ids).select("id"));
+          await registrar(null, ligar ? "Ativou todas as mensagens de destaque" : "Desativou todas as mensagens de destaque");
+          return ligar ? "Todas as mensagens ativadas." : "Todas as mensagens desativadas.";
+        };
+        if (ligar) void executar(trabalho);
+        else confirmar({ titulo: "Desativar todas as mensagens?", texto: "Sem nenhuma ativa, o Início não mostra a mensagem de destaque. Dá para ativar de novo depois.", rotulo: "Desativar todas" }, trabalho);
+        break;
       }
       case "vers-novo": ui.modal = { tipo: "vers", id: "novo" }; break;
       case "vers-modal": ui.modal = { tipo: "vers", id: d.id }; break;

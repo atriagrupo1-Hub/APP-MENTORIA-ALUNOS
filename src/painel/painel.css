@@ -3848,3 +3848,5 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cfg-vlista[open] > summary svg { transform: rotate(180deg); }
 .cfg-vlista[open] > summary { border-bottom: 1px solid var(--linha-suave); }
 .cfg-vlista > .cfg-vtab { margin: 0; border: 0; }
+.cfg-vtodas { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px; border-bottom: 1px solid var(--linha-suave); }
+.cfg-vtodas > span { margin-right: auto; font-size: 13px; color: var(--texto-2); }
