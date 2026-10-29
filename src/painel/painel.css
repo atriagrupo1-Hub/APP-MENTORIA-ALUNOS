@@ -3823,3 +3823,15 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .fc-alfa { position: relative; height: 14px; margin-top: 12px; border-radius: 999px; cursor: pointer; touch-action: none; background: repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 10px 10px; }
 .fc-alfa b { position: absolute; inset: 0; border-radius: inherit; }
 .fc-alfa i { position: absolute; top: 50%; width: 16px; height: 16px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0, 0, 0, .35), 0 2px 4px rgba(0, 0, 0, .3); transform: translate(-50%, -50%); pointer-events: none; }
+
+/* ——— Cor de fundo do card ——— */
+.se-seg3 { display: inline-flex; flex: none; border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.se-seg3 button { width: 46px; height: 40px; display: grid; place-items: center; border: 0; border-left: 1px solid var(--linha); background: var(--aa-cartao, #fff); color: var(--texto); cursor: pointer; }
+.se-seg3 button:first-child { border-left: 0; }
+.se-seg3 button:hover { background: rgba(201, 162, 92, .1); }
+.se-seg3 button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); }
+.se-seg3 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.se-sub { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding-left: 14px; font-size: 14px; color: var(--texto-2); }
+.se-sub-bts { display: flex; align-items: center; gap: 6px; }
+.se-sub-ang .se-pop-rl { flex: 1; max-width: 230px; grid-template-columns: minmax(0, 1fr) 70px; }
+.fc-degs button { border-radius: 50%; }
