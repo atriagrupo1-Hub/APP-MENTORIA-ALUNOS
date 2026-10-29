@@ -2747,21 +2747,18 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <div class="cfg-blcab"><div><h3>Botões do menu ${dicaCampo(`Os botões da barra de baixo do app (no computador, no alto). Dá para mudar o nome, o ícone, a cor quando está ativo, esconder e arrastar para mudar a ordem. Início e Perfil ficam sempre. "Adicionar botão" cria um botão que abre um link.`, "cfg.bot-es-do-menu")}</h3><p class="cfg-sub">Arraste para mudar a ordem dos botões.</p></div><button type="button" class="al-botao-ouro pequeno" data-a="mb-editar" data-v="novo">${IC_EQ.mais}Adicionar botão</button></div>
             <div class="cfg-mbtodos">
-              <span class="cfg-aul-tx"><b>Todos os botões</b><small>Cor quando o botão está aberto e o Estilo do texto (fonte, tamanho, cor…) de todos de uma vez. Depois dá para mudar um por um, abaixo.</small></span>
+              <span class="cfg-aul-tx"><b>Todos os botões</b></span>
               ${botaoEstiloTexto("est:mbtodos", "Texto de todos os botões do menu")}
-              <label class="cfg-corbt cfg-corlivre" title="Cor de todos os botões" style="background:${h(M.cores.ativo)}"><input type="color" value="${h(M.botoes.every((b) => (b.cor || M.cores.ativo) === (M.botoes[0]?.cor || M.cores.ativo)) ? M.botoes[0]?.cor || M.cores.ativo : M.cores.ativo)}" data-mb-cor-todos="1" aria-label="Cor de todos os botões" /></label>
             </div>
-            <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id), cor = b.cor || M.cores.ativo; return `
+            <div class="cfg-ordem">${M.botoes.map((b, i) => { const fixo = FIXOS_MENU.has(b.id); return `
               <div class="cfg-orl cfg-mbl" draggable="true" data-arrasta="mb:${i}">
                 <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
                 <span class="cfg-n">${i + 1}</span>
                 <span class="cfg-mbic">${IC_APP[b.icone || "inicio"] || IC_APP.inicio}</span>
                 <input class="campo cfg-mbrot" value="${h(b.rotulo)}" maxlength="18" data-mb-rot="${i}" aria-label="Nome do botão ${i + 1}" />
                 <span class="est3"><button type="button" class="cfg-icbt" data-a="estado-menu" data-v="mbic:${i}" title="Ícone" aria-label="Ícone do botão">${IC_APP[b.icone || "inicio"] || IC_APP.inicio}</button>${ui.estMenu === "mbic:" + i ? `<span class="est3-menu cfg-icmenu" role="menu">${Object.keys(IC_APP).map((k) => `<button type="button" role="menuitem" data-a="mb-icone" data-id="${i}" data-v="${k}" title="${NOME_IC_APP[k]}" aria-label="${NOME_IC_APP[k]}">${IC_APP[k]}</button>`).join("")}</span>` : ""}</span>
-                <label class="cfg-corbt cfg-corlivre" title="Cor quando o botão está ativo" style="background:${h(cor)}"><input type="color" value="${h(cor)}" data-mb-cor="${i}" aria-label="Cor do botão" /></label>
                 ${botaoEstiloTexto("est:" + chaveMenu(b.id), "Botão " + b.rotulo)}
                 <button type="button" class="cfg-vis${b.visivel !== false ? " on" : ""}" data-a="mb-vis" data-v="${i}" aria-pressed="${b.visivel !== false}" ${fixo ? 'disabled title="Início e Perfil ficam sempre no menu"' : ""}><i></i>${b.visivel !== false ? "Visível" : "Oculto"}</button>
-                <button type="button" class="al-botao pequeno" data-a="mb-editar" data-v="${i}">${IC_EQ.lapis}Editar</button>
                 ${b.url ? `<button type="button" class="cfg-lixo" data-a="mb-remover" data-v="${i}" aria-label="Excluir ${h(b.rotulo)}">${IC_MOD.lixo}</button>` : `<span class="cfg-lixo vazio" title="Botão do app: use Visível para esconder"></span>`}
               </div>`; }).join("")}</div>
             <div class="cfg-ordem cfg-mbbarra">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "menu"))}</div>
