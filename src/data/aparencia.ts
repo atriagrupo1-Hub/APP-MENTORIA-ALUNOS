@@ -60,6 +60,15 @@ export function carregarFonte(f: string) {
   document.head.append(l);
 }
 
+/** Carrega várias fontes de uma vez (um só pedido ao Google), só as que ainda faltam. */
+export function carregarFontes(fs: string[]) {
+  const faltam = fs.filter((f) => f && f !== "Cormorant Garamond" && f !== "Lato" && !document.getElementById("fonte-" + f.replace(/\s+/g, "-")));
+  if (!faltam.length) return;
+  const l = Object.assign(document.createElement("link"), { rel: "stylesheet", href: `https://fonts.googleapis.com/css2?${faltam.map((f) => "family=" + encodeURIComponent(f).replace(/%20/g, "+") + ":wght@400;600").join("&")}&display=swap` });
+  faltam.forEach((f) => document.head.append(Object.assign(document.createElement("meta"), { id: "fonte-" + f.replace(/\s+/g, "-") })));
+  document.head.append(l);
+}
+
 let fontesOriginais: Array<[CSSStyleDeclaration, string]> | null = null;
 /** Troca as fontes do app nas regras de CSS (títulos: Cormorant Garamond; textos: Lato). */
 function trocarFontes(titulo: string, texto: string) {

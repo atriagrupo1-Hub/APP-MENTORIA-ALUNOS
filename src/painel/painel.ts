@@ -21,7 +21,7 @@ import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif
 import { cssFundo, FONTES_APP, limparEstilo, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante } from "./flutuante";
-import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, type Aparencia, type Cores } from "@/data/aparencia";
+import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
 
 /* ---------- tipos ---------- */
 
@@ -2816,6 +2816,9 @@ export function montar(app: HTMLElement) {
       <div class="pv-pbs pv-pl-${h(t.presLayout)} pv-pe-${h(t.presEstilo)}">${cats.map(item).join("")}</div>`);
   }
   function telaConfig() {
+    // As fontes da lista já vêm carregadas antes de abrir "Fonte e cor" (abre na hora, sem travar).
+    const ric = (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback || ((f: () => void) => setTimeout(f, 300));
+    ric(() => carregarFontes(FONTES_APP));
     const aba = ui.cfgAba;
     let corpo = "";
     if (aba === "inicio") {
@@ -4697,7 +4700,7 @@ export function montar(app: HTMLElement) {
     fecharFlutuante(false);
     let cor = o.cor, fonte = o.fonte ?? "";
     const comFonte = o.fonte !== null;
-    FONTES_APP.forEach((x) => carregarFonte(x));
+    carregarFontes(FONTES_APP);
     const SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
     const GOTA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg>`;
     const fundo = document.createElement("div"); fundo.className = "fc-fundo";
@@ -4720,12 +4723,13 @@ export function montar(app: HTMLElement) {
         const am = q(".fc-amostra span")!; am.style.color = corVista(); am.style.fontFamily = f2 ? ffam(f2) : "";
         const st = q(".fc-sel-t")!; st.textContent = fonte || "Fonte do app (padrão)"; st.style.fontFamily = fonte ? ffam(fonte) : "";
       } else fundo.querySelectorAll<HTMLElement>(".fc-amostra i").forEach((x) => { x.style.background = corVista(); });
-      q(".fc-bola")!.style.background = corVista(); q(".fc-cod")!.textContent = cor ? cor.toUpperCase() : "Cor do app (padrão)";
+      q(".fc-bola")!.style.background = corVista(); const cd = q(".fc-cod")!; cd.textContent = cor ? cor.toUpperCase() : "Cor do app (padrão)"; cd.classList.toggle("pd", !cor);
     };
     const mudar = () => { pintar(); o.aoMudar(cor, fonte); };
     const fechar = (salvar: boolean) => {
       fecharFlutuante(false);
-      fundo.remove(); document.removeEventListener("keydown", tecla, true); o.volta.focus();
+      document.removeEventListener("keydown", tecla, true); o.volta.focus();
+      fundo.classList.add("saindo"); setTimeout(() => fundo.remove(), 140);
       if (salvar) o.aoSalvar(cor, fonte); else o.aoCancelar();
     };
     const tecla = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); fechar(false); } };

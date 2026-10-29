@@ -8,7 +8,7 @@
  * só "Salvar" chama `aoSalvar`. Cancelar (ou Esc, ou clicar fora) desfaz.
  */
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, flutuanteDe } from "./flutuante";
-import { carregarFonte } from "../data/aparencia";
+import { carregarFontes } from "../data/aparencia";
 import { cssFundo, cssVisual, FONTES_APP, limparEstilo, SOMBRAS, type Estilo, type Visual } from "../data/estilo";
 
 export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string; fonte?: boolean };
@@ -181,7 +181,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
           aoPrevia: (x) => { const s2 = caixa.querySelector<HTMLElement>(".se-am-txt"); if (s2) s2.style.fontFamily = x ? `'${x}', Georgia, serif` : v.fonte ? `'${v.fonte}', Georgia, serif` : ""; },
           aoEscolher: (x) => { if (x) v.fonte = x; else delete v.fonte; mudou(); desenhar(); posicionar(); caixa.querySelector<HTMLElement>(".se-fonte")?.focus(); },
         });
-        FONTES_APP.forEach(carregarFonte);
+        carregarFontes(FONTES_APP);
         return;
       case "fundo-tipo":
         if (val === "padrao") { delete v.fundo; alvo = "texto"; }
