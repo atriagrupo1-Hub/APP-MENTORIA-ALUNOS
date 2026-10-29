@@ -11,6 +11,7 @@
 export type Fundo = { t: "cor" | "degrade"; a: string; b?: string; ang?: number };
 export const ESTILOS_BORDA = [["none", "Oculto"], ["solid", "Sólido"], ["dotted", "Pontilhado"], ["dashed", "Tracejado"], ["double", "Duplo"], ["groove", "Ranhurado"], ["ridge", "Cume"], ["inset", "Inserir"], ["outset", "Saliente"]] as const;
 export type BordaEst = { estilo: (typeof ESTILOS_BORDA)[number][0]; w: [number, number, number, number]; cor: string };
+export type SombraCx = { cor: string; a: number; x: number; y: number; blur: number; esp: number; inset: boolean };
 export type Visual = {
   fundo?: Fundo | null;
   texto?: string | null;
@@ -20,6 +21,8 @@ export type Visual = {
   forma?: "quadrado" | "arredondado" | "redondo" | null;
   /** Borda completa (editor de card): estilo, largura de cada lado (topo, direita, baixo, esquerda) e cor. */
   bordaEst?: BordaEst | null;
+  /** Sombra da caixa completa (editor de card): cor, opacidade (0–100), deslocamento, desfoque, espalhar e se é por dentro. */
+  sombraCx?: SombraCx | null;
   /** Cantos arredondados em px: topo-esquerdo, topo-direito, baixo-direito, baixo-esquerdo. */
   raio?: [number, number, number, number] | null;
   /** Só para textos: uma das FONTES_APP. */
@@ -53,6 +56,8 @@ export function limparVisual(v: unknown): Visual | null {
   const be = o.bordaEst;
   if (be && ESTILOS_BORDA.some(([k]) => k === be.estilo)) { const w = lados(be.w, 20); if (w) out.bordaEst = { estilo: be.estilo, w, cor: hex(be.cor) || "#d4af37" }; }
   const rr = lados(o.raio, 200); if (rr) out.raio = rr;
+  const sc = o.sombraCx, faixa = (n: unknown, a: number, b: number) => Math.max(a, Math.min(b, Math.round(Number(n) || 0)));
+  if (sc && hex(sc.cor)) out.sombraCx = { cor: hex(sc.cor), a: faixa(sc.a, 0, 100), x: faixa(sc.x, -100, 100), y: faixa(sc.y, -100, 100), blur: faixa(sc.blur, 0, 100), esp: faixa(sc.esp, -100, 100), inset: sc.inset === true };
   if (FONTES_APP.includes(o.fonte)) out.fonte = o.fonte;
   if (o.peso === "normal" || o.peso === "negrito") out.peso = o.peso;
   if (typeof o.italico === "boolean") out.italico = o.italico;
@@ -100,6 +105,7 @@ export function cssVisual(v: Visual | null | undefined, tipo: "card" | "botao" |
     else { imp("border-style", v.bordaEst.estilo); imp("border-width", v.bordaEst.w.map((n) => n + "px").join(" ")); imp("border-color", v.bordaEst.cor); }
   }
   if (v.raio) imp("border-radius", v.raio.map((n) => n + "px").join(" "));
+  if (v.sombraCx) { const s = v.sombraCx; imp("box-shadow", `${s.inset ? "inset " : ""}${s.x}px ${s.y}px ${s.blur}px ${s.esp}px ${rgba(s.cor, s.a / 100)}`); }
   return r.join(";");
 }
 

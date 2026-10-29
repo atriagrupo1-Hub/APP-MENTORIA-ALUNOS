@@ -9,7 +9,7 @@
  */
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, flutuanteDe } from "./flutuante";
 import { carregarFontes } from "../data/aparencia";
-import { cssFundo, cssVisual, ESTILOS_BORDA, FONTES_APP, limparEstilo, SOMBRAS, type BordaEst, type Estilo, type Visual } from "../data/estilo";
+import { cssFundo, cssVisual, ESTILOS_BORDA, FONTES_APP, limparEstilo, SOMBRAS, type BordaEst, type SombraCx, type Estilo, type Visual } from "../data/estilo";
 
 export type Parte = { k: string; nome: string; tipo: "card" | "botao" | "capa" | "texto"; exemplo?: string; fonte?: boolean };
 type Opcoes = {
@@ -84,25 +84,31 @@ export function abrirSeletorEstilo(o: Opcoes) {
     if (v.raio) r.push("cantos " + (new Set(v.raio).size === 1 ? v.raio[0] + " px" : v.raio.join("/") + " px"));
     return r.length ? r.join(" · ") : "Padrão do app";
   }
+  const resumoSombra = (v: Visual) => { const s = v.sombraCx; return s ? `${s.inset ? "Dentro" : "Fora"} · ${s.x}/${s.y} px · desfoque ${s.blur} · ${s.cor.toUpperCase()} ${s.a}%` : "Padrão do app"; };
   function secoesCard(v: Visual) {
     const mexido = !!(v.bordaEst || v.raio);
     return `<div class="se-sec se-row">
         <span class="se-row-t"><b>Borda</b><small data-se-resumo>${h(resumoBorda(v))}</small></span>
         <span class="se-row-bts"><button type="button" class="se-ic" data-se="borda-rest" title="Voltar a borda ao padrão" aria-label="Voltar a borda ao padrão"${mexido ? "" : " disabled"}>${REFAZ}</button><button type="button" class="se-ic" data-se="borda-ed" title="Editar a borda" aria-label="Editar a borda" aria-haspopup="dialog" aria-expanded="false">${LAPIS}</button></span>
+      </div>
+      <div class="se-sec se-row">
+        <span class="se-row-t"><b>Sombra da caixa</b><small data-se-resumo-s>${h(resumoSombra(v))}</small></span>
+        <span class="se-row-bts"><button type="button" class="se-ic" data-se="sombra-rest" title="Voltar a sombra ao padrão" aria-label="Voltar a sombra ao padrão"${v.sombraCx ? "" : " disabled"}>${REFAZ}</button><button type="button" class="se-ic" data-se="sombra-ed" title="Editar a sombra da caixa" aria-label="Editar a sombra da caixa" aria-haspopup="dialog" aria-expanded="false">${LAPIS}</button></span>
       </div>`;
   }
   /** Painel flutuante da Borda: estilo, largura, cor e cantos. */
-  let painelBorda: HTMLElement | null = null;
+  let painelBorda: HTMLElement | null = null, painelTipo = "";
   function fecharBorda() {
     if (!painelBorda) return;
     painelBorda.remove(); painelBorda = null; fecharFlutuante(false);
     removeEventListener("pointerdown", foraBorda, true); removeEventListener("keydown", teclaBorda, true);
-    caixa.querySelector('[data-se="borda-ed"]')?.setAttribute("aria-expanded", "false");
+    caixa.querySelectorAll('[data-se="borda-ed"], [data-se="sombra-ed"]').forEach((x) => x.setAttribute("aria-expanded", "false"));
   }
-  const foraBorda = (e: PointerEvent) => { const t = e.target as HTMLElement; if (painelBorda && !painelBorda.contains(t) && !t.closest(".fc-pop, [data-se='borda-ed']")) fecharBorda(); };
+  const foraBorda = (e: PointerEvent) => { const t = e.target as HTMLElement; if (painelBorda && !painelBorda.contains(t) && !t.closest(".fc-pop, [data-se='borda-ed'], [data-se='sombra-ed']")) fecharBorda(); };
   const teclaBorda = (e: KeyboardEvent) => { if (e.key === "Escape" && painelBorda && !document.querySelector(".fc-pop")) { e.stopImmediatePropagation(); e.preventDefault(); fecharBorda(); } };
   function abrirBorda(g: HTMLElement) {
-    if (painelBorda) { fecharBorda(); return; }
+    if (painelBorda) { const era = painelTipo; fecharBorda(); if (era === "borda") return; }
+    painelTipo = "borda";
     const v = V();
     const el = document.createElement("div"); el.className = "se-pop"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Borda");
     const lados = ["Topo", "Direita", "Baixo", "Esquerda"], cantos = ["Topo esq.", "Topo dir.", "Baixo dir.", "Baixo esq."];
@@ -148,6 +154,52 @@ export function abrirSeletorEstilo(o: Opcoes) {
     Object.assign(el.style, { width: W + "px", left: x + "px", top: Math.max(8, Math.min(innerHeight - H - 8, r.top - 20)) + "px" });
     addEventListener("pointerdown", foraBorda, true); addEventListener("keydown", teclaBorda, true);
     el.querySelector<HTMLElement>("select")?.focus();
+  }
+
+  /** Painel flutuante da Sombra da caixa: cor (com transparência), horizontal, vertical, desfocar, espalhar e posição. */
+  const SOMBRA_PAD: SombraCx = { cor: "#000000", a: 40, x: 0, y: 8, blur: 24, esp: 0, inset: false };
+  function abrirSombra(g: HTMLElement) {
+    if (painelBorda) { const era = painelTipo; fecharBorda(); if (era === "sombra") return; }
+    painelTipo = "sombra";
+    const v = V(), sv = (): SombraCx => v.sombraCx || { ...SOMBRA_PAD };
+    const el = document.createElement("div"); el.className = "se-pop se-pop-sombra"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Sombra da caixa");
+    const GOTA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg>`;
+    const regua = (k: keyof SombraCx, nome: string, min: number, max: number) => `<div class="se-pop-reg"><span class="se-pop-r">${nome}<button type="button" class="se-mini-rest" data-ss-rest="${k}" title="Voltar ao padrão" aria-label="Voltar ${nome} ao padrão">${REFAZ}</button></span><div class="se-pop-rl"><input type="range" min="${min}" max="${max}" data-ss="${k}" aria-label="${nome}" /><input class="campo" type="number" min="${min}" max="${max}" data-ssn="${k}" aria-label="${nome} (número)" /></div></div>`;
+    el.innerHTML = `
+      <div class="se-pop-l"><span>Cor</span><span>${"EyeDropper" in window ? `<button type="button" class="se-mini-rest se-gota2" data-ss-gota title="Pegar uma cor da tela" aria-label="Pegar uma cor da tela">${GOTA}</button>` : ""}<button type="button" class="se-pop-bola" data-ss-cor aria-label="Cor da sombra" aria-haspopup="dialog" aria-expanded="false"></button></span></div>
+      ${regua("x", "Horizontal", -100, 100)}${regua("y", "Vertical", -100, 100)}${regua("blur", "Desfocar", 0, 100)}${regua("esp", "Espalhar", -100, 100)}
+      <label class="se-pop-l se-pop-pos"><span>Posição</span><select class="campo" data-ss-pos><option value="fora">Fora (outline)</option><option value="dentro">Dentro (inset)</option></select></label>`;
+    const pintar = () => {
+      const s = sv();
+      el.querySelector<HTMLElement>("[data-ss-cor]")!.style.background = `linear-gradient(${s.cor}${Math.round(s.a * 2.55).toString(16).padStart(2, "0")}, ${s.cor}${Math.round(s.a * 2.55).toString(16).padStart(2, "0")}), repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0/10px 10px`;
+      (["x", "y", "blur", "esp"] as const).forEach((k) => { const r = el.querySelector<HTMLInputElement>(`[data-ss="${k}"]`)!, n = el.querySelector<HTMLInputElement>(`[data-ssn="${k}"]`)!; r.value = String(s[k]); if (document.activeElement !== n) n.value = String(s[k]); });
+      el.querySelector<HTMLSelectElement>("[data-ss-pos]")!.value = s.inset ? "dentro" : "fora";
+    };
+    const mudar = (fn: (s: SombraCx) => void) => {
+      const s = sv(); fn(s); v.sombraCx = s; pintar(); leve();
+      const rs = caixa.querySelector("[data-se-resumo-s]"); if (rs) rs.textContent = resumoSombra(v);
+      const rb = caixa.querySelector<HTMLButtonElement>('[data-se="sombra-rest"]'); if (rb) rb.disabled = false;
+    };
+    el.addEventListener("input", (e) => {
+      const t = e.target as HTMLInputElement, k = (t.dataset.ss || t.dataset.ssn) as "x" | "y" | "blur" | "esp" | undefined;
+      if (k && t.value !== "" && t.value !== "-") mudar((s) => { s[k] = Number(t.value); });
+    });
+    el.addEventListener("change", (e) => { const t = e.target as HTMLSelectElement; if (t.matches("[data-ss-pos]")) mudar((s) => { s.inset = t.value === "dentro"; }); });
+    el.addEventListener("click", (e) => {
+      const t = e.target as HTMLElement, rest = t.closest<HTMLElement>("[data-ss-rest]");
+      if (rest) { const k = rest.dataset.ssRest as "x" | "y" | "blur" | "esp"; mudar((s) => { s[k] = SOMBRA_PAD[k]; }); return; }
+      const bola = t.closest<HTMLElement>("[data-ss-cor]");
+      if (bola) { const s = sv(); abrirQuadroCor(bola, { cor: s.cor, alfa: s.a, aoMudar: (c) => mudar((x) => { x.cor = c; }), aoAlfa: (a) => mudar((x) => { x.a = a; }) }); return; }
+      if (t.closest("[data-ss-gota]")) {
+        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+        void new ED().open().then((r) => { if (/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) mudar((x) => { x.cor = r.sRGBHex.toLowerCase(); }); }).catch(() => {});
+      }
+    });
+    pintar(); document.body.append(el); painelBorda = el; g.setAttribute("aria-expanded", "true");
+    const r = g.getBoundingClientRect(), c = caixa.getBoundingClientRect(), W = 320, H = el.offsetHeight;
+    let x = c.left - W - 10; if (x < 8) x = Math.min(innerWidth - W - 8, c.right + 10);
+    Object.assign(el.style, { width: W + "px", left: x + "px", top: Math.max(8, Math.min(innerHeight - H - 8, r.top - 40)) + "px" });
+    addEventListener("pointerdown", foraBorda, true); addEventListener("keydown", teclaBorda, true);
   }
 
   function desenhar() {
@@ -255,6 +307,8 @@ export function abrirSeletorEstilo(o: Opcoes) {
         mudou(); desenhar(); posicionar(); abrirCor(); return;
       case "borda-ed": abrirBorda(b); return;
       case "borda-rest": fecharBorda(); delete v.bordaEst; delete v.raio; mudou(); break;
+      case "sombra-ed": abrirSombra(b); return;
+      case "sombra-rest": fecharBorda(); delete v.sombraCx; mudou(); break;
       case "fonte":
         abrirListaFontes(b, {
           fontes: FONTES_APP, atual: v.fonte || "", padrao: "Fonte do app (padrão)",

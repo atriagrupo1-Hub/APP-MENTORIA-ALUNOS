@@ -88,12 +88,13 @@ export function abrirListaFontes(g: HTMLElement, o: { fontes: string[]; atual: s
 }
 
 /** Seletor de cor: quadro de saturação/brilho, matiz, código e cores prontas. */
-export function abrirQuadroCor(g: HTMLElement, o: { cor: string; aoMudar: (c: string) => void; aoFechar?: () => void }) {
+export function abrirQuadroCor(g: HTMLElement, o: { cor: string; aoMudar: (c: string) => void; aoFechar?: () => void; alfa?: number; aoAlfa?: (a: number) => void }) {
   if (flutuanteDe(g)) { fecharFlutuante(); return; }
-  let cor = /^#[0-9a-f]{6}$/i.test(o.cor) ? o.cor.toLowerCase() : "#d4af37", hsv = hexParaHsv(cor);
+  let cor = /^#[0-9a-f]{6}$/i.test(o.cor) ? o.cor.toLowerCase() : "#d4af37", hsv = hexParaHsv(cor), alfa = Math.max(0, Math.min(100, o.alfa ?? 100));
   const el = document.createElement("div"); el.className = "fc-pop fc-pop-cor"; el.dataset.larg = "280";
   el.innerHTML = `<div class="se-sv fc-sv"><i></i></div>
     <div class="se-hue"><i></i></div>
+    ${o.aoAlfa ? `<div class="fc-alfa" title="Transparência"><b></b><i></i></div>` : ""}
     <div class="fc-hexl"><i class="fc-bola"></i><input class="campo fc-hex" maxlength="7" spellcheck="false" aria-label="Código da cor (dá para colar)" /></div>
     <span class="fc-rot fc-rot-p">Cores prontas</span>
     <div class="se-prontas fc-prontas">${PRONTAS.map((c) => `<button type="button" data-v="${c}" title="${c.toUpperCase()}" aria-label="${c.toUpperCase()}" style="background:${c}"></button>`).join("")}</div>`;
@@ -103,6 +104,7 @@ export function abrirQuadroCor(g: HTMLElement, o: { cor: string; aoMudar: (c: st
     const p = sv.querySelector("i")!; p.style.left = hsv[1] * 100 + "%"; p.style.top = (1 - hsv[2]) * 100 + "%";
     hu.querySelector("i")!.style.left = (hsv[0] / 360) * 100 + "%";
     el.querySelector<HTMLElement>(".fc-bola")!.style.background = cor;
+    const al = el.querySelector<HTMLElement>(".fc-alfa"); if (al) { al.querySelector<HTMLElement>("b")!.style.background = `linear-gradient(90deg, transparent, ${cor})`; al.querySelector<HTMLElement>("i")!.style.left = alfa + "%"; }
     if (!deHex) hx.value = cor.toUpperCase();
     el.querySelectorAll<HTMLElement>(".fc-prontas button").forEach((b) => b.classList.toggle("on", b.dataset.v === cor));
   };
@@ -116,6 +118,8 @@ export function abrirQuadroCor(g: HTMLElement, o: { cor: string; aoMudar: (c: st
   };
   sv.addEventListener("pointerdown", (e) => arrastar(e, sv, (x, y) => { hsv = [hsv[0], x, 1 - y]; cor = hsvParaHex(...hsv); mudar(); }));
   hu.addEventListener("pointerdown", (e) => arrastar(e, hu, (x) => { hsv = [x * 359.9, hsv[1], hsv[2]]; cor = hsvParaHex(...hsv); mudar(); }));
+  const alv = el.querySelector<HTMLElement>(".fc-alfa");
+  alv?.addEventListener("pointerdown", (e) => arrastar(e, alv, (x) => { alfa = Math.round(x * 100); o.aoAlfa?.(alfa); mostrar(); }));
   hx.addEventListener("input", () => { let x = hx.value.trim(); if (!x.startsWith("#")) x = "#" + x; if (/^#[0-9a-f]{6}$/i.test(x)) { cor = x.toLowerCase(); hsv = hexParaHsv(cor); mudar(true); } });
   hx.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); fecharFlutuante(); } });
   el.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>(".fc-prontas button"); if (b) { cor = b.dataset.v!; hsv = hexParaHsv(cor); mudar(); } });
