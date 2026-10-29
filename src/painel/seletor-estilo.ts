@@ -84,6 +84,27 @@ export function abrirSeletorEstilo(o: Opcoes) {
     if (v.raio) r.push("cantos " + (new Set(v.raio).size === 1 ? v.raio[0] + " px" : v.raio.join("/") + " px"));
     return r.length ? r.join(" · ") : "Padrão do app";
   }
+  // ——— Cor de fundo do card: nenhum (padrão do app), cor lisa ou degradê, cada cor com transparência ———
+  const DEG_CARD: [string, string, number][] = [["#3a3a3a", "#000000", 135], ["#6b4e1f", "#120c04", 135], ["#1d2a6e", "#05060f", 135], ["#e6e6e6", "#8a8a8a", 135], ["#f7d6e6", "#e8c46b", 135], ["#bfe6f0", "#d8f0c8", 135], ["#ff7a45", "#e0383a", 135], ["#e05a8a", "#5a4fe0", 135], ["#9a6cf0", "#5f8af0", 135], ["#2b3fa8", "#7a4fd0", 135], ["#7fa8e8", "#c7b0f0", 135], ["#1f8fb0", "#5fc7e0", 135], ["#5a4fb0", "#2f9c78", 135], ["#2f9c98", "#4f9a5a", 135], ["#5fc7c2", "#e8c46b", 135], ["#f2d27a", "#f08a4a", 135], ["#f2a6b8", "#f2d27a", 135], ["#c86a8a", "#e8a05a", 135], ["#f2d27a", "#a8812f", 180], ["#d4af37", "#5a3d16", 135]];
+  const PINCEL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.5 3.5a2.1 2.1 0 0 1 3 3L12 16l-4-4z"/><path d="M8 12c-2.5 0-4 1.6-4 4 0 1.6-.8 2.6-2 3 3.5 1.5 8 .5 8-3"/></svg>`;
+  const NADA = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/></svg>`;
+  const DEGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 11h16M4 15h16M4 19h16" stroke-dasharray="2 2"/></svg>`;
+  const GOTA_F = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5l5 5M17 2.5l4.5 4.5-3 3-4.5-4.5zM15.5 8.5L6 18l-2.5 2.5 2.5-.5L15.5 10.5"/></svg>`;
+  const comA = (c: string, a?: number) => (a !== undefined && a < 100 ? c + Math.round(a * 2.55).toString(16).padStart(2, "0") : c);
+  const bolaFundo = (c: string, a?: number) => `background:linear-gradient(${comA(c, a)}, ${comA(c, a)}), repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0/10px 10px`;
+  function linhaCorFundo(k: "a" | "b", rot: string, c: string, a?: number) {
+    return `<div class="se-sub"><span>${rot}</span><span class="se-sub-bts"><button type="button" class="se-mini-rest" data-se="fundo-rest" data-v="${k}" title="Voltar ao padrão" aria-label="Voltar ${rot} ao padrão">${REFAZ}</button>${"EyeDropper" in window ? `<button type="button" class="se-mini-rest" data-se="fundo-gota" data-v="${k}" title="Pegar uma cor da tela" aria-label="Pegar uma cor da tela">${GOTA_F}</button>` : ""}<button type="button" class="se-pop-bola" data-se="fundo-cor" data-v="${k}" style="${bolaFundo(c, a)}" aria-label="${rot}" aria-haspopup="dialog" aria-expanded="false"></button></span></div>`;
+  }
+  function secaoFundo(v: Visual) {
+    const f = v.fundo, t = f ? f.t : "nada";
+    return `<div class="se-sec se-fundo">
+        <div class="se-row"><span class="se-row-t"><b>Cor de fundo</b></span>
+          <span class="se-seg3" role="group" aria-label="Tipo de fundo">${([["nada", "Padrão do app (sem cor própria)", NADA], ["cor", "Cor lisa", PINCEL], ["degrade", "Degradê", DEGR]] as const).map(([k, n, ic]) => `<button type="button" data-se="fundo-t" data-v="${k}" title="${n}" aria-label="${n}" aria-pressed="${t === k}">${ic}</button>`).join("")}</span></div>
+        ${f?.t === "cor" ? linhaCorFundo("a", "Cor lisa", f.a, f.aa) : ""}
+        ${f?.t === "degrade" ? `${linhaCorFundo("a", "Cor 1", f.a, f.aa)}${linhaCorFundo("b", "Cor 2", f.b || "#5a3d16", f.ba)}
+          <div class="se-sub se-sub-ang"><span>Ângulo</span><span class="se-pop-rl"><input type="range" min="0" max="360" step="5" value="${f.ang ?? 135}" data-se="fundo-ang" aria-label="Ângulo do degradê" /><input class="campo" type="number" min="0" max="360" value="${f.ang ?? 135}" data-se="fundo-angn" aria-label="Ângulo (graus)" /></span></div>` : ""}
+      </div>`;
+  }
   const resumoSombra = (v: Visual) => { const s = v.sombraCx; return s ? `${s.inset ? "Dentro" : "Fora"} · ${s.x}/${s.y} px · desfoque ${s.blur} · ${s.cor.toUpperCase()} ${s.a}%` : "Padrão do app"; };
   function secoesCard(v: Visual) {
     const mexido = !!(v.bordaEst || v.raio);
@@ -94,7 +115,8 @@ export function abrirSeletorEstilo(o: Opcoes) {
       <div class="se-sec se-row">
         <span class="se-row-t"><b>Sombra da caixa</b><small data-se-resumo-s>${h(resumoSombra(v))}</small></span>
         <span class="se-row-bts"><button type="button" class="se-ic" data-se="sombra-rest" title="Voltar a sombra ao padrão" aria-label="Voltar a sombra ao padrão"${v.sombraCx ? "" : " disabled"}>${REFAZ}</button><button type="button" class="se-ic" data-se="sombra-ed" title="Editar a sombra da caixa" aria-label="Editar a sombra da caixa" aria-haspopup="dialog" aria-expanded="false">${LAPIS}</button></span>
-      </div>`;
+      </div>
+      ${secaoFundo(v)}`;
   }
   /** Painel flutuante da Borda: estilo, largura, cor e cantos. */
   let painelBorda: HTMLElement | null = null, painelTipo = "";
@@ -308,6 +330,30 @@ export function abrirSeletorEstilo(o: Opcoes) {
       case "borda-ed": abrirBorda(b); return;
       case "borda-rest": fecharBorda(); delete v.bordaEst; delete v.raio; mudou(); break;
       case "sombra-ed": abrirSombra(b); return;
+      case "fundo-t":
+        if (val === "nada") delete v.fundo;
+        else if (val === "cor") v.fundo = { t: "cor", a: v.fundo?.a || "#1a1510", aa: v.fundo?.aa };
+        else v.fundo = { t: "degrade", a: v.fundo?.a || "#6b4e1f", b: v.fundo?.b || "#120c04", ang: v.fundo?.ang ?? 135, aa: v.fundo?.aa, ba: v.fundo?.ba };
+        mudou(); break;
+      case "fundo-rest":
+        if (v.fundo?.t === "cor" || !v.fundo) delete v.fundo;
+        else if (val === "a") { v.fundo.a = "#6b4e1f"; delete v.fundo.aa; } else { v.fundo.b = "#120c04"; delete v.fundo.ba; }
+        mudou(); break;
+      case "fundo-cor": {
+        const f = v.fundo; if (!f) return; const k = val === "b" ? "b" : "a";
+        const pinta = () => { b.setAttribute("style", bolaFundo(k === "a" ? f.a : f.b || "#000000", k === "a" ? f.aa : f.ba)); leve(); };
+        abrirQuadroCor(b, { cor: (k === "a" ? f.a : f.b) || "#000000", alfa: (k === "a" ? f.aa : f.ba) ?? 100,
+          aoMudar: (c) => { if (k === "a") f.a = c; else f.b = c; pinta(); },
+          aoAlfa: (a) => { if (k === "a") f.aa = a; else f.ba = a; pinta(); },
+          degrades: DEG_CARD, aoDegrade: (x, y, g) => { v.fundo = { t: "degrade", a: x, b: y, ang: g }; mudou(); desenhar(); posicionar(); } });
+        return;
+      }
+      case "fundo-gota": {
+        const f = v.fundo; if (!f) return;
+        const ED = (window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }).EyeDropper;
+        void new ED().open().then((r) => { if (!/^#[0-9a-f]{6}$/i.test(r.sRGBHex)) return; if (val === "b") f.b = r.sRGBHex.toLowerCase(); else f.a = r.sRGBHex.toLowerCase(); mudou(); desenhar(); posicionar(); }).catch(() => {});
+        return;
+      }
       case "sombra-rest": fecharBorda(); delete v.sombraCx; mudou(); break;
       case "fonte":
         abrirListaFontes(b, {
@@ -347,6 +393,11 @@ export function abrirSeletorEstilo(o: Opcoes) {
   });
   caixa.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement, v = V();
+    if ((t.dataset.se === "fundo-ang" || t.dataset.se === "fundo-angn") && v.fundo && t.value !== "") {
+      v.fundo.ang = Math.max(0, Math.min(360, Number(t.value)));
+      const outro = caixa.querySelector<HTMLInputElement>(t.dataset.se === "fundo-ang" ? '[data-se="fundo-angn"]' : '[data-se="fundo-ang"]'); if (outro) outro.value = String(v.fundo.ang);
+      leve();
+    }
     if (t.dataset.se === "ang" && v.fundo) { v.fundo.ang = Number(t.value); (t.nextElementSibling as HTMLElement).textContent = t.value + "°"; leve(); }
     if (t.dataset.se === "bw" && v.borda) { v.borda.w = Number(t.value); (t.nextElementSibling as HTMLElement).textContent = Number(t.value) ? t.value + " px" : "Sem"; leve(); }
   });

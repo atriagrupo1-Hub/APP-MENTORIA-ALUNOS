@@ -8,7 +8,8 @@
  * desenharem igual.
  */
 
-export type Fundo = { t: "cor" | "degrade"; a: string; b?: string; ang?: number };
+/** Fundo: cor lisa ou degradê; `aa`/`ba` = opacidade de cada cor (0–100, sem = 100). */
+export type Fundo = { t: "cor" | "degrade"; a: string; b?: string; ang?: number; aa?: number; ba?: number };
 export const ESTILOS_BORDA = [["none", "Oculto"], ["solid", "Sólido"], ["dotted", "Pontilhado"], ["dashed", "Tracejado"], ["double", "Duplo"], ["groove", "Ranhurado"], ["ridge", "Cume"], ["inset", "Inserir"], ["outset", "Saliente"]] as const;
 export type BordaEst = { estilo: (typeof ESTILOS_BORDA)[number][0]; w: [number, number, number, number]; cor: string };
 export type SombraCx = { cor: string; a: number; x: number; y: number; blur: number; esp: number; inset: boolean };
@@ -46,7 +47,13 @@ export function limparVisual(v: unknown): Visual | null {
   if (!v || typeof v !== "object") return null;
   const o = v as Record<string, any>, out: Visual = {};
   const f = o.fundo;
-  if (f && hex(f.a)) out.fundo = f.t === "degrade" && hex(f.b) ? { t: "degrade", a: hex(f.a), b: hex(f.b), ang: Math.max(0, Math.min(360, Math.round(Number(f.ang) || 0))) } : { t: "cor", a: hex(f.a) };
+  if (f && hex(f.a)) {
+    out.fundo = f.t === "degrade" && hex(f.b) ? { t: "degrade", a: hex(f.a), b: hex(f.b), ang: Math.max(0, Math.min(360, Math.round(Number(f.ang) || 0))) } : { t: "cor", a: hex(f.a) };
+    const op = (x: unknown) => (x === undefined || x === null || x === "" ? null : Math.max(0, Math.min(100, Math.round(Number(x) || 0))));
+    const aa = op(f.aa), ba = op(f.ba);
+    if (aa !== null && aa < 100) out.fundo.aa = aa;
+    if (out.fundo.t === "degrade" && ba !== null && ba < 100) out.fundo.ba = ba;
+  }
   if (hex(o.texto)) out.texto = hex(o.texto);
   if (o.borda && hex(o.borda.cor)) out.borda = { cor: hex(o.borda.cor), w: Math.max(0, Math.min(8, Math.round(Number(o.borda.w) || 0))) };
   if (o.sombra && hex(o.sombra.cor)) out.sombra = { n: Math.max(0, Math.min(4, Math.round(Number(o.sombra.n) || 0))), cor: hex(o.sombra.cor) };
@@ -74,7 +81,8 @@ export function limparEstilo(e: unknown): Estilo | null {
 }
 
 const rgba = (c: string, a: number) => `rgba(${parseInt(c.slice(1, 3), 16)},${parseInt(c.slice(3, 5), 16)},${parseInt(c.slice(5, 7), 16)},${a})`;
-export const cssFundo = (f: Fundo) => (f.t === "degrade" && f.b ? `linear-gradient(${f.ang ?? 135}deg, ${f.a}, ${f.b})` : f.a);
+const comAlfa = (c: string, a?: number) => (a !== undefined && a < 100 ? rgba(c, a / 100) : c);
+export const cssFundo = (f: Fundo) => (f.t === "degrade" && f.b ? `linear-gradient(${f.ang ?? 135}deg, ${comAlfa(f.a, f.aa)}, ${comAlfa(f.b, f.ba)})` : comAlfa(f.a, f.aa));
 export const SOMBRAS = ["Nenhuma", "Suave", "Média", "Forte", "Brilho"];
 function cssSombra(s: { n: number; cor: string }) {
   if (!s.n) return "none";
