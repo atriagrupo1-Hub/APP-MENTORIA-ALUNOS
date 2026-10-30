@@ -4020,3 +4020,8 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .oc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #fff; background: var(--oc); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
 .oc-chip button { width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,.18); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
 .oc-chip button:hover { background: rgba(0,0,0,.32); }
+
+/* Editar curso: botões da capa compactos, numa linha só */
+.cc-capa-bts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cc-capa-bts .al-botao { flex: 0 0 auto; width: auto; min-height: 0; height: 34px; padding: 0 12px; gap: 6px; font-size: 13px; border-radius: 8px; }
+.cc-capa-bts .al-botao svg { width: 15px; height: 15px; }
