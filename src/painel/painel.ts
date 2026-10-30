@@ -18,7 +18,7 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { chaveMenu, comModulosDaBase, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
+import { chaveMenu, comModulosDaBase, cssDaTela, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -79,7 +79,7 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -438,7 +438,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const cd: Record<string, any> = versaoCfg === "geral" ? comModulosDaBase({ ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia }, cfgBase) : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo) })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
@@ -537,7 +537,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, cursoBusca: "", cursoOrdem: "categorias", cursoVista: "grade", cursoCat: "",
   };
@@ -2408,6 +2408,17 @@ export function montar(app: HTMLElement) {
     return `<button type="button" class="se-abre" data-a="${acao}" data-id="${id}" title="Cores, degradê, contorno, sombra, tamanho e formato" aria-label="Estilo de ${h(nome)}"><i style="background:${h(am)}${h(borda)}"></i>Estilo</button>`;
   }
   const PARTES_CAT = [{ k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }];
+  /** O card da categoria (Editar categoria): partes que cada categoria pode estilizar sozinha. */
+  const PARTES_KX: ParteTela[] = [
+    { k: "card", nome: "Card", desc: "", tipo: "card", sel: ".kx-card" },
+    { k: "botao", nome: "Botão", desc: "", tipo: "botao", sel: ".kx-card .kx-bt" },
+    { k: "nome", nome: "Nome da categoria", desc: "", tipo: "texto", sel: ".kx-card .kx-tit" },
+    { k: "desc", nome: "Descrição", desc: "", tipo: "texto", sel: ".kx-card .kx-desc" },
+    { k: "botaotx", nome: "Texto do botão", desc: "", tipo: "texto", sel: ".kx-card .kx-bt b, .kx-card .kx-bt svg, .kx-card .kx-bt i" },
+  ];
+  const estKx = (x: CatAba): Estilo => (ui.prevEst.cat[x.id] !== undefined ? ui.prevEst.cat[x.id] : x.estilo) || {};
+  const cssKx = (x: CatAba) => cssDaTela(PARTES_KX, estKx(x));
+  function pintarKx(x: CatAba) { const st = document.getElementById("kxEstilo"); if (st) st.textContent = cssKx(x); }
   const PARTES_MOD = [{ k: "card", nome: "Card", tipo: "card" as const }, { k: "capa", nome: "Capa", tipo: "capa" as const }, { k: "botao", nome: "Botão", tipo: "botao" as const }, { k: "aulas", nome: "Cards das aulas", tipo: "card" as const }];
   /** Estilo de uma tela inteira (aula 0099, início 0100): partes, onde fica salvo e o rascunho da prévia. */
   const TELA_EST = {
@@ -3190,25 +3201,25 @@ export function montar(app: HTMLElement) {
   function editarCatAba() {
     const x = catAba(ui.catxEditar); if (!x) { ui.catxEditar = ""; return ""; }
     const img = previas["catx-" + x.id] || capaSite(x.capa);
+    const aa = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
+    const vis = (k: string, nome: string) => { const v = estKx(x)[k]; return `<div class="kx-est-l"><span><b>${h(nome)}</b><small>Borda, sombra e fundo.</small></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
+    const comp = ui.catxPrevia === "computador";
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="cat-painel-cab"><h2>Editar categoria</h2><button type="button" class="aa-fechar" data-a="catx-fechar" aria-label="Fechar">${xis}</button></header>
+        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Personalize as informações, o visual do card e defina o que ficará disponível nesta categoria.</p></div><button type="button" class="aa-fechar" data-a="catx-fechar" aria-label="Fechar">${xis}</button></header>
         <div class="aa-corpo cat-grade" data-rolagem="catx-${x.id}">
           <div class="cat-esq">
-        <form data-f="catx-salvar" data-id="${x.id}" class="cat-form">
-          <input type="hidden" name="capa" value="${h(x.capa)}" />
-          <label class="cat-campo"><span>Nome da categoria</span><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" /></label>
-          <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea></label>
-          <div class="cat-vis-linha"><span>Status</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
-          <div class="cat-rodape">
-            <button type="button" class="al-botao cat-remover" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button>
-            <button class="al-botao-ouro">Salvar alterações</button>
-          </div>
-        </form>
+            <form id="catxForm" data-f="catx-salvar" data-id="${x.id}" class="kx-bloco cat-form">
+              <input type="hidden" name="capa" value="${h(x.capa)}" />
+              <div class="cat-campo"><span>Nome da categoria ${dicaCampo(`O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
+              <div class="cat-campo"><span>Descrição (opcional) ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
+              <div class="cat-campo"><span>Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver categoria".`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" value="${h(x.botao || "")}" maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
+              <div class="cat-vis-linha"><span>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
+            </form>
+            <div class="kx-bloco">
         <section class="cx-cont">
-          <h3>O que fica dentro desta categoria <small>(botão ${h(cat(x.aba)?.nome || "—")})</small></h3>
-          <p>Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.</p>
+          <div class="kx-sec-cab"><span class="kx-sec-ic">${IC_CUR.camadas}</span><div><h3>O que fica dentro desta categoria ${dicaCampo(`Os cursos, módulos ou aulas que aparecem quando a aluna abre esta categoria (no botão ${h(cat(x.aba)?.nome || "—")}). O mesmo item pode estar em várias categorias.`, "cat.dentro")}</h3><p>Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.</p></div></div>
           <div class="cx-itens">${itensDe(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
           <div class="cx-add">
             <select class="campo" id="catxTipo" data-catx-tipo aria-label="Tipo">${[["curso", "Curso"], ["modulo", "Módulo"], ["aula", "Aula"]].map(([v2, t]) => `<option value="${v2}" ${ui.catxTipo === v2 ? "selected" : ""}>${t}</option>`).join("")}</select>
@@ -3216,24 +3227,27 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
           </div>
         </section>
+            </div>
           </div>
           <div class="cat-dir">
-            <section class="cat-prev">
-              <h3>Card da categoria</h3>
-              <p class="cs-nota">Como fica no celular da aluna. Muda enquanto você edita. As cores são neutras: o visual final é escolhido em Configurações.</p>
-              <div class="kx-cel"><article class="kx-card">
+            <section class="kx-bloco cat-prev">
+              <div class="kx-prev-cab"><div><h3>Prévia do card da categoria</h3><p class="cs-nota">Veja como ficará no app para as alunas.</p></div><span class="kx-seg">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="catx-previa" data-v="${k}" aria-pressed="${(ui.catxPrevia || "celular") === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
+              <style id="kxEstilo">${cssKx(x)}</style>
+              <div class="kx-cel${comp ? " kx-comp" : ""}"><article class="kx-card">
                 <span class="kx-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
                 <div class="kx-info">
                   <b class="kx-tit" data-kx="nome">${h(x.nome)}</b>
                   <p class="kx-desc" data-kx="descricao"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
-                  <span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>Ver categoria</b><i aria-hidden="true">›</i></span>
+                  <span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-kx="botaoTexto">${h(x.botao || "Ver categoria")}</b><i aria-hidden="true">›</i></span>
                 </div>
               </article></div>
-              <p class="cs-nota kx-formato">Capa deitada, formato 16:9 (ex.: 1280 × 720 px). O que estiver escrito na imagem aparece como está.</p>
               <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
+              <div class="kx-visual">${vis("card", "Card")}${vis("botao", "Botão")}</div>
+              <div class="kx-dica">${IC_EQ.info}<span><b>Dica para uma boa imagem</b>Use um formato 16:9 (ex.: 1280 × 720 px). O que estiver escrito na imagem aparece como está.</span></div>
             </section>
           </div>
         </div>
+        <footer class="kx-pe"><button type="button" class="al-botao cat-remover" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button><span></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></footer>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -6392,6 +6406,44 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "catx-previa": {
+        // Só troca a largura da prévia (sem redesenhar: o que foi digitado continua).
+        ui.catxPrevia = d.v === "computador" ? "computador" : "celular";
+        document.querySelector(".kx-cel")?.classList.toggle("kx-comp", ui.catxPrevia === "computador");
+        document.querySelectorAll<HTMLElement>('[data-a="catx-previa"]').forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === ui.catxPrevia)));
+        return;
+      }
+      case "catx-est": {
+        // Estilo próprio de uma categoria, direto no card da tela Editar categoria.
+        const x = S.catsAba.find((y) => y.id === d.id), pt = PARTES_KX.find((y) => y.k === d.v); if (!x || !pt || !el) return;
+        const base: Estilo = { ...(x.estilo || {}) };
+        const salvar = async (novo: Estilo | null) => {
+          const r = await supabase.from("categorias_aba").update({ estilo: novo }).eq("id", x.id).select("id").single();
+          if (r.error) { toast(motivo(r.error)); return false; }
+          x.estilo = novo; delete ui.prevEst.cat[x.id];
+          void executar(async () => { await registrar(null, "Mudou o estilo da categoria " + x.nome + ": " + pt.nome, ["catx", x.id]); return "Estilo de " + pt.nome + " salvo."; });
+          return true;
+        };
+        if (pt.tipo !== "texto") {
+          abrirSeletorEstilo({
+            ancora: el, titulo: pt.nome + " · " + x.nome, partes: [{ k: pt.k, nome: pt.nome, tipo: pt.tipo as "card" | "botao" }], valor: base[pt.k] ? { [pt.k]: base[pt.k] } : null,
+            aoMudar: (e) => { ui.prevEst.cat[x.id] = limparEstilo({ ...base, [pt.k]: e?.[pt.k] }); pintarKx(x); },
+            aoFechar: () => { delete ui.prevEst.cat[x.id]; pintarKx(x); },
+            aoSalvar: (e) => salvar(limparEstilo({ ...base, [pt.k]: e?.[pt.k] })),
+          });
+          return;
+        }
+        const alvo = document.querySelector<HTMLElement>(pt.sel.split(",")[0]);
+        const cs = alvo ? getComputedStyle(alvo) : null;
+        const vista = { cor: cs ? rgbHex(cs.color) || "#ffffff" : "#ffffff", fonte: cs ? cs.fontFamily.split(",")[0].replace(/["']/g, "").trim() : "", px: cs ? Math.round(parseFloat(cs.fontSize)) || 16 : 16, negrito: cs ? Number(cs.fontWeight) >= 600 : false, italico: cs ? cs.fontStyle === "italic" : false, alinha: ((cs && ({ center: "center", right: "right", justify: "justify" } as Record<string, "center" | "right" | "justify">)[cs.textAlign]) || "left") as "left" | "center" | "right" | "justify" };
+        const f = document.querySelector<HTMLFormElement>("#catxForm"), val = (n: string) => (f?.querySelector<HTMLInputElement>(`[name="${n}"]`)?.value || "").trim();
+        const textoDe: Record<string, string> = { nome: val("nome") || x.nome, desc: val("descricao") || "Descrição da categoria", botaotx: val("botaoTexto") || "Ver categoria" };
+        janelaEstilo({ nome: pt.nome, texto: textoDe[pt.k].slice(0, 40), val: txtDe(base[pt.k]), vista, volta: el,
+          aoMudar: (t) => { ui.prevEst.cat[x.id] = limparEstilo({ ...base, [pt.k]: visualDe(base[pt.k], t) }); pintarKx(x); },
+          aoCancelar: () => { delete ui.prevEst.cat[x.id]; pintarKx(x); },
+          aoAplicar: (t) => { void salvar(limparEstilo({ ...base, [pt.k]: visualDe(base[pt.k], t) })); } });
+        return;
+      }
       case "pcat-icone": case "pcat-cor": {
         ui.estMenu = ""; const x = S.catsAba.find((y) => y.id === d.id); if (!x) break;
         const campo = a === "pcat-icone" ? "icone" : "cor";
@@ -6630,10 +6682,10 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "catx-salvar": {
-        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null };
+        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null };
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
         void executar(async () => {
-          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null }).eq("id", id).select("id").single());
+          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null }).eq("id", id).select("id").single());
           await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); ui.catxEditar = ""; delete previas["catx-" + id];
           return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
@@ -7089,7 +7141,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["catx-est", "catx-previa", "catx-imagem", "pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -7187,7 +7239,7 @@ export function montar(app: HTMLElement) {
   });
   app.addEventListener("input", (e) => {
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
-    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     // Sobre o curso: o card de prévia acompanha o nome e a descrição enquanto escreve.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     const t = e.target as HTMLInputElement;

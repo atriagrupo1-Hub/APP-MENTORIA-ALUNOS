@@ -3930,3 +3930,51 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 /* Sem imagem: em todo lugar, o símbolo de imagem (transparente) no meio, no lugar do texto. */
 .cur-sem-capa, .cc-capa .cur-sem-capa, .kx-capa .cur-sem-capa { font-size: 0 !important; letter-spacing: 0 !important; color: transparent !important; }
 .cur-sem-capa::before { content: ""; position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; transform: translate(-50%, -50%); opacity: .32; background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='16' rx='2.5'/%3E%3Ccircle cx='9' cy='9.5' r='1.8'/%3E%3Cpath d='m21 16-5.5-5.5L6 20'/%3E%3C/svg%3E"); }
+
+/* ——— Editar categoria (modelo novo): cabeçalho, blocos, Aa Estilo dentro dos campos, prévia e rodapé ——— */
+.cat-painel-full { display: flex; flex-direction: column; }
+.kx-cab { display: flex; align-items: center; gap: 16px; padding: 20px 26px 12px; }
+.kx-cab > div { flex: 1; min-width: 0; }
+.kx-cab h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; }
+.kx-cab p { margin: 4px 0 0; font-size: 14px; color: var(--texto-2); }
+.kx-cab-ic { flex: none; width: 56px; height: 56px; display: grid; place-items: center; border-radius: 12px; background: #f5ecdc; color: #8a6220; }
+.kx-cab-ic svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.cat-painel-full .aa-corpo { flex: 1; overflow-y: auto; }
+.kx-bloco { padding: 18px 20px; border: 1px solid var(--linha-suave); border-radius: 14px; background: var(--aa-cartao, #fff); }
+.cat-esq { display: flex; flex-direction: column; gap: 16px; }
+.cat-esq .cat-campo > span:first-child { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-weight: 600; }
+.kx-campo-aa { position: relative; display: block; }
+.kx-campo-aa .campo { width: 100%; padding-right: 116px !important; }
+.kx-aa { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border: 1px solid #ecdcbc; border-radius: 9px; background: #fbf5e9; color: #8a6220; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.kx-aa b { font-size: 17px; color: var(--texto); }
+.kx-aa:hover { border-color: #c9a25c; }
+.kx-ta .kx-aa { top: 14px; transform: none; }
+.kx-sec-cab { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+.kx-sec-cab h3 { margin: 0; display: flex; align-items: center; gap: 6px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; }
+.kx-sec-cab p { margin: 4px 0 0; font-size: 13.5px; color: var(--texto-2); }
+.kx-sec-ic { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 11px; background: #f5ecdc; color: #8a6220; }
+.kx-sec-ic svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.kx-bloco .cx-cont { margin: 0; padding: 0; border: 0; }
+.kx-prev-cab { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.kx-prev-cab h3 { margin: 0; }
+.kx-seg { display: inline-flex; flex: none; border: 1px solid var(--linha); border-radius: 10px; overflow: hidden; }
+.kx-seg button { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 0; background: none; color: var(--texto); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.kx-seg button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.kx-seg button[aria-pressed="true"] { color: #fff; background: linear-gradient(180deg, #2a2114, #120f0b); }
+.kx-cel.kx-comp .kx-card { max-width: 560px; }
+.cat-grade { grid-template-columns: minmax(0, 1fr) minmax(360px, 460px); }
+.cat-prev .capa-bts { margin-top: 12px; }
+.kx-visual { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.kx-est-l { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--linha-suave); border-radius: 10px; }
+.kx-est-l > span { flex: 1; min-width: 0; }
+.kx-est-l b { display: block; font-size: 14px; }
+.kx-est-l small { font-size: 12px; color: var(--texto-2); }
+.kx-dica { display: flex; gap: 12px; margin-top: 14px; padding: 12px 14px; border: 1px solid var(--linha-suave); border-radius: 12px; font-size: 13px; color: var(--texto-2); }
+.kx-dica svg { flex: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.kx-dica b { display: block; color: var(--texto); }
+.kx-pe { display: flex; align-items: center; gap: 12px; padding: 14px 26px; border-top: 1px solid var(--linha-suave); background: var(--aa-cartao, #fff); }
+.kx-pe > span { flex: 1; }
+.cat-dir { top: 0; }
+.kx-prev-cab { flex-wrap: wrap; } .kx-prev-cab > div { flex: 1 1 200px; }
+.kx-aa { z-index: 3; }
+.kx-aa, .kx-aa:active, .kx-aa:hover { transform: none !important; top: calc(50% - 19px); } .kx-ta .kx-aa, .kx-ta .kx-aa:active { top: 14px; }
