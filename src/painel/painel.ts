@@ -2911,7 +2911,7 @@ export function montar(app: HTMLElement) {
           <div class="cfg-bloco">
             <h3>Banners ou destaques ${dicaCampo(`O que aparece no Início abaixo da mensagem: nada, uma imagem, um vídeo de boas-vindas (link do Cloudflare Stream) ou os cartões de Destaques do Início, que são editados em Categorias.`, "cfg.banners-ou-destaques")}</h3><p class="cfg-sub">Você pode exibir um banner, vídeo de boas-vindas ou destaque especial.</p>
             <div class="cfg-radios">${[["nenhum", "Nenhum"], ["imagem", "Imagem"], ["video", "Vídeo"], ["card", "Card especial"]].map(([k, t]) => `<label class="cfg-radio"><input type="radio" name="banner" value="${k}" ${v.banner === k ? "checked" : ""} /><span>${t}</span></label>`).join("")}</div>
-            <div class="cfg-op" data-op="imagem"${v.banner === "imagem" ? "" : " hidden"}><input type="hidden" name="bannerImg" value="${h(v.img)}" /><button type="button" class="al-botao pequeno" data-a="cfg-banner-img">${IC_PF.up}${v.img ? "Trocar imagem" : "Enviar imagem"}</button>${v.img ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-banner-tirar">${IC_MOD.lixo}Remover</button>` : ""}<small>Formato 16:9, recortada no editor.</small></div>
+            <div class="cfg-op" data-op="imagem"${v.banner === "imagem" ? "" : " hidden"}><input type="hidden" name="bannerImg" value="${h(v.img)}" /><button type="button" class="al-botao pequeno" data-a="cfg-banner-img">${IC_PF.up}${v.img ? "Trocar imagem" : "Enviar imagem"}</button>${v.img ? `<button type="button" class="al-botao pequeno pf-rm" data-a="cfg-banner-tirar">${IC_MOD.lixo}Remover</button>` : ""}${dicaCampo(`Formato: 1280 × 720 px (16:9). Recortada no editor.`, "cfg.banner-formato")}</div>
             <div class="cfg-op" data-op="video"${v.banner === "video" ? "" : " hidden"}><label class="cfg-c"><span>Link do vídeo (Cloudflare Stream)</span><input class="campo" name="bannerVideo" value="${h(v.video)}" placeholder="https://iframe.videodelivery.net/&lt;uid&gt; ou só o uid" /></label><small>O vídeo precisa estar liberado para tocar sem assinatura no Cloudflare Stream.</small></div>
             <div class="cfg-op" data-op="card"${v.banner === "card" ? "" : " hidden"}><small>Mostra os cartões de Destaques do Início (editados em Categorias).</small></div>
           </div>
@@ -3231,7 +3231,7 @@ export function montar(app: HTMLElement) {
           </div>
           <div class="cat-dir">
             <section class="kx-bloco cat-prev">
-              <div class="kx-prev-cab"><div><h3>Prévia do card da categoria</h3><p class="cs-nota">Veja como ficará no app para as alunas.</p></div><span class="kx-seg">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="catx-previa" data-v="${k}" aria-pressed="${(ui.catxPrevia || "celular") === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
+              <div class="kx-prev-cab"><div><h3>Prévia do card da categoria ${dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "cat.formato")}</h3><p class="cs-nota">Veja como ficará no app para as alunas.</p></div><span class="kx-seg">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="catx-previa" data-v="${k}" aria-pressed="${(ui.catxPrevia || "celular") === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
               <style id="kxEstilo">${cssKx(x)}</style>
               <div class="kx-cel${comp ? " kx-comp" : ""}"><article class="kx-card">
                 <span class="kx-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
@@ -3243,7 +3243,6 @@ export function montar(app: HTMLElement) {
               </article></div>
               <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
               <div class="kx-visual">${vis("card", "Card")}${vis("botao", "Botão")}</div>
-              <div class="kx-dica">${IC_EQ.info}<span><b>Dica para uma boa imagem</b>Use um formato 16:9 (ex.: 1280 × 720 px). O que estiver escrito na imagem aparece como está.</span></div>
             </section>
           </div>
         </div>
@@ -3671,7 +3670,7 @@ export function montar(app: HTMLElement) {
             <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}" data-a="mod-capa-h" data-id="${m.id}" title="Escolher a capa">${capaH ? `<img src="${h(capaH)}" alt="" onerror="this.remove()" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
             <input type="hidden" name="capaH" value="${h(m.capaH)}" />
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modh" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></span>
-            <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+            <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9).`, "fmt.169")}</span>
             <div class="capa-ia-box" data-capaia-box="modh:${m.id}">${capaIaBloco("modh", m.id)}</div>
             </div>
             <div class="mp-capa-col">
@@ -4159,7 +4158,7 @@ export function montar(app: HTMLElement) {
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_IMG}Capa ${dicaCampo(AJ.capa)}</span>
                       <span class="ea-op-capa" data-op-capa-previa${capa ? ` style="background:url('${h(capa)}') center/cover no-repeat"` : ""}></span>
                       <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="op-capa">${IC_IMG}Alterar imagem</button><button type="button" class="al-botao perigo" data-a="op-capa-tirar">${IC_MOD.lixo}Remover</button></span>
-                      <span class="mp-dica">Tamanho recomendado: 1920 × 1080 px (16:9)</span>
+                      <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9).`, "fmt.169")}</span>
                     </div>
                     <div class="ea-op-caixa">
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_LIVRO_BT}Conteúdo extra ${dicaCampo(AJ.extras)}</span>
@@ -4287,7 +4286,7 @@ export function montar(app: HTMLElement) {
             <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
             <div id="previaCapa" data-a="escolher-capa" title="Escolher a capa" class="ea-capa-img${previa ? "" : " sem"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${previa ? `<img hidden alt="" src="${h(previa)}" onerror="this.parentElement.classList.add('sem')" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
-            <span class="mp-dica" data-capa-dica>${tipoA === "pdf" ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)"}</span>
+            <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9). Se for PDF, capa em pé: 1024 × 1536 px (2:3).`, "fmt.aula")}</span>
             <div class="capa-ia-box" data-capaia-box="aula:${a.id}">${capaIaBloco("aula", a.id)}</div>
           </section>
 
@@ -6426,7 +6425,7 @@ export function montar(app: HTMLElement) {
         };
         if (pt.tipo !== "texto") {
           abrirSeletorEstilo({
-            ancora: el, titulo: pt.nome + " · " + x.nome, partes: [{ k: pt.k, nome: pt.nome, tipo: pt.tipo as "card" | "botao" }], valor: base[pt.k] ? { [pt.k]: base[pt.k] } : null,
+            ancora: el.closest<HTMLElement>(".cat-dir") || el, semAmostra: true, titulo: pt.nome + " · " + x.nome, partes: [{ k: pt.k, nome: pt.nome, tipo: pt.tipo as "card" | "botao" }], valor: base[pt.k] ? { [pt.k]: base[pt.k] } : null,
             aoMudar: (e) => { ui.prevEst.cat[x.id] = limparEstilo({ ...base, [pt.k]: e?.[pt.k] }); pintarKx(x); },
             aoFechar: () => { delete ui.prevEst.cat[x.id]; pintarKx(x); },
             aoSalvar: (e) => salvar(limparEstilo({ ...base, [pt.k]: e?.[pt.k] })),
@@ -6686,7 +6685,7 @@ export function montar(app: HTMLElement) {
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
         void executar(async () => {
           falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null }).eq("id", id).select("id").single());
-          await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); ui.catxEditar = ""; delete previas["catx-" + id];
+          await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null;
           return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
         return;
