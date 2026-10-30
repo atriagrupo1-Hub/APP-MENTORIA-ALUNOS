@@ -2299,8 +2299,9 @@ export function montar(app: HTMLElement) {
    */
   /** Etiquetas coloridas das categorias escolhidas para o curso. */
   const chipsCats = (ids: string[]) => ids.map((id) => catAba(id)).filter((x): x is CatAba => !!x).map((x) => `<span class="oc-chip" style="--oc:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}">${h(x.nome)}<button type="button" data-a="oc-tirar" data-id="${x.id}" aria-label="Tirar ${h(x.nome)}">×</button></span>`).join("") || `<em>Nenhuma categoria.</em>`;
-  const rotQtdCats = (n: number) => !n ? "Escolher" : n === 1 ? "1 escolhida" : n + " escolhidas";
-  const pintarChips = () => { const ids = [...document.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value); const box = document.querySelector<HTMLElement>(".oc-chips"); if (box) box.innerHTML = chipsCats(ids); const q = document.querySelector<HTMLElement>(".oc-qtd"); if (q) q.textContent = rotQtdCats(ids.length); pintarPassosCurso(); };
+  /** O que aparece na lista fechada: os nomes das categorias escolhidas. */
+  const rotQtdCats = (ids: string[]) => ids.map((id) => catAba(id)?.nome).filter(Boolean).join(", ") || "Escolher categorias";
+  const pintarChips = () => { const ids = [...document.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value); const box = document.querySelector<HTMLElement>(".oc-chips"); if (box) box.innerHTML = chipsCats(ids); const q = document.querySelector<HTMLElement>(".oc-qtd"); if (q) q.textContent = rotQtdCats(ids); pintarPassosCurso(); };
   const escolhaAbasCats = (cid: string) => {
     const tem = new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === cid).map((x) => x.cat));
     const abaOn = (k: Cat) => S.catsAba.some((x) => x.aba === k.id && tem.has(x.id));
@@ -2309,7 +2310,8 @@ export function montar(app: HTMLElement) {
             <span>Botões do app ${dicaCampo("Em quais botões do menu do app o curso aparece. Pode marcar mais de um. Todo botão novo aparece aqui sozinho.")}</span>
             <div class="oc-abas">${S.cats.map((k) => `<button type="button" class="oc-aba" data-a="oc-aba" data-id="${k.id}" aria-pressed="${abaOn(k)}">${icDaAba(k)}${h(k.nome)}</button>`).join("") || `<em>Nenhum botão. Crie em Botões do app e Categorias.</em>`}</div>
             <div class="oc-linha"><span>Categorias ${dicaCampo(AJ.cat)}</span>
-            <details class="oc-lista"><summary><span class="oc-qtd">${rotQtdCats(tem.size && [...tem].filter((id) => { const x = catAba(id); return !!x && S.cats.some((k) => k.id === x.aba && abaOn(k)); }).length)}</span><i aria-hidden="true">▾</i></summary><div class="oc-cats">${S.cats.map((k) => { const xs = S.catsAba.filter((x) => x.aba === k.id); return `<div class="oc-grupo" data-oc-aba="${k.id}" ${abaOn(k) ? "" : "hidden"}><b>Botão ${h(k.nome)}</b>${xs.map((x) => `<label class="oc-cat"><input type="checkbox" name="catx" value="${x.id}" ${tem.has(x.id) ? "checked" : ""} /><i style="background:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}"></i>${h(x.nome)}</label>`).join("") || `<em>Este botão ainda não tem categorias.</em>`}</div>`; }).join("")}<em class="oc-nada" ${S.cats.some(abaOn) ? "hidden" : ""}>Marque um botão acima para escolher as categorias.</em></div></details></div>
+            <details class="oc-lista"><summary><span class="oc-qtd">${rotQtdCats([...tem].filter((id) => { const x = catAba(id); return !!x && S.cats.some((k) => k.id === x.aba && abaOn(k)); }))}</span><i aria-hidden="true">▾</i></summary><div class="oc-cats">${S.cats.map((k) => { const xs = S.catsAba.filter((x) => x.aba === k.id); return `<div class="oc-grupo" data-oc-aba="${k.id}" ${abaOn(k) ? "" : "hidden"}><b>Botão ${h(k.nome)}</b>${xs.map((x) => `<label class="oc-cat"><input type="checkbox" name="catx" value="${x.id}" ${tem.has(x.id) ? "checked" : ""} /><i style="background:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}"></i>${h(x.nome)}</label>`).join("") || `<em>Este botão ainda não tem categorias.</em>`}</div>`; }).join("")}<em class="oc-nada" ${S.cats.some(abaOn) ? "hidden" : ""}>Marque um botão acima para escolher as categorias.</em></div></details></div>
+            <span class="oc-sel-rot">Categoria selecionada</span>
             <div class="oc-chips">${chipsCats([...tem].filter((id) => { const x = catAba(id); return !!x && S.cats.some((k) => k.id === x.aba && abaOn(k)); }))}</div>
           </div>`;
   };
@@ -3167,7 +3169,7 @@ export function montar(app: HTMLElement) {
     const aa = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
     const vis = (k: string, nome: string) => { const v = estKx(x)[k]; return `<div class="kx-est-l"><span><b>${h(nome)} ${dicaCampo(`Borda, sombra e fundo do ${nome.toLowerCase()}.`, "cat.vis." + k)}</b></span><button type="button" class="se-abre" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
     const pino = (l: string) => `<em class="ce-pino" aria-hidden="true">${l}</em>`;
-    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab"><i class="ce-num" data-ce-num="${n}">${n}</i><h3>${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
+    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab ce-cab-n"><h3>${n}. ${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCat(x);
     const comp = ui.catxPrevia === "computador";
     return `
@@ -3826,7 +3828,7 @@ export function montar(app: HTMLElement) {
     const val = (n: string, pd: string) => f ? ((f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? pd) : pd;
     return [
       { nome: "Capas", ok: !!(previas["modh-" + m.id] || previas["modv-" + m.id] || val("capaH", m.capaH) || val("capa", m.capa)), falta: "pôr uma capa" },
-      { nome: "Textos do card", ok: !!val("nome", m.nome).trim(), falta: "escrever o nome do módulo" },
+      { nome: "Textos", ok: !!val("nome", m.nome).trim(), falta: "escrever o nome do módulo" },
       { nome: "Visual", ok: !!(estMod(m)?.card || estMod(m)?.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: estado3(m.pub, !m.ativo) === "ativo", falta: "deixar o módulo Ativo" },
     ];
@@ -3953,7 +3955,7 @@ export function montar(app: HTMLElement) {
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
     const visC = (k: string, nome: string) => { const v = estCc(c)[k]; return `<div class="kx-est-l"><span><b>${h(nome)} ${dicaCampo(`Borda, sombra e fundo do ${nome.toLowerCase()}.`, "curso.vis." + k)}</b></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
     const pino = (l: string) => `<em class="ce-pino" aria-hidden="true">${l}</em>`;
-    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab"><i class="ce-num" data-ce-num="${n}">${n}</i><h3>${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
+    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab ce-cab-n"><h3>${n}. ${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCurso(c);
     return `
       <div class="cs-config cs-ed ce" data-form-de="formCurso">
@@ -4016,7 +4018,7 @@ export function montar(app: HTMLElement) {
     const est = estCc(c);
     return [
       { nome: "Capa", ok: capa, falta: "pôr a capa" },
-      { nome: "Textos do card", ok: !!val("nome", c.nome).trim() && !!val("descricao", c.descricao).trim(), falta: "escrever o nome e a descrição" },
+      { nome: "Textos", ok: !!val("nome", c.nome).trim() && !!val("descricao", c.descricao).trim(), falta: "escrever o nome e a descrição" },
       { nome: "Onde aparece", ok: cats > 0, falta: "escolher onde o curso aparece" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: estado3(c.visivel, c.bloq) === "ativo", falta: "deixar o curso Ativo" },
@@ -4026,8 +4028,8 @@ export function montar(app: HTMLElement) {
   /** Atualiza a barra de passos, os selos dos blocos, o aviso do rodapé e as letras da prévia. */
   function pintarPassosEm(raiz: HTMLElement, ps: Passo[]) {
     ps.forEach((x, i) => {
-      const li = raiz.querySelector<HTMLElement>(`[data-ce-passo="${i + 1}"]`); if (li) { li.classList.toggle("ok", x.ok); li.querySelector("i")!.textContent = x.ok ? "✓" : String(i + 1); }
-      const selo = raiz.querySelector<HTMLElement>(`[data-ce-selo="${i + 1}"]`); if (selo) { selo.textContent = x.ok ? "Pronto" : "Falta"; selo.classList.toggle("ok", x.ok); }
+      const li = raiz.querySelector<HTMLElement>(`[data-ce-passo="${i + 1}"]`); if (li) { li.classList.toggle("ok", x.ok); li.classList.toggle("at", i === ps.findIndex((y) => !y.ok && !y.opcional)); li.querySelector("i")!.textContent = x.ok ? "✓" : String(i + 1); }
+      const selo = raiz.querySelector<HTMLElement>(`[data-ce-selo="${i + 1}"]`); if (selo) { selo.textContent = x.ok ? "Configurado" : "Falta"; selo.classList.toggle("ok", x.ok); }
       const num = raiz.querySelector<HTMLElement>(`[data-ce-num="${i + 1}"]`); if (num) { num.textContent = x.ok ? "✓" : String(i + 1); num.classList.toggle("ok", x.ok); }
       raiz.querySelector(`[data-ce-bloco="${i + 1}"]`)?.classList.toggle("ce-atual", !x.ok && ps.slice(0, i).every((y) => y.ok || y.opcional));
     });
@@ -4047,7 +4049,7 @@ export function montar(app: HTMLElement) {
     const est = estKx(x);
     return [
       { nome: "Capa", ok: !!(previas["catx-" + x.id] || val("capa", x.capa)), falta: "pôr a capa" },
-      { nome: "Textos do card", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
+      { nome: "Textos", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
       { nome: "O que fica dentro", ok: itensReais(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: !x.rascunho, falta: "publicar a categoria" },
