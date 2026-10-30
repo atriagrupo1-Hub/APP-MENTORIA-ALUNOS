@@ -18,7 +18,7 @@ import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
 import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
-import { chaveMenu, comModulosDaBase, cssDaTela, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
+import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -57,7 +57,7 @@ type Opcao = {
   /** Ativa (a aluna vê), bloqueada (vê com cadeado e o aviso) ou desativada (não aparece) — 0097. */
   estado?: "ativo" | "bloqueado" | "desativado"; aviso?: string;
 };
-type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; estilo: Estilo | null; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; botao: string; estilo: Estilo | null; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; catAba: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -261,7 +261,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id, publicado, bloqueado, aviso_bloqueio").not("aula_id", "is", null).order("ordem"),
@@ -333,7 +333,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", botao: m.botao_texto ?? "", estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -863,7 +863,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
-    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat();
+    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -1297,7 +1297,6 @@ export function montar(app: HTMLElement) {
    * alunas); "Liberada · data" quando já abriu para as alunas; senão, o
    * botão "Liberar para todas".
    */
-  const IC_ENGR_M = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>`;
   const IC_EXP_M = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
   /** Liberação do módulo: a data dele, ou o que as aulas já têm (a mais próxima a abrir, ou a última aberta). */
   function situacaoModulo(m: Modulo) {
@@ -2474,8 +2473,7 @@ export function montar(app: HTMLElement) {
       </div>`;
   }
   function cfgModulos() {
-    const t = S.config.telas, jor = curso(S.config.jornada);
-    const mods = jor ? jor.modulos : [];
+    const t = S.config.telas;
     return `
       <div class="cfg-grade">
         <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="modulos">
@@ -2487,27 +2485,6 @@ export function montar(app: HTMLElement) {
           <input type="hidden" name="modProgresso" value="${h(t.modProgresso)}" /><input type="hidden" name="modLayout" value="${h(t.modLayout)}" /><input type="hidden" name="modTamanho" value="${h(t.modTamanho)}" />
           <div class="cfg-bloco">
             <div class="cfg-formato"><h3>Formato do card ${dicaCampo(`Capa ao lado: a capa vertical do módulo à esquerda e o texto à direita (como era). Capa em cima: a capa horizontal em cima, depois "Módulo", o título, o texto e o botão Ver aulas largo, igual ao card do Início.`, "cfg.formato-card-mod")}</h3><div class="cfg-tams">${[["lado", "Capa ao lado"], ["cima", "Capa em cima"]].map(([k, tt]) => `<label class="cfg-tam"><input type="radio" name="modFormato" value="${k}" ${(t.modFormato || "lado") === k ? "checked" : ""} /><span>${tt}</span></label>`).join("")}</div></div>
-          </div>
-          <div class="cfg-bloco">
-            <h3>Cards dos módulos ${dicaCampo(`O visual de todos os cards da tela Módulos de uma vez: o card (borda, sombra e fundo), o botão "Ver aulas" e os textos. Para mudar um módulo só, use o Estilo dele na Ordem dos módulos, abaixo; o que for escolhido para um módulo vale por cima do "todos".`, "cfg.cards-mod-todos")}</h3><p class="cfg-sub">Vale para todos os módulos. Para mudar um só, use o Estilo dele na lista abaixo.</p>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "modcard" || x.k === "modbotao"))}</div>
-            ${([["modrot", "Rótulo do módulo", "O “Módulo 1” em cima do título."], ["modtitulo", "Título do módulo", ""], ["moddesc", "Texto do módulo", "A descrição e o número de aulas."], ["modbotaotx", "Texto do botão “Ver aulas”", ""]] as const).map(([k, n, d]) => `<div class="cfg-linha-est"><span class="cfg-c cfg-c-so"><span>${n}</span>${d ? `<em>${d}</em>` : ""}</span>${botaoEstiloTexto("est:" + k, n)}</div>`).join("")}
-          </div>
-          <div class="cfg-bloco">
-            <h3>Ordem dos módulos ${dicaCampo(`A ordem em que os módulos aparecem para a aluna. Arraste pela alça (⋮⋮) para mudar. O status define se o módulo está ativo, bloqueado (aparece com cadeado) ou oculto (não aparece). O ⋮ abre o curso para editar.`, "cfg.ordem-dos-m-dulos")}</h3><p class="cfg-sub">Arraste para mudar a ordem que aparece no app.</p>
-            <details class="cfg-vlista" data-ui="modOrdemAberta"${ui.modOrdemAberta ? " open" : ""}><summary><span class="cfg-vlista-t">${ui.modOrdemAberta ? "Fechar a lista" : "Abrir a lista"} <em>(${p(mods.length, "módulo", "módulos")})</em></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>
-            <div class="cfg-ordem">${mods.map((m, i) => { const c = capaSite(m.capa); return `
-              <div class="cfg-orl" draggable="true" data-arrasta="${m.id}">
-                <span class="cfg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
-                <span class="cfg-n">${i + 1}</span>
-                <span class="cfg-mini">${c ? `<img src="${h(c)}" alt="" loading="lazy" />` : ""}</span>
-                <b>${h(m.nome)}</b>
-                <span class="cfg-aulas">${p(m.aulas.length, "aula", "aulas")}</span>
-                ${botaoEstilo("estilo-mod", m.id, m.nome, m.estilo, m.cor)}
-                ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo))}
-                <button type="button" class="eq-pts" data-a="cfg-mod-ir" data-id="${jor!.id}" title="Abrir o curso para editar" aria-label="Editar ${h(m.nome)}">${IC_EQ.pontos}</button>
-              </div>`; }).join("")}</div>
-            </details>
           </div>
         </form>
         ${previaCfgBox(previaModulos(t))}
@@ -3632,7 +3609,6 @@ export function montar(app: HTMLElement) {
     seta: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
   };
   /* --- Página do módulo (referência aprovada): informações e capas no alto, aulas embaixo --- */
-  const IC_INFO = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M8 10h.01M12 10h.01M16 10h.01M8 14.5h8"/></svg>`;
   const IC_SALVAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11.5l3 3V19a.5.5 0 0 1-.5.5H5a.5.5 0 0 1-.5-.5V5a.5.5 0 0 1 .5-.5z"/><path d="M8 4.5v5h7v-5M8 19.5v-6h8v6"/></svg>`;
   const IC_PLAY_C = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5l5.5 3.5-5.5 3.5z"/></svg>`;
   const IC_EXPANDIR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v4h-4"/></svg>`;
@@ -3665,76 +3641,84 @@ export function montar(app: HTMLElement) {
   function paginaModulo(c: Curso, m: Modulo, i: number) {
     const capaH = previas["modh-" + m.id] || capaSite(m.capaH), capaV = previas["modv-" + m.id] || capaSite(m.capa);
     const ident = h(m.rot) + " " + numModulo(c, i);
+    const aaT = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="fonte-cor" data-v="est:${k}" aria-label="Estilo: ${h(nome)} (vale para todos os módulos)"><b>Aa</b>Estilo</button>`;
+    const pino = (l: string) => `<em class="ce-pino" aria-hidden="true">${l}</em>`;
+    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab"><i class="ce-num" data-ce-num="${n}">${n}</i><h3>${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
+    const visM = (k: string, nome: string) => { const v = m.estilo?.[k]; return `<div class="kx-est-l"><span><b>${h(nome)} ${dicaCampo(`Borda, sombra e fundo do ${nome.toLowerCase()} deste módulo. Vazio: usa o padrão de todos os módulos.`, "mod.vis." + k)}</b></span><button type="button" class="se-abre" data-a="estilo-mod" data-id="${m.id}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
+    const ps = passosMod(m);
+    const capaCol = (tipo: "h" | "v", rot: string, dica: string, img: string) => `
+            <div class="mp-capa-col ce-capa-col">
+              <span class="ce-capa-rot">${rot} ${dica}</span>
+              <span class="ce-capa-img ce-capa-${tipo}" data-previa="mod${tipo}-${m.id}" data-a="mod-capa-${tipo}" data-id="${m.id}" title="Escolher a capa">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+              <input type="hidden" name="${tipo === "h" ? "capaH" : "capa"}" value="${h(tipo === "h" ? m.capaH : m.capa)}" />
+              <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-${tipo}" data-id="${m.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="mod${tipo}" data-id="${m.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="mod-capa-${tipo}-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></div>
+              <div class="capa-ia-box" data-capaia-box="mod${tipo}:${m.id}">${capaIaBloco(("mod" + tipo) as "modh" | "modv", m.id)}</div>
+            </div>`;
     return `
-    <section class="tela ativa cs mp" data-form-de="formMod">
+    <section class="tela ativa cs mp ce ce-mod" data-form-de="formMod">
       <div class="mp-topo">
         <nav class="mp-trilha" aria-label="Você está em">
           <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
           <button type="button" data-a="mod-pagina-voltar">${h(c.nome)}</button><i>›</i>
           <b>${ident}</b>
         </nav>
-        <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
+        <span class="ce-topo-bts">
+          <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
+          <button type="button" class="al-botao" data-a="cs-ver-aluna">${IC_OLHO_C}Ver na área da aluna</button>
+          <button type="button" class="al-botao" data-a="mod-duplicar" data-id="${m.id}">${IC_MOD.copiar}Duplicar módulo</button>
+          <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}" data-mod="${m.id}">${IC_EXP_M}Exportar conteúdo</button><button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Apagar módulo</button></div></details>
+        </span>
       </div>
       <div class="mp-tit"><h2>${ident}</h2></div>
-      <p class="mp-sub">${h(m.nome)}</p>
-
-      <div class="mp-dupla">
-      <form id="formMod" data-f="mod-renomear" data-id="${m.id}" class="cs-cartao mp-info">
-        <div class="mp-cab"><span class="mp-cab-ic">${IC_INFO}</span><div><h3>Informações do módulo</h3><p>Edite as informações e as capas do módulo.</p></div></div>
-        <div class="mp-grade">
-          <div class="mp-capas">
-            <div class="mp-capa-col">
-            <span class="rotulo-ajuda mp-rot">Capa deitada (16:9) ${dicaCampo(AJ.modCapaH)}</span>
-            <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-h" data-previa="modh-${m.id}" data-a="mod-capa-h" data-id="${m.id}" title="Escolher a capa">${capaH ? `<img src="${h(capaH)}" alt="" onerror="this.remove()" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
-            <input type="hidden" name="capaH" value="${h(m.capaH)}" />
-            <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="mod-capa-h" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modh" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-h-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button></span>
-            <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9).`, "fmt.169")}</span>
-            <div class="capa-ia-box" data-capaia-box="modh:${m.id}">${capaIaBloco("modh", m.id)}</div>
+      <ol class="ce-passos" aria-label="Passos do módulo">${ps.map((x, k) => `<li data-ce-passo="${k + 1}" class="${x.ok ? "ok" : ""}"><i>${x.ok ? "✓" : k + 1}</i>${h(x.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((x) => x.ok).length} de ${ps.length}</b> prontos</span></ol>
+      <div class="ce-mod-grade">
+        <form id="formMod" data-f="mod-renomear" data-id="${m.id}" class="ce-form">
+          <section class="cs-cartao ce-bloco" data-ce-bloco="1">
+            ${cab("1", "Capas do módulo", "")}
+            <div class="ce-capas">${capaCol("h", "Deitada (16:9)", dicaCampo(AJ.modCapaH + " Formato: 1920 × 1080 px (16:9).", "mod.capah"), capaH)}${capaCol("v", "Em pé (2:3)", dicaCampo(AJ.modCapa + " Formato: 1024 × 1536 px (2:3).", "mod.capav"), capaV)}</div>
+          </section>
+          <section class="cs-cartao ce-bloco" data-ce-bloco="2">
+            ${cab("2", "Textos do card", dicaCampo(`O botão Aa Estilo dos textos vale para todos os módulos (monta no primeiro e os outros repetem).`, "mod.textos"))}
+            <div class="ce-mod-l3">
+              <div class="cs-campo"><span>${pino("A")}Nome antes do número ${dicaCampo(AJ.rotMod)}</span><span class="kx-campo-aa"><input class="campo" name="rotulo" data-ce-alvo="mrot" value="${h(m.rot)}" maxlength="40" required />${aaT("modrot", "Rótulo do módulo")}</span></div>
+              <div class="cs-campo"><span>Número ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.semNum ? "" : m.num, "Número do módulo")}</div>
+              <div class="cs-campo"><span>${pino("B")}Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><span class="kx-campo-aa"><input id="editarCampo" class="campo" name="nome" data-ce-alvo="mtit" value="${ui.novoMod === m.id ? "" : h(m.nome)}" placeholder="Nome do novo módulo" required />${aaT("modtitulo", "Título do módulo")}</span></div>
             </div>
-            <div class="mp-capa-col">
-            <span class="rotulo-ajuda mp-rot">Capa em pé (2:3) ${dicaCampo(AJ.modCapa)}</span>
-            <span class="mp-pe">
-              <span class="e3-caixa${cls3(estado3(m.pub, !m.ativo))}"><span class="mp-capa-v" data-previa="modv-${m.id}" data-a="mod-capa-v" data-id="${m.id}" title="Escolher a capa">${capaV ? `<img src="${h(capaV)}" alt="" onerror="this.remove()" />` : ""}</span>${selo3(estado3(m.pub, !m.ativo))}</span>
-              <input type="hidden" name="capa" value="${h(m.capa)}" />
-              <span class="mp-pe-bts"><button type="button" class="al-botao" data-a="mod-capa-v" data-id="${m.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="modv" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="mod-capa-v-tirar" data-id="${m.id}">${IC_MOD.lixo}Remover</button><span class="mp-dica">Tamanho recomendado:<br />1024 × 1536 px (2:3)</span></span>
-            </span>
-            <div class="capa-ia-box" data-capaia-box="modv:${m.id}">${capaIaBloco("modv", m.id)}</div>
+            <div class="cs-campo ce-largo"><span>${pino("C")}Descrição ${dicaCampo(AJ.modDesc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="intro" data-ce-alvo="mdesc" rows="2">${h(m.intro)}</textarea>${aaT("moddesc", "Texto do módulo")}</span></div>
+            <div class="cs-duas">
+              <div class="cs-campo"><span>${pino("D")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver aulas".`, "mod.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" data-ce-alvo="mbot" value="${h(m.botao)}" maxlength="30" placeholder="Ver aulas" />${aaT("modbotaotx", "Texto do botão")}</span></div>
+              <label class="cs-campo"><span>Data de criação (opcional) ${dicaCampo(AJ.modCriado)}</span><input type="datetime-local" class="campo" name="criado" value="${h(dataLocal(m.criado))}" /></label>
             </div>
-          </div>
-          <div class="mp-campos">
-            <div class="mp-linha3">
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotMod)}</span><input class="campo" name="rotulo" value="${h(m.rot)}" maxlength="40" required /></label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Número do módulo ${dicaCampo(AJ.numMod)}</span>${campoNumero(m.semNum ? "" : m.num, "Número do módulo")}</label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do módulo ${dicaCampo(AJ.nomeMod)}</span><input id="editarCampo" class="campo" name="nome" value="${ui.novoMod === m.id ? "" : h(m.nome)}" placeholder="Nome do novo módulo" required /></label>
+          </section>
+        </form>
+        <div class="cs-col-prev">
+          <section class="cs-cartao cs-prev-curso">
+            <div class="kx-prev-cab"><div><h3>Prévia do card ${dicaCampo(`As letras A, B, C e D mostram onde cada texto aparece. Mostra o formato "capa em cima".`, "mod.previa")}</h3></div></div>
+            <style id="mpvEstilo">${cssPrevMod(m)}</style>
+            <div class="cc-cel ce-cel"><div class="grade-mod gm-modulos"><div class="mod-bloco mc mc-cima mpv-card"${estPrevMod(m, "card", "card")}>
+              <span class="mc-capa-h"${estPrevMod(m, "capa", "capa")} data-previa="modh-${m.id}">${capaH || capaV ? `<img src="${h(capaH || capaV)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+              <div class="mc-info">
+                <span class="mc-rot" data-ce-pino="A" data-mpv="mrot">${h(m.rot)} ${numModulo(c, i)}</span>
+                <b class="mc-tit" data-ce-pino="B" data-mpv="mtit">${h(tituloApp(m.nome))}</b>
+                <p class="mc-desc" data-ce-pino="C" data-mpv="mdesc"${m.intro ? "" : " hidden"}>${h(m.intro)}</p>
+                <span class="mc-ver-cheio" data-ce-pino="D"${estPrevMod(m, "botao", "botao")}><span data-mpv="mbot">${h(m.botao || "Ver aulas")}</span> (${m.aulas.length})</span>
+              </div>
+            </div></div><span class="ce-pinos"></span></div>
+            <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n" data-ce-num="3">3</i>Visual <small>(opcional)</small></span>
+              <div class="kx-visual ce-vis-lado">${visM("card", "Card")}${visM("botao", "Botão")}</div>
+              <button type="button" class="al-botao ce-repetir" data-a="mod-est-todos" data-id="${m.id}">${IC_MOD.copiar}Repetir este visual nos outros módulos do curso</button>
             </div>
-            <label class="grupo"><span class="rotulo-ajuda mp-rot">Descrição ${dicaCampo(AJ.modDesc)}</span><textarea class="campo" name="intro" rows="4">${h(m.intro)}</textarea></label>
-            <div class="mp-linha-cor">
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Cor do módulo ${dicaCampo(AJ.modCor)}</span><input type="color" class="campo-cor" name="cor" value="${h(/^#[0-9a-f]{6}$/i.test(m.cor) ? m.cor : "#e6b85a")}" /></label>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">Data de criação (opcional) ${dicaCampo(AJ.modCriado)}</span><input type="datetime-local" class="campo" name="criado" value="${h(dataLocal(m.criado))}" /></label>
-            </div>
-            <div class="mp-bts"><button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button><button class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button></div>
-          </div>
+          </section>
         </div>
-      </form>
-      <div class="mp-lado">
-        <section class="cs-cartao ea-config">
-          <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR_M}</span><div><h3>Configurações</h3></div></div>
-          <div class="mp-config">
-            <div class="grupo"><span class="rotulo-ajuda mp-rot">Status do módulo ${dicaCampo(AJ.statusMod)}</span>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</div>
-            <div class="grupo"><span class="rotulo-ajuda mp-rot">Também nas categorias</span>${naCategoria("modulo", m.id)}</div>
-            <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
-          </div>
-          <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo(m)}</div>
-        </section>
-        <section class="cs-cartao cs-rapidas">
-          <h3>Ações rápidas</h3>
-          <button type="button" data-a="cs-ver-aluna">${IC_OLHO_C}Ver na área da aluna</button>
-          <button type="button" data-a="mod-duplicar" data-id="${m.id}">${IC_MOD.copiar}Duplicar módulo</button>
-          <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}" data-mod="${m.id}">${IC_EXP_M}Exportar conteúdo</button>
-          <button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Apagar módulo</button>
-        </section>
       </div>
-      </div>
+      <footer class="cs-ed-pe">
+        <span class="cs-ed-st"><b><i class="ce-num ce-num-n">4</i>Status ${dicaCampo(AJ.statusMod)}</b>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
+        <label class="ce-libera">${IC_CUR.cal}<span>Liberar em ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
+        <span class="ce-mod-info">${situacaoModulo(m)}<span class="ce-mod-cats"><em>Também nas categorias:</em> ${naCategoria("modulo", m.id)}</span></span>
+        <span class="ce-falta" data-ce-falta></span>
+        <button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button>
+        <button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button>
+      </footer>
 
       <section class="cs-cartao mp-aulas">
         <div class="mp-aulas-topo">
@@ -3750,6 +3734,34 @@ export function montar(app: HTMLElement) {
         <div class="mp-lista">${m.aulas.map((a, j) => linhaAulaNova(m, a, j)).join("") || `<p class="ini-vazio">Nenhuma aula neste módulo.</p>`}</div>
       </section>
     </section>`;
+  }
+  /** Como o app escreve o título: TUDO EM MAIÚSCULA vira só a primeira letra maiúscula. */
+  const tituloApp = (t: string) => (t === t.toUpperCase() ? t.charAt(0) + t.slice(1).toLowerCase() : t);
+  /** Prévia do card do módulo: estilo de todos os módulos (Configurações) + o deste módulo por cima. */
+  const PARTES_MOD_CARD = PARTES_INICIO.filter((x) => /^mod(card|botao|botaotx|rot|titulo|desc)$/.test(x.k));
+  const cssPrevMod = (_m: Modulo) => cssDaTela(PARTES_MOD_CARD, estInicioAgora());
+  const estMod = (m: Modulo) => (m.id in ui.prevEst.mod ? limparEstilo(ui.prevEst.mod[m.id]) : m.estilo);
+  const estPrevMod = (m: Modulo, parte: string, tipo: "card" | "botao" | "capa") => { const css = cssVisual(estMod(m)?.[parte], tipo); return css ? ` style="${h(css)}"` : ""; };
+  function pintarPrevMod() {
+    const st = document.getElementById("mpvEstilo"); const x = ui.modPagina ? acharModulo(ui.modPagina) : null; if (!st || !x) return;
+    st.textContent = cssPrevMod(x.m);
+    const card = document.querySelector<HTMLElement>(".mpv-card"); if (card) { card.setAttribute("style", cssVisual(estMod(x.m)?.card, "card")); card.querySelector<HTMLElement>(".mc-ver-cheio")?.setAttribute("style", cssVisual(estMod(x.m)?.botao, "botao")); card.querySelector<HTMLElement>(".mc-capa-h")?.setAttribute("style", cssVisual(estMod(x.m)?.capa, "capa")); }
+    pintarPassosMod();
+  }
+  /** Os 4 passos do Editar módulo. */
+  function passosMod(m: Modulo): Passo[] {
+    const f = document.getElementById("formMod") as HTMLFormElement | null;
+    const val = (n: string, pd: string) => f ? ((f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? pd) : pd;
+    return [
+      { nome: "Capas", ok: !!(previas["modh-" + m.id] || previas["modv-" + m.id] || val("capaH", m.capaH) || val("capa", m.capa)), falta: "pôr uma capa" },
+      { nome: "Textos do card", ok: !!val("nome", m.nome).trim(), falta: "escrever o nome do módulo" },
+      { nome: "Visual", ok: !!(estMod(m)?.card || estMod(m)?.botao), opcional: true, falta: "" },
+      { nome: "Publicar", ok: estado3(m.pub, !m.ativo) === "ativo", falta: "deixar o módulo Ativo" },
+    ];
+  }
+  function pintarPassosMod() {
+    const raiz = document.querySelector<HTMLElement>(".ce-mod"); const x = ui.modPagina ? acharModulo(ui.modPagina) : null; if (!raiz || !x) return;
+    pintarPassosEm(raiz, passosMod(x.m));
   }
   function modulosCurso(c: Curso) {
     const q = norm(ui.modBusca || "").trim();
@@ -4733,6 +4745,7 @@ export function montar(app: HTMLElement) {
   }
   /** Manda para o app da prévia o que está sendo editado na aba aberta de Configurações (ainda sem salvar). */
   function mandarPreviaCfg() {
+    pintarPrevMod();
     const fr = celReal?.querySelector("iframe"); if (!fr || !celPronto) return;
     const aba = ui.cfgAba;
     if (aba === "inicio") { mandarPreviaInicio(); return; }
@@ -4831,7 +4844,7 @@ export function montar(app: HTMLElement) {
   /** Como o texto aparece hoje no celular da prévia (para mostrar o "padrão" de verdade). */
   function vistaNaPrevia(sel: string, reserva: Vista): Vista {
     try {
-      const fr = document.querySelector<HTMLIFrameElement>(".cel-real iframe, #cfgCel iframe"), d = fr?.contentDocument;
+      const fr = document.querySelector<HTMLIFrameElement>(".cel-real iframe, #cfgCel iframe"), d = fr?.contentDocument ?? (document.querySelector(".mpv-card") ? document : null);
       const el = d?.querySelector<HTMLElement>(sel.split(",")[0].trim()); if (!el || !d?.defaultView) return reserva;
       const cs = d.defaultView.getComputedStyle(el);
       return { cor: rgbHex(cs.color) || reserva.cor, fonte: cs.fontFamily.split(",")[0].replace(/["']/g, "").trim() || reserva.fonte, px: Math.round(parseFloat(cs.fontSize)) || reserva.px, negrito: Number(cs.fontWeight) >= 600, italico: cs.fontStyle === "italic", alinha: (({ center: "center", right: "right", end: "right", justify: "justify" } as Record<string, Alinha>)[cs.textAlign] || "left") };
@@ -6048,8 +6061,8 @@ export function montar(app: HTMLElement) {
       case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="cur-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosCurso(); toast("Capa tirada. Clique em Salvar para guardar."); return; }
       case "mod-capa-v": imgPara = alvoCapa("modv", d.id); arquivoImg.click(); return;
       case "mod-capa-h": imgPara = alvoCapa("modh", d.id); arquivoImg.click(); return;
-      case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modv-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
-      case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modh-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
+      case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modv-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
+      case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modh-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
@@ -6457,7 +6470,8 @@ export function montar(app: HTMLElement) {
         if (!x || !el) return;
         const mapa = ehCat ? ui.prevEst.cat : ui.prevEst.mod, id = x.id;
         abrirSeletorEstilo({
-          ancora: el, titulo: "Estilo de " + x.nome, partes: ehCat ? PARTES_CAT : PARTES_MOD, valor: x.estilo,
+          // No Editar módulo abre à esquerda da prévia, sem cobrir o card.
+          ancora: (el.closest(".ce-mod") && document.querySelector<HTMLElement>(".ce-mod .cs-col-prev")) || el, titulo: "Estilo de " + x.nome, partes: ehCat ? PARTES_CAT : PARTES_MOD, valor: x.estilo,
           aoMudar: (e) => { mapa[id] = e; mandarPreviaCfg(); },
           aoFechar: () => { delete mapa[id]; mandarPreviaCfg(); },
           aoSalvar: async (e) => {
@@ -6467,6 +6481,17 @@ export function montar(app: HTMLElement) {
             void executar(async () => { await registrar(null, "Mudou o estilo " + (ehCat ? "da categoria " : "do módulo ") + x.nome, ehCat ? ["catx", id] : undefined); return "Estilo de " + x.nome + " salvo."; });
             return true;
           },
+        });
+        return;
+      }
+      case "mod-est-todos": {
+        const x = acharModulo(d.id!); if (!x) return; const e = x.m.estilo, outros = x.c.modulos.filter((y) => y.id !== x.m.id);
+        if (!outros.length) { toast("Este curso só tem este módulo."); return; }
+        const velhos = outros.map((y) => ({ id: y.id, estilo: y.estilo }));
+        void executar(async () => {
+          falhou(await supabase.from("modulos").update({ estilo: e }).in("id", outros.map((y) => y.id)).select("id"));
+          await registrar(null, "Repetiu o visual do módulo " + x.m.nome + " nos outros módulos de " + x.c.nome);
+          return { msg: "Visual repetido em " + p(outros.length, "módulo", "módulos") + ".", texto: "visual dos módulos de " + x.c.nome, desfazer: async () => { for (const y of velhos) falhou(await supabase.from("modulos").update({ estilo: y.estilo }).eq("id", y.id).select("id")); } };
         });
         return;
       }
@@ -7009,7 +7034,7 @@ export function montar(app: HTMLElement) {
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
             const novoM = ui.novoMod === id; if (novoM) ui.novoMod = "";
-            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, cor_destaque: cor, ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, ...(form.elements.namedItem("cor") ? { cor_destaque: cor } : {}), ...(form.elements.namedItem("botaoTexto") ? { botao_texto: v("botaoTexto").trim() || null } : {}), ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
@@ -7343,6 +7368,8 @@ export function montar(app: HTMLElement) {
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     if ((e.target as HTMLElement).closest?.("#formCurso")) pintarPassosCurso();
     if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
+    // Editar módulo: a prévia acompanha os textos.
+    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.ceAlvo; if (k && ti.closest?.("#formMod")) { const el = document.querySelector<HTMLElement>(`[data-mpv="${k}"]`); if (el) { const num = (ti.form?.elements.namedItem("numero") as HTMLInputElement | null)?.value ?? ""; el.textContent = k === "mrot" ? (ti.value + " " + num).trim() : k === "mbot" ? ti.value || "Ver aulas" : k === "mtit" ? tituloApp(ti.value) : ti.value; if (k === "mdesc") el.hidden = !ti.value.trim(); } } if (ti.closest?.("#formMod")) pintarPassosMod(); }
     const t = e.target as HTMLInputElement;
     if (t.dataset?.hex) { const f = t.closest("form"); const tx = f?.querySelector<HTMLInputElement>(`input[name="${t.dataset.hex}"]`); if (tx) tx.value = t.value.toUpperCase(); (t.parentElement as HTMLElement).style.background = t.value; }
     if (t.classList?.contains("cfg-hexin") && /^#[0-9a-f]{6}$/i.test(t.value)) { const c = t.parentElement?.querySelector<HTMLInputElement>("input[data-hex]"); if (c) { c.value = t.value.toLowerCase(); (c.parentElement as HTMLElement).style.background = t.value; } }
@@ -7541,7 +7568,7 @@ export function montar(app: HTMLElement) {
         const campo = document.querySelector<HTMLInputElement>(alvo.form + ' input[name="' + alvo.campo + '"]');
         if (campo) campo.value = caminho;
         document.querySelectorAll<HTMLElement>('[data-previa="' + alvo.previa + '"]').forEach((pv) => { pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />'; });
-        toast("Imagem pronta. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat();
+        toast("Imagem pronta. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod();
       } catch (e) { toast(motivo(e)); }
     })();
   }
@@ -7708,7 +7735,7 @@ export function montar(app: HTMLElement) {
   });
   window.addEventListener("resize", () => { ajustarListaLateral(); ajustarArvore(); });
   // Sobre o curso: o campo em foco acende a parte dele no card de prévia.
-  document.addEventListener("focusin", (e) => { const k = (e.target as HTMLElement).dataset?.ceAlvo; document.querySelectorAll(".ce-luz").forEach((x) => x.classList.remove("ce-luz")); if (k) document.querySelector(`.ce-cel [data-cc="${k}"], .ce-cel [data-kx="${k}"]`)?.closest("[data-ce-pino]")?.classList.add("ce-luz"); });
+  document.addEventListener("focusin", (e) => { const k = (e.target as HTMLElement).dataset?.ceAlvo; document.querySelectorAll(".ce-luz").forEach((x) => x.classList.remove("ce-luz")); if (k) document.querySelector(`.ce-cel [data-cc="${k}"], .ce-cel [data-kx="${k}"], .ce-cel [data-mpv="${k}"]`)?.closest("[data-ce-pino]")?.classList.add("ce-luz"); });
   document.addEventListener("focusin", (e) => { if ((e.target as HTMLElement).id === "buscaGeral" && ui.buscaGeral.trim()) { ui.buscaAberta = true; atualizarBusca(); } });
   window.addEventListener("beforeunload", (e) => { if (ui.sujo && formSujo()) { e.preventDefault(); e.returnValue = ""; } });
 

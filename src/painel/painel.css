@@ -4155,3 +4155,46 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .kc-lista .cur-menu .kc-kb { position: relative; top: auto; right: auto; }
 .kc-lista .cur-menu .kc-pontos { filter: none; }
 .kc-lista .cur-menu .kb-menu { right: 0; left: auto; }
+
+/* Editar módulo no modelo de passos (igual curso e categoria) */
+.ce-mod .mp-topo { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ce-topo-bts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ce-topo-bts svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.ce-mod .mp-tit { margin: 6px 0 12px; }
+.ce-mod .ce-passos { margin-bottom: 14px; }
+.ce-mod-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 430px); gap: 16px; align-items: start; }
+@media (max-width: 1000px) { .ce-mod-grade { grid-template-columns: 1fr; } }
+.ce-capas { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-start; }
+.ce-capa-col { display: flex; flex-direction: column; gap: 8px; }
+.ce-capa-rot { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-2); }
+.ce-capa-col .ce-capa-img { cursor: pointer; }
+.ce-capa-col .ce-capa-v { width: 108px; aspect-ratio: 2 / 3; }
+.ce-capa-col .ce-capa-h { width: 240px; }
+.ce-capa-col .cc-capa-bts { margin: 0; }
+.ce-capa-col .capa-ia-box { margin: 0; }
+.ce-mod-l3 { display: grid; grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1.5fr); gap: 12px; margin-bottom: 10px; }
+.ce-mod-l3 .campo-num, .ce-mod-l3 .cs-campo > :last-child { width: 100%; }
+.ce-mod .ce-largo { margin-bottom: 10px; }
+@media (max-width: 700px) { .ce-mod-l3 { grid-template-columns: 1fr; } }
+.ce-mod .cs-ed-pe { margin: 14px 0; flex-wrap: wrap; }
+.ce-mod-info { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--texto-2); }
+.ce-mod-cats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ce-mod-cats em { font-style: normal; }
+.ce-repetir { width: 100%; margin-top: 10px; justify-content: center; }
+.ce-repetir svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+/* Card de prévia do módulo (como no app, formato capa em cima) */
+.ce-mod .grade-mod { width: 100%; max-width: 360px; }
+.mpv-card { overflow: hidden; color: #f1e6c9; background: #0d0c0e; border: 1.5px solid #c9a25c; border-radius: 16px; }
+.mpv-card .mc-capa-h { position: relative; display: block; aspect-ratio: 16 / 9; background: #111; }
+.mpv-card .mc-capa-h img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.mpv-card .mc-info { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px; }
+.mpv-card .mc-rot { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #c9a25c; }
+.mpv-card .mc-tit { font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600; color: #fff; }
+.mpv-card .mc-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: #cfc6b5; }
+.mpv-card .mc-ver-cheio { display: block; margin-top: 6px; padding: 10px; text-align: center; font-size: 13.5px; font-weight: 700; color: #1d1a16; background: linear-gradient(#d8b46e, #b98d43); border-radius: 10px; }
+.ce-mod .cs-ed-pe { position: static; box-shadow: none; flex-wrap: nowrap; }
+.ce-mod .cs-ed-pe .ce-falta { flex: 1; min-width: 80px; }
+.ce-mod .ce-libera .campo { width: 190px; }
+.ce-mod-info .ea-lib-ok, .ce-mod-info > :first-child { white-space: nowrap; }
+@media (max-width: 1200px) { .ce-mod .cs-ed-pe { flex-wrap: wrap; } }
+.ce-mod .ce-falta { white-space: nowrap; }

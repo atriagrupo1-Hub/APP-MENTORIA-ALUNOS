@@ -138,6 +138,7 @@ export async function meuPerfil(): Promise<PerfilSessao | null> {
 type LinhaModulo = {
   id: string;
   capa_horizontal_path?: string | null;
+  botao_texto?: string | null;
   rotulo?: string | null;
   numero: number;
   sem_numero?: boolean;
@@ -398,6 +399,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     produtoId: m.produto_id,
     capaPath: m.capa_path,
     capaHorizontalPath: m.capa_horizontal_path ?? null,
+    botaoTexto: m.botao_texto ?? null,
     cor: m.cor_destaque ?? null,
     estilo: m.estilo ?? null,
     rotulo: m.rotulo ?? null,
