@@ -3204,6 +3204,14 @@ export function montar(app: HTMLElement) {
                 <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
               </div>
             </section>
+            <section class="cs-cartao ce-bloco" data-ce-bloco="5">
+              ${cab("5", "Publicação e liberação", dicaCampo(`A categoria é que manda: se ela liberar numa data, nada do que está dentro dela (cursos, módulos e aulas) abre antes dessa data.`, "cat.libera"))}
+              <div class="ce-pl">
+                <label class="cs-campo"><span>Visibilidade</span><select class="campo" data-vis-est="catx:${x.id}">${([["ativo", "Ativa — visível e liberada na área da aluna"], ["bloqueado", "Bloqueada — aparece com cadeado"], ["desativado", "Oculta — não aparece na área da aluna"]] as [Estado3, string][]).map(([v, t]) => `<option value="${v}" ${estado3(x.pub, x.bloq) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+                <label class="cs-campo"><span>Liberação</span><select class="campo" name="libModo" form="catxForm" data-lib-modo>${[["ja", "Imediata"], ["data", "Escolher data"]].map(([v, t]) => `<option value="${v}" ${(x.libera ? "data" : "ja") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+                <input type="datetime-local" class="campo ce-pl-data" name="libera" form="catxForm" value="${h(dataLocal(x.libera))}" ${x.libera ? "" : "hidden"} aria-label="Data de liberação" />
+              </div>
+            </section>
           </div>
           <div class="cat-dir">
             <section class="cs-cartao cs-prev-curso cat-prev">
@@ -3221,10 +3229,7 @@ export function montar(app: HTMLElement) {
             </section>
           </div>
         </div>
-        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in">
-          <span class="cs-ed-st"><b><i class="ce-num ce-num-n" data-ce-num="5">5</i>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span>
-          <span class="ce-lib-cat"><b>${IC_CUR.cal}Liberação ${dicaCampo(`A categoria é que manda: se ela liberar numa data, nada do que está dentro dela (cursos, módulos e aulas) abre antes dessa data.`, "cat.libera")}</b>
-            <span class="ce-lib-op"><label><input type="radio" name="libModo" value="ja" form="catxForm" ${x.libera ? "" : "checked"} data-cat-lib />Imediata</label><label><input type="radio" name="libModo" value="data" form="catxForm" ${x.libera ? "checked" : ""} data-cat-lib />Na data</label><input type="datetime-local" class="campo" name="libera" form="catxForm" value="${h(dataLocal(x.libera))}" ${x.libera ? "" : "disabled"} /></span></span>
+        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in ce-pe2">
           <span class="ce-pub${x.rascunho ? "" : " ok"}">${x.rascunho ? "● Não publicada" : "✓ Publicada"}</span>
           <span class="ce-falta" data-ce-falta></span>
           <button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button>
@@ -3981,6 +3986,14 @@ export function montar(app: HTMLElement) {
             ${escolhaAbasCats(c.id)}
           </section>
           <input type="hidden" name="capa" value="${h(c.capa)}" />
+          <section class="cs-cartao ce-bloco" data-ce-bloco="5">
+            ${cab("5", "Publicação e liberação", dicaCampo(`Visibilidade: Ativo (a aluna vê e acessa), Bloqueado (aparece com cadeado) ou Oculto (não aparece). Liberação: imediata ou numa data escolhida.`, "curso.publicacao"))}
+            <div class="ce-pl">
+              <label class="cs-campo"><span>Visibilidade</span><select class="campo" data-vis-est="curso:${c.id}">${([["ativo", "Ativo — visível e liberado na área da aluna"], ["bloqueado", "Bloqueado — aparece com cadeado"], ["desativado", "Oculto — não aparece na área da aluna"]] as [Estado3, string][]).map(([v, t]) => `<option value="${v}" ${estado3(c.visivel, c.bloq) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+              <label class="cs-campo"><span>Liberação ${dicaCampo(AJ.liberaCurso)}</span><select class="campo" name="libModo" data-lib-modo>${[["ja", "Imediata"], ["data", "Escolher data"]].map(([v, t]) => `<option value="${v}" ${(c.libera ? "data" : "ja") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+              <input type="datetime-local" class="campo ce-pl-data" name="libera" value="${h(dataLocal(c.libera))}" ${c.libera ? "" : "hidden"} aria-label="Data de liberação" />
+            </div>
+          </section>
         </form>
         </div>
         <div class="cs-col cs-col-prev">
@@ -4000,12 +4013,11 @@ export function montar(app: HTMLElement) {
             <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n">4</i>Visual <small>(opcional)</small></span><div class="kx-visual ce-vis-lado">${visC("card", "Card")}${visC("botao", "Botão")}</div></div>
           </section>
         </div>
-        <footer class="cs-ed-pe">
-          <span class="cs-ed-st"><b><i class="ce-num ce-num-n">5</i>Status ${dicaCampo(AJ.statusCurso)}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</span>
-          <label class="ce-libera">${IC_CUR.cal}<span>Liberar em ${dicaCampo(AJ.liberaCurso)}</span><input type="datetime-local" class="campo" name="libera" form="formCurso" value="${h(dataLocal(c.libera))}" /></label>
+        <footer class="cs-ed-pe ce-pe2">
           <span class="ce-falta" data-ce-falta></span>
           <button type="button" class="al-botao" data-a="curso-cancelar">Cancelar</button>
-          <button type="submit" form="formCurso" class="al-botao-ouro">Salvar alterações</button>
+          <button type="submit" form="formCurso" class="${c.visivel ? "al-botao-ouro" : "al-botao"}">Salvar alterações</button>
+          ${c.visivel ? "" : `<button type="button" class="al-botao-ouro" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "bloqueado" : "ativo"}">Publicar curso</button>`}
         </footer>
       </div>`;
   }
@@ -7584,6 +7596,8 @@ export function montar(app: HTMLElement) {
     if (t.name === "catx") pintarChips();
     if (t.hasAttribute("data-kn-modo")) { const bx = t.form?.querySelector<HTMLElement>(".kn-cursos"); if (bx) bx.hidden = t.value !== "agora"; }
     if (t.hasAttribute("data-kn-arq")) { const f = t.files?.[0], bx = t.closest<HTMLElement>("[data-kn-capa]"); if (bx) { const im = bx.querySelector("img")!; if (im.src) URL.revokeObjectURL(im.src); im.hidden = !f; im.src = f ? URL.createObjectURL(f) : ""; bx.querySelector(".kn-capa")!.classList.toggle("tem", !!f); bx.querySelector<HTMLElement>(".kn-capa-tirar")!.hidden = !f; } }
+    if (t.hasAttribute("data-lib-modo")) { const i = (t.form?.elements.namedItem("libera") as HTMLInputElement | null) ?? null; if (i) { i.hidden = t.value !== "data"; if (t.value !== "data") i.value = ""; else i.focus(); } }
+    if (t.hasAttribute("data-vis-est")) { acao("estado-set", { v: t.dataset.visEst + ":" + t.value }, t, t); return; }
     if (t.hasAttribute("data-cat-lib")) { const i = document.querySelector<HTMLInputElement>('input[name="libera"][form="catxForm"]'); if (i) { i.disabled = t.value !== "data"; if (!i.disabled) i.focus(); } }
     if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
