@@ -2297,7 +2297,7 @@ export function montar(app: HTMLElement) {
    */
   /** Etiquetas coloridas das categorias escolhidas para o curso. */
   const chipsCats = (ids: string[]) => ids.map((id) => catAba(id)).filter((x): x is CatAba => !!x).map((x) => `<span class="oc-chip" style="--oc:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}">${h(x.nome)}<button type="button" data-a="oc-tirar" data-id="${x.id}" aria-label="Tirar ${h(x.nome)}">×</button></span>`).join("") || `<em>Nenhuma categoria.</em>`;
-  const rotQtdCats = (n: number) => !n ? "Nenhuma — escolher categorias" : n === 1 ? "1 categoria escolhida" : n + " categorias escolhidas";
+  const rotQtdCats = (n: number) => !n ? "Escolher" : n === 1 ? "1 escolhida" : n + " escolhidas";
   const pintarChips = () => { const ids = [...document.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value); const box = document.querySelector<HTMLElement>(".oc-chips"); if (box) box.innerHTML = chipsCats(ids); const q = document.querySelector<HTMLElement>(".oc-qtd"); if (q) q.textContent = rotQtdCats(ids.length); pintarPassosCurso(); };
   const escolhaAbasCats = (cid: string) => {
     const tem = new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === cid).map((x) => x.cat));
