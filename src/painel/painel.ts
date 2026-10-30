@@ -2295,6 +2295,10 @@ export function montar(app: HTMLElement) {
    * tempo) e, em cada aba marcada, as categorias dela. Liga e desliga sem
    * redesenhar a página, para não perder o que já foi digitado.
    */
+  /** Etiquetas coloridas das categorias escolhidas para o curso. */
+  const chipsCats = (ids: string[]) => ids.map((id) => catAba(id)).filter((x): x is CatAba => !!x).map((x) => `<span class="oc-chip" style="--oc:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}">${h(x.nome)}<button type="button" data-a="oc-tirar" data-id="${x.id}" aria-label="Tirar ${h(x.nome)}">×</button></span>`).join("") || `<em>Nenhuma categoria.</em>`;
+  const rotQtdCats = (n: number) => !n ? "Nenhuma — escolher categorias" : n === 1 ? "1 categoria escolhida" : n + " categorias escolhidas";
+  const pintarChips = () => { const ids = [...document.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value); const box = document.querySelector<HTMLElement>(".oc-chips"); if (box) box.innerHTML = chipsCats(ids); const q = document.querySelector<HTMLElement>(".oc-qtd"); if (q) q.textContent = rotQtdCats(ids.length); };
   const escolhaAbasCats = (cid: string) => {
     const tem = new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === cid).map((x) => x.cat));
     const abaOn = (k: Cat) => S.catsAba.some((x) => x.aba === k.id && tem.has(x.id));
@@ -2302,8 +2306,9 @@ export function montar(app: HTMLElement) {
           <div class="cs-campo onde-curso">
             <span>Botões do app ${dicaCampo("Em quais botões do menu do app o curso aparece. Pode marcar mais de um. Todo botão novo aparece aqui sozinho.")}</span>
             <div class="oc-abas">${S.cats.map((k) => `<button type="button" class="oc-aba" data-a="oc-aba" data-id="${k.id}" aria-pressed="${abaOn(k)}">${icDaAba(k)}${h(k.nome)}</button>`).join("") || `<em>Nenhum botão. Crie em Botões do app e Categorias.</em>`}</div>
-            <span>Categorias ${dicaCampo(AJ.cat)}</span>
-            <div class="oc-cats">${S.cats.map((k) => { const xs = S.catsAba.filter((x) => x.aba === k.id); return `<div class="oc-grupo" data-oc-aba="${k.id}" ${abaOn(k) ? "" : "hidden"}><b>Botão ${h(k.nome)}</b>${xs.map((x) => `<label class="oc-cat"><input type="checkbox" name="catx" value="${x.id}" ${tem.has(x.id) ? "checked" : ""} />${h(x.nome)}</label>`).join("") || `<em>Este botão ainda não tem categorias.</em>`}</div>`; }).join("")}<em class="oc-nada" ${S.cats.some(abaOn) ? "hidden" : ""}>Marque um botão acima para escolher as categorias.</em></div>
+            <div class="oc-linha"><span>Categorias ${dicaCampo(AJ.cat)}</span>
+            <details class="oc-lista"><summary><span class="oc-qtd">${rotQtdCats(tem.size && [...tem].filter((id) => { const x = catAba(id); return !!x && S.cats.some((k) => k.id === x.aba && abaOn(k)); }).length)}</span><i aria-hidden="true">▾</i></summary><div class="oc-cats">${S.cats.map((k) => { const xs = S.catsAba.filter((x) => x.aba === k.id); return `<div class="oc-grupo" data-oc-aba="${k.id}" ${abaOn(k) ? "" : "hidden"}><b>Botão ${h(k.nome)}</b>${xs.map((x) => `<label class="oc-cat"><input type="checkbox" name="catx" value="${x.id}" ${tem.has(x.id) ? "checked" : ""} /><i style="background:${COR_HEX[x.cor || "dourado"] || "#c9a25c"}"></i>${h(x.nome)}</label>`).join("") || `<em>Este botão ainda não tem categorias.</em>`}</div>`; }).join("")}<em class="oc-nada" ${S.cats.some(abaOn) ? "hidden" : ""}>Marque um botão acima para escolher as categorias.</em></div></details></div>
+            <div class="oc-chips">${chipsCats([...tem].filter((id) => { const x = catAba(id); return !!x && S.cats.some((k) => k.id === x.aba && abaOn(k)); }))}</div>
           </div>`;
   };
   /** Lista de categorias para escolher, agrupadas pela aba. */
@@ -5816,7 +5821,13 @@ export function montar(app: HTMLElement) {
         const on = el.getAttribute("aria-pressed") !== "true"; el.setAttribute("aria-pressed", String(on));
         const g = document.querySelector<HTMLElement>('[data-oc-aba="' + d.id + '"]'); if (g) g.hidden = !on;
         const algum = !!document.querySelector('.oc-aba[aria-pressed="true"]'); const nada = document.querySelector<HTMLElement>(".oc-nada"); if (nada) nada.hidden = algum;
+        pintarChips();
         const f = el.closest("form"); if (f) ui.sujo = { f: "curso-config", id: ui.curso || "" };
+        return;
+      }
+      case "oc-tirar": {
+        const i = document.querySelector<HTMLInputElement>(`input[name="catx"][value="${d.id}"]`); if (i) i.checked = false;
+        pintarChips(); const f = el.closest("form"); if (f) ui.sujo = { f: "curso-config", id: ui.curso || "" };
         return;
       }
       case "catx-item-add": {
@@ -6910,9 +6921,8 @@ export function montar(app: HTMLElement) {
         const c = curso(ui.curso)!; const cid = c.id;
         // Categorias marcadas, só das abas ligadas.
         const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value);
-        if (!marcadas.length) { toast("Marque pelo menos um botão do app e uma categoria para o curso."); return; }
-        // A categoria principal (a que o app usa hoje) só muda se ela foi desmarcada.
-        const xa = catAba(marcadas.includes(c.catAba) ? c.catAba : marcadas[0]);
+        // A categoria principal (a que o app usa hoje) só muda se ela foi desmarcada; sem nenhuma, fica a de antes.
+        const xa = marcadas.length ? catAba(marcadas.includes(c.catAba) ? c.catAba : marcadas[0]) : null;
         const antes = S.catItens.filter((x) => x.tipo === "curso" && x.item === cid);
         const velho = { titulo: c.nome, capa_path: c.capa || null, categoria_id: c.cat || null, categoria_aba_id: c.catAba || null, libera_em: c.libera || null, descricao: c.descricao || null, fundacao: c.fundacao || null, aviso_material: c.aviso || null, rotulo_inicio: c.rotuloInicio || null, nome_curto: c.nomeCurto || null, card_rotulo: c.cardRotulo || null, card_botao: c.cardBotao || null };
         void executar(async () => {
@@ -7337,10 +7347,13 @@ export function montar(app: HTMLElement) {
     if (t.dataset.i === "celular") { t.value = formatarCelular(t.value); return; }
     if (t.id === "confirmaPalavra") (document.getElementById("confirmaBotao") as HTMLButtonElement).disabled = t.value.trim().toUpperCase() !== t.dataset.palavra;
   });
+  // A lista de categorias do curso fecha ao clicar fora dela.
+  document.addEventListener("pointerdown", (e) => { document.querySelectorAll<HTMLDetailsElement>(".oc-lista[open]").forEach((x) => { if (!x.contains(e.target as Node)) x.open = false; }); });
   app.addEventListener("change", (e) => {
     const t = e.target as HTMLInputElement;
     if (t.hasAttribute("data-catx-tipo")) { ui.catxTipo = t.value; render(); return; }
     marcarSujo(t);
+    if (t.name === "catx") pintarChips();
     if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
     if (t.hasAttribute("data-rel-de")) { ui.relDe = t.value; render(); return; }

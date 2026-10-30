@@ -4002,3 +4002,21 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cs-ed-st b { display: flex; align-items: center; gap: 6px; }
 .cs-ed .cs-campo > span:first-child > svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .cs-ed .cs-col-prev { max-height: calc(100vh - 110px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: 6px; }
+
+/* Editar curso: categorias em lista suspensa + etiquetas coloridas */
+.oc-linha { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+.oc-lista { position: relative; flex: 1 1 220px; max-width: 360px; }
+.oc-lista > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 42px; padding: 0 14px; border: 1px solid var(--linha-suave); border-radius: 10px; background: var(--fundo-campo, #fff); cursor: pointer; font-size: 14px; font-weight: 400; }
+.oc-lista > summary::-webkit-details-marker { display: none; }
+.oc-lista > summary i { font-style: normal; color: var(--texto-2); transition: transform .15s; }
+.oc-lista[open] > summary i { transform: rotate(180deg); }
+.oc-lista > .oc-cats { position: absolute; z-index: 40; top: calc(100% + 6px); left: 0; min-width: 100%; max-height: 300px; overflow: auto; padding: 10px; background: var(--fundo-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.18); }
+.oc-lista .oc-grupo { flex-direction: column; align-items: stretch; gap: 2px; border: 0; padding: 4px 2px; }
+.oc-lista .oc-cat { padding: 7px 8px; border-radius: 8px; }
+.oc-lista .oc-cat:hover { background: rgba(201,162,92,.1); }
+.oc-cat > i { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.oc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.oc-chips em { font-size: 13px; color: var(--texto-2); }
+.oc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 6px 5px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: #fff; background: var(--oc); box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+.oc-chip button { width: 20px; height: 20px; border: 0; border-radius: 50%; background: rgba(0,0,0,.18); color: #fff; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; }
+.oc-chip button:hover { background: rgba(0,0,0,.32); }
