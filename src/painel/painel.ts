@@ -3910,7 +3910,6 @@ export function montar(app: HTMLElement) {
             </article></div>
             <p class="cs-nota cc-nota">O progresso (38%) é só um exemplo: cada aluna vê o dela.</p>
             <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
-            <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
           </section>
           <section class="cs-cartao">
             <h3>Configurações visuais do card</h3>
