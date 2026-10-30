@@ -3865,13 +3865,10 @@ export function montar(app: HTMLElement) {
     const capa = previas["cur-" + c.id] || capaSite(c.capa);
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
     const visC = (k: string, nome: string) => { const v = estCc(c)[k]; return `<div class="kx-est-l"><span><b>${h(nome)}</b><small>Borda, sombra e fundo.</small></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
-    const IC_V = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const IC_EXP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
     return `
       <div class="cs-config cs-ed" data-form-de="formCurso">
         <div class="cs-ed-acoes">
-          <button type="button" class="al-botao" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
-          <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
           <button type="button" class="al-botao" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
           <button type="button" class="al-botao cat-remover" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button>
         </div>
@@ -4008,7 +4005,6 @@ export function montar(app: HTMLElement) {
     if (mp && mp.c.id === c.id) return paginaModulo(c, mp.m, mp.i);
     const aba = ui.cursoAba || "visao";
     const todas = alunasDoCurso(c);
-    const capa = capaSite(c.capa);
     const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["config", "Sobre o curso"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["relatorios", "Relatórios"]];
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
@@ -4025,23 +4021,6 @@ export function montar(app: HTMLElement) {
         <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna ${IC_EXTERNO}</button>
         <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
         <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
-      </div>
-      <div class="cs-heroi${cls3(estado3(c.visivel, c.bloq))}">
-        <span class="cs-capa">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}${selo3(estado3(c.visivel, c.bloq))}<button type="button" class="cs-alterar-capa" data-a="cs-capa-direto" data-id="${c.id}">${IC_IMG}Alterar capa</button></span>
-        <div class="cs-heroi-txt">
-          <span class="cs-etq">Curso</span>
-          <h1>${h(c.nome)}</h1>
-          <div class="cs-heroi-est">${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</div>
-          <div class="cs-heroi-cats"><span>Categorias:</span>${naCategoria("curso", c.id)}</div>
-          ${c.descricao ? `<p>${h(c.descricao)}</p>` : ""}
-        </div>
-        <div class="cs-heroi-acoes">
-          <span class="eng-menu"><button type="button" class="cur-mais" data-a="cur-menu" data-id="${c.id}" aria-label="Mais opções" aria-expanded="${ui.curMenu === c.id}">⋮</button>${ui.curMenu === c.id ? `<span class="eng-menu-pop" role="menu">
-            <button role="menuitem" data-a="curso-aba" data-v="modulos">Módulos e aulas</button>
-            <button role="menuitem" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button>
-
-          </span>` : ""}</span>
-        </div>
       </div>
       <nav class="cs-abas" aria-label="Partes do curso">${ABAS_C.map(([v, t]) => `<button type="button" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${t}</button>`).join("")}</nav>
       ${conteudo}
