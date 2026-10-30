@@ -4219,3 +4219,46 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
   .kc-lista .cur-capa { aspect-ratio: 16 / 9 !important; align-self: center; margin: 12px 0 12px 12px; border-radius: 10px !important; overflow: hidden; }
   .kc-lista .kc-bts3 { grid-template-columns: repeat(2, 150px) auto; align-items: center; }
 }
+
+/* Categorias (referência): barra única, cards com capa, nome, cursos, visibilidade, Abrir e ⋮ */
+.kg-barra { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 10px; }
+.kg-busca { flex: 1 1 260px; max-width: 380px; }
+.kg-sel { width: auto; min-width: 180px; height: 42px; }
+.kg-vista { margin-left: auto; }
+.kg-conta { margin: 0 0 12px; font-size: 13px; color: var(--texto-2); }
+.kg-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+.kg-card { display: flex; flex-direction: column; gap: 8px; padding: 10px 10px 12px; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.kg-capa-box { position: relative; }
+.kg-capa { position: relative; display: block; width: 100%; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 10px; overflow: hidden; background: #111; cursor: pointer; }
+.kg-capa img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.kg-alca { position: absolute; top: 8px; left: 8px; z-index: 2; display: grid; place-items: center; width: 28px; height: 28px; color: #fff; background: rgba(0,0,0,.55); border-radius: 7px; cursor: grab; }
+.kg-alca svg { width: 16px; height: 16px; }
+.kg-nome { display: block; width: 100%; margin: 4px 4px 0; padding: 0; text-align: left; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; color: var(--texto); background: none; border: 0; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.kg-nome:hover { color: #9a7230; }
+.kg-info { margin: 0 4px; font-size: 12.5px; color: var(--texto-2); }
+.kg-pe { display: flex; align-items: center; gap: 8px; margin: 6px 4px 0; }
+.kg-vis { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.kg-acoes { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.kg-abrir { min-height: 36px !important; height: 36px; padding: 0 12px; gap: 6px; font-size: 13px; }
+.kg-abrir svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; }
+.kg-menu { position: relative; }
+.kg-pts { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; color: var(--texto); background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 8px; cursor: pointer; }
+.kg-pts svg { width: 18px; height: 18px; fill: currentColor; }
+.kg-menu .kb-menu { right: 0; left: auto; min-width: 170px; }
+.kg-menu .kb-menu .perigo { color: var(--perigo); }
+.kg-lista { display: flex; flex-direction: column; gap: 10px; }
+.kg-linha { display: flex; align-items: center; gap: 14px; padding: 10px 12px; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 14px; }
+.kg-linha .kg-alca { position: static; color: var(--texto-2); background: none; }
+.kg-mini { position: relative; flex: none; width: 168px; aspect-ratio: 16 / 9; padding: 0; border: 0; border-radius: 9px; overflow: hidden; background: #111; cursor: pointer; }
+.kg-mini img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.kg-ltxt { flex: 1; min-width: 0; }
+.kg-ltxt .kg-nome { margin: 0; }
+.kg-ltxt .kg-info { margin: 2px 0 0; }
+.kg-card .sel3, .kg-linha .sel3 { font-size: 11px; }
+@media (max-width: 760px) {
+  .kg-barra > * { flex: 1 1 100%; max-width: none; }
+  .kg-vista { margin-left: 0; }
+  .kg-linha { flex-wrap: wrap; }
+  .kg-mini { width: 120px; }
+  .kg-linha .kg-acoes { margin-left: 0; width: 100%; justify-content: flex-end; }
+}
