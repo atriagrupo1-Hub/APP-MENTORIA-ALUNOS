@@ -68,7 +68,7 @@ type Curso = {
   criado: string; capa: string;
   /** Início da área da aluna (0052): rótulo e nome curto do bloco da mentoria. */
   rotuloInicio: string; nomeCurto: string;
-  /** Card do curso (0112): estilo próprio e textos (vazio = o de Configurações → Cursos). */
+  /** Card do curso (0112): estilo próprio e textos (vazio = o texto padrão). */
   estilo: Estilo | null; cardRotulo: string; cardBotao: string;
 };
 type Versiculo = { id: string; texto: string; ref: string; visivel: boolean };
@@ -2339,7 +2339,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["cursos", "Cursos"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"]];
   /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
   const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
@@ -2470,29 +2470,6 @@ export function montar(app: HTMLElement) {
             <div class="cfg-ordem">${linhasEstilo("aula", PARTES_AULA)}</div>
           </div>
         </div>
-        ${previaCfgBox("")}
-      </div>`;
-  }
-  /** Configurações → Cursos: o card de todos os cursos (capa deitada, texto em cima, nome, descrição, progresso e botão). */
-  function cfgCursos() {
-    const t = S.config.telas;
-    const linhaC = (campo: string, chave: string, nome: string) => `<div class="cfg-linha-est">${campo}${botaoEstiloTexto(chave, nome)}</div>`;
-    return `
-      <div class="cfg-grade">
-        <form data-f="cfg-telas" class="cfg-painel cfg-form" id="cfgTelas" data-tela="cursos">
-          <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.cursos}</span><div><h2>Cursos</h2><p>O card de todos os cursos: o que aparece dentro de cada categoria.</p></div></div>
-          <div class="cfg-bloco">
-            <h3>Textos do card ${dicaCampo(`O texto pequeno em cima do nome (ex.: "Curso completo") e o texto do botão (ex.: "Ver curso"). Valem para todos os cursos. Vazio: o texto de cima não aparece. O nome, a descrição e a capa de cada curso são editados no próprio curso, em Sobre o curso.`, "cfg.cursos-textos")}</h3><p class="cfg-sub">Valem para todos os cursos. Nome, descrição e capa ficam em cada curso.</p>
-            ${linhaC(`<label class="cfg-c"><span>Texto em cima do nome</span><input class="campo" name="curRotulo" value="${h(t.curRotulo ?? "Curso completo")}" maxlength="40" placeholder="Ex.: Curso completo" /></label>`, "est:currot", "Texto em cima do nome do curso")}
-            ${linhaC(`<span class="cfg-c cfg-c-so"><span>Nome do curso</span><em>Vem de cada curso.</em></span>`, "est:curtitulo", "Nome do curso")}
-            ${linhaC(`<span class="cfg-c cfg-c-so"><span>Descrição do curso</span><em>Vem de cada curso.</em></span>`, "est:curdesc", "Descrição do curso")}
-            ${linhaC(`<label class="cfg-c"><span>Texto do botão</span><input class="campo" name="curBotao" value="${h(t.curBotao ?? "Ver curso")}" maxlength="30" placeholder="Ex.: Ver curso" /></label>`, "est:curbotaotx", "Texto do botão do curso")}
-          </div>
-          <div class="cfg-bloco">
-            <h3>Card e botão ${dicaCampo(`Borda, sombra e fundo do card de todos os cursos e do botão.`, "cfg.cursos-card")}</h3><p class="cfg-sub">Toque em Estilo. O celular ao lado mostra na hora.</p>
-            <div class="cfg-ordem">${linhasEstilo("inicio", PARTES_INICIO.filter((x) => x.k === "curcard" || x.k === "curbotao"))}</div>
-          </div>
-        </form>
         ${previaCfgBox("")}
       </div>`;
   }
@@ -2950,8 +2927,6 @@ export function montar(app: HTMLElement) {
           <p class="cfg-pvnota">É o app de verdade, com o que está publicado agora e o que você mudou aqui. Role com o mouse dentro do celular. Mostra a sua conta da equipe, então tudo aparece liberado.</p>
         </aside>
       </div>`;
-    } else if (aba === "cursos") {
-      corpo = cfgCursos();
     } else if (aba === "modulos" || aba === "presentes") {
       corpo = aba === "modulos" ? cfgModulos() : cfgPresentes();
     } else if (aba === "perfil") {
@@ -3896,10 +3871,10 @@ export function montar(app: HTMLElement) {
           <section class="cs-cartao ce-bloco" data-ce-bloco="2">
             ${cab("2", "Textos do card", "")}
             <div class="cs-duas">
-              <div class="cs-campo"><span>${pino("A")}Texto em cima do nome ${dicaCampo(`O texto pequeno em cima do nome no card (ex.: "Curso completo"). Vazio: usa o de Configurações → Cursos.`, "curso.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" data-ce-alvo="cardRotulo" value="${h(c.cardRotulo)}" maxlength="40" placeholder="${h(S.config.telas.curRotulo ?? "Curso completo")}" />${aaC("rot", "Texto em cima do nome")}</span></div>
+              <div class="cs-campo"><span>${pino("A")}Texto em cima do nome ${dicaCampo(`O texto pequeno em cima do nome no card (ex.: "Curso completo"). Vazio: usa o texto padrão.`, "curso.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" data-ce-alvo="cardRotulo" value="${h(c.cardRotulo)}" maxlength="40" placeholder="${h(S.config.telas.curRotulo ?? "Curso completo")}" />${aaC("rot", "Texto em cima do nome")}</span></div>
               <div class="cs-campo"><span>${pino("B")}Nome do curso ${dicaCampo(`O nome que aparece no card e no alto do curso.`, "curso.nome")}</span><span class="kx-campo-aa"><input class="campo" name="nome" data-ce-alvo="nome" value="${h(c.nome)}" required />${aaC("titulo", "Nome do curso")}</span></div>
               <div class="cs-campo ce-largo"><span>${pino("C")}Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" data-ce-alvo="descricao" rows="2" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
-              <div class="cs-campo"><span>${pino("D")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: usa o de Configurações → Cursos.`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" data-ce-alvo="cardBotao" value="${h(c.cardBotao)}" maxlength="30" placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
+              <div class="cs-campo"><span>${pino("D")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: usa o texto padrão.`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" data-ce-alvo="cardBotao" value="${h(c.cardBotao)}" maxlength="30" placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
             </div>
           </section>
           <section class="cs-cartao ce-bloco" data-ce-bloco="3">
