@@ -6883,8 +6883,8 @@ export function montar(app: HTMLElement) {
           const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), descricao: desc || null, capa_path: capa, ordem: irmas.length, publicado: visivel, rascunho: !visivel }).select("id").single());
           for (const [i, c] of cursos.entries()) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: r.data!.id, tipo: "curso", item_id: c, ordem: i }).select("id").single());
           await registrar(null, "Criou a categoria " + v("nome"), ["catx", r.data!.id]); ui.modal = null;
-          // Abre a página de gerenciamento da categoria nova.
-          ui.catxSel = r.data!.id; ui.tab = "catAba"; ui.kaBusca = ""; window.scrollTo(0, 0);
+          // Abre a página da categoria nova já com a edição completa aberta, para terminar de montar.
+          ui.catxSel = r.data!.id; ui.tab = "catAba"; ui.kaBusca = ""; ui.catxEditar = r.data!.id; window.scrollTo(0, 0);
           return { msg: "Categoria criada" + (cursos.length ? " com " + p(cursos.length, "curso", "cursos") : "") + (visivel ? "." : ". Ela está oculta até você deixar visível."), texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
