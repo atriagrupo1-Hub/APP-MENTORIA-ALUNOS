@@ -3889,10 +3889,6 @@ export function montar(app: HTMLElement) {
           <div class="cs-campo"><span>Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
           <h3 class="cs-ed-h">Organização</h3>
           ${escolhaAbasCats(c.id)}
-          <div class="cs-duas">
-            <label class="cs-campo"><span>Rótulo no Início (opcional) ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" /></label>
-            <label class="cs-campo"><span>Nome curto no Início (opcional) ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" /></label>
-          </div>
           <label class="cs-campo"><span>${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaCurso)}</span><input type="datetime-local" class="campo" name="libera" value="${h(dataLocal(c.libera))}" /></label>
           <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo({ libera: c.libera, aulas: c.modulos.flatMap((m) => m.aulas) } as Modulo)}</div>
           <input type="hidden" name="capa" value="${h(c.capa)}" />
@@ -6928,7 +6924,6 @@ export function montar(app: HTMLElement) {
             titulo: v("nome"), capa_path: v("capa") || null, ...(xa ? { categoria_id: xa.aba, categoria_aba_id: xa.id } : {}),
             libera_em: v("libera") && !isNaN(+new Date(v("libera"))) ? new Date(v("libera")).toISOString() : null,
             descricao: v("descricao") || null,
-            rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
             card_rotulo: v("cardRotulo").trim() || null, card_botao: v("cardBotao").trim() || null,
           }).eq("id", cid).select("id").single());
           for (const x of antes) if (!marcadas.includes(x.cat)) falhou(await supabase.from("categoria_itens").delete().eq("id", x.id).select("id").single());
