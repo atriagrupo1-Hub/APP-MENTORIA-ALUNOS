@@ -4351,3 +4351,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .kn-curso { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; }
 .kn-pe { justify-content: flex-end; gap: 10px; }
 .kn-pe svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+.kg-pubm { position: relative; }
+.kg-pubm .kc-pub svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+.kg-pubm .kb-menu { left: 0; min-width: 160px; }
