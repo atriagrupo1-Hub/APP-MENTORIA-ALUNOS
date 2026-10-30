@@ -4106,3 +4106,16 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ce .onde-curso .oc-linha > span, .ce .onde-curso .oc-lista > summary { white-space: nowrap; }
 .ce .onde-curso .oc-lista { flex: 0 0 150px; min-width: 0; }
 .ce .onde-curso .oc-lista > .oc-cats { min-width: 240px; }
+
+/* Editar categoria no mesmo padrão do Editar curso: X com contorno, Excluir em "⋯ Mais", rodapé em cartão */
+.kx-cab-acoes { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.kx-cab-acoes .ce-mais > summary { min-height: 40px; }
+.al-botao.kx-x { width: 40px; min-height: 40px; height: 40px; padding: 0; display: inline-grid; place-items: center; }
+.al-botao.kx-x svg { width: 18px; height: 18px; }
+.cat-painel-full .kx-pe { display: block; border-top: 0; background: transparent; padding-top: 6px; padding-bottom: 16px; }
+.cat-painel-full .kx-pe-in { position: static; max-width: 1500px; margin: 0 auto; box-shadow: none; }
+.cat-painel-full .kx-pe-in > span:nth-child(2) { flex: 1; }
+/* Cabeçalho, conteúdo e rodapé na mesma largura, alinhados */
+.cat-painel-full .cat-grade, .cat-painel-full .kx-cab, .cat-painel-full .kx-pe { box-sizing: border-box; width: 100%; max-width: 1400px; margin-left: auto; margin-right: auto; padding-left: 26px; padding-right: 26px; }
+.cat-painel-full .kx-pe-in { max-width: none; }
+.kx-cab > .kx-cab-acoes { flex: none; }
