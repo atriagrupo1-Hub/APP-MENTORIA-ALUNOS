@@ -3887,8 +3887,6 @@ export function montar(app: HTMLElement) {
             <div class="cs-campo"><span>Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: usa o de Configurações → Cursos.`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" value="${h(c.cardBotao)}" maxlength="30" placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
           </div>
           <div class="cs-campo"><span>Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
-          <label class="cs-campo"><span>Fundação — o que é este curso? ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="4" maxlength="1000" data-conta-max="1000" placeholder="Para quem é, o que promete, com que voz se fala aqui.">${h(c.fundacao)}</textarea><em class="cs-conta">${c.fundacao.length}/1000</em></label>
-          <label class="cs-campo"><span>Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="3" placeholder="Orientações, avisos importantes e materiais complementares.">${h(c.aviso)}</textarea></label>
           <h3 class="cs-ed-h">Organização</h3>
           ${escolhaAbasCats(c.id)}
           <div class="cs-duas">
@@ -6929,7 +6927,7 @@ export function montar(app: HTMLElement) {
           falhou(await supabase.from("produtos").update({
             titulo: v("nome"), capa_path: v("capa") || null, ...(xa ? { categoria_id: xa.aba, categoria_aba_id: xa.id } : {}),
             libera_em: v("libera") && !isNaN(+new Date(v("libera"))) ? new Date(v("libera")).toISOString() : null,
-            descricao: v("descricao") || null, fundacao: v("fundacao") || null, aviso_material: v("aviso") || null,
+            descricao: v("descricao") || null,
             rotulo_inicio: v("rotuloInicio") || null, nome_curto: v("nomeCurto") || null,
             card_rotulo: v("cardRotulo").trim() || null, card_botao: v("cardBotao").trim() || null,
           }).eq("id", cid).select("id").single());
