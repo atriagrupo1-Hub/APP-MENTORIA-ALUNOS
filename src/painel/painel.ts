@@ -5315,11 +5315,19 @@ export function montar(app: HTMLElement) {
       </form>`;
     } else if (m.tipo === "catx") {
       corpo = `
-      <form data-f="catx-criar" data-id="${m.aba}">
+      <form data-f="catx-criar" data-id="${m.aba}" class="kn">
         <h2 class="titulo">Nova categoria</h2>
-        <p class="explica">Depois de criar, coloque a capa e escolha os cursos que ficam dentro dela.</p>
-        <div class="campos"><label class="grupo nome"><span class="rotulo">Nome da categoria</span><input id="catxNovaNome" class="campo" name="nome" maxlength="80" required /></label></div>
-        <div class="rodape-modal"><button class="botao">Criar</button><button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button></div>
+        <label class="kn-grupo"><span class="kn-rot">Nome da categoria *</span><input id="catxNovaNome" class="campo" name="nome" maxlength="80" required placeholder="Ex.: Desenvolvimento espiritual" /></label>
+        <div class="kn-grupo"><span class="kn-rot">Capa da categoria ${dicaCampo(`Formato recomendado: 1280 × 720 px (proporção 16:9). Pode trocar ou recortar depois, no Editar categoria.`, "kn.capa")}</span>
+          <div class="kn-capa-box" data-kn-capa><label class="kn-capa"><input type="file" name="capaArq" accept="image/*" data-kn-arq hidden /><span class="kn-capa-vazio">${IC_IMG}<b>Adicionar imagem de capa</b><em>Clique para escolher</em></span><img alt="" hidden /></label><button type="button" class="kn-capa-tirar" data-a="kn-capa-tirar" hidden aria-label="Tirar a imagem">×</button></div>
+        </div>
+        <label class="kn-grupo"><span class="kn-rot">Descrição (opcional)</span><textarea class="campo" name="descricao" rows="3" maxlength="200" placeholder="Descreva o conteúdo desta categoria..."></textarea></label>
+        <label class="kn-vis"><span><b>Visível para alunas</b><em>Desligado: a categoria fica oculta e não publicada até você preparar.</em></span><input type="checkbox" name="visivel" class="kn-chave" /></label>
+        <div class="kn-grupo"><span class="kn-rot">Cursos</span>
+          <div class="kn-cursos-op"><label><input type="radio" name="cursosModo" value="depois" checked data-kn-modo />Adicionar cursos depois</label><label><input type="radio" name="cursosModo" value="agora" data-kn-modo />Selecionar cursos existentes</label>
+            <div class="kn-cursos" hidden>${S.cursos.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<label class="kn-curso"><input type="checkbox" name="kncurso" value="${c.id}" />${h(c.nome)}</label>`).join("") || `<em>Nenhum curso cadastrado.</em>`}</div></div>
+        </div>
+        <div class="rodape-modal kn-pe"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_ABAC.mais}Criar categoria</button></div>
       </form>`;
       if (!ui.focar) ui.focar = "catxNovaNome";
     } else if (m.tipo === "curso") {
@@ -6532,6 +6540,7 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "ka-add-abrir": ui.kaAdd = !ui.kaAdd; break;
+      case "kn-capa-tirar": { const bx = el.closest<HTMLElement>("[data-kn-capa]"); if (!bx) return; const i = bx.querySelector<HTMLInputElement>("[data-kn-arq]")!; i.value = ""; const im = bx.querySelector("img")!; if (im.src) URL.revokeObjectURL(im.src); im.removeAttribute("src"); im.hidden = true; bx.querySelector(".kn-capa")!.classList.remove("tem"); el.hidden = true; return; }
       case "ka-vista": ui.kaVista = d.v === "lista" ? "lista" : "grade"; break;
       case "ka-add": {
         // Associa um curso já cadastrado (não duplica: só cria o vínculo em categoria_itens).
@@ -6859,10 +6868,19 @@ export function montar(app: HTMLElement) {
       }
       case "catx-criar": {
         const aba = form.dataset.id || ""; const irmas = S.catsAba.filter((y) => y.aba === aba);
+        const arq = (form.elements.namedItem("capaArq") as HTMLInputElement | null)?.files?.[0] || null;
+        const desc = ((form.elements.namedItem("descricao") as HTMLTextAreaElement | null)?.value || "").trim();
+        const visivel = !!(form.elements.namedItem("visivel") as HTMLInputElement | null)?.checked;
+        const cursos = (form.elements.namedItem("cursosModo") as RadioNodeList | null)?.value === "agora" ? [...form.querySelectorAll<HTMLInputElement>('input[name="kncurso"]:checked')].map((i) => i.value) : [];
         void executar(async () => {
-          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), ordem: irmas.length, rascunho: true }).select("id").single());
-          await registrar(null, "Criou a categoria " + v("nome"), ["catx", r.data!.id]); ui.modal = null; ui.catxEditar = r.data!.id;
-          return { msg: "Categoria criada. Coloque a capa e salve.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
+          // A capa só sobe ao criar (cancelar não deixa arquivo solto no depósito).
+          const capa = arq ? await enviarArquivo("capas", "categorias", arq) : null;
+          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), descricao: desc || null, capa_path: capa, ordem: irmas.length, publicado: visivel, rascunho: !visivel }).select("id").single());
+          for (const [i, c] of cursos.entries()) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: r.data!.id, tipo: "curso", item_id: c, ordem: i }).select("id").single());
+          await registrar(null, "Criou a categoria " + v("nome"), ["catx", r.data!.id]); ui.modal = null;
+          // Abre a página de gerenciamento da categoria nova.
+          ui.catxSel = r.data!.id; ui.tab = "catAba"; ui.kaBusca = ""; window.scrollTo(0, 0);
+          return { msg: "Categoria criada" + (cursos.length ? " com " + p(cursos.length, "curso", "cursos") : "") + (visivel ? "." : ". Ela está oculta até você deixar visível."), texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -7499,6 +7517,8 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-tipo")) { ui.catxTipo = t.value; render(); return; }
     marcarSujo(t);
     if (t.name === "catx") pintarChips();
+    if (t.hasAttribute("data-kn-modo")) { const bx = t.form?.querySelector<HTMLElement>(".kn-cursos"); if (bx) bx.hidden = t.value !== "agora"; }
+    if (t.hasAttribute("data-kn-arq")) { const f = t.files?.[0], bx = t.closest<HTMLElement>("[data-kn-capa]"); if (bx) { const im = bx.querySelector("img")!; if (im.src) URL.revokeObjectURL(im.src); im.hidden = !f; im.src = f ? URL.createObjectURL(f) : ""; bx.querySelector(".kn-capa")!.classList.toggle("tem", !!f); bx.querySelector<HTMLElement>(".kn-capa-tirar")!.hidden = !f; } }
     if (t.hasAttribute("data-cat-lib")) { const i = document.querySelector<HTMLInputElement>('input[name="libera"][form="catxForm"]'); if (i) { i.disabled = t.value !== "data"; if (!i.disabled) i.focus(); } }
     if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
