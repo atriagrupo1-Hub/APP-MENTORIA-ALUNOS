@@ -3192,12 +3192,12 @@ export function montar(app: HTMLElement) {
     const img = previas["catx-" + x.id] || capaSite(x.capa);
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
-      <aside class="aa-painel largo cat-painel" role="dialog" aria-modal="true" aria-label="Editar categoria">
+      <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
         <header class="cat-painel-cab"><h2>Editar categoria</h2><button type="button" class="aa-fechar" data-a="catx-fechar" aria-label="Fechar">${xis}</button></header>
-        <form data-f="catx-salvar" data-id="${x.id}" class="aa-corpo cat-form" data-rolagem="catx-${x.id}">
-          <div class="cat-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : ""}</div>
+        <div class="aa-corpo cat-grade" data-rolagem="catx-${x.id}">
+          <div class="cat-esq">
+        <form data-f="catx-salvar" data-id="${x.id}" class="cat-form">
           <input type="hidden" name="capa" value="${h(x.capa)}" />
-          <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
           <label class="cat-campo"><span>Nome da categoria</span><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" /></label>
           <label class="cat-campo"><span>Descrição (opcional)</span><textarea class="campo" name="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea></label>
           <div class="cat-vis-linha"><span>Status</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
@@ -3216,6 +3216,24 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
           </div>
         </section>
+          </div>
+          <div class="cat-dir">
+            <section class="cat-prev">
+              <h3>Card da categoria</h3>
+              <p class="cs-nota">Como fica no celular da aluna. Muda enquanto você edita. As cores são neutras: o visual final é escolhido em Configurações.</p>
+              <div class="kx-cel"><article class="kx-card">
+                <span class="kx-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+                <div class="kx-info">
+                  <b class="kx-tit" data-kx="nome">${h(x.nome)}</b>
+                  <p class="kx-desc" data-kx="descricao"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
+                  <span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>Ver categoria</b><i aria-hidden="true">›</i></span>
+                </div>
+              </article></div>
+              <p class="cs-nota kx-formato">Capa deitada, formato 16:9 (ex.: 1280 × 720 px). O que estiver escrito na imagem aparece como está.</p>
+              <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
+            </section>
+          </div>
+        </div>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -7168,6 +7186,8 @@ export function montar(app: HTMLElement) {
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
+    // Editar categoria: o card de prévia acompanha o nome e a descrição.
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     // Sobre o curso: o card de prévia acompanha o nome e a descrição enquanto escreve.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     const t = e.target as HTMLInputElement;
