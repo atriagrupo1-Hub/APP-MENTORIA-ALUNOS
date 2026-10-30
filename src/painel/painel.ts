@@ -3227,7 +3227,7 @@ export function montar(app: HTMLElement) {
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Personalize as informações, o visual do card e defina o que ficará disponível nesta categoria.</p></div><button type="button" class="aa-fechar" data-a="catx-fechar" aria-label="Fechar">${xis}</button></header>
+        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Personalize as informações, o visual do card e defina o que ficará disponível nesta categoria.</p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
         <div class="aa-corpo cat-grade" data-rolagem="catx-${x.id}">
           <div class="cat-esq">
             <form id="catxForm" data-f="catx-salvar" data-id="${x.id}" class="kx-bloco cat-form">
@@ -3235,7 +3235,6 @@ export function montar(app: HTMLElement) {
               <div class="cat-campo"><span>Nome da categoria ${dicaCampo(`O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
               <div class="cat-campo"><span>Descrição (opcional) ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
               <div class="cat-campo"><span>Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver categoria".`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" value="${h(x.botao || "")}" maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
-              <div class="cat-vis-linha"><span>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</span>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</div>
             </form>
             <div class="kx-bloco">
         <section class="cx-cont">
@@ -3266,7 +3265,7 @@ export function montar(app: HTMLElement) {
             </section>
           </div>
         </div>
-        <footer class="kx-pe"><button type="button" class="al-botao cat-remover" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button><span></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></footer>
+        <footer class="kx-pe"><div class="cs-ed-pe kx-pe-in"><span class="cs-ed-st"><b>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span><span></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></div></footer>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
