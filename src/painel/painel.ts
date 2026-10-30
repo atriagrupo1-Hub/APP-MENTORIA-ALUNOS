@@ -4150,9 +4150,34 @@ export function montar(app: HTMLElement) {
       : aba === "config" ? configCurso(c)
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
+    // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
+    const cv = (() => {
+      if (aba !== "visao") return "";
+      const im = capaSite(c.capa), cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
+      const st = !c.visivel ? ["Oculto", "cz"] : c.bloq ? ["Bloqueado", "am"] : ["Ativo", "vd"];
+      const kS = "cvst:" + c.id, kP = "cvpub:" + c.id;
+      const it = (v: string, t: string, on: boolean) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
+      return `
+      <nav class="ka-trilha"><button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span>/</span><b>${h(c.nome)}</b></nav>
+      <div class="cv-tit"><div><h1>Visão geral do curso</h1><p>Acompanhe a estrutura, as alunas e as atividades do curso.</p></div>
+        <select class="campo cv-trocar" data-curso-trocar aria-label="Trocar de curso">${S.cursos.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.nome)}</option>`).join("")}</select></div>
+      <div class="cv-card">
+        <span class="cv-capa">${im ? `<img src="${h(im)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
+        <div class="cv-info">
+          <small>Curso</small>
+          <h2>${h(c.nome)}</h2>
+          <p class="cv-cat">Categoria: <b>${h(cats)}</b></p>
+          <div class="cv-selos">
+            <span class="est3 kg-menu"><button type="button" class="cc2-selo ${st[1]} cv-pil" data-a="estado-menu" data-v="${kS}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kS}">${st[0]}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kS ? `<span class="est3-menu kb-menu" role="menu">${it("ativo", "Ativar", c.visivel && !c.bloq)}${it("bloqueado", "Bloquear", c.visivel && c.bloq)}${it("desativado", "Ocultar", !c.visivel)}</span>` : ""}</span>
+            <span class="est3 kg-menu"><button type="button" class="cc2-selo ${c.visivel ? "az" : "cz"} cv-pil" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${c.visivel ? "Publicado" : "Rascunho (não publicado)"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu">${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:desativado">Despublicar</button>` : `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "bloqueado" : "ativo"}">Publicar</button>`}</span>` : ""}</span>
+          </div>
+          <div class="cv-bts"><button type="button" class="al-botao" data-a="cs-ver-aluna">Visualizar como aluna ${IC_EXTERNO}</button><button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button><button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar</button><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details></div>
+        </div>
+      </div>`;
+    })();
     return `
     <section class="tela ativa cs">
-      <div class="cs-trilha">
+      ${cv || `      <div class="cs-trilha">
         <button type="button" class="cs-volta-ic" data-a="aba" data-v="cursos" aria-label="Voltar para Cursos e conteúdos">${IC_CURSO.voltar}</button>
         <span><button type="button" class="link cs-link-trilha" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true" class="cs-sep">›</span><b>${h(c.nome)}</b></span>
         <span style="flex:1"></span>
@@ -4160,7 +4185,7 @@ export function montar(app: HTMLElement) {
         <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
         <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
         <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
-      </div>
+      </div>`}
       <nav class="cs-abas" aria-label="Partes do curso">${ABAS_C.map(([v, t]) => `<button type="button" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${t}</button>`).join("")}</nav>
       ${conteudo}
     </section>`;
@@ -7596,6 +7621,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
     if (t.hasAttribute("data-curso-cat")) { ui.cursoCat = t.value; render(); return; }
+    if (t.hasAttribute("data-curso-trocar")) { ui.curso = t.value; ui.cursoAba = "visao"; ui.modPagina = ""; ui.estMenu = ""; render(); return; }
     if (t.hasAttribute("data-curso-st")) { ui.cursoSt = t.value; render(); return; }
     if (t.hasAttribute("data-curso-pub")) { ui.cursoPub = t.value; render(); return; }
     if (t.hasAttribute("data-ka-ordem")) { ui.kaOrdem = t.value; render(); return; }
