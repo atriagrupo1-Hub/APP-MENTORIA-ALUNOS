@@ -3144,6 +3144,14 @@ export function montar(app: HTMLElement) {
       const aulas = cs.reduce((t, c) => t + totalAulas(c), 0) + its.filter((i) => i.tipo === "aula").length + its.filter((i) => i.tipo === "modulo").reduce((t, i) => t + (todosModulos().find((y) => y.m.id === i.item)?.m.aulas.length || 0), 0);
       return `<span>${IC_CUR.camadas}${p(cs.length, "curso", "cursos")}</span><span>${livro}${p(mods, "módulo", "módulos")}</span><span>${IC_CURSO.play}${p(aulas, "aula", "aulas")}</span>`;
     };
+    /** Os mesmos números, no formato dos cartões de curso (número em cima, nome embaixo). */
+    const numerosLista = (x: CatAba) => {
+      const its = itensDe(x.id), cs = its.filter((i) => i.tipo === "curso").map((i) => curso(i.item)).filter((c): c is Curso => !!c);
+      const mods = cs.reduce((t, c) => t + c.modulos.length, 0) + its.filter((i) => i.tipo === "modulo").length;
+      const aulas = cs.reduce((t, c) => t + totalAulas(c), 0) + its.filter((i) => i.tipo === "aula").length + its.filter((i) => i.tipo === "modulo").reduce((t, i) => t + (todosModulos().find((y) => y.m.id === i.item)?.m.aulas.length || 0), 0);
+      const um = (ic: string, n: number, s1: string, s2: string) => `<span>${ic}<b>${n}</b><em>${n === 1 ? s1 : s2}</em></span>`;
+      return um(IC_CUR.camadas, cs.length, "curso", "cursos") + um(livro, mods, "módulo", "módulos") + um(IC_CURSO.play, aulas, "aula", "aulas");
+    };
     const status = (x: CatAba, e: Estado3) => `<span class="kc-status">${seletorEstado("catx", x.id, e, false, true)}</span>`;
     const kb = (x: CatAba) => `<span class="est3 kb kc-kb"><button type="button" class="kc-pontos" data-a="estado-menu" data-v="kb-kc:${x.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-kc:" + x.id}" aria-label="Mais opções de ${h(x.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === "kb-kc:" + x.id ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="catx-entrar" data-id="${x.id}">Entrar na categoria</button>
@@ -3165,12 +3173,17 @@ export function montar(app: HTMLElement) {
         <div class="kc-nums">${numeros(x)}</div>
         <div class="kc-pe">${status(x, e)}<span class="kc-bts">${acoes(x)}</span></div>
       </article>`; };
-    const linha = (x: CatAba) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq); return `
-      <article class="kc-linha${cls3(e)}" draggable="true" data-arrasta="${x.id}">
-        <span class="kc-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>
-        <button type="button" class="kc-mini" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(e, true)}</button>
-        <div class="kc-linha-txt"><button type="button" class="kc-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}${seta}</button><div class="kc-nums">${numeros(x)}</div></div>
-        ${status(x, e)}<span class="kc-bts">${acoes(x)}</span>
+    // Em lista: o mesmo cartão largo de Cursos e conteúdos (capa à esquerda; nome, botão do app, status, números e botões ao lado).
+    const linha = (x: CatAba) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq), dias = x.criado ? diasEntre(diaDe(x.criado), hoje()) : -1; return `
+      <article class="cur-card kc-lcard${cls3(e)}" draggable="true" data-arrasta="${x.id}">
+        <button type="button" class="cur-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Entrar na categoria ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(e, true)}</button>
+        <span class="cur-menu">${kb(x)}</span>
+        <div class="cur-corpo">
+          <button type="button" class="cur-tit" data-a="catx-entrar" data-id="${x.id}" title="${h(x.nome)}">${h(x.nome)}</button>
+          <div class="cur-linha cur-linha-est kc-lab">${cat(x.aba) ? icDaAba(cat(x.aba)!) : IC_CUR.pasta}<em>Botão do app:</em><b>${h(cat(x.aba)?.nome || "Sem botão")}</b>${status(x, e)}</div>
+          <div class="cur-stats kc-lstats">${numerosLista(x)}<span>${IC_CUR.cal}<b>${x.criado ? br(diaDe(x.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span></div>
+          <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="catx-entrar" data-id="${x.id}">${seta}Entrar</button><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button></div>
+        </div>
       </article>`; };
     return `
     <section class="tela ativa ax kc">
@@ -3187,7 +3200,7 @@ export function montar(app: HTMLElement) {
         </span>
       </div>
       ${vista === "lista"
-        ? `<div class="kc-lista">${lista.map(linha).join("") || `<div class="vazio">Nenhuma categoria encontrada.</div>`}</div>`
+        ? `<div class="cur-grade em-lista kc-lista">${lista.map(linha).join("") || `<div class="vazio">Nenhuma categoria encontrada.</div>`}</div>`
         : `<div class="kc-grade">${lista.map(cartao).join("")}<button type="button" class="kc-add" data-a="catx-nova-geral"><span>${IC_ABAC.mais}</span><b>Nova categoria</b><em>Crie uma categoria, coloque a capa e escolha os cursos.</em></button></div>`}
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;

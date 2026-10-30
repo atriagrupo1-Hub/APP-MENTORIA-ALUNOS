@@ -1348,7 +1348,7 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 /* Cursos em lista: capa à esquerda; nome, categoria, números e botões ao lado; menu ⋮ perto do conteúdo */
 @media (min-width: 641px) {
   .cur-grade.em-lista { gap: 14px; }
-  .cur-grade.em-lista .cur-card { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 330px) auto; grid-template-areas: "capa tit menu" "capa cat menu" "capa stats menu" "capa botoes menu"; grid-template-rows: auto auto 1fr auto; column-gap: 16px; width: fit-content; max-width: 100%; height: auto; padding: 0 12px 0 0; }
+  .cur-grade.em-lista .cur-card { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 420px) auto; grid-template-areas: "capa tit menu" "capa aba menu" "capa cat menu" "capa stats menu" "capa botoes menu"; grid-template-rows: auto auto auto 1fr auto; column-gap: 16px; width: fit-content; max-width: 100%; height: auto; padding: 0 12px 0 0; }
   .cur-grade.em-lista .cur-corpo { display: contents; }
   .cur-grade.em-lista .cur-capa { grid-area: capa; align-self: center; width: 100%; height: auto; aspect-ratio: 2.9 / 1; min-height: 0; border-radius: 12px 0 0 12px; }
   .cur-grade.em-lista .cur-tit { grid-area: tit; padding-top: 12px; }
@@ -4135,3 +4135,23 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ce-cat .cx-cont .cx-itens { margin-top: 0; }
 .ce-cat .cat-prev { position: static; }
 .kx-cab p b { color: var(--texto); }
+
+/* Lista: "Botão do app" e "Categoria" em linhas separadas (não se sobrepõem) */
+@media (min-width: 641px) {
+  .cur-grade.em-lista .cur-linha-aba { grid-area: aba; margin: 4px 0 0; }
+  .cur-grade.em-lista .cur-linha-est { grid-area: cat; margin-top: 2px; }
+  .cur-grade.em-lista .cur-linha b { max-width: 260px; }
+  .kc-lista .cur-linha-est .kc-status { margin-left: 0; }
+  .kc-lista .cur-stats { grid-template-columns: repeat(2, 150px); }
+  .kc-lista .cur-botoes svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+}
+.kc-lista.cur-grade { display: grid; }
+.kc-lista .kc-lab { grid-area: aba; margin-top: 6px; }
+.kc-lista .kc-lab svg { width: 18px; height: 18px; fill: none; stroke: var(--texto-2); stroke-width: 1.7; }
+.kc-lista .kc-lab .kc-status { margin-left: auto; }
+.kc-lista .cur-menu .kc-pontos { width: 36px; height: 36px; display: grid; place-items: center; color: var(--texto); background: var(--aa-cartao); border: 1px solid var(--linha-suave); border-radius: 8px; opacity: 1; }
+.kc-lista .cur-menu .kc-pontos svg { width: 18px; height: 18px; }
+.kc-lista .cur-card { grid-template-areas: "capa tit menu" "capa aba menu" "capa stats menu" "capa botoes menu"; grid-template-rows: auto auto 1fr auto; }
+.kc-lista .cur-menu .kc-kb { position: relative; top: auto; right: auto; }
+.kc-lista .cur-menu .kc-pontos { filter: none; }
+.kc-lista .cur-menu .kb-menu { right: 0; left: auto; }
