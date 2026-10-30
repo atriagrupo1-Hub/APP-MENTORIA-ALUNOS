@@ -4406,3 +4406,33 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cv-bts svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 @media (max-width: 760px) { .cv-card { flex-direction: column; align-items: stretch; } .cv-capa { width: 100%; } .cv-trocar { width: 100%; max-width: none; } .cv-tit h1 { font-size: 30px; } }
 .cs-aula-txt .cs-aula-tempo { font-size: 12px; color: var(--texto-3); }
+
+/* Barra de passos no padrão de chips numerados (curso, categoria e módulo) */
+.ce-passos { gap: 6px; padding: 8px 10px; flex-wrap: wrap; }
+.ce-passos li { flex: 0 0 auto; gap: 8px; padding: 7px 12px; border-radius: 9px; font-size: 13.5px; font-weight: 700; color: #5c564c; }
+.ce-passos li::after { display: none; }
+.ce-passos li i { width: 20px; height: 20px; font-size: 10.5px; border: 1.5px solid #8f887b; background: transparent; color: #5c564c; }
+.ce-passos li.at { background: #efe9d6; color: #6b5313; }
+.ce-passos li.at i { border-color: #9a7a2a; color: #6b5313; }
+.ce-passos li.ok { color: #2f6b3a; }
+.ce-passos li.ok i { background: #3f8a4c; border-color: #3f8a4c; color: #fff; }
+.ce-passos .ce-prog { margin-left: auto; }
+/* Blocos numerados ("1. Capa do curso") e capa maior (curso e categoria) */
+.ce-cab-n h3 { font-size: 22px !important; }
+.ce-capa .ce-capa-img { width: 250px; border-radius: 10px; }
+@media (max-width: 700px) { .ce-capa .ce-capa-img { width: 100%; } }
+/* "Onde o curso aparece": botões do app em linha; Categorias com a lista larga embaixo; categoria selecionada em chips */
+.ce .onde-curso { display: grid !important; grid-template-columns: auto 1fr; align-items: center; gap: 12px 12px !important; flex-wrap: initial !important; }
+.ce .onde-curso > span:first-child { grid-column: 1; font-size: 13px; color: var(--texto-2); }
+.ce .onde-curso .oc-abas { grid-column: 2; }
+.ce .onde-curso .oc-abas .oc-aba[aria-pressed="true"] { background: #efe2bd; border-color: #a88a3e; color: #1d1a16; }
+.ce .onde-curso .oc-linha { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: stretch; gap: 6px; margin: 4px 0 0 !important; }
+.ce .onde-curso .oc-linha > span { font-size: 13px; color: var(--texto-2); }
+.ce .onde-curso .oc-lista { flex: none !important; max-width: none !important; width: 100%; }
+.ce .onde-curso .oc-lista > summary { min-height: 44px !important; font-size: 14px !important; padding: 0 14px !important; }
+.ce .onde-curso .oc-lista .oc-qtd { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.ce .onde-curso .oc-sel-rot { grid-column: 1 / -1; font-size: 13px; color: var(--texto-2); }
+.ce .onde-curso .oc-chips { grid-column: 1 / -1; margin: -6px 0 0 !important; }
+.oc-sel-rot { display: none; }
+.ce .oc-sel-rot { display: block; }
+.ce-cab-n h3 { flex: none !important; }
