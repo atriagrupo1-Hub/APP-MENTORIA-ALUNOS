@@ -81,7 +81,7 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -440,7 +440,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const cd: Record<string, any> = versaoCfg === "geral" ? comModulosDaBase({ ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia }, cfgBase) : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "" })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "", rascunho: !!x.rascunho, libera: x.libera_em ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
@@ -641,7 +641,7 @@ export function montar(app: HTMLElement) {
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar",
-    "cat-visivel": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "capa-ia-usar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
+    "cat-visivel": "cat_estado", "catx-pub-toggle": "cat_estado", "catx-publicar": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "capa-ia-usar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
   };
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
   const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
@@ -3105,6 +3105,9 @@ export function montar(app: HTMLElement) {
    * categoria; embaixo, os cartões das categorias, lado a lado, como em
    * Cursos e conteúdos. O menu do app terá a sua própria tela.
    */
+  const IC_CHECK_PUB = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>`;
+  /** Botão ao lado do Editar: mostra se a categoria está publicada e troca com um clique. */
+  const botaoPub = (x: CatAba) => `<button type="button" class="kc-pub${x.rascunho ? "" : " ok"}" data-a="catx-pub-toggle" data-id="${x.id}" title="${x.rascunho ? "Clique para publicar" : "Clique para despublicar"}">${x.rascunho ? "Não publicada" : "Publicada"}</button>`;
   function telaCategorias() {
     const sel = catAba(ui.catxFiltro) ? ui.catxFiltro : "";
     const q = norm(ui.catBusca || "").trim(), ordem = ui.catxOrdem || "recentes", vista = ui.catVista === "lista" ? "lista" : "grade";
@@ -3139,7 +3142,7 @@ export function montar(app: HTMLElement) {
         <button type="button" role="menuitem" class="perigo" data-a="catx-remover" data-id="${x.id}">Excluir</button>
       </span>` : ""}</span>`;
     const acoes = (x: CatAba) => `
-            <button type="button" class="al-botao ax-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button>
+            <button type="button" class="al-botao ax-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button>${botaoPub(x)}
             <button type="button" class="ax-ic" data-a="catx-duplicar" data-id="${x.id}" title="Duplicar" aria-label="Duplicar ${h(x.nome)}">${copia}</button>
             <button type="button" class="ax-ic perigo" data-a="catx-remover" data-id="${x.id}" title="Excluir" aria-label="Excluir ${h(x.nome)}">${IC_CAT.lixo}</button>
             <button type="button" class="ax-ic" data-a="catx-entrar" data-id="${x.id}" title="Entrar na categoria" aria-label="Entrar na categoria ${h(x.nome)}">${seta}</button>`;
@@ -3159,7 +3162,7 @@ export function montar(app: HTMLElement) {
           <button type="button" class="cur-tit" data-a="catx-entrar" data-id="${x.id}" title="${h(x.nome)}">${h(x.nome)}</button>
           <div class="cur-linha cur-linha-est kc-lab">${cat(x.aba) ? icDaAba(cat(x.aba)!) : IC_CUR.pasta}<em>Botão do app:</em><b>${h(cat(x.aba)?.nome || "Sem botão")}</b>${status(x, e)}</div>
           <div class="cur-stats kc-lstats">${numerosLista(x)}<span>${IC_CUR.cal}<b>${x.criado ? br(diaDe(x.criado)) : "—"}</b><em>${dias < 0 ? "" : dias === 0 ? "Criada hoje" : "Criada há " + dias + (dias === 1 ? " dia" : " dias")}</em></span></div>
-          <div class="cur-botoes"><button type="button" class="al-botao-ouro" data-a="catx-entrar" data-id="${x.id}">${seta}Entrar</button><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button></div>
+          <div class="cur-botoes kc-bts3"><button type="button" class="al-botao-ouro" data-a="catx-entrar" data-id="${x.id}">${seta}Entrar</button><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar</button>${botaoPub(x)}</div>
         </div>
       </article>`; };
     return `
@@ -3195,12 +3198,12 @@ export function montar(app: HTMLElement) {
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Botão do app: <b>${h(cat(x.aba)?.nome || "—")}</b></p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
+        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Botão do app: <b>${h(cat(x.aba)?.nome || "—")}</b></p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div>${x.rascunho ? "" : `<button type="button" data-a="catx-pub-toggle" data-id="${x.id}">Despublicar</button>`}<button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
         <div class="aa-corpo cat-grade ce ce-cat" data-rolagem="catx-${x.id}">
           <ol class="ce-passos" aria-label="Passos da categoria">${ps.map((p2, i) => `<li data-ce-passo="${i + 1}" class="${p2.ok ? "ok" : ""}"><i>${p2.ok ? "✓" : i + 1}</i>${h(p2.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((p2) => p2.ok).length} de ${ps.length}</b> prontos</span></ol>
           <div class="cat-esq">
             <form id="catxForm" data-f="catx-salvar" data-id="${x.id}" class="ce-form">
-              <input type="hidden" name="capa" value="${h(x.capa)}" />
+              <input type="hidden" name="capa" value="${h(x.capa)}" /><input type="hidden" name="publicar" value="" />
               <section class="cs-cartao ce-bloco" data-ce-bloco="1">
                 ${cab("1", "Capa da categoria", dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "cat.formato"))}
                 <div class="ce-capa"><span class="ce-capa-img" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
@@ -3241,7 +3244,16 @@ export function montar(app: HTMLElement) {
             </section>
           </div>
         </div>
-        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in"><span class="cs-ed-st"><b><i class="ce-num ce-num-n">5</i>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span><span class="ce-falta" data-ce-falta></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></div></footer>
+        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in">
+          <span class="cs-ed-st"><b><i class="ce-num ce-num-n" data-ce-num="5">5</i>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span>
+          <span class="ce-lib-cat"><b>${IC_CUR.cal}Liberação ${dicaCampo(`A categoria é que manda: se ela liberar numa data, nada do que está dentro dela (cursos, módulos e aulas) abre antes dessa data.`, "cat.libera")}</b>
+            <span class="ce-lib-op"><label><input type="radio" name="libModo" value="ja" form="catxForm" ${x.libera ? "" : "checked"} data-cat-lib />Imediata</label><label><input type="radio" name="libModo" value="data" form="catxForm" ${x.libera ? "checked" : ""} data-cat-lib />Na data</label><input type="datetime-local" class="campo" name="libera" form="catxForm" value="${h(dataLocal(x.libera))}" ${x.libera ? "" : "disabled"} /></span></span>
+          <span class="ce-pub${x.rascunho ? "" : " ok"}">${x.rascunho ? "● Não publicada" : "✓ Publicada"}</span>
+          <span class="ce-falta" data-ce-falta></span>
+          <button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button>
+          <button type="submit" form="catxForm" class="${x.rascunho ? "al-botao" : "al-botao-ouro"}">Salvar alterações</button>
+          ${x.rascunho ? `<button type="button" class="al-botao-ouro ce-publicar" data-a="catx-publicar">${IC_CHECK_PUB}Publicar categoria</button>` : ""}
+        </div></footer>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -3978,7 +3990,7 @@ export function montar(app: HTMLElement) {
       { nome: "Textos do card", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
       { nome: "O que fica dentro", ok: itensDe(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
-      { nome: "Publicar", ok: estado3(x.pub, x.bloq) === "ativo", falta: "deixar a categoria Ativa" },
+      { nome: "Publicar", ok: !x.rascunho, falta: "publicar a categoria" },
     ];
   }
   function pintarPassosCat() {
@@ -5934,7 +5946,7 @@ export function montar(app: HTMLElement) {
       case "catx-duplicar": {
         const x = catAba(d.id)!; const irmas = S.catsAba.filter((y) => y.aba === x.aba);
         void executar(async () => {
-          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: x.aba, titulo: x.nome + " (cópia)", descricao: x.descricao || null, capa_path: x.capa || null, ordem: irmas.length, publicado: false }).select("id").single());
+          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: x.aba, titulo: x.nome + " (cópia)", descricao: x.descricao || null, capa_path: x.capa || null, ordem: irmas.length, publicado: false, rascunho: true }).select("id").single());
           const ids = irmas.map((y) => y.id); ids.splice(irmas.indexOf(x) + 1, 0, r.data!.id);
           await rpc("ordenar_lista", { p_tabela: "categorias_aba", p_ids: ids });
           await registrar(null, "Duplicou a categoria " + x.nome, ["catx", r.data!.id]);
@@ -6484,6 +6496,19 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "catx-publicar": {
+        const f = document.getElementById("catxForm") as HTMLFormElement | null; if (!f) return;
+        const c = f.elements.namedItem("publicar") as HTMLInputElement; c.value = "1"; f.requestSubmit(); return;
+      }
+      case "catx-pub-toggle": {
+        const x = catAba(d.id!); if (!x) return; const pub = x.rascunho;
+        void executar(async () => {
+          falhou(await supabase.from("categorias_aba").update({ rascunho: !pub }).eq("id", x.id).select("id").single());
+          await registrar(null, (pub ? "Publicou a categoria " : "Despublicou a categoria ") + x.nome, ["catx", x.id]);
+          return { msg: pub ? "Categoria publicada." : "Categoria despublicada: as alunas não a veem mais.", texto: (pub ? "publicação" : "despublicação") + " da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update({ rascunho: pub }).eq("id", x.id).select("id").single()); } };
+        });
+        return;
+      }
       case "mod-est-todos": {
         const x = acharModulo(d.id!); if (!x) return; const e = x.m.estilo, outros = x.c.modulos.filter((y) => y.id !== x.m.id);
         if (!outros.length) { toast("Este curso só tem este módulo."); return; }
@@ -6799,19 +6824,24 @@ export function montar(app: HTMLElement) {
       case "catx-criar": {
         const aba = form.dataset.id || ""; const irmas = S.catsAba.filter((y) => y.aba === aba);
         void executar(async () => {
-          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), ordem: irmas.length }).select("id").single());
+          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: v("nome"), ordem: irmas.length, rascunho: true }).select("id").single());
           await registrar(null, "Criou a categoria " + v("nome"), ["catx", r.data!.id]); ui.modal = null; ui.catxEditar = r.data!.id;
           return { msg: "Categoria criada. Coloque a capa e salve.", texto: "criação da categoria " + v("nome"), desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
       case "catx-salvar": {
-        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null };
+        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, rascunho: x.rascunho };
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
+        // Liberação: imediata (sem data) ou na data escolhida.
+        const modoLib = (form.elements.namedItem("libModo") as RadioNodeList | null)?.value || "ja", dLib = (form.elements.namedItem("libera") as HTMLInputElement | null)?.value || "";
+        if (modoLib === "data" && (!dLib || isNaN(+new Date(dLib)))) { toast("Escolha a data de liberação da categoria."); return; }
+        const libera_em = modoLib === "data" ? new Date(dLib).toISOString() : null;
+        const publicar = v("publicar") === "1"; const campoPub = form.elements.namedItem("publicar") as HTMLInputElement | null; if (campoPub) campoPub.value = "";
         void executar(async () => {
-          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null }).eq("id", id).select("id").single());
-          await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null;
-          return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
+          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null, libera_em, ...(publicar ? { rascunho: false } : {}) }).eq("id", id).select("id").single());
+          await registrar(null, (publicar ? "Publicou a categoria " : "Editou a categoria ") + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null;
+          return { msg: publicar ? "Categoria salva e publicada." : x.rascunho ? "Categoria salva (ainda não publicada)." : "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
         return;
       }
@@ -7264,7 +7294,7 @@ export function montar(app: HTMLElement) {
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
   const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["curso-est", "curso-previa", "catx-est", "catx-previa", "catx-imagem", "pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const LIVRE = new Set(["catx-publicar", "curso-est", "curso-previa", "catx-est", "catx-previa", "catx-imagem", "pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -7432,6 +7462,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-tipo")) { ui.catxTipo = t.value; render(); return; }
     marcarSujo(t);
     if (t.name === "catx") pintarChips();
+    if (t.hasAttribute("data-cat-lib")) { const i = document.querySelector<HTMLInputElement>('input[name="libera"][form="catxForm"]'); if (i) { i.disabled = t.value !== "data"; if (!i.disabled) i.focus(); } }
     if (t.hasAttribute("data-cs-com-mod")) { ui.csComMod = t.value; render(); return; }
     if (t.hasAttribute("data-cs-porpag")) { ui.csPorPag = Number(t.value) || 10; ui.csPag = 1; render(); return; }
     if (t.hasAttribute("data-rel-de")) { ui.relDe = t.value; render(); return; }

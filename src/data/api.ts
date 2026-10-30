@@ -316,7 +316,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
-      supabase.from("categorias_aba").select("id, titulo, publicado, bloqueada_geral, icone, cor, ordem, estilo"),
+      supabase.from("categorias_aba").select("id, titulo, publicado, bloqueada_geral, icone, cor, ordem, estilo, libera_em"),
       supabase.rpc("opcoes_bloqueadas"),
     ]);
 
@@ -465,7 +465,8 @@ export async function carregarCatalogo(): Promise<Catalogo> {
    * esta função —, então admin e aluna nunca divergem.
    */
   // Categoria dentro da aba (0076): Oculta esconde o curso; Bloqueada o deixa à vista, sem acesso.
-  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; titulo: string | null; publicado: boolean; bloqueada_geral: boolean; icone: string | null; cor: string | null; ordem: number | null; estilo: Record<string, unknown> | null }>).map((x) => [x.id, x]));
+  const estadoCatAba = new Map(((catsAba.data ?? []) as Array<{ id: string; titulo: string | null; publicado: boolean; bloqueada_geral: boolean; icone: string | null; cor: string | null; ordem: number | null; estilo: Record<string, unknown> | null; libera_em?: string | null }>).map((x) => [x.id, x]));
+  const catAindaFechada = (d: string | null | undefined) => !!d && new Date(d).getTime() > Date.now();
   const listaProdutos: Produto[] = ((produtos.data ?? []) as LinhaProduto[]).map(
     (p): Produto => ({
       id: p.id,
@@ -476,8 +477,10 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       descricao: p.descricao ?? "",
       capaPath: p.capa_path,
       ordem: p.ordem,
-      publicado: p.publicado && estadoCatAba.get(p.categoria_aba_id ?? "")?.publicado !== false,
-      bloqueadoGeral: p.bloqueado_geral || !!estadoCatAba.get(p.categoria_aba_id ?? "")?.bloqueada_geral,
+      // Categoria em rascunho não chega à aluna (o Supabase não a devolve): o curso dela fica escondido.
+      publicado: p.publicado && (!p.categoria_aba_id || (estadoCatAba.has(p.categoria_aba_id) && estadoCatAba.get(p.categoria_aba_id)?.publicado !== false)),
+      // Categoria com data de liberação no futuro: o curso aparece, mas trancado até a data.
+      bloqueadoGeral: p.bloqueado_geral || !!estadoCatAba.get(p.categoria_aba_id ?? "")?.bloqueada_geral || catAindaFechada(estadoCatAba.get(p.categoria_aba_id ?? "")?.libera_em),
       catIcone: estadoCatAba.get(p.categoria_aba_id ?? "")?.icone ?? null,
       catCor: estadoCatAba.get(p.categoria_aba_id ?? "")?.cor ?? null,
       catAbaId: p.categoria_aba_id ?? null,
