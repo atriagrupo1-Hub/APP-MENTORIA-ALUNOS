@@ -541,7 +541,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, catVis: "", cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, catVis: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -640,7 +640,7 @@ export function montar(app: HTMLElement) {
     "aula-sobe": "cur_editar", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
-    "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar",
+    "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar", "ka-add": "cat_editar", "ka-add-abrir": "cat_editar",
     "cat-visivel": "cat_estado", "catx-pub-toggle": "cat_estado", "catx-publicar": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "capa-ia-usar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
   };
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
@@ -965,7 +965,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3229,21 +3229,73 @@ export function montar(app: HTMLElement) {
   /** Dentro da categoria: só os cursos dela, em cartões. */
   function telaCategoriaAba() {
     const x = catAba(ui.catxSel); if (!x) { ui.tab = "layout"; return telaAbas(); }
-    const k = cat(x.aba), img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
+    const img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
+    const itens = S.catItens.filter((y) => y.cat === x.id && y.tipo === "curso");
+    const daCat = itens.map((y) => curso(y.item)).filter((c): c is Curso => !!c);
+    const q = norm(ui.kaBusca || "").trim(), ordem = ui.kaOrdem || "recentes", vista = ui.kaVista === "lista" ? "lista" : "grade";
+    const lista = daCat.filter((c) => !q || casa(q, c.nome))
+      .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "antigos" ? (a.criado || "").localeCompare(b.criado || "") : (b.criado || "").localeCompare(a.criado || ""));
+    const fora = S.cursos.filter((c) => !daCat.some((y) => y.id === c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
+    const VIS: Record<Estado3, string> = { ativo: "Visível para alunas", bloqueado: "Bloqueada (aparece com cadeado)", desativado: "Oculta para alunas" };
+    const IC_OLHO_S = IC_OLHO_C;
+    // Visão geral e Editar curso à vista; o resto no ⋮.
+    const menu = (c: Curso) => { const k = "kac:" + c.id, it = itens.find((y) => y.item === c.id); return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
+        <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
+        <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
+        ${it ? `<span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-item-tirar" data-id="${it.id}">Tirar desta categoria</button>` : ""}
+      </span>` : ""}</span>`; };
+    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Aula" : "Aulas"}</em></span></div>`; };
+    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa), ec = estado3(c.visivel, c.bloq); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(ec)}</button>`; };
+    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_S}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar curso</button>${menu(c)}`;
+    const cartao = (c: Curso) => `
+      <article class="ka-card${cls3(estado3(c.visivel, c.bloq))}">
+        ${capaC(c, "ka-capa")}
+        <div class="ka-corpo">
+          <button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button>
+          ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}
+          ${stats(c)}
+          <div class="ka-bts">${bts(c)}</div>
+        </div>
+      </article>`;
+    const linha = (c: Curso) => `
+      <article class="ka-linha${cls3(estado3(c.visivel, c.bloq))}">
+        ${capaC(c, "ka-mini")}
+        <div class="ka-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
+        ${stats(c)}
+        <div class="ka-bts">${bts(c)}</div>
+      </article>`;
+    const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso");
     return `
-    <section class="tela ativa ax">
-      <nav class="ax-trilha"><button type="button" data-a="aba" data-v="layout">Categorias</button><span>›</span><b>${h(x.nome)}</b></nav>
-      <div class="ax-catcab${cls3(e)}">
-        <span class="ax-catcab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="ax-sem-capa">Sem capa</span>`}${selo3(e, true)}</span>
-        <div class="ax-catcab-txt"><small class="ax-seq">Botão: ${h(k?.nome || "")}<i>›</i>Categoria: ${h(x.nome)}</small><h2>${h(x.nome)}</h2>${x.descricao ? `<p>${h(x.descricao)}</p>` : ""}${seletorEstado("catx", x.id, e, false, true)}</div>
-        <div class="ax-catcab-acoes"><button type="button" class="al-botao" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></div>
+    <section class="tela ativa ax ka">
+      <nav class="ka-trilha"><button type="button" data-a="aba" data-v="layout">‹ Categorias</button><span>/</span><b>${h(x.nome)}</b></nav>
+      <div class="ka-tit"><h1>${h(x.nome)}</h1><p>Gerencie a categoria e seus cursos associados.</p></div>
+      <div class="ka-cab${cls3(e)}">
+        <span class="ka-cab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
+        <div class="ka-cab-txt">
+          <small>Categoria de cursos${x.rascunho ? ` · <em class="ka-rasc">Não publicada</em>` : ""}</small>
+          <h2>${h(x.nome)}</h2>
+          ${x.descricao ? `<p class="ka-desc">${h(x.descricao)}</p>` : ""}
+          <p class="ka-meta"><span class="ka-vis ka-vis-${e}">● ${VIS[e]}</span> · ${p(daCat.length, "curso", "cursos")}</p>
+        </div>
+        <button type="button" class="al-botao ka-editar" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button>
       </div>
-      ${(() => { const n = S.catItens.filter((y) => y.cat === x.id && y.tipo === "curso").length; return `<div class="ax-cursos-rot"><span class="ax-cursos-chip">${IC_CUR.camadas}Cursos<b>${n}</b></span><span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="cursos-da-cat" aria-label="O que são estes cursos" aria-expanded="${ui.ajuda === "cursos-da-cat"}">?</button>${ui.ajuda === "cursos-da-cat" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>Cursos</b><span>Abaixo estão os cursos do botão ${h(k?.nome || "")}, categoria ${h(x.nome)}. Clique num curso para gerenciar os módulos e as aulas dele.</span></span>` : ""}</span></div>`; })()}
-      ${telaCursos(false, x.id)}
-      ${(() => { const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso"); return soltos.length ? `<h3 class="ab-sub" style="margin-left:0">Módulos e aulas nesta categoria</h3><div class="cx-itens">${soltos.map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b>${it.tipo === "aula" ? `<button type="button" class="al-botao" data-a="abrir-aula" data-id="${it.item}">Abrir</button>` : ""}</div>`).join("")}</div>` : ""; })()}
+      <div class="ka-sec">
+        <div class="ka-sec-cab"><div><h3>Cursos nesta categoria ${dicaCampo(`Os cursos que aparecem quando a aluna abre esta categoria. Um curso pode estar em várias categorias; tirar daqui não apaga o curso.`, "ka.cursos")}</h3><p>Organize e gerencie os cursos desta categoria.</p></div>
+          <span class="ka-sec-bts"><button type="button" class="al-botao" data-a="ka-add-abrir" aria-expanded="${ui.kaAdd}">${IC_ABAC.mais}Adicionar existente</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></span></div>
+        ${ui.kaAdd ? `<div class="ka-add">${fora.length ? `<select class="campo" id="kaAddSel" aria-label="Curso já cadastrado">${fora.map((c) => `<option value="${c.id}">${h(c.nome)}</option>`).join("")}</select><button type="button" class="al-botao-ouro" data-a="ka-add" data-id="${x.id}">Adicionar à categoria</button>` : `<em>Todos os cursos já estão nesta categoria.</em>`}<button type="button" class="al-botao" data-a="ka-add-abrir">Cancelar</button></div>` : ""}
+        <div class="kg-barra">
+          <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" type="search" id="kaBusca" data-ka-busca value="${h(ui.kaBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
+          <select class="campo kg-sel" data-ka-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+          <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="ka-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="ka-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        </div>
+        ${!lista.length ? `<div class="vazio">${daCat.length ? "Nenhum curso encontrado." : "Nenhum curso nesta categoria ainda. Use Novo curso ou Adicionar existente."}</div>`
+          : vista === "lista" ? `<div class="ka-lista">${lista.map(linha).join("")}</div>` : `<div class="ka-grade">${lista.map(cartao).join("")}</div>`}
+      </div>
+      ${soltos.length ? `<div class="ka-sec"><h3 class="ka-h3">Módulos e aulas nesta categoria</h3><div class="cx-itens">${soltos.map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b>${it.tipo === "aula" ? `<button type="button" class="al-botao" data-a="abrir-aula" data-id="${it.item}">Abrir</button>` : ""}<button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("")}</div></div>` : ""}
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;
   }
+
   const ICONE_ABA: Record<string, string> = { presentes: "Presente", livro: "Livro", material: "Documento", modulos: "Grade", trofeu: "Troféu", coroa: "Coroa" };
   function editarAba() {
     const k = cat(ui.catEditar!); if (!k) { ui.catEditar = null; return ""; }
@@ -6479,6 +6531,20 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "ka-add-abrir": ui.kaAdd = !ui.kaAdd; break;
+      case "ka-vista": ui.kaVista = d.v === "lista" ? "lista" : "grade"; break;
+      case "ka-add": {
+        // Associa um curso já cadastrado (não duplica: só cria o vínculo em categoria_itens).
+        const x = catAba(d.id!); const item = (document.getElementById("kaAddSel") as HTMLSelectElement | null)?.value || ""; if (!x || !item) return;
+        if (S.catItens.some((y) => y.cat === x.id && y.tipo === "curso" && y.item === item)) { toast("Este curso já está na categoria."); return; }
+        const nome = nomeItem("curso", item);
+        void executar(async () => {
+          const r = falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: x.id, tipo: "curso", item_id: item, ordem: itensDe(x.id).length }).select("id").single());
+          await registrar(null, "Colocou " + nome + " na categoria " + x.nome, ["catx", x.id]); ui.kaAdd = false;
+          return { msg: nome + " agora está na categoria " + x.nome + ".", texto: "curso da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categoria_itens").delete().eq("id", r.data!.id).select("id").single()); } };
+        });
+        return;
+      }
       case "mod-est-todos": {
         const x = acharModulo(d.id!); if (!x) return; const e = x.m.estilo, outros = x.c.modulos.filter((y) => y.id !== x.m.id);
         if (!outros.length) { toast("Este curso só tem este módulo."); return; }
@@ -7418,6 +7484,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cat-busca")) { ui.catBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-ka-busca")) { ui.kaBusca = t.value; render(); return; }
     if (t.hasAttribute("data-eq-busca")) { ui.eqBusca = t.value; render(); return; }
     if (t.hasAttribute("data-com-busca")) { ui.comBusca = t.value; ui.comPag = 1; render(); return; }
     if (t.hasAttribute("data-cur-al-busca")) { ui.curAlBusca = t.value; ui.csPag = 1; render(); return; }
@@ -7470,6 +7537,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
+    if (t.hasAttribute("data-ka-ordem")) { ui.kaOrdem = t.value; render(); return; }
     if (t.closest?.("#cfgInicio, #cfgTelas")) { atualizarPreviaCfg(); }
     if (t.closest?.("#cfgApar")) {
       const A = aparRascunho();
