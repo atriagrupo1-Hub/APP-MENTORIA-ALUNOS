@@ -3984,3 +3984,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cat-painel-full .kx-cab, .cat-painel-full .kx-pe { padding-left: max(26px, calc((100vw - 1500px) / 2 + 26px)); padding-right: max(26px, calc((100vw - 1500px) / 2 + 26px)); }
 .cat-prev h3 { display: flex; align-items: center; gap: 6px; }
 .mp-dica-aj { display: inline-flex; vertical-align: middle; margin-left: 6px; }
+.cc-cel.kx-comp .cc-card { max-width: 560px; }
+.cs-prev-curso .kx-prev-cab h3 { display: flex; align-items: center; gap: 6px; }
+.cs-campo .kx-campo-aa { margin-top: 0; }

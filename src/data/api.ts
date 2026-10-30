@@ -481,6 +481,9 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       catAbaId: p.categoria_aba_id ?? null,
       catEstilo: estadoCatAba.get(p.categoria_aba_id ?? "")?.estilo ?? null,
       catTitulo: estadoCatAba.get(p.categoria_aba_id ?? "")?.titulo ?? null,
+      cardEstilo: (p as Record<string, unknown>).estilo as Record<string, unknown> | null ?? null,
+      cardRotulo: ((p as Record<string, unknown>).card_rotulo as string | null) ?? null,
+      cardBotao: ((p as Record<string, unknown>).card_botao as string | null) ?? null,
       catOrdem: estadoCatAba.get(p.categoria_aba_id ?? "")?.ordem ?? null,
       modulos: listaModulos
         .filter((m) => m.produtoId === p.id)

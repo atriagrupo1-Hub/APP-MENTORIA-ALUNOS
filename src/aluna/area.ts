@@ -196,7 +196,7 @@ export function montar(raiz: HTMLElement) {
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
         cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
-          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", ehCurso: ehCursoDeVerdade(x), capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
+          id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", ehCurso: ehCursoDeVerdade(x), cardEstilo: limparEstilo(x.cardEstilo), cardRotulo: x.cardRotulo || "", cardBotao: x.cardBotao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, criado: a.criadoEm || "", titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
         })),
@@ -1471,10 +1471,13 @@ export function montar(raiz: HTMLElement) {
     </div>`;
     // Card do curso (Configurações → Cursos): só para curso de verdade (não para as categorias antigas de Presentes).
     if (curso.ehCurso) {
-      const T = TELAS(), rot = (typeof T.curRotulo === "string" ? T.curRotulo : "Curso completo").trim(), bt = (typeof T.curBotao === "string" ? T.curBotao : "Ver curso").trim() || "Ver curso";
+      const T = TELAS(), rot = (curso.cardRotulo || (typeof T.curRotulo === "string" ? T.curRotulo : "Curso completo")).trim(), bt = (curso.cardBotao || (typeof T.curBotao === "string" ? T.curBotao : "Ver curso")).trim() || "Ver curso";
+      // Estilo próprio do curso (Sobre o curso), por cima do de Configurações → Cursos.
+      const sc = (s) => `.cur-card[data-cid="${curso.id}"]` + s;
+      const cssProprio = curso.cardEstilo ? cssDaTela([{ k: "card", tipo: "card", sel: sc("") }, { k: "botao", tipo: "botao", sel: sc(" .cur-bt") }, { k: "rot", tipo: "texto", sel: sc(" .cur-rot") }, { k: "titulo", tipo: "texto", sel: sc(" .cur-tit") }, { k: "desc", tipo: "texto", sel: sc(" .cur-desc") }, { k: "botaotx", tipo: "texto", sel: sc(" .cur-bt b") + "," + sc(" .cur-bt svg") + "," + sc(" .cur-bt i") }], curso.cardEstilo) : "";
       const feitos = curso.itens.filter((x) => feitaId(x.id)).length, pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
       return `
-    <article class="cur-card" style="--mc:${COR}">
+    ${cssProprio ? `<style>${cssProprio}</style>` : ""}<article class="cur-card" data-cid="${curso.id}" style="--mc:${COR}">
       <button class="cur-capa" data-a="curso-pres" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
       <div class="cur-info">
         ${rot ? `<p class="cur-rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>${h(rot)}</p>` : ""}
