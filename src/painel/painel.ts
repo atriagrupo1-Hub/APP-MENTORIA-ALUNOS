@@ -3868,41 +3868,35 @@ export function montar(app: HTMLElement) {
     const IC_V = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const IC_EXP = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
     return `
-      <div class="cs-config" data-form-de="formCurso">
+      <div class="cs-config cs-ed" data-form-de="formCurso">
+        <div class="cs-ed-acoes">
+          <button type="button" class="al-botao" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
+          <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
+          <button type="button" class="al-botao" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
+          <button type="button" class="al-botao cat-remover" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button>
+        </div>
         <div class="cs-col">
         <form id="formCurso" data-f="curso-config" class="cs-cartao cs-form">
-          <h3>Informações do curso</h3>
-          <div class="cs-campo"><span>Nome do curso</span><span class="kx-campo-aa"><input class="campo" name="nome" value="${h(c.nome)}" required />${aaC("titulo", "Nome do curso")}</span></div>
+          <div class="kx-cab cs-ed-cab"><span class="kx-cab-ic">${IC_CFG.cursos}</span><div><h2>Editar curso</h2><p>Personalize as informações e o visual do curso.</p></div></div>
+          <h3 class="cs-ed-h">Informações principais</h3>
+          <div class="cs-campo"><span>Nome do curso ${dicaCampo(`O nome que aparece no card e no alto do curso.`, "curso.nome")}</span><span class="kx-campo-aa"><input class="campo" name="nome" value="${h(c.nome)}" required />${aaC("titulo", "Nome do curso")}</span></div>
           <div class="cs-duas">
             <div class="cs-campo"><span>Texto em cima do nome ${dicaCampo(`O texto pequeno em cima do nome no card (ex.: "Curso completo"). Vazio: usa o de Configurações → Cursos.`, "curso.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" value="${h(c.cardRotulo)}" maxlength="40" placeholder="${h(S.config.telas.curRotulo ?? "Curso completo")}" />${aaC("rot", "Texto em cima do nome")}</span></div>
             <div class="cs-campo"><span>Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: usa o de Configurações → Cursos.`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" value="${h(c.cardBotao)}" maxlength="30" placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
           </div>
+          <div class="cs-campo"><span>Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
+          <label class="cs-campo"><span>Fundação — o que é este curso? ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="4" maxlength="1000" data-conta-max="1000" placeholder="Para quem é, o que promete, com que voz se fala aqui.">${h(c.fundacao)}</textarea><em class="cs-conta">${c.fundacao.length}/1000</em></label>
+          <label class="cs-campo"><span>Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="3" placeholder="Orientações, avisos importantes e materiais complementares.">${h(c.aviso)}</textarea></label>
+          <h3 class="cs-ed-h">Organização</h3>
           ${escolhaAbasCats(c.id)}
           <div class="cs-duas">
             <label class="cs-campo"><span>Rótulo no Início (opcional) ${dicaCampo(AJ.rotIni)}</span><input class="campo" name="rotuloInicio" value="${h(c.rotuloInicio)}" maxlength="40" placeholder="Sua mentoria" /></label>
             <label class="cs-campo"><span>Nome curto no Início (opcional) ${dicaCampo(AJ.nomeIni)}</span><input class="campo" name="nomeCurto" value="${h(c.nomeCurto)}" maxlength="60" placeholder="Bênçãos Ilimitadas" /></label>
           </div>
-          <div class="cs-campo"><span>Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
-          <label class="cs-campo"><span>Fundação — o que é este curso? ${dicaCampo(AJ.fund)}</span><textarea class="campo" name="fundacao" rows="4" maxlength="1000" data-conta-max="1000" placeholder="Para quem é, o que promete, com que voz se fala aqui.">${h(c.fundacao)}</textarea><em class="cs-conta">${c.fundacao.length}/1000</em></label>
-          <label class="cs-campo"><span>Aviso de material — aparece em toda aula ${dicaCampo(AJ.aviso)}</span><textarea class="campo" name="aviso" rows="3" placeholder="Orientações, avisos importantes e materiais complementares.">${h(c.aviso)}</textarea></label>
+          <label class="cs-campo"><span>${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaCurso)}</span><input type="datetime-local" class="campo" name="libera" value="${h(dataLocal(c.libera))}" /></label>
+          <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo({ libera: c.libera, aulas: c.modulos.flatMap((m) => m.aulas) } as Modulo)}</div>
           <input type="hidden" name="capa" value="${h(c.capa)}" />
-          <div class="cs-salvar"><button class="al-botao-ouro">Salvar alterações</button></div>
         </form>
-          <section class="cs-cartao ea-config cs-config-est">
-            <h3>Configurações</h3>
-            <div class="mp-config">
-              <div class="grupo"><span class="rotulo-ajuda mp-rot">Status do curso ${dicaCampo(AJ.statusCurso)}</span>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</div>
-              <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaCurso)}</span><input type="datetime-local" class="campo" name="libera" form="formCurso" value="${h(dataLocal(c.libera))}" /></label>
-            </div>
-            <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${situacaoModulo({ libera: c.libera, aulas: c.modulos.flatMap((m) => m.aulas) } as Modulo)}</div>
-          </section>
-          <section class="cs-cartao cs-rapidas">
-            <h3>Ações rápidas</h3>
-            <button type="button" data-a="cs-ver-aluna">${IC_V}Ver na área da aluna</button>
-            <button type="button" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
-            <button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">${IC_EXP}Exportar conteúdo</button>
-            <button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Apagar curso</button>
-          </section>
         </div>
         <div class="cs-col cs-col-prev">
           <section class="cs-cartao cs-prev-curso">
@@ -3921,12 +3915,21 @@ export function montar(app: HTMLElement) {
             <p class="cs-nota cc-nota">O progresso (38%) é só um exemplo: cada aluna vê o dela.</p>
             <div class="cs-duas"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div>
             <p class="cs-nota" style="margin:10px 0 0">Depois de trocar a imagem, clique em Salvar alterações.</p>
+          </section>
+          <section class="cs-cartao">
+            <h3>Configurações visuais do card</h3>
+            <p class="cs-nota" style="margin:-6px 0 12px">Personalize o estilo do card que aparece na área da aluna.</p>
             <div class="kx-visual">${visC("card", "Card")}${visC("botao", "Botão")}</div>
           </section>
         </div>
+        <footer class="cs-ed-pe">
+          <span class="cs-ed-st"><b>Status do curso ${dicaCampo(AJ.statusCurso)}</b>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq), true)}</span>
+          <span></span>
+          <button type="button" class="al-botao" data-a="curso-cancelar">Cancelar</button>
+          <button type="submit" form="formCurso" class="al-botao-ouro">Salvar alterações</button>
+        </footer>
       </div>`;
   }
-
   /* --- Relatórios: período, números com a variação, gráficos e os mais vistos --- */
   type RelCurso = { dias: { dia: string; novas: number; assistidas: number }[]; totais: Record<string, number>; modulos: { id: string; titulo: string; n: number }[]; aulas: { id: string; titulo: string; n: number }[] };
   let relCurso: { chave: string; r: RelCurso | null } | null = null;
@@ -6427,6 +6430,7 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "curso-cancelar": ui.sujo = null; delete previas["cur-" + (ui.curso || "")]; break;
       case "curso-previa": {
         ui.catxPrevia = d.v === "computador" ? "computador" : "celular";
         document.querySelector(".cc-cel")?.classList.toggle("kx-comp", ui.catxPrevia === "computador");
