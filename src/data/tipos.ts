@@ -211,9 +211,14 @@ export type Presente = {
   conteudos: Conteudo[];
 };
 
+/** Categoria dentro de um botão do app (categorias_aba), já publicada. */
+export type CategoriaAba = { id: string; abaId: string; titulo: string; descricao: string; capaPath: string | null; icone: string | null; cor: string | null; estilo: Record<string, unknown> | null; ordem: number; bloqueadaGeral: boolean };
+
 export type Catalogo = {
   modulos: Modulo[];
   categorias: Categoria[];
+  /** As categorias de cada botão (a área Presentes mostra também as que ainda não têm conteúdo). */
+  categoriasAba?: CategoriaAba[];
   aoVivo: Record<string, AulaAoVivo>;
   /** Todos os produtos, na ordem de categoria e depois de posição. */
   produtos: Produto[];
