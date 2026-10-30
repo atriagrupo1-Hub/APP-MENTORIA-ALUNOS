@@ -3106,6 +3106,8 @@ export function montar(app: HTMLElement) {
    * Cursos e conteúdos. O menu do app terá a sua própria tela.
    */
   const IC_CHECK_PUB = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>`;
+  /** Só cursos de verdade: os antigos produtos com o mesmo nome de uma categoria (Descobertas, E-books…) são a própria categoria, não um curso. */
+  const cursosDeVerdade = () => S.cursos.filter((c) => !S.catsAba.some((x) => norm(x.nome) === norm(c.nome)));
   function telaCategorias() {
     const q = norm(ui.catBusca || "").trim(), ordem = ui.catxOrdem || "recentes", vista = ui.catVista === "lista" ? "lista" : "grade", vis = ui.catVis || "";
     const nCursos = (x: CatAba) => itensDe(x.id).filter((i) => i.tipo === "curso" && curso(i.item)).length;
@@ -3235,7 +3237,7 @@ export function montar(app: HTMLElement) {
     const q = norm(ui.kaBusca || "").trim(), ordem = ui.kaOrdem || "recentes", vista = ui.kaVista === "lista" ? "lista" : "grade";
     const lista = daCat.filter((c) => !q || casa(q, c.nome))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "antigos" ? (a.criado || "").localeCompare(b.criado || "") : (b.criado || "").localeCompare(a.criado || ""));
-    const fora = S.cursos.filter((c) => !daCat.some((y) => y.id === c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
+    const fora = cursosDeVerdade().filter((c) => !daCat.some((y) => y.id === c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
     const VIS: Record<Estado3, string> = { ativo: "Visível para alunas", bloqueado: "Bloqueada (aparece com cadeado)", desativado: "Oculta para alunas" };
     const IC_OLHO_S = IC_OLHO_C;
     // Visão geral e Editar curso à vista; o resto no ⋮.
@@ -5325,7 +5327,7 @@ export function montar(app: HTMLElement) {
         <label class="kn-vis"><span><b>Visível para alunas</b><em>Desligado: a categoria fica oculta e não publicada até você preparar.</em></span><input type="checkbox" name="visivel" class="kn-chave" /></label>
         <div class="kn-grupo"><span class="kn-rot">Cursos</span>
           <div class="kn-cursos-op"><label><input type="radio" name="cursosModo" value="depois" checked data-kn-modo />Adicionar cursos depois</label><label><input type="radio" name="cursosModo" value="agora" data-kn-modo />Selecionar cursos existentes</label>
-            <div class="kn-cursos" hidden>${S.cursos.slice().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<label class="kn-curso"><input type="checkbox" name="kncurso" value="${c.id}" />${h(c.nome)}</label>`).join("") || `<em>Nenhum curso cadastrado.</em>`}</div></div>
+            <div class="kn-cursos" hidden>${cursosDeVerdade().sort((a, b) => a.nome.localeCompare(b.nome)).map((c) => `<label class="kn-curso"><input type="checkbox" name="kncurso" value="${c.id}" />${h(c.nome)}</label>`).join("") || `<em>Nenhum curso cadastrado.</em>`}</div></div>
         </div>
         <div class="rodape-modal kn-pe"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_ABAC.mais}Criar categoria</button></div>
       </form>`;
