@@ -7,6 +7,7 @@ import {
   supabase,
 } from "./supabase";
 import type {
+  CategoriaAba,
   Catalogo,
   Categoria,
   Conteudo,
@@ -311,7 +312,7 @@ export async function carregarCatalogo(): Promise<Catalogo> {
       supabase.from("produtos").select("*").order("ordem"),
       supabase.from("conteudos").select("*").order("ordem"),
       supabase.from("configuracoes").select("produto_jornada").maybeSingle(),
-      supabase.from("categorias_aba").select("id, titulo, publicado, bloqueada_geral, icone, cor, ordem, estilo, libera_em"),
+      supabase.from("categorias_aba").select("id, aba_id, titulo, descricao, capa_path, publicado, bloqueada_geral, rascunho, icone, cor, ordem, estilo, libera_em"),
       supabase.rpc("opcoes_bloqueadas"),
     ]);
 
@@ -537,9 +538,19 @@ export async function carregarCatalogo(): Promise<Catalogo> {
     };
   }
 
+  // As categorias (dentro de cada botão), para a área Presentes mostrar mesmo as que não têm um produto com o nome delas.
+  const listaCatsAba: CategoriaAba[] = ((catsAba.data ?? []) as Array<Record<string, unknown>>)
+    .filter((x) => x.publicado !== false && x.rascunho !== true)
+    .map((x) => ({
+      id: String(x.id), abaId: String(x.aba_id ?? ""), titulo: String(x.titulo ?? ""), descricao: (x.descricao as string | null) ?? "", capaPath: (x.capa_path as string | null) ?? null,
+      icone: (x.icone as string | null) ?? null, cor: (x.cor as string | null) ?? null, estilo: (x.estilo as Record<string, unknown> | null) ?? null, ordem: Number(x.ordem ?? 0),
+      bloqueadaGeral: !!x.bloqueada_geral || catAindaFechada(x.libera_em as string | null),
+    }));
+
   return {
     modulos: listaModulos,
     categorias: listaCategorias,
+    categoriasAba: listaCatsAba,
     aoVivo: mapaAoVivo,
     produtos: listaProdutos,
     produtoJornada:

@@ -195,7 +195,14 @@ export function montar(raiz: HTMLElement) {
       .filter((c) => c.publicado !== false)
       .map((c) => ({
         id: c.id, nome: c.titulo, bloqueada: c.bloqueadaGeral,
-        cursos: c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).sort((a, b) => (a.catOrdem ?? 1e6) - (b.catOrdem ?? 1e6) || a.ordem - b.ordem).map((x) => ({
+        cursos: [
+          ...c.produtos.filter((x) => x.id !== jornada && x.publicado !== false).map((x) => ({ _o: [x.catOrdem ?? 1e6, 1, x.ordem], x })),
+          // Categoria sem o produto antigo com o nome dela: entra assim mesmo, como cartão da própria categoria (vazia até ter conteúdo).
+          ...(cat.categoriasAba || []).filter((k) => k.abaId === c.id && !c.produtos.some((x) => x.catAbaId === k.id && !ehCursoDeVerdade(x))).map((k) => ({ _o: [k.ordem, 0, 0], k })),
+        ].sort((a, b) => a._o[0] - b._o[0] || a._o[1] - b._o[1] || a._o[2] - b._o[2]).map(({ x, k }) => k ? ({
+          id: k.id, nome: k.titulo, icone: k.icone || "", cor: k.cor || "", catAbaId: k.id, estilo: limparEstilo(k.estilo), descricao: k.descricao || "", ehCurso: false, cardEstilo: null, cardRotulo: "", cardBotao: "", capa: fotoOuSite(k.capaPath || ""), conteudos: [],
+          liberadoDireto: !k.bloqueadaGeral, bloq: k.bloqueadaGeral, itens: [],
+        }) : ({
           id: x.id, nome: x.titulo, icone: x.catIcone || "", cor: x.catCor || "", catAbaId: x.catAbaId || "", estilo: limparEstilo(x.catEstilo), descricao: x.descricao || "", ehCurso: ehCursoDeVerdade(x), cardEstilo: limparEstilo(x.cardEstilo), cardRotulo: x.cardRotulo || "", cardBotao: x.cardBotao || "", capa: fotoOuSite(x.capaPath || ""), conteudos: x.conteudos || [],
           liberadoDireto: prodLib.has(x.id),
           itens: x.modulos.slice().sort((a, b) => a.ordem - b.ordem).flatMap((m) => m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem)).map((a) => ({ id: a.id, mod: a.moduloId, bloq: !!a.bloqueadoGeral, criado: a.criadoEm || "", titulo: a.titulo, texto: a.texto || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath), ...ebookDe(a) })),
