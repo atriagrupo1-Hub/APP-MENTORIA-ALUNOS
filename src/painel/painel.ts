@@ -541,7 +541,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, catVis: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -965,7 +965,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3434,27 +3434,60 @@ export function montar(app: HTMLElement) {
         </article>`;
     };
     if (abas) return telaAbasCat(todas, filtroCat, daAba, filtroProd, lista, cartao, vista, ordem);
+    // Cursos e conteúdos: busca, filtros (categoria, status, publicação), ordem e cards/lista.
+    // Status = bloqueado_geral (Ativo / Bloqueado); Publicação = publicado (Publicado / Rascunho, oculto para as alunas).
+    const catsDo = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
+    const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
+    const nAl = (c: Curso) => numerosCurso(c).alunas;
+    const lista2 = S.cursos.filter((c) => (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
+        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq : c.bloq)) && (!fPub || (fPub === "pub" ? c.visivel : !c.visivel)))
+      .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
+    const selos = (c: Curso) => `<span class="cc2-selos"><span class="cc2-selo ${c.bloq ? "am" : "vd"}">${c.bloq ? "Bloqueado" : "Ativo"}</span><span class="cc2-selo ${c.visivel ? "az" : "cz"}">${c.visivel ? "Publicado" : "Rascunho"}</span></span>`;
+    const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
+    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Aula" : "Aulas"}</em></span></div>`; };
+    const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
+    // Ações secundárias no ⋮ (todas já existiam no painel).
+    const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
+        <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
+        <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
+        <button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.visivel ? "desativado" : c.bloq ? "bloqueado" : "ativo"}">${c.visivel ? "Despublicar (Rascunho)" : "Publicar"}</button>
+        ${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "ativo" : "bloqueado"}">${c.bloq ? "Desbloquear (Ativo)" : "Bloquear"}</button>` : ""}
+        <span class="kb-sep"></span>
+        <button type="button" role="menuitem" class="perigo" data-a="curso-remover" data-id="${c.id}">Excluir curso</button>
+      </span>` : ""}</span>`; };
+    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>`; };
+    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
+    const card2 = (c: Curso) => `
+      <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
+        ${capaC(c, "ka-capa")}
+        <div class="cc2-corpo">
+          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>${menu(c)}</div>
+          ${cats(c)}${selos(c)}${stats(c)}${quando(c)}
+          <div class="cc2-bts">${bts(c)}</div>
+        </div>
+      </article>`;
+    const linha2 = (c: Curso) => `
+      <article class="cc2-linha${c.visivel ? "" : " cc2-rasc"}">
+        ${capaC(c, "ka-mini")}
+        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>${cats(c)}${selos(c)}</div>
+        ${stats(c)}
+        <div class="cc2-bts">${bts(c)}${menu(c)}</div>
+      </article>`;
+    const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo kg-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
-    <section class="tela ativa cur">
-      <div class="cur-barra-topo">
-        <p class="cur-sub">${soCatAba ? "" : abas ? "Escolha o botão e a categoria. Clique numa categoria para gerenciar o conteúdo dela." : "Todos os cursos cadastrados. Clique em um curso para gerenciar seus módulos e conteúdos."}</p>
-        <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="${abas ? "Buscar categoria..." : "Buscar curso..."}" aria-label="${abas ? "Buscar categoria" : "Buscar curso"}" /></label>
-        <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["categorias", "Ordem da área de membros"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+    <section class="tela ativa cur cc2">
+      <p class="cur-sub cc2-sub">Gerencie todos os cursos criados, acompanhe status, publicação e organização por categoria.</p>
+      <div class="kg-barra">
+        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
+        ${sel("data-curso-cat", fCat, [["", "Todas as categorias"], ...S.catsAba.map((x) => [x.id, x.nome])], "Categoria")}
+        ${sel("data-curso-st", fSt, [["", "Todos os status"], ["ativo", "Ativo"], ["bloqueado", "Bloqueado"]], "Status")}
+        ${sel("data-curso-pub", fPub, [["", "Toda publicação"], ["pub", "Publicado"], ["rasc", "Rascunho"]], "Publicação")}
+        ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunas"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordem")}
+        <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
-      ${abas ? `<div class="cur-cats" role="group" aria-label="Botões do app">
-        <span class="cur-cats-rot">Botões do app: <span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="o-que-e-aba" aria-label="O que é um botão do app" aria-expanded="${ui.ajuda === "o-que-e-aba"}">?</button>${ui.ajuda === "o-que-e-aba" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>O que é um botão do app</b><span>A aba é o primeiro nível da área de membros. Ela aparece no menu da aluna, ao lado de Início e Perfil: no celular, embaixo da tela; no computador, no alto.</span><span class="aba-niveis"><i>1</i><b>Botão do app</b> no menu da área de membros (ex.: Presentes)<br /><i>2</i><b>Categoria</b> dentro da aba<br /><i>3</i><b>Cursos</b> dentro da categoria, com os módulos e as aulas</span><em>O que fazer: clique numa aba para ver o que tem dentro dela, ou em Criar aba para colocar uma nova no menu.</em></span>` : ""}</span></span>
-        ${S.cats.map((k) => [k.id, k.nome, S.cursos.filter((c) => c.cat === k.id).length] as [string, string, number]).map(([id, nome, n]) => `<button type="button" class="cur-cat" data-a="lay-aba" data-v="${id}" aria-pressed="${filtroCat === id}">${h(nome)}<span>${n}</span></button>`).join("")}
-        ${ui.abaNova ? `<form data-f="cat-add" class="cur-aba-nova"><input id="abaNovaNome" class="campo" name="nome" placeholder="Nome do botão" maxlength="30" required aria-label="Nome do novo botão" /><button class="al-botao-ouro">Criar</button><button type="button" class="al-botao" data-a="aba-nova-fechar">Cancelar</button></form>`
-          : `<button type="button" class="al-botao cur-aba-criar" data-a="aba-nova-abrir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar aba</button>`}
-      </div>
-      <div class="cur-cats cur-cats2" role="group" aria-label="Categorias do botão ${h(cat(filtroCat)?.nome || "")}">
-        <span class="cur-cats-rot">Categorias: <span class="ajuda"><button type="button" class="ajuda-btn" data-a="ajuda" data-v="o-que-e-categoria" aria-label="O que é uma categoria" aria-expanded="${ui.ajuda === "o-que-e-categoria"}">?</button>${ui.ajuda === "o-que-e-categoria" ? `<span class="ajuda-pop esq aba-pop" role="tooltip"><b>O que é uma categoria</b><span>A categoria é o segundo nível: fica dentro de uma aba. Na área de membros, aparece como um botão e um cartão dentro do botão (ex.: na aba Presentes, as categorias Mestres espirituais, Documentários, E-books…).</span><span class="aba-niveis"><i>1</i><b>Botão do app</b> ${h(cat(filtroCat)?.nome || "")}<br /><i>2</i><b>Categoria</b> dentro da aba<br /><i>3</i><b>Cursos</b> dentro da categoria</span><em>O que fazer: clique numa categoria para ver só ela, ou em Criar categoria para colocar uma nova nesta aba.</em></span>` : ""}</span></span>
-        <button type="button" class="cur-cat" data-a="lay-cat" data-v="" aria-pressed="${!filtroProd}">Todas<span>${daAba.length}</span></button>
-        ${daAba.map((c) => `<button type="button" class="cur-cat" data-a="lay-cat" data-v="${c.id}" aria-pressed="${filtroProd === c.id}">${h(c.nome)}</button>`).join("")}
-        <button type="button" class="al-botao cur-aba-criar" data-a="cat-criar" data-id="${filtroCat}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar categoria</button>
-      </div>` : ""}
-      ${lista.length ? `<div class="cur-grade${vista === "lista" ? " em-lista" : ""}">${lista.map(cartao).join("")}</div>` : `<div class="vazio">${q ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`}
+      <p class="kg-conta">${lista2.length === 1 ? "1 curso encontrado" : lista2.length + " cursos encontrados"}</p>
+      ${!lista2.length ? `<div class="vazio">${q || fCat || fSt || fPub ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`
+        : vista === "lista" ? `<div class="ka-lista">${lista2.map(linha2).join("")}</div>` : `<div class="cc2-grade">${lista2.map(card2).join("")}</div>`}
     </section>`;
   }
 
@@ -7562,6 +7595,9 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-curso-ordem")) { ui.cursoOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
+    if (t.hasAttribute("data-curso-cat")) { ui.cursoCat = t.value; render(); return; }
+    if (t.hasAttribute("data-curso-st")) { ui.cursoSt = t.value; render(); return; }
+    if (t.hasAttribute("data-curso-pub")) { ui.cursoPub = t.value; render(); return; }
     if (t.hasAttribute("data-ka-ordem")) { ui.kaOrdem = t.value; render(); return; }
     if (t.closest?.("#cfgInicio, #cfgTelas")) { atualizarPreviaCfg(); }
     if (t.closest?.("#cfgApar")) {
