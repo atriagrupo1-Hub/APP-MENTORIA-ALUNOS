@@ -1632,3 +1632,10 @@ html[data-tema="claro"] .topo-novo .ig-bt { background: #fff; color: #1a1206; bo
 .cur-bt i { font-style: normal; font-size: 22px; line-height: 1; }
 html[data-tema="claro"] .cur-card { background: #fff; color: #1a1206; }
 html[data-tema="claro"] .cur-tit { color: #1a1206; }
+/* Card do curso: padrão neutro (branco e preto); as cores são escolhidas em Configurações → Cursos. */
+.cur-card { background: #0d0d0d; border-color: #fff; box-shadow: 0 0 22px -6px rgba(255,255,255,.45); }
+.cur-rot { color: rgba(255,255,255,.8); }
+.cur-desc { color: rgba(255,255,255,.72); }
+.cur-prog i { background: #fff; }
+.cur-prog span { background: #333; }
+.cur-bt { color: #000; background: #fff; border-color: #fff; box-shadow: none; }

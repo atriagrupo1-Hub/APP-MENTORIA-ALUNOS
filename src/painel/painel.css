@@ -3896,3 +3896,33 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cc-bt i { font-style: normal; font-size: 22px; line-height: 1; }
 .cc-nota { margin: 8px 0 12px !important; font-size: 12px !important; }
 .cfg-abas button { padding: 0 13px; gap: 8px; font-size: 14px; }
+
+/* ——— Editar categoria: tela larga, formulário à esquerda e o card da categoria parado à direita ——— */
+.aa-painel.cat-painel-full { width: min(1180px, calc(100vw - 32px)) !important; max-width: none !important; }
+.cat-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 400px); gap: 24px; align-items: start; }
+.cat-esq { min-width: 0; }
+.cat-dir { position: sticky; top: 0; }
+.cat-prev h3 { margin: 0 0 6px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 21px; font-weight: 600; }
+.cat-prev .cs-nota { margin: 0 0 12px; font-size: 12.5px; color: var(--texto-2); }
+.cat-prev .kx-formato { margin: 10px 0 12px; }
+@media (max-width: 900px) { .cat-grade { grid-template-columns: 1fr; } .cat-dir { position: static; } }
+/* Cards de prévia neutros (branco e preto): o visual final é escolhido em Configurações. */
+.kx-cel { display: grid; place-items: center; padding: 18px 12px; border-radius: 14px; background: #050506; }
+.kx-card { width: 100%; max-width: 360px; overflow: hidden; color: #fff; background: #0d0d0d; border: 1.5px solid #ffffff; border-radius: 16px; box-shadow: 0 0 22px -6px rgba(255,255,255,.45); }
+.kx-capa { position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden; background: #1a1a1a; }
+.kx-capa img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.kx-capa .cur-sem-capa { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.4); }
+.kx-info { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px 16px; }
+.kx-tit { font-family: "Cormorant Garamond", Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.15; color: #fff; overflow-wrap: anywhere; }
+.kx-desc { margin: 0; font-size: 14px; line-height: 1.45; color: rgba(255,255,255,.72); overflow-wrap: anywhere; }
+.kx-bt { display: flex; align-items: center; gap: 12px; min-height: 48px; margin-top: 6px; padding: 0 16px; color: #000; background: #fff; border-radius: 8px; }
+.kx-bt svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.kx-bt b { flex: 1; text-align: center; font-size: 16px; }
+.kx-bt i { font-style: normal; font-size: 22px; line-height: 1; }
+/* O card do curso (Sobre o curso) também neutro. */
+.cc-card { color: #fff; background: #0d0d0d; border-color: #fff; box-shadow: 0 0 22px -6px rgba(255,255,255,.45); }
+.cc-rot { color: rgba(255,255,255,.8); }
+.cc-desc { color: rgba(255,255,255,.72); }
+.cc-prog i { background: #fff; }
+.cc-prog span { background: #333; }
+.cc-bt { color: #000; background: #fff; border-color: #fff; box-shadow: none; }
