@@ -3987,3 +3987,18 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cc-cel.kx-comp .cc-card { max-width: 560px; }
 .cs-prev-curso .kx-prev-cab h3 { display: flex; align-items: center; gap: 6px; }
 .cs-campo .kx-campo-aa { margin-top: 0; }
+
+/* ——— Editar curso (Sobre o curso) no modelo da categoria ——— */
+.cs-ed { padding-bottom: 80px; }
+.cs-ed-acoes { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.cs-ed-acoes .al-botao { min-height: 42px; }
+.cs-ed-acoes svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.cs-ed-cab { padding: 0 0 6px; }
+.cs-ed-h { margin: 18px 0 10px !important; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px !important; font-weight: 600; }
+.cs-ed .cs-campo > span:first-child { display: flex; align-items: center; gap: 6px; }
+.cs-ed-pe { position: sticky; bottom: 0; z-index: 5; grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: 0 -8px 24px -16px rgba(0,0,0,.25); }
+.cs-ed-pe > span:nth-child(2) { flex: 1; }
+.cs-ed-st { display: flex; align-items: center; gap: 12px; }
+.cs-ed-st b { display: flex; align-items: center; gap: 6px; }
+.cs-ed .cs-campo > span:first-child > svg { flex: none; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.cs-ed .cs-col-prev { max-height: calc(100vh - 110px); overflow-y: auto; overscroll-behavior: contain; padding-bottom: 6px; }
