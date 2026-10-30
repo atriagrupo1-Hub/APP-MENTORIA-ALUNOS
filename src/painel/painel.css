@@ -4119,3 +4119,14 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cat-painel-full .cat-grade, .cat-painel-full .kx-cab, .cat-painel-full .kx-pe { box-sizing: border-box; width: 100%; max-width: 1400px; margin-left: auto; margin-right: auto; padding-left: 26px; padding-right: 26px; }
 .cat-painel-full .kx-pe-in { max-width: none; }
 .kx-cab > .kx-cab-acoes { flex: none; }
+/* Sobre o curso: Card e Botão do visual lado a lado; prévia mais compacta para o rodapé subir */
+.ce-vis-lado { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ce-vis-lado .kx-est-l { margin: 0 !important; padding: 10px 12px !important; gap: 8px; flex-wrap: wrap; }
+.ce-vis-lado .kx-est-l > span { flex: 1 1 auto; }
+.ce-vis-lado .kx-est-l b { display: inline-flex; align-items: center; gap: 6px; }
+.ce-vis-lado .kx-est-l em { display: none; }
+.ce-vis-lado .se-abre { padding: 0 10px; min-height: 34px; }
+.ce .cs-prev-curso .kx-prev-cab { align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.ce .cs-prev-curso .kx-prev-cab h3 { margin: 0; }
+.ce .ce-cel { padding-top: 12px !important; padding-bottom: 12px !important; }
+.ce .ce-visual { margin-top: 10px; }
