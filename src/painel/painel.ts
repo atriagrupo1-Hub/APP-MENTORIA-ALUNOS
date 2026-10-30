@@ -3913,7 +3913,6 @@ export function montar(app: HTMLElement) {
           </section>
           <section class="cs-cartao">
             <h3>Configurações visuais do card</h3>
-            <p class="cs-nota" style="margin:-6px 0 12px">Personalize o estilo do card que aparece na área da aluna.</p>
             <div class="kx-visual">${visC("card", "Card")}${visC("botao", "Botão")}</div>
           </section>
         </div>
