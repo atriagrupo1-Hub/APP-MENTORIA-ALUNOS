@@ -863,7 +863,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
-    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso();
+    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -3222,50 +3222,61 @@ export function montar(app: HTMLElement) {
     const x = catAba(ui.catxEditar); if (!x) { ui.catxEditar = ""; return ""; }
     const img = previas["catx-" + x.id] || capaSite(x.capa);
     const aa = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
-    const vis = (k: string, nome: string) => { const v = estKx(x)[k]; return `<div class="kx-est-l"><span><b>${h(nome)}</b><small>Borda, sombra e fundo.</small></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
+    const vis = (k: string, nome: string) => { const v = estKx(x)[k]; return `<div class="kx-est-l"><span><b>${h(nome)} ${dicaCampo(`Borda, sombra e fundo do ${nome.toLowerCase()}.`, "cat.vis." + k)}</b></span><button type="button" class="se-abre" data-a="catx-est" data-id="${x.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
+    const pino = (l: string) => `<em class="ce-pino" aria-hidden="true">${l}</em>`;
+    const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab"><i class="ce-num" data-ce-num="${n}">${n}</i><h3>${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
+    const ps = passosCat(x);
     const comp = ui.catxPrevia === "computador";
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Personalize as informações, o visual do card e defina o que ficará disponível nesta categoria.</p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
-        <div class="aa-corpo cat-grade" data-rolagem="catx-${x.id}">
+        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Botão do app: <b>${h(cat(x.aba)?.nome || "—")}</b></p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
+        <div class="aa-corpo cat-grade ce ce-cat" data-rolagem="catx-${x.id}">
+          <ol class="ce-passos" aria-label="Passos da categoria">${ps.map((p2, i) => `<li data-ce-passo="${i + 1}" class="${p2.ok ? "ok" : ""}"><i>${p2.ok ? "✓" : i + 1}</i>${h(p2.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((p2) => p2.ok).length} de ${ps.length}</b> prontos</span></ol>
           <div class="cat-esq">
-            <form id="catxForm" data-f="catx-salvar" data-id="${x.id}" class="kx-bloco cat-form">
+            <form id="catxForm" data-f="catx-salvar" data-id="${x.id}" class="ce-form">
               <input type="hidden" name="capa" value="${h(x.capa)}" />
-              <div class="cat-campo"><span>Nome da categoria ${dicaCampo(`O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
-              <div class="cat-campo"><span>Descrição (opcional) ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" rows="3" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
-              <div class="cat-campo"><span>Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver categoria".`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" value="${h(x.botao || "")}" maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
+              <section class="cs-cartao ce-bloco" data-ce-bloco="1">
+                ${cab("1", "Capa da categoria", dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "cat.formato"))}
+                <div class="ce-capa"><span class="ce-capa-img" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+                  <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button></div></div>
+              </section>
+              <section class="cs-cartao ce-bloco" data-ce-bloco="2">
+                ${cab("2", "Textos do card", "")}
+                <div class="cs-duas">
+                  <div class="cs-campo"><span>${pino("A")}Nome da categoria ${dicaCampo(`O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" data-ce-alvo="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
+                  <div class="cs-campo"><span>${pino("C")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver categoria".`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" data-ce-alvo="botaoTexto" value="${h(x.botao || "")}" maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
+                  <div class="cs-campo ce-largo"><span>${pino("B")}Descrição (opcional) ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" data-ce-alvo="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
+                </div>
+              </section>
             </form>
-            <div class="kx-bloco">
-        <section class="cx-cont">
-          <div class="kx-sec-cab"><span class="kx-sec-ic">${IC_CUR.camadas}</span><div><h3>O que fica dentro desta categoria ${dicaCampo(`Os cursos, módulos ou aulas que aparecem quando a aluna abre esta categoria (no botão ${h(cat(x.aba)?.nome || "—")}). O mesmo item pode estar em várias categorias.`, "cat.dentro")}</h3><p>Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.</p></div></div>
-          <div class="cx-itens">${itensDe(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
-          <div class="cx-add">
-            <select class="campo" id="catxTipo" data-catx-tipo aria-label="Tipo">${[["curso", "Curso"], ["modulo", "Módulo"], ["aula", "Aula"]].map(([v2, t]) => `<option value="${v2}" ${ui.catxTipo === v2 ? "selected" : ""}>${t}</option>`).join("")}</select>
-            <select class="campo" id="catxItem" aria-label="Escolha o item">${(ui.catxTipo === "modulo" ? todosModulos().map((y) => [y.m.id, nomeItem("modulo", y.m.id)]) : ui.catxTipo === "aula" ? todasAulas().map((y) => [y.a.id, nomeItem("aula", y.a.id)]) : S.cursos.map((c) => [c.id, c.nome])).filter(([id]) => !itensDe(x.id).some((it) => it.tipo === ui.catxTipo && it.item === id)).map(([id, t]) => `<option value="${id}">${h(t)}</option>`).join("")}</select>
-            <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
-          </div>
-        </section>
-            </div>
+            <section class="cs-cartao ce-bloco cx-cont" data-ce-bloco="3">
+              ${cab("3", "O que fica dentro desta categoria", dicaCampo(`Os cursos, módulos ou aulas que aparecem quando a aluna abre esta categoria (no botão ${h(cat(x.aba)?.nome || "—")}). Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.`, "cat.dentro"))}
+              <div class="cx-itens">${itensDe(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
+              <div class="cx-add">
+                <select class="campo" id="catxTipo" data-catx-tipo aria-label="Tipo">${[["curso", "Curso"], ["modulo", "Módulo"], ["aula", "Aula"]].map(([v2, t]) => `<option value="${v2}" ${ui.catxTipo === v2 ? "selected" : ""}>${t}</option>`).join("")}</select>
+                <select class="campo" id="catxItem" aria-label="Escolha o item">${(ui.catxTipo === "modulo" ? todosModulos().map((y) => [y.m.id, nomeItem("modulo", y.m.id)]) : ui.catxTipo === "aula" ? todasAulas().map((y) => [y.a.id, nomeItem("aula", y.a.id)]) : S.cursos.map((c) => [c.id, c.nome])).filter(([id]) => !itensDe(x.id).some((it) => it.tipo === ui.catxTipo && it.item === id)).map(([id, t]) => `<option value="${id}">${h(t)}</option>`).join("")}</select>
+                <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
+              </div>
+            </section>
           </div>
           <div class="cat-dir">
-            <section class="kx-bloco cat-prev">
-              <div class="kx-prev-cab"><div><h3>Prévia do card da categoria ${dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "cat.formato")}</h3><p class="cs-nota">Veja como ficará no app para as alunas.</p></div><span class="kx-seg">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="catx-previa" data-v="${k}" aria-pressed="${(ui.catxPrevia || "celular") === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
+            <section class="cs-cartao cs-prev-curso cat-prev">
+              <div class="kx-prev-cab"><div><h3>Prévia do card ${dicaCampo(`As letras A, B e C mostram onde cada texto aparece.`, "cat.previa")}</h3></div><span class="kx-seg">${[["celular", "Celular"], ["computador", "Computador"]].map(([k, t]) => `<button type="button" data-a="catx-previa" data-v="${k}" aria-pressed="${(ui.catxPrevia || "celular") === k}">${IC_CFG[k]}${t}</button>`).join("")}</span></div>
               <style id="kxEstilo">${cssKx(x)}</style>
-              <div class="kx-cel${comp ? " kx-comp" : ""}"><article class="kx-card">
+              <div class="kx-cel ce-cel${comp ? " kx-comp" : ""}"><article class="kx-card">
                 <span class="kx-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
                 <div class="kx-info">
-                  <b class="kx-tit" data-kx="nome">${h(x.nome)}</b>
-                  <p class="kx-desc" data-kx="descricao"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
-                  <span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-kx="botaoTexto">${h(x.botao || "Ver categoria")}</b><i aria-hidden="true">›</i></span>
+                  <b class="kx-tit" data-kx="nome" data-ce-pino="A">${h(x.nome)}</b>
+                  <p class="kx-desc" data-kx="descricao" data-ce-pino="B"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
+                  <span class="kx-bt" data-ce-pino="C"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-kx="botaoTexto">${h(x.botao || "Ver categoria")}</b><i aria-hidden="true">›</i></span>
                 </div>
-              </article></div>
-              <div class="capa-bts"><button type="button" class="al-botao" data-a="catx-imagem" data-id="${x.id}">${IC_IMG}${img ? "Alterar" : "Adicionar capa"}</button>${img ? `<button type="button" class="al-botao" data-a="capa-editar" data-v="catx" data-id="${x.id}">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="capa-tirar" data-v="catx" data-id="${x.id}">${IC_MOD.lixo}Remover</button>` : ""}</div>
-              <div class="kx-visual">${vis("card", "Card")}${vis("botao", "Botão")}</div>
+              </article><span class="ce-pinos"></span></div>
+              <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n">4</i>Visual <small>(opcional)</small></span><div class="kx-visual ce-vis-lado">${vis("card", "Card")}${vis("botao", "Botão")}</div></div>
             </section>
           </div>
         </div>
-        <footer class="kx-pe"><div class="cs-ed-pe kx-pe-in"><span class="cs-ed-st"><b>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span><span></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></div></footer>
+        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in"><span class="cs-ed-st"><b><i class="ce-num ce-num-n">5</i>Status ${dicaCampo(`Ativa: as alunas veem. Bloqueada: aparece com cadeado. Desativada: não aparece.`, "cat.status")}</b>${seletorEstado("catx", x.id, estado3(x.pub, x.bloq), true, true)}</span><span class="ce-falta" data-ce-falta></span><button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button><button type="submit" form="catxForm" class="al-botao-ouro">Salvar alterações</button></div></footer>
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -3925,7 +3936,7 @@ export function montar(app: HTMLElement) {
       </div>`;
   }
   /** Os 5 passos do Sobre o curso: o que já está pronto, lido da tela (enquanto edita) ou do curso salvo. */
-  function passosCurso(c: Curso) {
+  function passosCurso(c: Curso): Passo[] {
     const f = document.getElementById("formCurso") as HTMLFormElement | null;
     const val = (n: string, pd: string) => f ? ((f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? pd) : pd;
     const capa = !!(previas["cur-" + c.id] || (f ? val("capa", c.capa) : c.capa));
@@ -3939,10 +3950,9 @@ export function montar(app: HTMLElement) {
       { nome: "Publicar", ok: estado3(c.visivel, c.bloq) === "ativo", falta: "deixar o curso Ativo" },
     ];
   }
+  type Passo = { nome: string; ok: boolean; falta: string; opcional?: boolean };
   /** Atualiza a barra de passos, os selos dos blocos, o aviso do rodapé e as letras da prévia. */
-  function pintarPassosCurso() {
-    const raiz = document.querySelector<HTMLElement>(".ce"); const c = ui.curso ? curso(ui.curso) : null; if (!raiz || !c) return;
-    const ps = passosCurso(c);
+  function pintarPassosEm(raiz: HTMLElement, ps: Passo[]) {
     ps.forEach((x, i) => {
       const li = raiz.querySelector<HTMLElement>(`[data-ce-passo="${i + 1}"]`); if (li) { li.classList.toggle("ok", x.ok); li.querySelector("i")!.textContent = x.ok ? "✓" : String(i + 1); }
       const selo = raiz.querySelector<HTMLElement>(`[data-ce-selo="${i + 1}"]`); if (selo) { selo.textContent = x.ok ? "Pronto" : "Falta"; selo.classList.toggle("ok", x.ok); }
@@ -3954,11 +3964,34 @@ export function montar(app: HTMLElement) {
     const av = raiz.querySelector<HTMLElement>("[data-ce-falta]"); if (av) { av.classList.toggle("ok", !faltam.length); av.textContent = !faltam.length ? "✓ Tudo pronto." : `Falta ${faltam.length} ${faltam.length === 1 ? "passo" : "passos"}: ${faltam.map((x) => x.falta).join(", ")}.`; }
     posicionarPinos();
   }
+  function pintarPassosCurso() {
+    const raiz = document.querySelector<HTMLElement>(".ce:not(.ce-cat)"); const c = ui.curso ? curso(ui.curso) : null; if (!raiz || !c) return;
+    pintarPassosEm(raiz, passosCurso(c));
+  }
+  /** Os 5 passos do Editar categoria. */
+  function passosCat(x: CatAba): Passo[] {
+    const f = document.getElementById("catxForm") as HTMLFormElement | null;
+    const val = (n: string, pd: string) => f ? ((f.elements.namedItem(n) as HTMLInputElement | null)?.value ?? pd) : pd;
+    const est = estKx(x);
+    return [
+      { nome: "Capa", ok: !!(previas["catx-" + x.id] || val("capa", x.capa)), falta: "pôr a capa" },
+      { nome: "Textos do card", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
+      { nome: "O que fica dentro", ok: itensDe(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
+      { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
+      { nome: "Publicar", ok: estado3(x.pub, x.bloq) === "ativo", falta: "deixar a categoria Ativa" },
+    ];
+  }
+  function pintarPassosCat() {
+    const raiz = document.querySelector<HTMLElement>(".cat-painel-full"); const x = ui.catxEditar ? catAba(ui.catxEditar) : null; if (!raiz || !x) return;
+    pintarPassosEm(raiz, passosCat(x));
+  }
   /** Letras A–D ao lado de cada parte do card de prévia. */
   function posicionarPinos() {
-    const cel = document.querySelector<HTMLElement>(".ce-cel"); const box = cel?.querySelector<HTMLElement>(".ce-pinos"); if (!cel || !box) return;
+    document.querySelectorAll<HTMLElement>(".ce-cel").forEach((cel) => {
+    const box = cel.querySelector<HTMLElement>(".ce-pinos"); if (!box) return;
     const r0 = cel.getBoundingClientRect();
     box.innerHTML = [...cel.querySelectorAll<HTMLElement>("[data-ce-pino]")].filter((x) => !x.hidden).map((x) => { const r = x.getBoundingClientRect(); return `<em class="ce-pino ce-pino-p" data-l="${x.dataset.cePino}" style="top:${Math.round(r.top - r0.top + Math.min(r.height, 40) / 2 - 10)}px">${x.dataset.cePino}</em>`; }).join("");
+    });
   }
   /* --- Relatórios: período, números com a variação, gráficos e os mais vistos --- */
   type RelCurso = { dias: { dia: string; novas: number; assistidas: number }[]; totais: Record<string, number>; modulos: { id: string; titulo: string; n: number }[]; aulas: { id: string; titulo: string; n: number }[] };
@@ -5893,8 +5926,8 @@ export function montar(app: HTMLElement) {
       case "capa-tirar": {
         const alvoT = alvoCapa(d.v, d.id); if (!alvoT) return;
         const c = document.querySelector<HTMLInputElement>(alvoT.form + ' input[name="' + alvoT.campo + '"]'); if (c) c.value = "";
-        delete previas[alvoT.previa]; const pv = document.querySelector<HTMLElement>('[data-previa="' + alvoT.previa + '"]'); if (pv) pv.innerHTML = "";
-        toast("Capa tirada. Clique em Salvar para guardar."); return;
+        delete previas[alvoT.previa]; document.querySelectorAll<HTMLElement>('[data-previa="' + alvoT.previa + '"]').forEach((pv) => { pv.innerHTML = ""; });
+        toast("Capa tirada. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat(); return;
       }
       case "curso-novo-cat": ui.modal = { tipo: "curso", catAba: d.id }; ui.focar = "cursoNome"; break;
       case "catx-duplicar": {
@@ -6024,7 +6057,7 @@ export function montar(app: HTMLElement) {
         break;
       }
       case "curso-capa": imgPara = alvoCapa("curso", d.id); arquivoImg.click(); return;
-      case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="cur-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar para guardar."); return; }
+      case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="cur-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosCurso(); toast("Capa tirada. Clique em Salvar para guardar."); return; }
       case "mod-capa-v": imgPara = alvoCapa("modv", d.id); arquivoImg.click(); return;
       case "mod-capa-h": imgPara = alvoCapa("modh", d.id); arquivoImg.click(); return;
       case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; const pv = document.querySelector<HTMLElement>('[data-previa="modv-' + d.id + '"]'); if (pv) pv.innerHTML = ""; toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
@@ -7321,6 +7354,7 @@ export function montar(app: HTMLElement) {
     // Sobre o curso: o card de prévia acompanha o nome e a descrição enquanto escreve.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     if ((e.target as HTMLElement).closest?.("#formCurso")) pintarPassosCurso();
+    if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
     const t = e.target as HTMLInputElement;
     if (t.dataset?.hex) { const f = t.closest("form"); const tx = f?.querySelector<HTMLInputElement>(`input[name="${t.dataset.hex}"]`); if (tx) tx.value = t.value.toUpperCase(); (t.parentElement as HTMLElement).style.background = t.value; }
     if (t.classList?.contains("cfg-hexin") && /^#[0-9a-f]{6}$/i.test(t.value)) { const c = t.parentElement?.querySelector<HTMLInputElement>("input[data-hex]"); if (c) { c.value = t.value.toLowerCase(); (c.parentElement as HTMLElement).style.background = t.value; } }
@@ -7518,9 +7552,8 @@ export function montar(app: HTMLElement) {
         previas[alvo.previa] = URL.createObjectURL(file);
         const campo = document.querySelector<HTMLInputElement>(alvo.form + ' input[name="' + alvo.campo + '"]');
         if (campo) campo.value = caminho;
-        const pv = document.querySelector<HTMLElement>('[data-previa="' + alvo.previa + '"]');
-        if (pv) pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />';
-        toast("Imagem pronta. Clique em Salvar para guardar.");
+        document.querySelectorAll<HTMLElement>('[data-previa="' + alvo.previa + '"]').forEach((pv) => { pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />'; });
+        toast("Imagem pronta. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat();
       } catch (e) { toast(motivo(e)); }
     })();
   }
@@ -7687,7 +7720,7 @@ export function montar(app: HTMLElement) {
   });
   window.addEventListener("resize", () => { ajustarListaLateral(); ajustarArvore(); });
   // Sobre o curso: o campo em foco acende a parte dele no card de prévia.
-  document.addEventListener("focusin", (e) => { const k = (e.target as HTMLElement).dataset?.ceAlvo; document.querySelectorAll(".ce-luz").forEach((x) => x.classList.remove("ce-luz")); if (k) document.querySelector(`.ce-cel [data-cc="${k}"]`)?.closest("[data-ce-pino]")?.classList.add("ce-luz"); });
+  document.addEventListener("focusin", (e) => { const k = (e.target as HTMLElement).dataset?.ceAlvo; document.querySelectorAll(".ce-luz").forEach((x) => x.classList.remove("ce-luz")); if (k) document.querySelector(`.ce-cel [data-cc="${k}"], .ce-cel [data-kx="${k}"]`)?.closest("[data-ce-pino]")?.classList.add("ce-luz"); });
   document.addEventListener("focusin", (e) => { if ((e.target as HTMLElement).id === "buscaGeral" && ui.buscaGeral.trim()) { ui.buscaAberta = true; atualizarBusca(); } });
   window.addEventListener("beforeunload", (e) => { if (ui.sujo && formSujo()) { e.preventDefault(); e.returnValue = ""; } });
 
