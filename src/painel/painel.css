@@ -3978,3 +3978,9 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .kx-prev-cab { flex-wrap: wrap; } .kx-prev-cab > div { flex: 1 1 200px; }
 .kx-aa { z-index: 3; }
 .kx-aa, .kx-aa:active, .kx-aa:hover { transform: none !important; top: calc(50% - 19px); } .kx-ta .kx-aa, .kx-ta .kx-aa:active { top: 14px; }
+/* Editar categoria: tela inteira. */
+.aa-painel.largo.cat-painel-full { top: 0 !important; right: 0 !important; bottom: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh; border-radius: 0 !important; border: 0 !important; }
+.cat-painel-full .cat-grade { max-width: 1500px; margin: 0 auto; grid-template-columns: minmax(0, 1fr) minmax(380px, 520px); }
+.cat-painel-full .kx-cab, .cat-painel-full .kx-pe { padding-left: max(26px, calc((100vw - 1500px) / 2 + 26px)); padding-right: max(26px, calc((100vw - 1500px) / 2 + 26px)); }
+.cat-prev h3 { display: flex; align-items: center; gap: 6px; }
+.mp-dica-aj { display: inline-flex; vertical-align: middle; margin-left: 6px; }

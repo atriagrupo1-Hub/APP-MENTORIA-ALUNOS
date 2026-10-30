@@ -20,6 +20,8 @@ type Opcoes = {
   aoMudar: (e: Estilo | null) => void;
   aoSalvar: (e: Estilo | null) => Promise<boolean>;
   aoFechar?: () => void;
+  /** Sem a amostra no alto (quando a própria tela já mostra o card mudando). */
+  semAmostra?: boolean;
 };
 
 const DEGRADES: [string, string, number][] = [["#f2d27a", "#a8812f", 180], ["#d4af37", "#5a3d16", 135], ["#c7b0f0", "#4b2a8a", 135], ["#7fa8e8", "#1d3a6e", 135], ["#5fc7c2", "#13504d", 135], ["#e07a8a", "#5a1626", 135], ["#1c1430", "#08060d", 135], ["#2a2a2a", "#000000", 180]];
@@ -238,7 +240,7 @@ export function abrirSeletorEstilo(o: Opcoes) {
       <div class="se-cab"><b>${h(o.titulo)}</b><button type="button" class="se-x" data-se="cancelar" aria-label="Fechar">✕</button></div>
       ${o.partes.length > 1 ? `<div class="se-partes" role="tablist">${o.partes.map((p) => `<button type="button" role="tab" data-se="parte" data-v="${p.k}" aria-selected="${p.k === parte}">${h(p.nome)}${est[p.k] && Object.keys(est[p.k]!).length ? "<i></i>" : ""}</button>`).join("")}</div>` : ""}
       <div class="se-rolo">
-        <div class="se-amostra">${amostra()}</div>
+        ${o.semAmostra ? "" : `<div class="se-amostra">${amostra()}</div>`}
         ${t === "card" || t === "botao" ? secoesCard(v) : `
         ${soCor ? `<div class="se-sec"><span class="se-rot">Cor</span>
           <div class="se-chips">${chip("texto", v.texto || "#f1e6c9", v.texto ? "Cor escolhida" : "Cor do app (padrão)", !v.texto)}${v.texto ? `<button type="button" class="se-lnk" data-se="tirar" data-v="texto">Usar a do app</button>` : ""}</div>
