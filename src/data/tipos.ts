@@ -178,6 +178,10 @@ export type Produto = {
   catEstilo?: Record<string, unknown> | null;
   /** Nome da categoria (Presentes) em que o produto está. */
   catTitulo?: string | null;
+  /** Card do curso (0112): estilo próprio e textos. */
+  cardEstilo?: Record<string, unknown> | null;
+  cardRotulo?: string | null;
+  cardBotao?: string | null;
   modulos: Modulo[];
   presentes: Presente[];
   /** Conteúdo pendurado direto no produto, sem módulo nem item. */
