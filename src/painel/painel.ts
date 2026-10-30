@@ -2279,6 +2279,9 @@ export function montar(app: HTMLElement) {
   const catAba = (id: string | null | undefined) => S.catsAba.find((x) => x.id === id);
   /** O que está dentro de cada categoria (0077): cursos, módulos ou aulas; um item pode estar em várias. */
   const itensDe = (catId: string) => S.catItens.filter((x) => x.cat === catId);
+  /** O que a categoria tem de verdade: sem os antigos produtos com o nome de uma categoria (eles são a própria categoria, não um curso). Só esconde na tela; nada é apagado. */
+  const ehCursoReal = (id: string) => { const c = curso(id); return !!c && !S.catsAba.some((x) => norm(x.nome) === norm(c.nome)); };
+  const itensReais = (catId: string) => itensDe(catId).filter((it) => it.tipo !== "curso" || ehCursoReal(it.item));
   const todosModulos = () => S.cursos.flatMap((c) => c.modulos.map((m) => ({ c, m })));
   const todasAulas = () => S.cursos.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((a) => ({ c, m, a }))));
   const nomeItem = (tipo: string, id: string) => {
@@ -3107,10 +3110,10 @@ export function montar(app: HTMLElement) {
    */
   const IC_CHECK_PUB = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>`;
   /** Só cursos de verdade: os antigos produtos com o mesmo nome de uma categoria (Descobertas, E-books…) são a própria categoria, não um curso. */
-  const cursosDeVerdade = () => S.cursos.filter((c) => !S.catsAba.some((x) => norm(x.nome) === norm(c.nome)));
+  const cursosDeVerdade = () => S.cursos.filter((c) => ehCursoReal(c.id));
   function telaCategorias() {
     const q = norm(ui.catBusca || "").trim(), ordem = ui.catxOrdem || "recentes", vista = ui.catVista === "lista" ? "lista" : "grade", vis = ui.catVis || "";
-    const nCursos = (x: CatAba) => itensDe(x.id).filter((i) => i.tipo === "curso" && curso(i.item)).length;
+    const nCursos = (x: CatAba) => itensReais(x.id).filter((i) => i.tipo === "curso").length;
     const lista = S.catsAba
       .filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || (vis === "rascunho" ? x.rascunho : estado3(x.pub, x.bloq) === vis)))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "recentes" ? (b.criado || "").localeCompare(a.criado || "") : ordem === "cursos" ? nCursos(b) - nCursos(a) || a.nome.localeCompare(b.nome) : S.catsAba.indexOf(a) - S.catsAba.indexOf(b));
@@ -3192,10 +3195,10 @@ export function montar(app: HTMLElement) {
             </form>
             <section class="cs-cartao ce-bloco cx-cont" data-ce-bloco="3">
               ${cab("3", "O que fica dentro desta categoria", dicaCampo(`Os cursos, módulos ou aulas que aparecem quando a aluna abre esta categoria (no botão ${h(cat(x.aba)?.nome || "—")}). Pode ser um curso inteiro, um módulo ou uma aula. O mesmo item pode estar em várias categorias.`, "cat.dentro"))}
-              <div class="cx-itens">${itensDe(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
+              <div class="cx-itens">${itensReais(x.id).map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "curso" ? "Curso" : it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b><button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("") || `<div class="cat-vazio">Nada nesta categoria ainda.</div>`}</div>
               <div class="cx-add">
                 <select class="campo" id="catxTipo" data-catx-tipo aria-label="Tipo">${[["curso", "Curso"], ["modulo", "Módulo"], ["aula", "Aula"]].map(([v2, t]) => `<option value="${v2}" ${ui.catxTipo === v2 ? "selected" : ""}>${t}</option>`).join("")}</select>
-                <select class="campo" id="catxItem" aria-label="Escolha o item">${(ui.catxTipo === "modulo" ? todosModulos().map((y) => [y.m.id, nomeItem("modulo", y.m.id)]) : ui.catxTipo === "aula" ? todasAulas().map((y) => [y.a.id, nomeItem("aula", y.a.id)]) : S.cursos.map((c) => [c.id, c.nome])).filter(([id]) => !itensDe(x.id).some((it) => it.tipo === ui.catxTipo && it.item === id)).map(([id, t]) => `<option value="${id}">${h(t)}</option>`).join("")}</select>
+                <select class="campo" id="catxItem" aria-label="Escolha o item">${(ui.catxTipo === "modulo" ? todosModulos().map((y) => [y.m.id, nomeItem("modulo", y.m.id)]) : ui.catxTipo === "aula" ? todasAulas().map((y) => [y.a.id, nomeItem("aula", y.a.id)]) : cursosDeVerdade().map((c) => [c.id, c.nome])).filter(([id]) => !itensDe(x.id).some((it) => it.tipo === ui.catxTipo && it.item === id)).map(([id, t]) => `<option value="${id}">${h(t)}</option>`).join("")}</select>
                 <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
               </div>
             </section>
@@ -3232,7 +3235,7 @@ export function montar(app: HTMLElement) {
   function telaCategoriaAba() {
     const x = catAba(ui.catxSel); if (!x) { ui.tab = "layout"; return telaAbas(); }
     const img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
-    const itens = S.catItens.filter((y) => y.cat === x.id && y.tipo === "curso");
+    const itens = itensReais(x.id).filter((y) => y.tipo === "curso");
     const daCat = itens.map((y) => curso(y.item)).filter((c): c is Curso => !!c);
     const q = norm(ui.kaBusca || "").trim(), ordem = ui.kaOrdem || "recentes", vista = ui.kaVista === "lista" ? "lista" : "grade";
     const lista = daCat.filter((c) => !q || casa(q, c.nome))
@@ -4012,7 +4015,7 @@ export function montar(app: HTMLElement) {
     return [
       { nome: "Capa", ok: !!(previas["catx-" + x.id] || val("capa", x.capa)), falta: "pôr a capa" },
       { nome: "Textos do card", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
-      { nome: "O que fica dentro", ok: itensDe(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
+      { nome: "O que fica dentro", ok: itensReais(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: !x.rascunho, falta: "publicar a categoria" },
     ];
