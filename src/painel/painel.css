@@ -4198,3 +4198,24 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ce-mod-info .ea-lib-ok, .ce-mod-info > :first-child { white-space: nowrap; }
 @media (max-width: 1200px) { .ce-mod .cs-ed-pe { flex-wrap: wrap; } }
 .ce-mod .ce-falta { white-space: nowrap; }
+
+/* Categoria: publicar e liberação */
+.ce-lib-cat { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.ce-lib-cat > b { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+.ce-lib-cat > b svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.ce-lib-op { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ce-lib-op label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.ce-lib-op .campo { height: 34px; width: 200px; padding: 0 8px; font-size: 13px; }
+.ce-lib-op .campo:disabled { opacity: .45; }
+.ce-pub, .kc-pub { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px; color: #9a5b16; background: #fdf0de; border: 1px solid #f0d9b5; }
+.ce-pub.ok, .kc-pub.ok { color: #2f6b3a; background: #e7f3e9; border-color: #cfe6d3; }
+.kc-pub { cursor: pointer; font-family: inherit; }
+.kc-pub:hover { filter: brightness(.97); }
+.ce-publicar svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.ce-cat-pe .kx-pe-in { flex-wrap: wrap; row-gap: 10px; }
+/* Lista de categorias: capa inteira (16:9), sem cortar */
+@media (min-width: 641px) {
+  .kc-lista .cur-card { grid-template-columns: 340px minmax(0, 420px) auto; }
+  .kc-lista .cur-capa { aspect-ratio: 16 / 9 !important; align-self: center; margin: 12px 0 12px 12px; border-radius: 10px !important; overflow: hidden; }
+  .kc-lista .kc-bts3 { grid-template-columns: repeat(2, 150px) auto; align-items: center; }
+}
