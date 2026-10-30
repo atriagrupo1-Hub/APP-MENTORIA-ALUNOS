@@ -12,6 +12,8 @@ export type Modulo = {
   rotulo?: string | null;
   /** Capa deitada (16:9) do "Comece por aqui" (0052). */
   capaHorizontalPath?: string | null;
+  /** Texto do botão do card (vazio = "Ver aulas"). */
+  botaoTexto?: string | null;
   /** Cor do módulo (#rrggbb), do painel: contorno, brilho e linha (0054). */
   cor?: string | null;
   /** Estilo escolhido no painel (0098): card, capa, botão e cards das aulas. */

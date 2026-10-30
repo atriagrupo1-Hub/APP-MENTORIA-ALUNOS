@@ -180,7 +180,7 @@ export function montar(raiz: HTMLElement) {
       .map((m, k) => {
         const vivo = cat.aoVivo[m.id];
         return {
-          id: m.id, num: m.semNumero ? "" : Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""),
+          id: m.id, num: m.semNumero ? "" : Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""), botao: (m.botaoTexto || "").trim(),
           capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length], estilo: limparEstilo(m.estilo),
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
@@ -483,7 +483,7 @@ export function montar(raiz: HTMLElement) {
         <button class="mc-cab" data-a="modulo" data-m="${m}"><span class="mc-rot">${rotIc}${h(md.rot)} ${md.num}</span><b class="mc-tit serif">${h(titulo(md.titulo))}</b></button>
         ${md.intro ? `<p class="mc-desc">${h(md.intro)}</p>` : ""}
         ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
-        ${t ? `<button class="ex-botao mc-ver-cheio ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}</button>` : `<p class="mc-meta">Aula será adicionada em breve</p>`}
+        ${t ? `<button class="ex-botao mc-ver-cheio ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : h(md.botao || "Ver aulas") + " (" + t + ")"}</button>` : `<p class="mc-meta">Aula será adicionada em breve</p>`}
       </div>
     ${!t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
       <button class="la-item${ea.fech ? " fechada" : ""}"${est(E, "aulas", "card")} data-a="aula" data-m="${m}" data-i="${i}">
@@ -519,8 +519,8 @@ export function montar(raiz: HTMLElement) {
           ${meta}
           ${n > 0 ? `<p class="mc-prog"><span class="barra"><i style="width:${(n / t) * 100}%"></i></span>${n === t ? "✓ Concluído" : n + " de " + t + " feitas"}</p>` : ""}
           ${irModulo
-            ? `<button class="ex-botao mc-ver-grande"${est(E, "botao", "botao")} data-a="modulo" data-m="${m}">Ver aulas</button>`
-            : t ? `<button class="mc-ver ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : "Ver aulas (" + t + ")"}<span aria-hidden="true">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
+            ? `<button class="ex-botao mc-ver-grande"${est(E, "botao", "botao")} data-a="modulo" data-m="${m}">${h(md.botao || "Ver aulas")}</button>`
+            : t ? `<button class="mc-ver ver-aulas"${est(E, "botao", "botao")} data-a="ver-aulas" data-m="${m}" aria-expanded="${aberto}">${aberto ? "Esconder aulas" : h(md.botao || "Ver aulas") + " (" + t + ")"}<span aria-hidden="true">${aberto ? "⌃" : "⌄"}</span></button>` : ""}
         </div>
       </div>
     ${irModulo || !t ? "" : `<div class="lista-aulas-mod${aberto ? " aberto" : ""}" id="la-${m}"><div class="la-in">${md.aulas.map((x, i) => { const ea = estadoAula(m, i); return `
@@ -2103,7 +2103,7 @@ export function montar(raiz: HTMLElement) {
       case "ver-aulas": {
         S.verAulas = S.verAulas || {}; const ab = (S.verAulas[d.m] = !S.verAulas[d.m]);
         const lista = document.getElementById("la-" + d.m), b = d._el;
-        if (lista && b) { lista.classList.toggle("aberto", ab); b.setAttribute("aria-expanded", ab); b.innerHTML = (ab ? "Esconder aulas" : "Ver aulas (" + MODS()[+d.m].aulas.length + ")") + '<span aria-hidden="true">' + (ab ? "⌃" : "⌄") + "</span>"; return; }
+        if (lista && b) { lista.classList.toggle("aberto", ab); b.setAttribute("aria-expanded", ab); b.innerHTML = (ab ? "Esconder aulas" : h(MODS()[+d.m].botao || "Ver aulas") + " (" + MODS()[+d.m].aulas.length + ")") + '<span aria-hidden="true">' + (ab ? "⌃" : "⌄") + "</span>"; return; }
         break;
       }
       case "voltar-aula-fim": delete S.modFim[S.mod]; render(); window.scrollTo({ top: 0 }); return;
