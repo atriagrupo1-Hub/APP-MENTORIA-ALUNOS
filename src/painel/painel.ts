@@ -3868,7 +3868,7 @@ export function montar(app: HTMLElement) {
   function configCurso(c: Curso) {
     const capa = previas["cur-" + c.id] || capaSite(c.capa);
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
-    const visC = (k: string, nome: string) => { const v = estCc(c)[k]; return `<div class="kx-est-l"><span><b>${h(nome)}</b><small>Borda, sombra e fundo.</small></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
+    const visC = (k: string, nome: string) => { const v = estCc(c)[k]; return `<div class="kx-est-l"><span><b>${h(nome)} ${dicaCampo(`Borda, sombra e fundo do ${nome.toLowerCase()}.`, "curso.vis." + k)}</b></span>${v ? `<em class="cfg-aul-on">Personalizado</em>` : `<em class="cfg-aul-pd">Padrão</em>`}<button type="button" class="se-abre" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><i style="background:${h(v?.fundo ? cssFundo(v.fundo) : "repeating-linear-gradient(135deg,#ddd 0 3px,#fff 3px 6px)")}"></i>Estilo</button></div>`; };
     const pino = (l: string) => `<em class="ce-pino" aria-hidden="true">${l}</em>`;
     const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab"><i class="ce-num" data-ce-num="${n}">${n}</i><h3>${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCurso(c);
@@ -3912,7 +3912,7 @@ export function montar(app: HTMLElement) {
                 <span class="cc-bt" data-ce-pino="D"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-cc="cardBotao">${h(c.cardBotao || S.config.telas.curBotao || "Ver curso")}</b><i aria-hidden="true">›</i></span>
               </div>
             </article><span class="ce-pinos"></span></div>
-            <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n">4</i>Visual <small>(opcional)</small></span><div class="kx-visual">${visC("card", "Card")}${visC("botao", "Botão")}</div></div>
+            <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n">4</i>Visual <small>(opcional)</small></span><div class="kx-visual ce-vis-lado">${visC("card", "Card")}${visC("botao", "Botão")}</div></div>
           </section>
         </div>
         <footer class="cs-ed-pe">
