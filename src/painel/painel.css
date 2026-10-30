@@ -4436,3 +4436,13 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .oc-sel-rot { display: none; }
 .ce .oc-sel-rot { display: block; }
 .ce-cab-n h3 { flex: none !important; }
+/* 5. Publicação e liberação (curso e categoria) */
+.ce-pl { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ce-pl .cs-campo { margin: 0; }
+.ce-pl .cs-campo > span { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--texto-2); }
+.ce-pl select.campo { height: 42px; }
+.ce-pl .ce-pl-data { grid-column: 1 / -1; height: 42px; }
+.ce-pl .ce-pl-data[hidden] { display: none; }
+@media (max-width: 700px) { .ce-pl { grid-template-columns: 1fr; } }
+.ce-pe2 { flex-wrap: wrap; }
+.ce-pe2 .ce-falta { flex: 1; min-width: 160px; white-space: normal !important; }
