@@ -3938,8 +3938,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const r0 = bx.querySelector<HTMLElement>("[data-pm-res]")!; r0.className = "pm-res " + cls + (r0.dataset.so ? " pm-res-so" : "");
     r0.innerHTML = `<b>${h(t)}</b><dl><dt>Data de criação:</dt><dd>${dia(criado)}</dd><dt>Data de publicação:</dt><dd>${pubEm === "ao salvar" ? "Ao salvar" : pubEm ? dia(pubEm) : "—"}</dd><dt>Data de liberação:</dt><dd>${h(libTx)}</dd></dl>`;
   }
-  /** Por enquanto, a nova publicação/liberação vale só no Módulo 0 do curso Bênçãos Ilimitadas (em teste). */
-  const ehModTeste = (m: Modulo) => m.id === "76e20306-7f78-4502-8633-918f3e2d5f07";
+  /** A publicação/liberação nova (testada no Módulo 0) vale para todos os módulos e aulas. */
+  const ehModTeste = (_m: Modulo) => true;
   /** Módulo anterior no curso e a data em que a última aula dele foi liberada (para a regra "prazo"). */
   function anteriorDe(m: Modulo) {
     const x = acharModulo(m.id); if (!x || x.i < 1) return null;
