@@ -4606,3 +4606,9 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 @media (max-width: 760px) { .pm-res-so dl { grid-template-columns: auto 1fr; } }
 .pm-bts { display: flex; gap: 10px; } .pm-bts[hidden] { display: none; }
 .cv-pub { grid-column: 1 / -1; } .cv-pub .pm { margin: 0; }
+.pm-aula { margin-top: 0; } .pm-aula .pm { margin: 0; } .pm-aula .pm-grade { grid-template-columns: 1fr 1fr; } .pm-aula .pm-col:nth-child(2) { border-right: 0; } .pm-aula .pm-col:nth-child(-n+2) { border-bottom: 1px solid var(--linha-suave); } .pm-aula .pm-res-so dl { grid-template-columns: auto 1fr; }
+.pm-aula .pm-grade { grid-template-columns: 1fr 1fr; }
+.pm-aula .pm-col.pm-lib { grid-column: 1 / -1; border-right: 0; border-bottom: 1px solid var(--linha-suave); }
+.pm-aula .pm-col:last-child { grid-column: 1 / -1; }
+.pm-aula .pm-ops { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .pm-aula .pm-grade, .pm-aula .pm-ops { grid-template-columns: 1fr; } }
