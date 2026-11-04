@@ -57,7 +57,7 @@ type Opcao = {
   /** Ativa (a aluna vê), bloqueada (vê com cadeado e o aviso) ou desativada (não aparece) — 0097. */
   estado?: "ativo" | "bloqueado" | "desativado"; aviso?: string;
 };
-type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; botao: string; rascunho: boolean; liberaModo: string; liberaDias: number | null; estilo: Estilo | null; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; botao: string; rascunho: boolean; publicadoEm: string; liberaModo: string; liberaDias: number | null; estilo: Estilo | null; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; catAba: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -261,7 +261,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto, rascunho, libera_modo, libera_dias").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto, rascunho, publicado_em, libera_modo, libera_dias").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id, publicado, bloqueado, aviso_bloqueio").not("aula_id", "is", null).order("ordem"),
@@ -333,7 +333,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", botao: m.botao_texto ?? "", rascunho: !!m.rascunho, liberaModo: m.libera_modo ?? "", liberaDias: m.libera_dias ?? null, estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", botao: m.botao_texto ?? "", rascunho: !!m.rascunho, publicadoEm: m.publicado_em ?? "", liberaModo: m.libera_modo ?? "", liberaDias: m.libera_dias ?? null, estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -3850,7 +3850,7 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
     const op = (v: string, t: string, dis = false) => `<label class="pm-op${dis ? " dis" : ""}"><input type="radio" name="libModo" value="${v}" form="formMod" ${modo === v ? "checked" : ""} ${dis ? "disabled" : ""} data-pm />${t}</label>`;
     const sel = (nome: string, ops: [string, string][], val: string) => `<select class="campo pm-sel" name="${nome}" form="formMod" data-pm>${ops.map(([v, t]) => `<option value="${v}" ${v === val ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
-      <section class="cs-cartao pm" data-pm-box data-criado="${h(m.libera && new Date(m.libera) <= new Date() ? m.libera : m.criado)}" data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant ? ant.ant.rot + " " + ant.num : "")}">
+      <section class="cs-cartao pm" data-pm-box data-criado="${h(m.criado)}" data-pub-em="${h(m.publicadoEm)}" data-era-pub="${!m.rascunho && m.pub ? "1" : ""}" data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant ? ant.ant.rot + " " + ant.num : "")}">
         <div class="pm-cab"><span class="pm-num">${numModulo(c, i)}</span><div><b>${h(m.rot)} ${numModulo(c, i)} — ${h(tituloApp(m.nome))}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></div><span class="pm-passo">4. Publicação e liberação</span></div>
         <div class="pm-grade">
           <div class="pm-col"><h4>${IC.pub}Publicação ${dicaCampo(`Não publicado: fica como rascunho; as alunas não veem nem acessam. Publicado: você escolhe o acesso.`, "pm.pub")}</h4>${sel("pubSel", [["1", "Publicado"], ["0", "Não publicado"]], m.rascunho ? "0" : "1")}</div>
@@ -3862,7 +3862,7 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
             <div class="pm-campo" data-pm-de="cadastro"><span>${IC.rel}Dias após o cadastro</span><span class="pm-dias"><input class="campo" type="number" min="0" max="3650" name="libDiasCad" form="formMod" value="${m.liberaModo === "cadastro" ? m.liberaDias ?? 7 : 7}" data-pm /> dias</span></div>
             ${!ant ? `<p class="pm-nota">Primeiro módulo do curso: não há módulo anterior para contar o prazo.</p>` : ""}
           </div>
-          <div class="pm-col"><h4>${IC.est}Resumo da liberação</h4><div class="pm-res" data-pm-res></div></div>
+          <div class="pm-col"><h4>${IC.est}Resumo do status</h4><div class="pm-res" data-pm-res></div></div>
         </div>
         <div class="pm-pe">
           <span class="pm-info">${IC.tag}<b>Categorias:</b> ${naCategoria("modulo", m.id)}</span>
@@ -3891,21 +3891,26 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
     const val = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | RadioNodeList | null)?.value || "";
     const pub = val("pubSel") === "1", acc = val("accSel"), modo = val("libModo") || "imediato";
     const accSel = bx.querySelector<HTMLSelectElement>('select[name="accSel"]')!; accSel.hidden = !pub; bx.querySelector<HTMLElement>(".pm-rasc")!.hidden = pub;
-    const lib = bx.querySelector<HTMLElement>(".pm-lib")!; lib.classList.toggle("pm-off", !pub || acc !== "ativo");
+    const libBox = bx.querySelector<HTMLElement>(".pm-lib")!; libBox.classList.toggle("pm-off", !pub || acc !== "ativo");
     bx.querySelectorAll<HTMLElement>("[data-pm-de]").forEach((x) => { x.hidden = x.dataset.pmDe !== modo; });
     bx.querySelectorAll<HTMLElement>(".pm-op").forEach((x) => x.classList.toggle("on", !!x.querySelector<HTMLInputElement>("input:checked")));
-    let t = "", sub = "", cls = "ok";
-    if (!pub) { t = "Não publicado • Rascunho"; sub = "As alunas não veem nem acessam."; cls = "off"; }
-    else if (acc === "bloqueado") { t = "Publicado • Bloqueado"; sub = "A aluna vê com cadeado, mas não acessa."; cls = "am"; }
-    else if (acc === "desativado") { t = "Publicado • Oculto"; sub = "A aluna não vê nem acessa."; cls = "off"; }
+    const dia = (x: string) => (x ? br(diaDe(x)) : "—");
+    const criado = bx.dataset.criado || "";
+    // Publicação: a gravada; se agora vai publicar (ainda não salvo), "ao salvar".
+    const pubEm = !pub || acc === "desativado" ? "" : bx.dataset.eraPub ? bx.dataset.pubEm || "" : "ao salvar";
+    let t = "", cls = "ok", libTx = "—";
+    if (!pub) { t = "Não publicado • Rascunho"; cls = "off"; libTx = "Não liberado (rascunho)"; }
+    else if (acc === "bloqueado") { t = "Publicado • Bloqueado"; cls = "am"; libTx = "Sem liberação enquanto estiver bloqueado"; }
+    else if (acc === "desativado") { t = "Publicado • Oculto"; cls = "off"; libTx = "Não liberado (oculto)"; }
     else {
       const dias = (n: string) => Number(val(n)) || 0;
-      if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); sub = a ? "Após a última aula do " + bx.dataset.antNome + " (" + br(diaDe(a)) + "): libera em " + br(diaDe(new Date(new Date(a).getTime() + d * 864e5).toISOString())) + "." : "Aguardando a liberação do módulo anterior."; }
-      else if (modo === "data") { const dt = val("libera"); t = "Publicado • Liberado " + (dt ? "em " + dataHoraCurta(new Date(dt).toISOString()) : "(escolha a data)"); sub = "Para todas as alunas, inclusive as que entrarem depois."; }
-      else if (modo === "cadastro") { t = "Publicado • Liberado " + p(dias("libDiasCad"), "dia", "dias") + " após o cadastro"; sub = "Contados do cadastro de cada aluna, entrando no app ou não."; }
-      else { const cr = bx.dataset.criado || ""; t = "Publicado • Liberado imediatamente"; sub = cr ? "Liberado desde " + br(diaDe(cr)) + " (data de criação), para as alunas com acesso." : "Disponível agora para as alunas com acesso."; }
+      if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); libTx = a ? dia(new Date(new Date(a).getTime() + d * 864e5).toISOString()) + " (" + p(d, "dia", "dias") + " após o " + bx.dataset.antNome + ")" : "Aguardando o módulo anterior"; }
+      else if (modo === "data") { const dt = val("libera"); t = "Publicado • Liberado na data"; libTx = dt ? dataHoraCurta(new Date(dt).toISOString()) : "Escolha a data"; }
+      else if (modo === "cadastro") { const d = dias("libDiasCad"); t = "Publicado • Liberado após o cadastro"; libTx = p(d, "dia", "dias") + " após o cadastro de cada aluna"; }
+      else { t = "Publicado • Liberado imediatamente"; libTx = pubEm === "ao salvar" ? "Ao salvar (imediata)" : dia(pubEm || criado) + " (imediata)"; }
     }
-    const r = bx.querySelector<HTMLElement>("[data-pm-res]")!; r.className = "pm-res " + cls; r.innerHTML = `<b>${h(t)}</b><span>${h(sub)}</span>`;
+    const r0 = bx.querySelector<HTMLElement>("[data-pm-res]")!; r0.className = "pm-res " + cls;
+    r0.innerHTML = `<b>${h(t)}</b><dl><dt>Data de criação:</dt><dd>${dia(criado)}</dd><dt>Data de publicação:</dt><dd>${pubEm === "ao salvar" ? "Ao salvar" : pubEm ? dia(pubEm) : "—"}</dd><dt>Data de liberação:</dt><dd>${h(libTx)}</dd></dl>`;
   }
   /** Módulo anterior no curso e a data em que a última aula dele foi liberada (para a regra "prazo"). */
   function anteriorDe(m: Modulo) {

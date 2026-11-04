@@ -4590,3 +4590,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-pe .pm-info svg { stroke: #b98d43; }
 @media (max-width: 1150px) { .pm-grade { grid-template-columns: 1fr 1fr; } .pm-col:nth-child(2) { border-right: 0; } .pm-col:nth-child(-n+2) { border-bottom: 1px solid var(--linha-suave); } }
 @media (max-width: 640px) { .pm-grade { grid-template-columns: 1fr; } .pm-col { border-right: 0; border-bottom: 1px solid var(--linha-suave); } }
+.pm-res dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin: 4px 0 0; font-size: 13px; }
+.pm-res dt { color: var(--texto-2); }
+.pm-res dd { margin: 0; font-weight: 700; color: var(--texto); }
