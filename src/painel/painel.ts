@@ -43,6 +43,8 @@ type Aula = {
   liberadaEm: string;
   /** Nome antes do número: "Aula", "Episódio"… (0064). */
   rot: string;
+  /** Publicação separada do acesso e formas de liberação (0118). */
+  rascunho: boolean; publicadoEm: string; liberaModo: string; liberaDias: number | null;
   /** Data de liberação da aula para todas; vazio = sem data própria (0066). */
   libera: string;
   /** Vídeo, áudio ou PDF (e-book); áudio e PDF guardam o caminho do arquivo (0067). */
@@ -323,6 +325,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
       texto: a.texto ?? "",
       resumo: "resumo" in a ? a.resumo ?? "" : null, exercicio: "exercicio" in a ? a.exercicio ?? "" : null,
       acesso: a.bloqueado_geral ? "bloqueada" : a.liberada_geral ? "liberada" : "padrao",
+      rascunho: !!a.rascunho, publicadoEm: a.publicado_em ?? "", liberaModo: a.libera_modo ?? "", liberaDias: a.libera_dias ?? null,
       extras: extrasDa.get(a.id) ?? [], criado: a.criada_em ?? "", duracao: Number(a.duracao_segundos) || 0,
       num: Number(a.numero) || 0, semNum: !!a.sem_numero, pub: a.publicado !== false, liberadaEm: a.liberada_em ?? "", rot: (a.rotulo ?? "").trim() || "Aula", libera: a.libera_em ?? "",
       tipo: a.tipo === "audio" || a.tipo === "pdf" ? a.tipo : "video", arquivo: a.arquivo_path ?? "",
@@ -3845,7 +3848,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     pintarPassosEm(raiz, passosMod(x.m));
   }
   /** Item 4 do Editar módulo (primeiro módulo): publicação, acesso, como liberar e o resumo; tudo grava ao Salvar módulo. */
-  type PubOpts = { form: string; num: string; quem: string; criado: string; publicadoEm: string; rascunho: boolean; pub: boolean; bloq: boolean; libera: string; liberaModo: string; liberaDias: number | null; ant: { data: string; nome: string } | null; semPrazo: string; cats: string[] };
+  type PubOpts = { extra?: string; form: string; num: string; quem: string; criado: string; publicadoEm: string; rascunho: boolean; pub: boolean; bloq: boolean; libera: string; liberaModo: string; liberaDias: number | null; ant: { data: string; nome: string } | null; semPrazo: string; cats: string[] };
   /** Item "Publicação e liberação" (módulo e curso): publicação, acesso, como liberar e o resumo; grava ao Salvar. */
   function blocoPub(o: PubOpts) {
     const ant = o.ant, e = estado3(o.pub, o.bloq), F = o.form;
@@ -3855,7 +3858,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const sel = (nome: string, ops: [string, string][], val: string) => `<select class="campo pm-sel" name="${nome}" form="${F}" data-pm>${ops.map(([v, t]) => `<option value="${v}" ${v === val ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
       <section class="cs-cartao pm" data-pm-box data-form="${F}" data-criado="${h(o.criado)}" data-pub-em="${h(o.publicadoEm)}" data-era-pub="${!o.rascunho && o.pub ? "1" : ""}" data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant?.nome || "")}">
-        <div class="ce-cab ce-cab-n pm-cab"><h3>${o.num}. Publicação e liberação</h3>${dicaCampo(`Publicação, acesso e quando ${o.quem} libera para as alunas. Grava ao clicar em Salvar.`, "pm.passo")}${ui.pmEditar ? "" : `<button type="button" class="al-botao pm-alterar" data-a="pm-editar">${IC_CURSO.lapis}Alterar</button>`}</div>
+        <div class="ce-cab ce-cab-n pm-cab"><h3>${o.num ? o.num + ". " : ""}Publicação e liberação</h3>${dicaCampo(`Publicação, acesso e quando ${o.quem} libera para as alunas. Grava ao clicar em Salvar.`, "pm.passo")}${ui.pmEditar ? "" : `<button type="button" class="al-botao pm-alterar" data-a="pm-editar">${IC_CURSO.lapis}Alterar</button>`}</div>
         ${ui.pmEditar ? "" : `<div class="pm-res pm-res-so" data-pm-res data-so="1"></div>`}
         <div class="pm-grade"${ui.pmEditar ? "" : " hidden"}>
           <div class="pm-col"><h4>${IC.pub}Publicação ${dicaCampo(`Não publicado: fica como rascunho; as alunas não veem nem acessam. Publicado: você escolhe o acesso.`, "pm.pub")}</h4>${sel("pubSel", [["1", "Publicado"], ["0", "Não publicado"]], o.rascunho ? "0" : "1")}</div>
@@ -3871,6 +3874,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
         </div>
         <div class="pm-pe">
           <span class="pm-info">${IC.tag}<b>Categorias:</b> ${o.cats.length ? o.cats.map((n) => `<span class="pm-cat">${h(n)}</span>`).join("") : `<em class="pm-sem">Nenhuma categoria</em>`}</span>
+          ${o.extra || ""}
           <span class="ce-falta" data-ce-falta></span>
           <span class="pm-bts"${ui.pmEditar ? "" : " hidden"}><button type="button" class="al-botao" data-a="pm-cancelar">Cancelar</button><button type="submit" form="${F}" class="al-botao-ouro">${IC_SALVAR}Salvar</button></span>
         </div>
@@ -3884,6 +3888,11 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   function blocoPubCurso(c: Curso) {
     const cats = [...new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
     return blocoPub({ form: "formCurso", num: "5", quem: "o curso", criado: c.criado, publicadoEm: c.publicadoEm, rascunho: c.rascunho, pub: c.visivel, bloq: c.bloq, libera: c.libera, liberaModo: c.liberaModo, liberaDias: c.liberaDias, ant: null, semPrazo: "-", cats });
+  }
+  function blocoPubAula(c: Curso, m: Modulo, a: Aula) {
+    const i = m.aulas.indexOf(a), ant = i > 0 ? m.aulas[i - 1] : null;
+    const cats = [...new Set(S.catItens.filter((x) => (x.tipo === "curso" && x.item === c.id) || (x.tipo === "modulo" && x.item === m.id) || (x.tipo === "aula" && x.item === a.id)).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
+    return `<div class="pm-aula">${blocoPub({ form: "formAula", num: "", quem: "a aula", criado: a.criado, publicadoEm: a.publicadoEm, rascunho: a.rascunho, pub: a.pub, bloq: a.acesso === "bloqueada", libera: a.libera, liberaModo: a.liberaModo, liberaDias: a.liberaDias, ant: ant ? { data: ant.libera || ant.liberadaEm, nome: (ant.rot || "Aula") + " " + ant.num } : null, semPrazo: "Primeira aula do módulo: não há aula anterior para contar o prazo.", cats, extra: `<span class="pm-info"><b>Liberação para alunas:</b> ${botaoLiberacao(a)}</span>` })}</div>`;
   }
   /** Por enquanto, a nova publicação/liberação do curso vale só no Bênçãos Ilimitadas (em teste). */
   const ehCursoTeste = (c: Curso) => c.id === "72894a27-1b7a-4c1f-8f0b-fdd765aa075d";
@@ -3919,7 +3928,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     else if (acc === "desativado") { t = "Publicado • Oculto"; cls = "off"; libTx = "Não liberado (oculto)"; }
     else {
       const dias = (n: string) => Number(val(n)) || 0;
-      if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); libTx = a ? dia(new Date(new Date(a).getTime() + d * 864e5).toISOString()) + " (" + p(d, "dia", "dias") + " após o " + bx.dataset.antNome + ")" : "Aguardando o módulo anterior"; }
+      if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); libTx = a ? dia(new Date(new Date(a).getTime() + d * 864e5).toISOString()) + " (" + p(d, "dia", "dias") + " após o " + bx.dataset.antNome + ")" : "Aguardando a liberação " + (bx.dataset.form === "formAula" ? "da aula anterior" : "do módulo anterior") + " (sem data)"; }
       else if (modo === "data") { const dt = val("libera"); t = "Publicado • Liberado na data"; libTx = dt ? dataHoraCurta(new Date(dt).toISOString()) : "Escolha a data"; }
       else if (modo === "cadastro") { const d = dias("libDiasCad"); t = "Publicado • Liberado após o cadastro"; libTx = p(d, "dia", "dias") + " após o cadastro de cada aluna"; }
       else { t = "Publicado • Liberado imediatamente"; libTx = pubEm === "ao salvar" ? "Ao salvar (imediata)" : dia(pubEm || criado) + " (imediata)"; }
@@ -4608,7 +4617,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
           <form id="formExtra" data-f="extra-add" data-id="${a.id}" hidden></form>
 
-          <section class="cs-cartao ea-config">
+          ${ehModTeste(m) ? blocoPubAula(c, m, a) : `          <section class="cs-cartao ea-config">
             <div class="mp-cab"><span class="mp-cab-ic">${IC_ENGR}</span><div><h3>Configurações</h3></div></div>
             <div class="ea-config-grade">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">${IC_CUR.cal}Data de liberação (opcional) ${dicaCampo(AJ.liberaAula)}</span><input type="datetime-local" class="campo" name="libera" form="formAula" value="${h(dataLocal(a.libera))}" /></label>
@@ -4618,7 +4627,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Liberação</span>${botaoLiberacao(a)}</div>
             <div class="ea-lib"><span class="rotulo-ajuda mp-rot">Também nas categorias</span>${naCategoria("aula", a.id)}</div>
             
-          </section>
+          </section>`}
         </div>
       </div>
 
@@ -6484,7 +6493,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0); break; }
-      case "aula-voltar-modulo": {
+      case "aula-voltar-modulo": { ui.pmEditar = false;
         const rasc = ui.novaAula && ui.novaAula === ui.aula ? ui.novaAula : ""; ui.novaAula = "";
         ui.modPagina = d.id; ui.tab = "curso"; ui.aula = null; window.scrollTo(0, 0);
         if (rasc) { void executar(async () => { falhou(await supabase.from("aulas").delete().eq("id", rasc).select("id")); return "Aula nova descartada."; }); return; }
@@ -7464,7 +7473,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (ex) extrasAula.exercicio = ex.value.trim() ? ex.value : null;
         }
         void executar(async () => {
-          falhou(await supabase.from("aulas").update({ ...base, ...botaoEb, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
+          falhou(await supabase.from("aulas").update({ ...base, ...(form.elements.namedItem("pubSel") ? pubLibMod(form) : {}), ...botaoEb, capa_path: v("capa") || null, texto: texto.trim() ? texto : null, ...extrasAula }).eq("id", id).select("id").single());
           for (const o of opcoes) {
             if (o.id) falhou(await supabase.from("conteudos").update(o.dados).eq("id", o.id).select("id").single());
             else falhou(await supabase.from("conteudos").insert({ ...o.dados, produto_id: xa.c.id, aula_id: id, opcao: true, publicado: true }).select("id").single());
@@ -7479,7 +7488,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(video), video_ref: ref }));
           else falhou(await supabase.from("aula_midia").delete().eq("aula_id", id));
           delete previas[id];
-          return {
+          ui.pmEditar = false; return {
             msg: "Aula salva.", texto: "conteúdo da aula " + x0.nome,
             desfazer: async () => {
               if (mudouStatus) await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: ativa });
@@ -7747,7 +7756,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
     if ((e.target as HTMLElement).hasAttribute?.("data-pm")) pintarPubMod();
     // Editar módulo: Salvar e Cancelar só aparecem quando algo muda.
-    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formMod, #formCurso") || ti.getAttribute?.("form") === "formMod" || ti.getAttribute?.("form") === "formCurso") document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); }
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formMod, #formCurso, #formAula") || ["formMod", "formCurso", "formAula"].includes(ti.getAttribute?.("form") || "")) document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); }
     // Editar módulo: a prévia acompanha os textos.
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.ceAlvo; if (k && ti.closest?.("#formMod")) { const el = document.querySelector<HTMLElement>(`[data-mpv="${k}"]`); if (el) { const num = (ti.form?.elements.namedItem("numero") as HTMLInputElement | null)?.value ?? ""; el.textContent = k === "mrot" ? (ti.value + " " + num).trim() : k === "mbot" ? ti.value || "Ver aulas" : k === "mtit" ? tituloApp(ti.value) : ti.value; if (k === "mdesc") el.hidden = !ti.value.trim(); } } if (ti.closest?.("#formMod")) pintarPassosMod(); }
     const t = e.target as HTMLInputElement;
