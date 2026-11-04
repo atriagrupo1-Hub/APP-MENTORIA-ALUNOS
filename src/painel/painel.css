@@ -4494,3 +4494,19 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ma-barra .cs-mods-busca .campo { border-radius: 999px; }
 @media (max-width: 640px) { .ma-cab { flex-direction: column; } .ma-cab .al-botao-ouro { width: 100%; } .ma-chips small { margin-left: 0; width: 100%; } }
 .ma-cab h2 { display: flex; align-items: center; gap: 8px; }
+
+/* Seleção múltipla de módulos */
+.ms-todos { display: inline-flex; align-items: center; gap: 10px; margin: 0 0 10px 16px; font-size: 14px; cursor: pointer; }
+.ms-todos input, .ms-ck input { width: 20px; height: 20px; accent-color: #b98d43; cursor: pointer; }
+.ms-ck { flex: none; display: grid; place-items: center; cursor: pointer; }
+.ms-barra { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; padding: 12px 16px; background: #f3ead6; border: 1px solid #e3d2a8; border-radius: 12px; }
+.ms-qtd { display: inline-flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 700; }
+.ms-qtd i { display: grid; place-items: center; width: 22px; height: 22px; font-style: normal; font-size: 13px; color: #fff; background: #b98d43; border-radius: 5px; }
+.ms-bts { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ms-bts .al-botao { min-height: 36px; height: 36px; padding: 0 14px; gap: 6px; background: #fff; }
+.ms-bts svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.ms-bts .ms-ativar { color: #fff; background: #3f7d4a; border-color: #3f7d4a; }
+.ms-bts .ms-excluir { color: var(--aa-verm, #b8352d); border-color: #e2a9a3; }
+.ms-sep { width: 1px; height: 26px; background: #d9c8a0; }
+.cs-mods .cs-mod.ms-on { background: #fbf4e4; border-color: #e3d2a8; }
+@media (max-width: 760px) { .ms-bts { margin-left: 0; } .ms-sep { display: none; } }
