@@ -3895,7 +3895,7 @@ export function montar(app: HTMLElement) {
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
-              ${i === 0 ? seletorPub(m) : ""}${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}
+              <span class="mest">${i === 0 ? seletorPub(m) : ""}${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
                 <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
