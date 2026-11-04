@@ -3873,8 +3873,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
             return ns.length ? ns.map((n) => `<span class="pm-cat">${h(n)}</span>`).join("") : `<em class="pm-sem">Nenhuma categoria</em>`;
           })()}</span>
           <span class="ce-falta" data-ce-falta></span>
-          <button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button>
-          <button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button>
+          <span class="pm-bts"${ui.pmEditar ? "" : " hidden"}><button type="button" class="al-botao" data-a="pm-cancelar">Cancelar</button><button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar</button></span>
         </div>
       </section>`;
   }
@@ -6322,8 +6321,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       case "curso-capa-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="curso-config"]'); const c2 = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c2) c2.value = ""; delete previas["cur-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="cur-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosCurso(); toast("Capa tirada. Clique em Salvar para guardar."); return; }
       case "mod-capa-v": imgPara = alvoCapa("modv", d.id); arquivoImg.click(); return;
       case "mod-capa-h": imgPara = alvoCapa("modh", d.id); arquivoImg.click(); return;
-      case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modv-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
-      case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modh-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
+      case "mod-capa-v-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capa"]'); if (c) c.value = ""; delete previas["modv-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modv-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
+      case "mod-capa-h-tirar": { const f = document.querySelector<HTMLFormElement>('form[data-f="mod-renomear"][data-id="' + d.id + '"]'); const c = f?.querySelector<HTMLInputElement>('input[name="capaH"]'); if (c) c.value = ""; delete previas["modh-" + d.id]; document.querySelectorAll<HTMLElement>('[data-previa="modh-' + d.id + '"]').forEach((pv) => { pv.innerHTML = ""; }); pintarPassosMod(); document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); toast("Capa tirada. Clique em Salvar módulo para guardar."); return; }
       case "al-pag": ui.paginaAl = Number(d.v) || 1; window.scrollTo(0, 0); break;
       case "cat-ver": if (ui.catVer.has(d.id)) ui.catVer.delete(d.id); else ui.catVer.add(d.id); break;
       case "cat-abrir-editar": ui.catEditar = d.id; ui.catAnima = true; break;
@@ -6411,6 +6410,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       }
       case "mods-sel-limpar": ui.modSel.clear(); break;
       case "pm-editar": ui.pmEditar = true; break;
+      case "pm-cancelar": ui.pmEditar = false; ui.sujo = null; break;
       case "mod-lib-abrir": ui.estMenu = ""; ui.modal = { tipo: "modLib", id: d.id! }; break;
       case "mod-pub": {
         const x = acharModulo(d.id!); if (!x) return; const rasc = d.v !== "1"; ui.estMenu = "";
@@ -7628,8 +7628,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
 
   /* ---------- alterações não salvas ---------- */
   const NAO_RASTREIA = new Set(["entrar", "confirmar", "lote"]);
-  const CANCELA = new Set(["fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
-  const LIVRE = new Set(["catx-publicar", "curso-est", "curso-previa", "catx-est", "catx-previa", "catx-imagem", "pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
+  const CANCELA = new Set(["pm-cancelar", "fechar", "cancelar-edicao", "curso-cancelar", "aula-add-cancelar", "com-responder-cancelar", "voltar-sem-salvar"]);
+  const LIVRE = new Set(["pm-editar", "catx-publicar", "curso-est", "curso-previa", "catx-est", "catx-previa", "catx-imagem", "pv-notif", "apar-cores-tema", "apar-img", "apar-img-tirar", "mb-icone", "mb-vis", "mb-remover", "mb-editar", "cfg-previa", "cfg-modelo", "cfg-salvar", "cfg-banner-img", "cfg-banner-tirar", "cfg-logo-img", "cfg-logo-tirar", "escolher-capa", "enviar-arquivo", "gerar-codigo", "tema", "ajuda", "extra-tipo", "preencher-datas"]);
   function marcarSujo(t: HTMLElement) {
     const fm = t.closest?.<HTMLFormElement>("form[data-f]");
     if (fm && !NAO_RASTREIA.has(fm.dataset.f!)) ui.sujo = { f: fm.dataset.f!, id: fm.dataset.id || "" };
@@ -7734,6 +7734,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     if ((e.target as HTMLElement).closest?.("#formCurso")) pintarPassosCurso();
     if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
     if ((e.target as HTMLElement).hasAttribute?.("data-pm")) pintarPubMod();
+    // Editar módulo: Salvar e Cancelar só aparecem quando algo muda.
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formMod") || ti.getAttribute?.("form") === "formMod") document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); }
     // Editar módulo: a prévia acompanha os textos.
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.ceAlvo; if (k && ti.closest?.("#formMod")) { const el = document.querySelector<HTMLElement>(`[data-mpv="${k}"]`); if (el) { const num = (ti.form?.elements.namedItem("numero") as HTMLInputElement | null)?.value ?? ""; el.textContent = k === "mrot" ? (ti.value + " " + num).trim() : k === "mbot" ? ti.value || "Ver aulas" : k === "mtit" ? tituloApp(ti.value) : ti.value; if (k === "mdesc") el.hidden = !ti.value.trim(); } } if (ti.closest?.("#formMod")) pintarPassosMod(); }
     const t = e.target as HTMLInputElement;
@@ -7950,7 +7952,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
         const campo = document.querySelector<HTMLInputElement>(alvo.form + ' input[name="' + alvo.campo + '"]');
         if (campo) campo.value = caminho;
         document.querySelectorAll<HTMLElement>('[data-previa="' + alvo.previa + '"]').forEach((pv) => { pv.innerHTML = '<img src="' + previas[alvo.previa] + '" alt="" />'; });
-        toast("Imagem pronta. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod();
+        toast("Imagem pronta. Clique em Salvar para guardar."); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden");
       } catch (e) { toast(motivo(e)); }
     })();
   }
