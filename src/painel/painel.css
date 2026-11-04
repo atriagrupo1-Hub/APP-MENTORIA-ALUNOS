@@ -4629,3 +4629,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .nov-item ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
 .nov .rodape-modal { justify-content: flex-end; }
 .nov-item ul { list-style: disc; } .nov-item li { margin: 2px 0; }
+.kg-vis { gap: 6px; } .kg-vis .est3-menu { left: 0; right: auto; }
