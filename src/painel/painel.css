@@ -4524,3 +4524,20 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .mpub-pil.on { color: #2f4ea3; background: #e6ecfb; }
 .cs-mod-linha .mest { width: 360px; justify-content: flex-end; }
 @media (max-width: 900px) { .cs-mod-linha .mest { width: auto; } }
+/* Acesso do módulo (Rascunho / Liberado / Bloqueado / Oculto) e janela de liberação */
+.est3-pil.macc-rasc { color: #5c564c; background: #ece8e1; cursor: default; }
+.est3-pil > svg:last-child { width: 13px; height: 13px; }
+.ml { display: flex; flex-direction: column; gap: 10px; min-width: min(520px, 86vw); }
+.ml-trilha { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--texto-2); }
+.ml-q { margin: 4px 0 0; font-weight: 700; font-size: 14px; }
+.ml-op { display: flex; align-items: center; gap: 10px; padding: 6px 2px; font-size: 15px; cursor: pointer; }
+.ml-op input { width: 18px; height: 18px; accent-color: #b98d43; }
+.ml-op.dis { opacity: .45; cursor: not-allowed; }
+.ml-nota { margin: -6px 0 0 30px; font-size: 12.5px; color: var(--texto-3); }
+.ml-campo { display: flex; flex-direction: column; gap: 6px; margin: 0 0 4px 30px; padding: 12px; background: #faf8f4; border: 1px solid var(--linha-suave); border-radius: 10px; }
+.ml-campo[hidden] { display: none; }
+.ml-campo > span:first-child { font-size: 13px; font-weight: 700; }
+.ml-campo em { font-style: normal; font-size: 12.5px; color: var(--texto-2); }
+.ml-dias { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.ml-dias .campo { width: 90px; }
+.ml .rodape-modal { justify-content: flex-end; gap: 10px; }
