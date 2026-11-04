@@ -4593,3 +4593,5 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-res dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; margin: 4px 0 0; font-size: 13px; }
 .pm-res dt { color: var(--texto-2); }
 .pm-res dd { margin: 0; font-weight: 700; color: var(--texto); }
+.pm-cat { padding: 4px 12px; font-size: 13px; font-weight: 600; background: #f1ece2; border: 1px solid var(--linha-suave); border-radius: 999px; }
+.pm-sem { font-style: normal; color: var(--texto-3) !important; font-weight: 400 !important; }

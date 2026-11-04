@@ -3865,8 +3865,12 @@ ${ehModTeste(m) ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
           <div class="pm-col"><h4>${IC.est}Resumo do status</h4><div class="pm-res" data-pm-res></div></div>
         </div>
         <div class="pm-pe">
-          <span class="pm-info">${IC.tag}<b>Categorias:</b> ${naCategoria("modulo", m.id)}</span>
-          <span class="pm-info">${IC_CUR.cal}<b>Data de criação:</b> <em>${m.criado ? br(diaDe(m.criado)) : "—"}</em></span>
+          <span class="pm-info">${IC.tag}<b>Categorias:</b> ${(() => {
+            // A categoria do curso (o módulo está dentro dele) e as que tiverem o módulo direto.
+            const ids = new Set(S.catItens.filter((x) => (x.tipo === "curso" && x.item === c.id) || (x.tipo === "modulo" && x.item === m.id)).map((x) => x.cat));
+            const ns = [...ids].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
+            return ns.length ? ns.map((n) => `<span class="pm-cat">${h(n)}</span>`).join("") : `<em class="pm-sem">Nenhuma categoria</em>`;
+          })()}</span>
           <span class="ce-falta" data-ce-falta></span>
           <button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button>
           <button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button>
