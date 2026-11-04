@@ -3953,6 +3953,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="mod-pub" data-id="${m.id}" data-v="0"><span class="mpub-pil off">Não publicado</span></button>
     </span>` : ""}</span>`;
   }
+  const VOLTA_KEY = "aion-painel-volta";
   /** Na aula (lista do módulo): Publicada / Não publicada, e o acesso — mesmo padrão do Módulo 0. */
   function seletorPubAula(a: Aula) {
     const k = "apub:" + a.id, pub = !a.rascunho;
@@ -5902,9 +5903,11 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "sugestoes": ui.modal = { tipo: "sugestoes" }; break;
       case "novidades": ui.modal = { tipo: "novidades" }; break;
       case "atualizar-dados": {
-        // Busca tudo de novo no Supabase e fica na mesma página.
-        if (ocupado || !eu) return; el?.classList.add("girando");
-        void (async () => { try { S = await lerTudo(eu!); toast("Dados atualizados."); } catch (e) { toast(motivo(e)); } render(); if (celReal && celReal.style.display !== "none") recarregarCel(); })();
+        // Recarrega o painel inteiro (pega a versão nova e os dados de agora) e volta para a mesma página.
+        // Só guarda onde estava, neste navegador e só até recarregar (sessionStorage).
+        el?.classList.add("girando");
+        try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, y: window.scrollY })); } catch { /* sem armazenamento: recarrega mesmo assim */ }
+        location.reload();
         return;
       }
       case "novidades-chave": {
@@ -8303,6 +8306,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       S = await dadosP;
+      // Voltou do botão Atualizar: abre a mesma página em que estava.
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
