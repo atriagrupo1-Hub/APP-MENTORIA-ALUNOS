@@ -3845,14 +3845,14 @@ export function montar(app: HTMLElement) {
   function modulosCurso(c: Curso) {
     const q = norm(ui.modBusca || "").trim();
     return `
-      <div class="cs-mods-barra">
+      <div class="ma-cab"><div><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2><p>Organize a sequência e o acesso aos conteúdos do curso.</p></div>
+        <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
+      <div class="ma-chips"><span><b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"}</span><span><b>${totalAulas(c)}</b> ${totalAulas(c) === 1 ? "aula" : "aulas"}</span><em>${c.modulos.length ? "Estrutura cadastrada" : "Sem módulos ainda"}</em><small>Arraste pela alça para mudar a ordem</small></div>
+      <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
-        <button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}">${IC_EXPANDIR}Expandir todos</button>
-        <button type="button" class="al-botao" data-a="mods-recolher">${IC_RECOLHER}Recolher todos</button>
-        <span style="flex:1"></span>
-        <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button>
+        <button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}">${IC_EXPANDIR}Expandir</button>
+        <button type="button" class="al-botao" data-a="mods-recolher">${IC_RECOLHER}Recolher</button>
       </div>
-      <div class="cs-mods-topo"><span class="cs-nota">${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")} · arraste pela alça para mudar a ordem ${dicaCampo(AJ.listaMods)}</span></div>
       ${ui.csAddMod ? `
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
         <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>

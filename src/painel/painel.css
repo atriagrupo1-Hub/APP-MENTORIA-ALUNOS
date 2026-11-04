@@ -4477,3 +4477,20 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cs-mods .cs-add-aula { margin-top: 10px; background: #fff; }
 .cs-mods .cs-mod-aulas .mp-aula-mais { padding-left: 128px; }
 @media (max-width: 900px) { .cs-mods .cs-mod-aulas { margin: 0 8px 10px; } .cs-mods .cs-mod-aulas .mp-aula-linha { grid-template-columns: auto 90px minmax(0, 1fr) auto; } .cs-mods .cs-mod-aulas .mp-aula-capa { width: 90px; } .cs-mods .cs-mod-aulas .mp-aula-mais { padding-left: 12px; } }
+
+/* Módulos e aulas: cabeçalho com título, contadores e barra de busca */
+.ma-cab { display: flex; align-items: flex-start; gap: 16px; margin: 4px 0 12px; }
+.ma-cab > div { flex: 1; min-width: 0; }
+.ma-cab h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; }
+.ma-cab p { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; font-size: 13.5px; color: var(--texto-2); }
+.ma-cab .al-botao-ouro svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+.ma-chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.ma-chips span { padding: 8px 14px; font-size: 15px; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 10px; }
+.ma-chips span b { font-weight: 700; }
+.ma-chips em { padding: 7px 12px; font-style: normal; font-size: 13px; color: #2f6b3a; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 10px; }
+.ma-chips small { margin-left: auto; font-size: 12.5px; color: var(--texto-3); }
+.ma-barra .cs-mods-busca { flex: 1 1 320px; max-width: none; }
+.ma-barra .al-botao { border-radius: 999px; }
+.ma-barra .cs-mods-busca .campo { border-radius: 999px; }
+@media (max-width: 640px) { .ma-cab { flex-direction: column; } .ma-cab .al-botao-ouro { width: 100%; } .ma-chips small { margin-left: 0; width: 100%; } }
+.ma-cab h2 { display: flex; align-items: center; gap: 8px; }
