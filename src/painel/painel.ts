@@ -20,6 +20,7 @@ import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
+import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
 
@@ -142,7 +143,7 @@ type Dados = {
   /** Foto de cada aluna (o recorte redondo), quando tem. */
   fotos: Record<string, string>;
   /** Configurações gerais e Destaques do Início (0052). */
-  config: { marcaTitulo: string; marcaSub: string; marcaTipo: string; marcaLogo: string; topoSaud: string; topoEstilo: Record<string, string>; fraseRetorno: string; saudacao: string; comece: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; estiloAula: Estilo | null; estiloInicio: Estilo | null; estiloPerfil: Estilo | null; estiloNotif: Estilo | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string; fonte: string } };
+  config: { novidades: boolean; marcaTitulo: string; marcaSub: string; marcaTipo: string; marcaLogo: string; topoSaud: string; topoEstilo: Record<string, string>; fraseRetorno: string; saudacao: string; comece: string; exibirDestaques: boolean; jornada: string; banner: string; bannerImg: string; bannerVideo: string; estilo: string; telas: Record<string, string>; perfBotoes: BotaoPerfil[]; menu: MenuCfg; aparencia: Aparencia | null; notif: NotifCfg; capaGuia: string; estiloAula: Estilo | null; estiloInicio: Estilo | null; estiloPerfil: Estilo | null; estiloNotif: Estilo | null; divisor: { exibir: boolean; texto: string; cor: string; linha: string; fonte: string } };
 
   versiculos: Versiculo[];
   destaques: Destaque[];
@@ -284,7 +285,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     supabase.from("historico_acoes").select("id, aluna_id, autor_id, autor_nome, quando, texto, ref_tipo, ref_id, contexto").order("quando", { ascending: false }).limit(1000),
     supabase.from("profiles").select("id, criada_em").eq("papel", "aluna"),
     Promise.resolve(null), // as fotos chegam depois (carregarFotos), para a tela abrir antes
-    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, cursos_rotulo, cursos_botao, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, vers_titulo, aparencia, notif, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
+    supabase.from("configuracoes").select("marca_titulo, marca_sub, frase_retorno, inicio_saudacao, exibir_destaques, produto_jornada, inicio_banner, inicio_banner_imagem, inicio_banner_video, inicio_estilo, modulos_titulo, modulos_titulo_estilo, modulos_progresso, modulos_layout, modulos_tamanho, modulos_formato, cursos_rotulo, cursos_botao, presentes_titulo, presentes_titulo_estilo, presentes_layout, presentes_estilo, perfil_titulo, perfil_saudacao, perfil_imagem, perfil_texto, perfil_layout, perfil_botoes, menu_botoes, menu_estilo, menu_cores, menu_tamanho, vers_exibir, vers_estilo, vers_posicao, vers_referencia, vers_fundo, vers_fonte, vers_tamanho, vers_cores, vers_titulo, aparencia, notif, novidades_ativas, capa_guia, inicio_divisor, marca_tipo, marca_logo, topo_saudacao, topo_estilo, inicio_comece, estilo_aula, estilo_inicio, estilo_perfil, estilo_notif, versao_geral").maybeSingle(),
     supabase.from("versiculos").select("id, texto, referencia, visivel").order("ordem").order("criado_em"),
     supabase.from("destaques_inicio").select("*").order("ordem").order("criado_em"),
     supabase.from("aulas_ao_vivo").select("modulo_id, data_hora"),
@@ -455,7 +456,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
         vCorTexto: (cd.vers_cores as Record<string, string> | null)?.texto ?? "", vCorBorda: (cd.vers_cores as Record<string, string> | null)?.borda ?? "", vCorFundo: (cd.vers_cores as Record<string, string> | null)?.fundo ?? "" },
       perfBotoes: Array.isArray(cd.perfil_botoes) ? (cd.perfil_botoes as BotaoPerfil[]) : [],
       aparencia: (cd.aparencia as Aparencia | null) ?? null,
-      notif: notifDe(cd.notif), capaGuia: String(cd.capa_guia ?? ""), estiloAula: limparEstilo(cd.estilo_aula), estiloInicio: limparEstilo(cd.estilo_inicio), estiloPerfil: limparEstilo(cd.estilo_perfil), estiloNotif: limparEstilo(cd.estilo_notif), divisor: divisorDe(cd.inicio_divisor),
+      notif: notifDe(cd.notif), novidades: cd.novidades_ativas === true, capaGuia: String(cd.capa_guia ?? ""), estiloAula: limparEstilo(cd.estilo_aula), estiloInicio: limparEstilo(cd.estilo_inicio), estiloPerfil: limparEstilo(cd.estilo_perfil), estiloNotif: limparEstilo(cd.estilo_notif), divisor: divisorDe(cd.inicio_divisor),
       menu: { botoes: Array.isArray(cd.menu_botoes) ? (cd.menu_botoes as BotaoMenu[]) : null, estilo: cd.menu_estilo ?? "padrao", cores: (cd.menu_cores as Record<string, string> | null) ?? null, tamanho: cd.menu_tamanho ?? "medio" } },
     geralRaw,
     versiculos: ((versos.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, texto: x.texto, ref: x.referencia, visivel: (x.visivel as unknown) !== false })),
@@ -526,7 +527,7 @@ export function montar(app: HTMLElement) {
   document.title = "Painel AION";
 
   let eu: Eu | null = null;
-  let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { marcaTitulo: "", marcaSub: "", marcaTipo: "texto", marcaLogo: "", topoSaud: "Bem-vindo(a), {nome_completo}", topoEstilo: {}, fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", comece: "Comece por aqui", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
+  let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { novidades: false, marcaTitulo: "", marcaSub: "", marcaTipo: "texto", marcaLogo: "", topoSaud: "Bem-vindo(a), {nome_completo}", topoEstilo: {}, fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", comece: "Comece por aqui", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
@@ -961,10 +962,13 @@ export function montar(app: HTMLElement) {
             <div id="buscaResultados">${resultadosBusca()}</div>
           </div>
           <button class="al-botao topo-sug" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
+          <button class="al-botao topo-atu" data-a="atualizar-dados" title="Buscar de novo os dados, sem sair desta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar</button>
+          ${S.config.novidades ? `<button class="al-botao topo-nov" data-a="novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>Novidades</button>` : ""}
           ${botaoTema()}
           <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
             <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
             <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
+            ${ehDono() ? `<button type="button" role="menuitem" data-a="novidades-chave" class="pf-nov">Botão Novidades<span class="pf-chave${S.config.novidades ? " on" : ""}">${S.config.novidades ? "Ativado" : "Desativado"}</span></button>` : ""}
             <span class="pf-sep"></span>
             <button type="button" role="menuitem" class="pf-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
           </span>` : ""}</span>
@@ -5553,6 +5557,14 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>
       </form>`;
+    } else if (m.tipo === "novidades") {
+      corpo = `
+      <div class="nov">
+        <h2 class="titulo">Novidades</h2>
+        <p class="explica">As últimas atualizações do painel.</p>
+        ${NOVIDADES.map((n) => `<section class="nov-item"><span class="nov-data">${br(n.data)}</span><h3>${h(n.titulo)}</h3><ul>${n.itens.map((t) => `<li>${h(t)}</li>`).join("")}</ul></section>`).join("")}
+        <div class="rodape-modal"><button type="button" class="al-botao-ouro" data-a="fechar">Fechar</button></div>
+      </div>`;
     } else if (m.tipo === "modLib") {
       const x = acharModulo(m.id); const md = x?.m; const ant = md ? anteriorDe(md) : null;
       const modo = md?.liberaModo === "cadastro" || md?.liberaModo === "prazo" ? md.liberaModo : md?.libera ? "data" : "imediato";
@@ -5899,6 +5911,18 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ajuda": ui.ajuda = ui.ajuda === d.v ? null : d.v; break;
       case "contato": ui.modal = { tipo: "contato", id: d.id }; break;
       case "sugestoes": ui.modal = { tipo: "sugestoes" }; break;
+      case "novidades": ui.modal = { tipo: "novidades" }; break;
+      case "atualizar-dados": {
+        // Busca tudo de novo no Supabase e fica na mesma página.
+        if (ocupado || !eu) return; el?.classList.add("girando");
+        void (async () => { try { S = await lerTudo(eu!); toast("Dados atualizados."); } catch (e) { toast(motivo(e)); } render(); if (celReal && celReal.style.display !== "none") recarregarCel(); })();
+        return;
+      }
+      case "novidades-chave": {
+        if (!ehDono()) return; const novo = !S.config.novidades; ui.estMenu = "";
+        void executar(async () => { falhou(await supabase.from("configuracoes").update({ novidades_ativas: novo }).not("id", "is", null).select("id")); await registrar(null, (novo ? "Ativou" : "Desativou") + " o botão Novidades"); return novo ? "Botão Novidades ativado." : "Botão Novidades desativado."; });
+        return;
+      }
       case "sugestao-remover":
         confirmar({ titulo: "Remover esta sugestão?", texto: "Ela sai da lista da equipe.", palavra: "REMOVER", rotulo: "Remover sugestão" }, async () => {
           falhou(await supabase.from("sugestoes").delete().eq("id", d.id).select("id").single());
