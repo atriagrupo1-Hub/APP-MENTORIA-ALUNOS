@@ -541,7 +541,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -637,7 +637,7 @@ export function montar(app: HTMLElement) {
     "aula-bloquear": "cur_estado", "aula-liberar": "cur_estado", "mod-bloquear": "cur_estado",
     "curso-novo": "cur_editar", "curso-novo-cat": "cur_editar", "mod-add": "cur_editar", "aula-add-abrir": "cur_editar", "aula-editar": "cur_editar", "mod-editar": "cur_editar",
     "aula-duplicar": "cur_editar", "mod-duplicar": "cur_editar", "cs-duplicar": "cur_editar", "aula-renomear": "cur_editar", "mod-renomear": "cur_editar",
-    "aula-sobe": "cur_editar", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
+    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar", "ka-add": "cat_editar", "ka-add-abrir": "cat_editar",
@@ -3859,6 +3859,19 @@ export function montar(app: HTMLElement) {
         <input id="novoModulo" class="campo" name="nome" placeholder="Nome do novo módulo" required />
         <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
       </form>` : ""}
+      ${(() => { const sel = c.modulos.filter((m) => ui.modSel.has(m.id)), tudo = !!c.modulos.length && sel.length === c.modulos.length; return `
+      <label class="ms-todos"><input type="checkbox" data-mod-sel-todos="${c.id}" ${tudo ? "checked" : ""} ${c.modulos.length ? "" : "disabled"} />Selecionar todos os módulos</label>
+      ${sel.length ? `<div class="ms-barra" role="toolbar" aria-label="Ações nos módulos selecionados">
+        <span class="ms-qtd"><i>✓</i>${sel.length === 1 ? "1 módulo selecionado" : sel.length + " módulos selecionados"}</span>
+        <span class="ms-bts">
+          <button type="button" class="al-botao ms-ativar" data-a="mods-estado" data-v="ativo" data-id="${c.id}">${IC_OLHO}Ativar</button>
+          <button type="button" class="al-botao" data-a="mods-estado" data-v="bloqueado" data-id="${c.id}">${IC_CAD}Bloquear</button>
+          <button type="button" class="al-botao" data-a="mods-duplicar" data-v="duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar</button>
+          <button type="button" class="al-botao ms-excluir" data-a="mods-excluir" data-v="excluir" data-id="${c.id}">${IC_MOD.lixo}Excluir</button>
+          <i class="ms-sep"></i>
+          <button type="button" class="al-botao" data-a="mods-sel-limpar">${xis}Cancelar seleção</button>
+        </span>
+      </div>` : ""}`; })()}
       <div class="cs-cartao cs-mods">
         ${c.modulos.map((m, i) => {
           const casaMod = !q || norm(m.nome).includes(q) || norm(m.rot + " " + m.num).includes(q);
@@ -3868,8 +3881,9 @@ export function montar(app: HTMLElement) {
           if (editando("mod", m.id)) return `<div class="cs-mod-edita">${blocoModulo(c, m, i)}</div>`;
           const capa = capaSite(m.capaH) || capaSite(m.capa);
           return `
-          <div class="cs-mod${aberto ? " aberto" : ""}${cls3(estado3(m.pub, !m.ativo))}" draggable="true" data-arrasta="${m.id}">
+          <div class="cs-mod${aberto ? " aberto" : ""}${ui.modSel.has(m.id) ? " ms-on" : ""}${cls3(estado3(m.pub, !m.ativo))}" draggable="true" data-arrasta="${m.id}">
             <div class="cs-mod-linha">
+              <label class="ms-ck" title="Selecionar"><input type="checkbox" data-mod-sel="${m.id}" ${ui.modSel.has(m.id) ? "checked" : ""} aria-label="Selecionar ${h(m.rot)} ${numModulo(c, i)}" /></label>
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
@@ -6267,6 +6281,39 @@ export function montar(app: HTMLElement) {
         });
         break;
       }
+      case "mods-sel-limpar": ui.modSel.clear(); break;
+      case "mods-estado": case "mods-duplicar": case "mods-excluir": {
+        // Ações em massa: as mesmas regras de cada módulo (estado, duplicar_modulo, excluir), com confirmação antes.
+        const c = curso(d.id!); if (!c) return; const sel = c.modulos.filter((m) => ui.modSel.has(m.id)); if (!sel.length) return;
+        const n = p(sel.length, "módulo", "módulos"), lista = sel.map((m) => m.rot + " " + m.num).join(", ");
+        if (d.v === "excluir") {
+          const aulas = sel.reduce((t, m) => t + m.aulas.length, 0);
+          confirmar({ titulo: "Excluir " + n + "?", texto: lista + ". " + (aulas ? p(aulas, "aula é apagada", "aulas são apagadas") + " junto, com o progresso das alunas nelas. " : "") + "Não dá para desfazer.", palavra: "EXCLUIR", rotulo: "Excluir " + n }, async () => {
+            for (const m of sel) falhou(await supabase.from("modulos").delete().eq("id", m.id).select("id").single());
+            if (sel.some((m) => m.id === ui.modPagina)) ui.modPagina = null;
+            ui.modSel.clear(); await registrar(null, "Excluiu " + n + " de " + c.nome + ": " + lista);
+            return n.charAt(0).toUpperCase() + n.slice(1) + " excluído" + (sel.length === 1 ? "." : "s.");
+          });
+          break;
+        }
+        if (d.v === "duplicar") {
+          confirmar({ titulo: "Duplicar " + n + "?", texto: lista + ". Cada cópia vai para o fim da lista, com as aulas dela." }, async () => {
+            for (const m of sel) await rpc("duplicar_modulo", { p_modulo: m.id });
+            ui.modSel.clear(); await registrar(null, "Duplicou " + n + " de " + c.nome + ": " + lista);
+            return n.charAt(0).toUpperCase() + n.slice(1) + " duplicado" + (sel.length === 1 ? "." : "s.") + " As cópias foram para o fim da lista.";
+          });
+          break;
+        }
+        const novo = d.v === "bloqueado" ? "bloqueado" : "ativo", muda = sel.filter((m) => estado3(m.pub, !m.ativo) !== novo);
+        if (!muda.length) { toast("Os módulos selecionados já estão " + (novo === "ativo" ? "ativos." : "bloqueados.")); return; }
+        const antes = muda.map((m) => ({ id: m.id, publicado: m.pub, bloqueado_geral: !m.ativo }));
+        confirmar({ titulo: (novo === "ativo" ? "Ativar " : "Bloquear ") + p(muda.length, "módulo", "módulos") + "?", texto: muda.map((m) => m.rot + " " + m.num).join(", ") + (novo === "ativo" ? ". Ficam visíveis e liberados para as alunas." : ". Ficam visíveis, com cadeado, sem acesso para as alunas.") }, async () => {
+          for (const m of muda) falhou(await supabase.from("modulos").update({ publicado: true, bloqueado_geral: novo === "bloqueado" }).eq("id", m.id).select("id").single());
+          ui.modSel.clear(); await registrar(null, (novo === "ativo" ? "Ativou " : "Bloqueou ") + p(muda.length, "módulo", "módulos") + " de " + c.nome);
+          return { msg: p(muda.length, "módulo", "módulos") + (novo === "ativo" ? " ativado" : " bloqueado") + (muda.length === 1 ? "." : "s."), texto: "estado de " + p(muda.length, "módulo", "módulos"), desfazer: async () => { for (const x of antes) falhou(await supabase.from("modulos").update({ publicado: x.publicado, bloqueado_geral: x.bloqueado_geral }).eq("id", x.id).select("id").single()); } };
+        });
+        break;
+      }
       case "mod-abrir-fechar": if (ui.abertos.has(d.id)) ui.abertos.delete(d.id); else ui.abertos.add(d.id); break;
       case "aula-add-abrir": {
         // Cria a aula (ainda desativada) e abre Editar aula completo; salvar ativa, voltar sem salvar descarta.
@@ -7637,6 +7684,8 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
     if (t.hasAttribute("data-curso-cat")) { ui.cursoCat = t.value; render(); return; }
+    if (t.hasAttribute("data-mod-sel")) { const id = t.dataset.modSel!; if (t.checked) ui.modSel.add(id); else ui.modSel.delete(id); render(); return; }
+    if (t.hasAttribute("data-mod-sel-todos")) { const c = curso(t.dataset.modSelTodos!); ui.modSel.clear(); if (t.checked && c) c.modulos.forEach((m) => ui.modSel.add(m.id)); render(); return; }
     if (t.hasAttribute("data-curso-trocar")) { ui.curso = t.value; ui.cursoAba = "visao"; ui.modPagina = ""; ui.estMenu = ""; render(); return; }
     if (t.hasAttribute("data-curso-st")) { ui.cursoSt = t.value; render(); return; }
     if (t.hasAttribute("data-curso-pub")) { ui.cursoPub = t.value; render(); return; }
