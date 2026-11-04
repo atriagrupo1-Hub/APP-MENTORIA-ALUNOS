@@ -4595,3 +4595,12 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-res dd { margin: 0; font-weight: 700; color: var(--texto); }
 .pm-cat { padding: 4px 12px; font-size: 13px; font-weight: 600; background: #f1ece2; border: 1px solid var(--linha-suave); border-radius: 999px; }
 .pm-sem { font-style: normal; color: var(--texto-3) !important; font-weight: 400 !important; }
+/* Item 4: cabeçalho no padrão dos outros passos; salvo, mostra só o resumo */
+.pm .pm-cab { display: flex; align-items: center; gap: 8px; margin: 0; padding: 16px 20px; border-bottom: 1px solid var(--linha-suave); }
+.pm .pm-cab h3 { margin: 0 !important; }
+.pm-alterar { margin-left: auto; min-height: 36px; height: 36px; }
+.pm-alterar svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.pm-grade[hidden] { display: none; }
+.pm-res-so { margin: 16px 20px; }
+.pm-res-so dl { grid-template-columns: repeat(3, auto 1fr); }
+@media (max-width: 760px) { .pm-res-so dl { grid-template-columns: auto 1fr; } }
