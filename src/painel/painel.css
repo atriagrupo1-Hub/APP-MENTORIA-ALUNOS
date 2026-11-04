@@ -4605,3 +4605,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-res-so dl { grid-template-columns: repeat(3, auto 1fr); }
 @media (max-width: 760px) { .pm-res-so dl { grid-template-columns: auto 1fr; } }
 .pm-bts { display: flex; gap: 10px; } .pm-bts[hidden] { display: none; }
+.cv-pub { grid-column: 1 / -1; } .cv-pub .pm { margin: 0; }
