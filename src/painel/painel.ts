@@ -57,7 +57,7 @@ type Opcao = {
   /** Ativa (a aluna vê), bloqueada (vê com cadeado e o aviso) ou desativada (não aparece) — 0097. */
   estado?: "ativo" | "bloqueado" | "desativado"; aviso?: string;
 };
-type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; botao: string; estilo: Estilo | null; vivo: { data: string } | null };
+type Modulo = { id: string; nome: string; num: number; semNum?: boolean; rot: string; ativo: boolean; pub: boolean; libera: string; aulas: Aula[]; criado: string; intro: string; capaH: string; capa: string; cor: string; botao: string; rascunho: boolean; liberaModo: string; liberaDias: number | null; estilo: Estilo | null; vivo: { data: string } | null };
 type Curso = {
   id: string; nome: string; cat: string; catAba: string; visivel: boolean; inicio: number;
   /** Bloqueado: aparece para a aluna, sem acesso (0069). */
@@ -261,7 +261,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
     supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao").order("ordem"),
-    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto").not("produto_id", "is", null).order("ordem"),
+    supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto, rascunho, libera_modo, libera_dias").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
     supabase.from("conteudos").select("id, aula_id, tipo, titulo, texto, arquivo_path, url, video_ref, video_provider, ordem, opcao, cor, capa_path, titulo_tela, instrucoes, pai_id, publicado, bloqueado, aviso_bloqueio").not("aula_id", "is", null).order("ordem"),
@@ -333,7 +333,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const vivoDo = new Map<string, string>(((vivos.data ?? []) as Array<{ modulo_id: string; data_hora: string | null }>).map((v) => [v.modulo_id, v.data_hora ?? ""]));
   for (const m of mods.data ?? []) {
     const lista = modsDo.get(m.produto_id) ?? [];
-    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", botao: m.botao_texto ?? "", estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
+    lista.push({ id: m.id, nome: m.titulo, num: Number(m.numero) || 0, semNum: !!m.sem_numero, rot: (m.rotulo ?? "").trim() || "Módulo", ativo: !m.bloqueado_geral, pub: m.publicado !== false, libera: m.libera_em ?? "", aulas: aulasDo.get(m.id) ?? [], criado: m.criado_em ?? "", intro: m.intro ?? "", capaH: m.capa_horizontal_path ?? "", capa: m.capa_path ?? "", cor: m.cor_destaque ?? "", botao: m.botao_texto ?? "", rascunho: !!m.rascunho, liberaModo: m.libera_modo ?? "", liberaDias: m.libera_dias ?? null, estilo: limparEstilo(m.estilo), vivo: vivoDo.has(m.id) ? { data: vivoDo.get(m.id)! } : null });
     modsDo.set(m.produto_id, lista);
   }
 
@@ -637,7 +637,7 @@ export function montar(app: HTMLElement) {
     "aula-bloquear": "cur_estado", "aula-liberar": "cur_estado", "mod-bloquear": "cur_estado",
     "curso-novo": "cur_editar", "curso-novo-cat": "cur_editar", "mod-add": "cur_editar", "aula-add-abrir": "cur_editar", "aula-editar": "cur_editar", "mod-editar": "cur_editar",
     "aula-duplicar": "cur_editar", "mod-duplicar": "cur_editar", "cs-duplicar": "cur_editar", "aula-renomear": "cur_editar", "mod-renomear": "cur_editar",
-    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
+    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mod-pub": "cur_estado", "mod-lib-abrir": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar", "ka-add": "cat_editar", "ka-add-abrir": "cat_editar",
@@ -3842,12 +3842,37 @@ export function montar(app: HTMLElement) {
     const raiz = document.querySelector<HTMLElement>(".ce-mod"); const x = ui.modPagina ? acharModulo(ui.modPagina) : null; if (!raiz || !x) return;
     pintarPassosEm(raiz, passosMod(x.m));
   }
-  /** Publicado (azul) ou Não publicado (vermelho), com menu para trocar. Usa o mesmo campo "publicado" do módulo. */
+  /** Módulo anterior no curso e a data em que a última aula dele foi liberada (para a regra "prazo"). */
+  function anteriorDe(m: Modulo) {
+    const x = acharModulo(m.id); if (!x || x.i < 1) return null;
+    const ant = x.c.modulos[x.i - 1], ult = ant.aulas.filter((a) => a.pub).slice(-1)[0];
+    return { ant, num: numModulo(x.c, x.i - 1), data: (ult && (ult.libera || ult.liberadaEm)) || ant.libera || "" };
+  }
+  /** Resumo da liberação ("Imediatamente", "Em 15/11/26 10:00"…). */
+  function resumoLib(m: Modulo) {
+    const d = m.liberaDias ?? 0;
+    if (m.liberaModo === "cadastro") return p(d, "dia", "dias") + " após o cadastro da aluna";
+    if (m.liberaModo === "prazo") { const a = anteriorDe(m); const quando = a?.data ? new Date(new Date(a.data).getTime() + d * 864e5).toISOString() : ""; return p(d, "dia", "dias") + " após o " + (a ? h(a.ant.rot) + " " + a.num : "módulo anterior") + (quando ? " · " + dataHoraCurta(quando) : " · aguardando o anterior"); }
+    if (m.libera) return "Em " + dataHoraCurta(m.libera);
+    return "Imediatamente";
+  }
+  /** Publicado (azul) ou Não publicado (vermelho). Não publicado = rascunho (0115): a aluna não vê nem acessa. */
   function seletorPub(m: Modulo) {
-    const k = "mpub:" + m.id;
-    return `<span class="est3 mpub"><button type="button" class="mpub-pil ${m.pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${m.pub ? "Publicado" : "Não publicado"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
-      <button type="button" role="menuitemradio" aria-checked="${m.pub}" data-a="estado-set" data-v="mod:${m.id}:${m.ativo ? "ativo" : "bloqueado"}"><span class="mpub-pil on">Publicado</span></button>
-      <button type="button" role="menuitemradio" aria-checked="${!m.pub}" data-a="estado-set" data-v="mod:${m.id}:desativado"><span class="mpub-pil off">Não publicado</span></button>
+    const k = "mpub:" + m.id, pub = !m.rascunho;
+    return `<span class="est3 mpub"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${pub ? "Publicado" : "Não publicado"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+      <button type="button" role="menuitemradio" aria-checked="${pub}" data-a="mod-pub" data-id="${m.id}" data-v="1"><span class="mpub-pil on">Publicado</span></button>
+      <button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="mod-pub" data-id="${m.id}" data-v="0"><span class="mpub-pil off">Não publicado</span></button>
+    </span>` : ""}</span>`;
+  }
+  /** Acesso: Rascunho (automático, sem escolha) ou, publicado, Liberado / Bloqueado / Oculto. */
+  function seletorAcesso(m: Modulo) {
+    if (m.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc">Rascunho</span><em>Não publicado: as alunas não veem</em></span>`;
+    const e = estado3(m.pub, !m.ativo), k = "macc:" + m.id;
+    const [rot, cor, sub] = e === "ativo" ? ["Liberado", "verde", resumoLib(m)] : e === "bloqueado" ? ["Bloqueado", "amarelo", "A aluna vê, mas não acessa"] : ["Oculto", "vermelho", "A aluna não vê nem acessa"];
+    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar o acesso">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+      <button type="button" role="menuitemradio" aria-checked="${e === "ativo"}" data-a="mod-lib-abrir" data-id="${m.id}"><span class="est3-pil verde">${IC_OLHO}Liberado…</span></button>
+      <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="mod:${m.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueado</span></button>
+      <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="mod:${m.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculto</span></button>
     </span>` : ""}</span>`;
   }
   function modulosCurso(c: Curso) {
@@ -3895,7 +3920,7 @@ export function montar(app: HTMLElement) {
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
-              <span class="mest">${i === 0 ? seletorPub(m) : ""}${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
+              <span class="mest">${i === 0 ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
                 <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
@@ -5412,6 +5437,23 @@ export function montar(app: HTMLElement) {
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>
       </form>`;
+    } else if (m.tipo === "modLib") {
+      const x = acharModulo(m.id); const md = x?.m; const ant = md ? anteriorDe(md) : null;
+      const modo = md?.liberaModo === "cadastro" || md?.liberaModo === "prazo" ? md.liberaModo : md?.libera ? "data" : "imediato";
+      const op = (v: string, t: string, extra = "", dis = false) => `<label class="ml-op${dis ? " dis" : ""}"><input type="radio" name="modo" value="${v}" ${modo === v ? "checked" : ""} ${dis ? "disabled" : ""} data-ml-modo />${t}</label>${extra}`;
+      const dias = `<div class="ml-campo" data-ml-de="#V#" #H#><span>Quantidade de dias</span><span class="ml-dias"><input class="campo" type="number" name="dias_#V#" min="0" max="3650" value="${md?.liberaDias ?? 7}" /> dias</span><em>#T#</em></div>`;
+      corpo = md ? `
+      <form data-f="mod-lib" data-id="${md.id}" class="ml">
+        <h2 class="titulo">Liberar ${h(md.rot)} ${x ? numModulo(x.c, x.i) : ""}</h2>
+        <p class="ml-trilha"><span class="mpub-pil on">Publicado</span> › <span class="est3-pil verde">Liberado</span></p>
+        <p class="ml-q">Como deseja liberar o conteúdo?</p>
+        ${op("imediato", "Liberar imediatamente")}
+        ${op("prazo", "Liberar após um prazo definido", dias.replace(/#V#/g, "prazo").replace("#H#", modo === "prazo" ? "" : "hidden").replace("#T#", ant ? (ant.data ? "Contados da liberação da última aula do " + h(ant.ant.rot) + " " + ant.num + ": " + dataHoraCurta(ant.data) + "." : "O " + h(ant.ant.rot) + " " + ant.num + " ainda não tem data de liberação: este módulo espera.") : ""), !ant)}
+        ${!ant ? `<p class="ml-nota">Este é o primeiro módulo do curso: não há módulo anterior para contar o prazo.</p>` : ""}
+        ${op("data", "Liberar em uma data específica", `<div class="ml-campo" data-ml-de="data" ${modo === "data" ? "" : "hidden"}><span>Data específica de liberação</span><input class="campo" type="datetime-local" name="data" value="${h(dataLocal(md.libera))}" /><em>Para todas as alunas, inclusive as que receberem acesso depois dessa data.</em></div>`)}
+        ${op("cadastro", "Liberar X dias após o cadastro da aluna", dias.replace(/#V#/g, "cadastro").replace("#H#", modo === "cadastro" ? "" : "hidden").replace("#T#", "Contados a partir do cadastro de cada aluna, entrando no app ou não."))}
+        <div class="rodape-modal"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">Salvar liberação</button></div>
+      </form>` : "";
     } else if (m.tipo === "catx") {
       corpo = `
       <form data-f="catx-criar" data-id="${m.aba}" class="kn">
@@ -6290,6 +6332,17 @@ export function montar(app: HTMLElement) {
         break;
       }
       case "mods-sel-limpar": ui.modSel.clear(); break;
+      case "mod-lib-abrir": ui.estMenu = ""; ui.modal = { tipo: "modLib", id: d.id! }; break;
+      case "mod-pub": {
+        const x = acharModulo(d.id!); if (!x) return; const rasc = d.v !== "1"; ui.estMenu = "";
+        if (x.m.rascunho === rasc) break;
+        void executar(async () => {
+          falhou(await supabase.from("modulos").update({ rascunho: rasc }).eq("id", x.m.id).select("id").single());
+          await registrar(null, (rasc ? "Despublicou o módulo " : "Publicou o módulo ") + x.m.nome);
+          return { msg: x.m.rot + " " + x.m.num + (rasc ? ": não publicado (rascunho). As alunas não veem." : ": publicado."), texto: "publicação do módulo " + x.m.nome, desfazer: async () => { falhou(await supabase.from("modulos").update({ rascunho: !rasc }).eq("id", x.m.id).select("id").single()); } };
+        });
+        return;
+      }
       case "mods-estado": case "mods-duplicar": case "mods-excluir": {
         // Ações em massa: as mesmas regras de cada módulo (estado, duplicar_modulo, excluir), com confirmação antes.
         const c = curso(d.id!); if (!c) return; const sel = c.modulos.filter((m) => ui.modSel.has(m.id)); if (!sel.length) return;
@@ -7016,6 +7069,21 @@ export function montar(app: HTMLElement) {
         });
         return;
       }
+      case "mod-lib": {
+        const x = acharModulo(id); if (!x) return; const md = x.m;
+        const modo = (form.elements.namedItem("modo") as RadioNodeList).value || "imediato";
+        const dias = modo === "prazo" || modo === "cadastro" ? Number(v("dias_" + modo)) : null;
+        if (dias !== null && (!Number.isInteger(dias) || dias < 0 || dias > 3650)) { toast("Escreva a quantidade de dias (0 a 3650)."); return; }
+        const dt = v("data"); if (modo === "data" && (!dt || isNaN(+new Date(dt)))) { toast("Escolha a data de liberação."); return; }
+        const antes = { publicado: md.pub, bloqueado_geral: !md.ativo, libera_em: md.libera || null, libera_modo: md.liberaModo || null, libera_dias: md.liberaDias };
+        const novo = { publicado: true, bloqueado_geral: false, libera_em: modo === "data" ? new Date(dt).toISOString() : null, libera_modo: modo, libera_dias: dias };
+        void executar(async () => {
+          falhou(await supabase.from("modulos").update(novo).eq("id", md.id).select("id").single());
+          await registrar(null, "Liberou o módulo " + md.nome + " (" + modo + ")"); ui.modal = null;
+          return { msg: md.rot + " " + md.num + ": liberação salva.", texto: "liberação do módulo " + md.nome, desfazer: async () => { falhou(await supabase.from("modulos").update(antes).eq("id", md.id).select("id").single()); } };
+        });
+        return;
+      }
       case "catx-salvar": {
         const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, rascunho: x.rascunho };
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
@@ -7250,7 +7318,7 @@ export function montar(app: HTMLElement) {
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
             const novoM = ui.novoMod === id; if (novoM) ui.novoMod = "";
-            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, ...(form.elements.namedItem("cor") ? { cor_destaque: cor } : {}), ...(form.elements.namedItem("botaoTexto") ? { botao_texto: v("botaoTexto").trim() || null } : {}), ...(form.elements.namedItem("libera") ? { libera_em: liberaMod } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, ...(form.elements.namedItem("cor") ? { cor_destaque: cor } : {}), ...(form.elements.namedItem("botaoTexto") ? { botao_texto: v("botaoTexto").trim() || null } : {}), ...(form.elements.namedItem("libera") ? { libera_em: liberaMod, libera_modo: liberaMod ? "data" : mm.liberaModo === "data" ? "imediato" : mm.liberaModo || null } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
@@ -7692,6 +7760,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
     if (t.hasAttribute("data-curso-cat")) { ui.cursoCat = t.value; render(); return; }
+    if (t.hasAttribute("data-ml-modo")) { t.form?.querySelectorAll<HTMLElement>("[data-ml-de]").forEach((c) => { c.hidden = c.dataset.mlDe !== t.value; }); return; }
     if (t.hasAttribute("data-mod-sel")) { const id = t.dataset.modSel!; if (t.checked) ui.modSel.add(id); else ui.modSel.delete(id); render(); return; }
     if (t.hasAttribute("data-mod-sel-todos")) { const c = curso(t.dataset.modSelTodos!); ui.modSel.clear(); if (t.checked && c) c.modulos.forEach((m) => ui.modSel.add(m.id)); render(); return; }
     if (t.hasAttribute("data-curso-trocar")) { ui.curso = t.value; ui.cursoAba = "visao"; ui.modPagina = ""; ui.estMenu = ""; render(); return; }
