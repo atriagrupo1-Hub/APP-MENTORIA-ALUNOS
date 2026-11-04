@@ -4632,3 +4632,15 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .kg-vis { gap: 6px; } .kg-vis .est3-menu { left: 0; right: auto; }
 .mest-aula { width: 250px; justify-content: flex-start; } @media (max-width: 1100px) { .mest-aula { width: auto; } }
 .cc2-tipo { color: #9a7230; font-weight: 700; }
+
+/* Lixeira */
+.lx-lista { display: flex; flex-direction: column; gap: 10px; }
+.lx-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 12px; }
+.lx-tipo { flex: none; min-width: 84px; padding: 4px 10px; text-align: center; font-size: 12px; font-weight: 700; color: #6b5313; background: #efe9d6; border-radius: 99px; }
+.lx-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lx-txt b { font-size: 15px; }
+.lx-txt span { font-size: 12.5px; color: var(--texto-2); }
+.lx-txt em { font-style: normal; color: #9a7230; font-weight: 700; }
+.lx-bts { display: flex; gap: 8px; flex-wrap: wrap; }
+.lx-del { color: var(--aa-verm, #b8352d); }
+@media (max-width: 700px) { .lx-item { flex-wrap: wrap; } .lx-bts { width: 100%; } }
