@@ -863,7 +863,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
-    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod();
+    posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); pintarPubMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
     if (alvo) {
@@ -3790,14 +3790,14 @@ export function montar(app: HTMLElement) {
           </section>
         </div>
       </div>
-      <footer class="cs-ed-pe">
+${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
         <span class="cs-ed-st"><b><i class="ce-num ce-num-n">4</i>Status ${dicaCampo(AJ.statusMod)}</b>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
         <label class="ce-libera">${IC_CUR.cal}<span>Liberar em ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
         <span class="ce-mod-info">${situacaoModulo(m)}<span class="ce-mod-cats"><em>Também nas categorias:</em> ${naCategoria("modulo", m.id)}</span></span>
         <span class="ce-falta" data-ce-falta></span>
         <button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button>
         <button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button>
-      </footer>
+      </footer>`}
 
       <section class="cs-cartao mp-aulas">
         <div class="mp-aulas-topo">
@@ -3841,6 +3841,71 @@ export function montar(app: HTMLElement) {
   function pintarPassosMod() {
     const raiz = document.querySelector<HTMLElement>(".ce-mod"); const x = ui.modPagina ? acharModulo(ui.modPagina) : null; if (!raiz || !x) return;
     pintarPassosEm(raiz, passosMod(x.m));
+  }
+  /** Item 4 do Editar módulo (primeiro módulo): publicação, acesso, como liberar e o resumo; tudo grava ao Salvar módulo. */
+  function blocoPubMod(c: Curso, m: Modulo, i: number) {
+    const ant = anteriorDe(m), e = estado3(m.pub, !m.ativo);
+    const modo = m.liberaModo === "cadastro" || m.liberaModo === "prazo" ? m.liberaModo : m.libera ? "data" : "imediato";
+    const IC = { pub: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>`, cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`, est: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>`, rel: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`, tag: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.4"/></svg>` };
+    const op = (v: string, t: string, dis = false) => `<label class="pm-op${dis ? " dis" : ""}"><input type="radio" name="libModo" value="${v}" form="formMod" ${modo === v ? "checked" : ""} ${dis ? "disabled" : ""} data-pm />${t}</label>`;
+    const sel = (nome: string, ops: [string, string][], val: string) => `<select class="campo pm-sel" name="${nome}" form="formMod" data-pm>${ops.map(([v, t]) => `<option value="${v}" ${v === val ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    return `
+      <section class="cs-cartao pm" data-pm-box data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant ? ant.ant.rot + " " + ant.num : "")}">
+        <div class="pm-cab"><span class="pm-num">${numModulo(c, i)}</span><div><b>${h(m.rot)} ${numModulo(c, i)} — ${h(tituloApp(m.nome))}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></div><span class="pm-passo">4. Publicação e liberação</span></div>
+        <div class="pm-grade">
+          <div class="pm-col"><h4>${IC.pub}Publicação ${dicaCampo(`Não publicado: fica como rascunho; as alunas não veem nem acessam. Publicado: você escolhe o acesso.`, "pm.pub")}</h4>${sel("pubSel", [["1", "Publicado"], ["0", "Não publicado"]], m.rascunho ? "0" : "1")}</div>
+          <div class="pm-col"><h4>${IC.cad}Acesso ${dicaCampo(`Liberado: segue a liberação escolhida. Bloqueado: a aluna vê com cadeado e não acessa. Oculto: a aluna não vê. Rascunho: automático quando não publicado.`, "pm.acesso")}</h4>${sel("accSel", [["ativo", "Liberado"], ["bloqueado", "Bloqueado"], ["desativado", "Oculto"]], e)}<span class="pm-rasc" hidden>Rascunho</span></div>
+          <div class="pm-col pm-lib"><h4>${IC_CUR.cal}Como deseja liberar o conteúdo? ${dicaCampo(`Só vale quando o acesso é Liberado.`, "pm.lib")}</h4>
+            <div class="pm-ops">${op("imediato", "Liberar imediatamente")}${op("prazo", "Liberar após um prazo definido", !ant)}${op("data", "Liberar em uma data específica")}${op("cadastro", "Liberar X dias após o cadastro da aluna")}</div>
+            <div class="pm-campo" data-pm-de="prazo"><span>${IC.rel}Prazo definido</span><span class="pm-dias"><input class="campo" type="number" min="0" max="3650" name="libDiasPrazo" form="formMod" value="${m.liberaModo === "prazo" ? m.liberaDias ?? 7 : 7}" data-pm /> dias</span></div>
+            <div class="pm-campo" data-pm-de="data"><span>${IC_CUR.cal}Data</span><input class="campo" type="datetime-local" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" data-pm /></div>
+            <div class="pm-campo" data-pm-de="cadastro"><span>${IC.rel}Dias após o cadastro</span><span class="pm-dias"><input class="campo" type="number" min="0" max="3650" name="libDiasCad" form="formMod" value="${m.liberaModo === "cadastro" ? m.liberaDias ?? 7 : 7}" data-pm /> dias</span></div>
+            ${!ant ? `<p class="pm-nota">Primeiro módulo do curso: não há módulo anterior para contar o prazo.</p>` : ""}
+          </div>
+          <div class="pm-col"><h4>${IC.est}Resumo da liberação</h4><div class="pm-res" data-pm-res></div></div>
+        </div>
+        <div class="pm-pe">
+          <span class="pm-info">${IC.tag}<b>Categorias:</b> ${naCategoria("modulo", m.id)}</span>
+          <span class="pm-info">${IC_CUR.cal}<b>Data de criação:</b> <em>${m.criado ? br(diaDe(m.criado)) : "—"}</em></span>
+          <span class="ce-falta" data-ce-falta></span>
+          <button type="button" class="al-botao" data-a="mod-pagina-voltar">Cancelar</button>
+          <button type="submit" form="formMod" class="al-botao-ouro">${IC_SALVAR}Salvar módulo</button>
+        </div>
+      </section>`;
+  }
+  /** O que o item 4 grava no módulo. */
+  function pubLibMod(form: HTMLFormElement): Record<string, unknown> {
+    const el = form.elements, val = (n: string) => (el.namedItem(n) as HTMLInputElement | RadioNodeList | null)?.value || "";
+    const rasc = val("pubSel") !== "1", acc = val("accSel") as Estado3, modo = val("libModo") || "imediato";
+    const r: Record<string, unknown> = { rascunho: rasc };
+    if (!rasc) Object.assign(r, { publicado: acc !== "desativado", bloqueado_geral: acc === "bloqueado" });
+    if (!rasc && acc === "ativo") {
+      const dl = val("libera");
+      Object.assign(r, { libera_modo: modo, libera_em: modo === "data" && dl ? new Date(dl).toISOString() : null, libera_dias: modo === "prazo" ? Number(val("libDiasPrazo")) || 0 : modo === "cadastro" ? Number(val("libDiasCad")) || 0 : null });
+    }
+    return r;
+  }
+  /** Mostra/esconde as partes do item 4 e escreve o resumo, conforme o que está escolhido. */
+  function pintarPubMod() {
+    const bx = document.querySelector<HTMLElement>("[data-pm-box]"); const f = document.getElementById("formMod") as HTMLFormElement | null; if (!bx || !f) return;
+    const val = (n: string) => (f.elements.namedItem(n) as HTMLInputElement | RadioNodeList | null)?.value || "";
+    const pub = val("pubSel") === "1", acc = val("accSel"), modo = val("libModo") || "imediato";
+    const accSel = bx.querySelector<HTMLSelectElement>('select[name="accSel"]')!; accSel.hidden = !pub; bx.querySelector<HTMLElement>(".pm-rasc")!.hidden = pub;
+    const lib = bx.querySelector<HTMLElement>(".pm-lib")!; lib.classList.toggle("pm-off", !pub || acc !== "ativo");
+    bx.querySelectorAll<HTMLElement>("[data-pm-de]").forEach((x) => { x.hidden = x.dataset.pmDe !== modo; });
+    bx.querySelectorAll<HTMLElement>(".pm-op").forEach((x) => x.classList.toggle("on", !!x.querySelector<HTMLInputElement>("input:checked")));
+    let t = "", sub = "", cls = "ok";
+    if (!pub) { t = "Não publicado • Rascunho"; sub = "As alunas não veem nem acessam."; cls = "off"; }
+    else if (acc === "bloqueado") { t = "Publicado • Bloqueado"; sub = "A aluna vê com cadeado, mas não acessa."; cls = "am"; }
+    else if (acc === "desativado") { t = "Publicado • Oculto"; sub = "A aluna não vê nem acessa."; cls = "off"; }
+    else {
+      const dias = (n: string) => Number(val(n)) || 0;
+      if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); sub = a ? "Após a última aula do " + bx.dataset.antNome + " (" + br(diaDe(a)) + "): libera em " + br(diaDe(new Date(new Date(a).getTime() + d * 864e5).toISOString())) + "." : "Aguardando a liberação do módulo anterior."; }
+      else if (modo === "data") { const dt = val("libera"); t = "Publicado • Liberado " + (dt ? "em " + dataHoraCurta(new Date(dt).toISOString()) : "(escolha a data)"); sub = "Para todas as alunas, inclusive as que entrarem depois."; }
+      else if (modo === "cadastro") { t = "Publicado • Liberado " + p(dias("libDiasCad"), "dia", "dias") + " após o cadastro"; sub = "Contados do cadastro de cada aluna, entrando no app ou não."; }
+      else { t = "Publicado • Liberado imediatamente"; sub = "Disponível agora para as alunas com acesso."; }
+    }
+    const r = bx.querySelector<HTMLElement>("[data-pm-res]")!; r.className = "pm-res " + cls; r.innerHTML = `<b>${h(t)}</b><span>${h(sub)}</span>`;
   }
   /** Módulo anterior no curso e a data em que a última aula dele foi liberada (para a regra "prazo"). */
   function anteriorDe(m: Modulo) {
@@ -7310,6 +7375,8 @@ export function montar(app: HTMLElement) {
         return;
       }
       case "mod-renomear":
+        if (form.elements.namedItem("pubSel")) { const f2 = form.elements; const m2 = (f2.namedItem("libModo") as RadioNodeList | null)?.value; const pubOk = (f2.namedItem("pubSel") as HTMLSelectElement).value === "1" && (f2.namedItem("accSel") as HTMLSelectElement).value === "ativo";
+          if (pubOk && m2 === "data" && !(f2.namedItem("libera") as HTMLInputElement).value) { toast("Escolha a data de liberação."); return; } }
         { const xm = acharModulo(id)!, mm = xm.m; const velho = mm.nome, numVelho = mm.num, semNum = v("numero") === "", num = semNum ? mm.num : Number(v("numero"));
           const erro = semNum ? "" : erroNumero(num, xm.c.modulos.filter((k) => k.id !== id).map((k) => k.num), "módulo"); if (erro) { toast(erro); return; }
           const capaH = (form.elements.namedItem("capaH") as HTMLInputElement).value || null; const intro = (form.elements.namedItem("intro") as HTMLTextAreaElement).value.trim() || null;
@@ -7318,7 +7385,7 @@ export function montar(app: HTMLElement) {
           const capa = v("capa") || null, cor = v("cor") || null, campoVivo = form.elements.namedItem("temVivo") as HTMLInputElement | null, temVivo = !!campoVivo?.checked, vivoData = v("vivoData");
           void executar(async () => {
             const novoM = ui.novoMod === id; if (novoM) ui.novoMod = "";
-            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, ...(form.elements.namedItem("cor") ? { cor_destaque: cor } : {}), ...(form.elements.namedItem("botaoTexto") ? { botao_texto: v("botaoTexto").trim() || null } : {}), ...(form.elements.namedItem("libera") ? { libera_em: liberaMod, libera_modo: liberaMod ? "data" : mm.liberaModo === "data" ? "imediato" : mm.liberaModo || null } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
+            falhou(await supabase.from("modulos").update({ ...(novoM ? { publicado: true } : {}), numero: num, sem_numero: semNum, titulo: v("nome"), rotulo: v("rotulo") || "Módulo", intro, capa_horizontal_path: capaH, capa_path: capa, ...(form.elements.namedItem("cor") ? { cor_destaque: cor } : {}), ...(form.elements.namedItem("botaoTexto") ? { botao_texto: v("botaoTexto").trim() || null } : {}), ...(form.elements.namedItem("pubSel") ? pubLibMod(form) : form.elements.namedItem("libera") ? { libera_em: liberaMod, libera_modo: liberaMod ? "data" : mm.liberaModo === "data" ? "imediato" : mm.liberaModo || null } : {}), ...(mudouCriado ? { criado_em: new Date(criado).toISOString() } : {}) }).eq("id", id).select("id").single());
             const dataHora = vivoData ? new Date(vivoData).toISOString() : null;
             // A página do módulo não tem mais o campo da aula ao vivo: sem o campo, não mexe nela.
             if (!campoVivo) { /* mantém como está */ }
@@ -7652,6 +7719,7 @@ export function montar(app: HTMLElement) {
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
     if ((e.target as HTMLElement).closest?.("#formCurso")) pintarPassosCurso();
     if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
+    if ((e.target as HTMLElement).hasAttribute?.("data-pm")) pintarPubMod();
     // Editar módulo: a prévia acompanha os textos.
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.ceAlvo; if (k && ti.closest?.("#formMod")) { const el = document.querySelector<HTMLElement>(`[data-mpv="${k}"]`); if (el) { const num = (ti.form?.elements.namedItem("numero") as HTMLInputElement | null)?.value ?? ""; el.textContent = k === "mrot" ? (ti.value + " " + num).trim() : k === "mbot" ? ti.value || "Ver aulas" : k === "mtit" ? tituloApp(ti.value) : ti.value; if (k === "mdesc") el.hidden = !ti.value.trim(); } } if (ti.closest?.("#formMod")) pintarPassosMod(); }
     const t = e.target as HTMLInputElement;
@@ -7760,6 +7828,7 @@ export function montar(app: HTMLElement) {
     if (t.hasAttribute("data-catx-ordem")) { ui.catxOrdem = t.value; render(); return; }
     if (t.hasAttribute("data-cat-vis")) { ui.catVis = t.value; render(); return; }
     if (t.hasAttribute("data-curso-cat")) { ui.cursoCat = t.value; render(); return; }
+    if (t.hasAttribute("data-pm")) { pintarPubMod(); }
     if (t.hasAttribute("data-ml-modo")) { t.form?.querySelectorAll<HTMLElement>("[data-ml-de]").forEach((c) => { c.hidden = c.dataset.mlDe !== t.value; }); return; }
     if (t.hasAttribute("data-mod-sel")) { const id = t.dataset.modSel!; if (t.checked) ui.modSel.add(id); else ui.modSel.delete(id); render(); return; }
     if (t.hasAttribute("data-mod-sel-todos")) { const c = curso(t.dataset.modSelTodos!); ui.modSel.clear(); if (t.checked && c) c.modulos.forEach((m) => ui.modSel.add(m.id)); render(); return; }
