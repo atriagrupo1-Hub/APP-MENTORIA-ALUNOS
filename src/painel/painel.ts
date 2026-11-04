@@ -750,12 +750,13 @@ export function montar(app: HTMLElement) {
     layout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
     comentarios: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`,
     equipe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.5c.6-3.4 3.3-5.3 6.5-5.3s5.9 1.9 6.5 5.3"/></svg>`,
+    lixeira: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5"/></svg>`,
     config: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
     registro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M9 11h6M9 14.5h6M9 18h4"/></svg>`,
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { lixeira: "O que foi apagado fica aqui por 30 dias e pode ser restaurado.", inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
     cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
@@ -764,7 +765,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
   ACAO_ABA.config = `<button type="button" class="al-botao-ouro cfg-salvar-topo" data-a="cfg-salvar">Salvar alterações</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
-  const ABAS_EXTRA: [string, string][] = [["config", "Configurações"]];
+  const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
@@ -773,6 +774,7 @@ export function montar(app: HTMLElement) {
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
       case "inicio": return ["Início", "o que pede atenção hoje"];
+      case "lixeira": return ["Lixeira", lixo ? p(lixo.length, "item", "itens") : ""];
       case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
       case "engajamento": return ["Engajamento", "quem está avançando e quem precisa de um empurrão"];
       case "registro": return ["Registro", p(S.historico.length, "ação registrada", "ações registradas")];
@@ -944,7 +946,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -3965,6 +3967,27 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     </span>` : ""}</span>`;
   }
   const VOLTA_KEY = "aion-painel-volta";
+  /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
+  type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
+  let lixo: ItemLixo[] | null = null;
+  function carregarLixeira() {
+    lixo = null;
+    void (async () => { const r = await supabase.rpc("lixeira_listar"); lixo = r.error ? [] : (r.data as ItemLixo[]); if (r.error) toast(motivo(r.error)); if (ui.tab === "lixeira") render(); })();
+  }
+  function telaLixeira() {
+    if (lixo === null) return `<section class="tela ativa lx"><div class="vazio">Carregando a lixeira…</div></section>`;
+    const TIPO: Record<string, string> = { categoria: "Categoria", curso: "Curso", modulo: "Módulo", aula: "Aula" };
+    const resta = (q: string) => { const d = 30 - Math.floor((Date.now() - new Date(q).getTime()) / 864e5); return d <= 1 ? "sai amanhã" : "sai em " + d + " dias"; };
+    return `
+    <section class="tela ativa lx">
+      ${lixo.length ? `<div class="lx-lista">${lixo.map((x) => `
+        <article class="lx-item">
+          <span class="lx-tipo">${TIPO[x.tipo] || x.tipo}</span>
+          <div class="lx-txt"><b>${h(x.titulo)}</b><span>Apagado em ${dataHoraCurta(x.apagado_em)}${x.autor ? " por " + h(x.autor) : ""} · ${p(x.itens, "item guardado", "itens guardados")} · <em>${resta(x.apagado_em)}</em></span></div>
+          <span class="lx-bts"><button type="button" class="al-botao-ouro" data-a="lixo-restaurar" data-v="${x.lote}">Restaurar</button><button type="button" class="al-botao lx-del" data-a="lixo-excluir" data-v="${x.lote}">Excluir de vez</button></span>
+        </article>`).join("")}</div>` : `<div class="vazio">A lixeira está vazia. O que for apagado (cursos, módulos, aulas e categorias) aparece aqui por 30 dias.</div>`}
+    </section>`;
+  }
   /** Na aula (lista do módulo): Publicada / Não publicada, e o acesso — mesmo padrão do Módulo 0. */
   function seletorPubAula(a: Aula) {
     const k = "apub:" + a.id, pub = !a.rascunho;
@@ -5851,6 +5874,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
+        if (d.v === "lixeira") carregarLixeira();
         window.scrollTo(0, 0);
         break;
       case "tema": {
@@ -6448,7 +6472,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "curso-cancelar": toast("Alterações descartadas."); break;
       case "curso-remover": {
         const c = curso(d.id)!;
-        confirmar({ titulo: "Apagar o curso " + c.nome + "?", texto: "O curso, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado de vez, junto com as liberações, o progresso e os comentários das alunas nele. Não dá para desfazer. Para confirmar, escreva APAGAR.", palavra: "APAGAR", rotulo: "Apagar curso" }, async () => {
+        confirmar({ titulo: "Apagar o curso " + c.nome + "?", texto: "O curso, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado de vez, junto com as liberações, o progresso e os comentários das alunas nele. Fica na Lixeira por 30 dias. Para confirmar, escreva APAGAR.", palavra: "APAGAR", rotulo: "Apagar curso" }, async () => {
           await rpc("remover_produto", { p_produto: c.id }); ui.curso = null; ui.aula = null; ui.tab = "cursos"; toast("Curso apagado.");
         });
         break;
@@ -6470,12 +6494,26 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "mod-remover": {
         const x = acharModulo(d.id)!;
-        confirmar({ titulo: "Remover o módulo " + x.m.nome + "?", texto: "As " + p(x.m.aulas.length, "aula dele é apagada", "aulas dele são apagadas") + " junto. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover módulo" }, async () => {
+        confirmar({ titulo: "Remover o módulo " + x.m.nome + "?", texto: "As " + p(x.m.aulas.length, "aula dele é apagada", "aulas dele são apagadas") + " junto. Fica na Lixeira por 30 dias.", palavra: "REMOVER", rotulo: "Remover módulo" }, async () => {
           falhou(await supabase.from("modulos").delete().eq("id", x.m.id).select("id").single()); if (ui.modPagina === x.m.id) ui.modPagina = null; toast("Módulo removido.");
         });
         break;
       }
       case "mods-sel-limpar": ui.modSel.clear(); break;
+      case "lixo-restaurar": {
+        const x = lixo?.find((y) => String(y.lote) === d.v); if (!x) return;
+        confirmar({ titulo: "Restaurar " + x.titulo + "?", texto: "Volta tudo o que foi apagado junto (" + p(x.itens, "item", "itens") + "), no mesmo lugar de antes." }, async () => {
+          await rpc("lixeira_restaurar", { p_lote: x.lote }); await registrar(null, "Restaurou da lixeira: " + x.titulo); carregarLixeira(); return x.titulo + " restaurado.";
+        });
+        break;
+      }
+      case "lixo-excluir": {
+        const x = lixo?.find((y) => String(y.lote) === d.v); if (!x) return;
+        confirmar({ titulo: "Excluir de vez " + x.titulo + "?", texto: "Sai da lixeira e não dá mais para restaurar.", palavra: "EXCLUIR", rotulo: "Excluir de vez" }, async () => {
+          await rpc("lixeira_excluir", { p_lote: x.lote }); await registrar(null, "Excluiu de vez da lixeira: " + x.titulo); carregarLixeira(); return x.titulo + " excluído de vez.";
+        });
+        break;
+      }
       case "pm-editar": ui.pmEditar = true; break;
       case "pm-cancelar": ui.pmEditar = false; ui.sujo = null; break;
       case "mod-lib-abrir": ui.estMenu = ""; ui.modal = { tipo: "modLib", id: d.id! }; break;
@@ -6506,7 +6544,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = p(sel.length, "módulo", "módulos"), lista = sel.map((m) => m.rot + " " + m.num).join(", ");
         if (d.v === "excluir") {
           const aulas = sel.reduce((t, m) => t + m.aulas.length, 0);
-          confirmar({ titulo: "Excluir " + n + "?", texto: lista + ". " + (aulas ? p(aulas, "aula é apagada", "aulas são apagadas") + " junto, com o progresso das alunas nelas. " : "") + "Não dá para desfazer.", palavra: "EXCLUIR", rotulo: "Excluir " + n }, async () => {
+          confirmar({ titulo: "Excluir " + n + "?", texto: lista + ". " + (aulas ? p(aulas, "aula é apagada", "aulas são apagadas") + " junto, com o progresso das alunas nelas. " : "") + "Fica na Lixeira por 30 dias.", palavra: "EXCLUIR", rotulo: "Excluir " + n }, async () => {
             for (const m of sel) falhou(await supabase.from("modulos").delete().eq("id", m.id).select("id").single());
             if (sel.some((m) => m.id === ui.modPagina)) ui.modPagina = null;
             ui.modSel.clear(); await registrar(null, "Excluiu " + n + " de " + c.nome + ": " + lista);
@@ -6574,7 +6612,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "aula-remover": {
         const x = acharAula(d.id)!;
-        confirmar({ titulo: "Remover a aula " + x.a.nome + "?", texto: "O texto, o vídeo e os extras dela são apagados. Não dá para desfazer.", palavra: "REMOVER", rotulo: "Remover aula" }, async () => {
+        confirmar({ titulo: "Remover a aula " + x.a.nome + "?", texto: "O texto, o vídeo e os extras dela são apagados. Fica na Lixeira por 30 dias.", palavra: "REMOVER", rotulo: "Remover aula" }, async () => {
           falhou(await supabase.from("aulas").delete().eq("id", x.a.id).select("id").single()); if (ui.aula === x.a.id) { ui.aula = null; ui.modPagina = x.m.id; if (ui.tab === "aula") ui.tab = "curso"; } toast("Aula removida.");
         });
         break;
