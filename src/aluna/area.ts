@@ -181,10 +181,10 @@ export function montar(raiz: HTMLElement) {
         const vivo = cat.aoVivo[m.id];
         return {
           id: m.id, num: m.semNumero ? "" : Number.isInteger(m.numero) ? m.numero : k, rot: (m.rotulo || "").trim() || "Módulo", titulo: m.titulo, intro: m.intro || "", aviso: (m.avisoMaterial || "").trim(), capaH: fotoOuSite(m.capaHorizontalPath || ""), botao: (m.botaoTexto || "").trim(),
-          capa: fotoOuSite(m.capaPath || `modulo-${m.numero}.webp`), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length], estilo: limparEstilo(m.estilo),
+          capa: fotoOuSite(m.capaPath || ""), cor: /^#[0-9a-f]{6}$/i.test(m.cor || "") ? m.cor : CORES_MOD[k % CORES_MOD.length], estilo: limparEstilo(m.estilo),
           vivo: vivo ? { data: vivo.dataHora || null, texto: (vivo.quandoTexto || "").trim() } : null,
           aulas: m.aulas.filter((a) => a.publicado !== false).sort((a, b) => a.ordem - b.ordem || a.numero - b.numero).map((a, i) => ({
-            id: a.id, num: a.semNumero ? "" : Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || `modulo-${m.numero}-aula-${i + 1}.webp`), ...ebookDe(a),
+            id: a.id, num: a.semNumero ? "" : Number.isInteger(a.numero) ? a.numero : i + 1, rot: (a.rotulo || "").trim() || "Aula", bloq: !!a.bloqueadoGeral, titulo: a.titulo, texto: a.texto || "", resumo: a.resumo || "", exercicio: a.exercicio || "", capa: fotoOuSite(a.capaPath || ""), ...ebookDe(a),
           })),
         };
       });
@@ -714,7 +714,7 @@ export function montar(raiz: HTMLElement) {
       : freq ? { selo: "Áudio", sub: feitaId(t.id) ? "Ouvido" : "Ouvir", cls: "ig-azul" }
       : { selo: "Vídeo", sub: feitaId(t.id) ? "Assistido" : "Assistir", cls: "ig-ouro" };
     return `<button class="ig-card ${sl.cls}" data-a="presente" data-v="${ci}-${i}-${j}" aria-label="${h(t.titulo)}${livre ? "" : " (bloqueado)"}"${est(estCat(curso), "card", "card")}>
-        ${t.capa || curso.capa ? `<span class="ig-card-img">${img(t.capa || curso.capa, "")}</span>` : ""}<span class="ig-card-veu" aria-hidden="true"></span>
+        ${t.capa ? `<span class="ig-card-img">${img(t.capa, "")}</span>` : ""}<span class="ig-card-veu" aria-hidden="true"></span>
         <span class="ig-card-in"><span class="ig-selo">${h(sl.selo)}</span><span class="ig-card-tit">${h(t.titulo)}</span>
           <span class="ig-card-pe"><span>${h(sl.sub)}</span><i aria-hidden="true">${livre ? IG.play : IG.cad}</i></span></span>
       </button>`;
@@ -1515,7 +1515,7 @@ export function montar(raiz: HTMLElement) {
     if (t.tipoMidia === "pdf") return `
         <div class="mod-bloco mc eb-card${livre ? "" : " fechada"}">
           <div class="mc-top">
-            <button class="mc-capa" data-a="presente" data-v="${ci}-${i}-${j}" aria-label="Abrir ${h(t.titulo)}">${img(t.capa || curso.capa, "")}${livre ? "" : '<span class="cadeado"></span>'}</button>
+            <button class="mc-capa" data-a="presente" data-v="${ci}-${i}-${j}" aria-label="Abrir ${h(t.titulo)}">${img(t.capa, "")}${livre ? "" : '<span class="cadeado"></span>'}</button>
             <div class="mc-info">
               <button class="mc-cab" data-a="presente" data-v="${ci}-${i}-${j}"><span class="mc-rot">${h(curso.nome)}</span><b class="mc-tit serif">${h(t.titulo)}</b></button>
               <span class="mc-meta">${ICONES.livro}Leitura</span>
@@ -1525,7 +1525,7 @@ export function montar(raiz: HTMLElement) {
         </div>`;
     return `
         <button class="la-item${livre ? "" : " fechada"}" data-a="presente" data-v="${ci}-${i}-${j}">
-          <span class="la-capa">${img(t.capa || curso.capa, "")}<span class="la-ic">${livre ? (feitaId(t.id) ? "✓" : "") : '<span class="cadeado"></span>'}</span></span>
+          <span class="la-capa">${img(t.capa, "")}<span class="la-ic">${livre ? (feitaId(t.id) ? "✓" : "") : '<span class="cadeado"></span>'}</span></span>
           <span class="la-info"><b>${h(curso.nome)} · ${j + 1}</b><span>${h(t.titulo)}</span>${livre ? `<em>${feitaId(t.id) ? "Concluído" : "Disponível"}</em>` : `<span class="aviso-lib">${ICONES.cadeado}Libera em breve</span>`}</span>
           ${livre ? `<span class="la-assistir" aria-hidden="true">${ICONES.play}${freq ? "Ouvir" : "Assistir"}</span>` : ""}
         </button>`;
@@ -1560,7 +1560,7 @@ export function montar(raiz: HTMLElement) {
     const x = opcaoAberta(); if (!x) return `<div class="pagina"><div class="barra-aula"><button class="voltar voltar-btn" data-a="opcao-voltar">${ICONES.seta_esq}Voltar</button></div><div class="vazio">Este conteúdo não está disponível agora.</div></div>`;
     const { op, item, c } = x;
     const R = Object.assign({}, op.tipo === "audio" ? ROT.freq : ROT.mestres, { item: "", sobre: "Sobre", instr: "Instruções", pdf: "PDF", comentar: "" });
-    const capa = op.capaPath ? fotoOuSite(op.capaPath) : item.capa || (c.curso && c.curso.capa);
+    const capa = op.capaPath ? fotoOuSite(op.capaPath) : "";
     const pdf = pdfDe(op.extras); const extras = (op.extras || []).filter((y) => y.publicado !== false && y !== pdf);
     return `
     <div class="pagina" style="padding:0">
@@ -1659,7 +1659,7 @@ export function montar(raiz: HTMLElement) {
       return `
     <div class="pagina" style="padding:0">
       ${cabConteudo(voltaE === "cursoPres" ? curso.nome : NOME_VOLTA[voltaE] || curso.nome)}
-      <div class="pagina eb">${blocoEbook(t, t.capa || curso.capa, livre, est.txt)}</div>
+      <div class="pagina eb">${blocoEbook(t, t.capa, livre, est.txt)}</div>
     </div>`;
     }
     const ultimo = j + 1 >= curso.itens.length;
@@ -1679,7 +1679,7 @@ export function montar(raiz: HTMLElement) {
       ${cabConteudo(volta === "cursoPres" ? curso.nome : NOME_VOLTA[volta] || curso.nome)}
       <div class="aula-col">
         <div>
-          ${livre ? playerHtml(t.id, t.capa || curso.capa, true, Object.assign({ titulo: t.titulo, ultima: ultimo }, R)) : `<div class="player">${img(t.capa || curso.capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.cadeado}</span><p class="fim-rot">${h(est.txt)}</p></div></div>`}
+          ${livre ? playerHtml(t.id, t.capa, true, Object.assign({ titulo: t.titulo, ultima: ultimo }, R)) : `<div class="player">${img(t.capa, "")}<span class="veu"></span><div class="fim-sobre" role="status"><span class="fim-ic">${ICONES.cadeado}</span><p class="fim-rot">${h(est.txt)}</p></div></div>`}
           <div class="pagina">
             <div class="dois-botoes">
               <button class="nav-ant" ${j > 0 ? `data-a="presente" data-v="${ci}-${i}-${j - 1}"` : "disabled"}>${ICONES.chev_esq}${h(R.ant)}</button>
@@ -1692,7 +1692,7 @@ export function montar(raiz: HTMLElement) {
               <h2 id="h-prox">${h(R.lista)}</h2>
               ${prox.map((x, n) => { const jj = j + 1 + n; const e = estadoItem(curso, jj, R); return `
               <button class="prox-card${e.fech ? " fechada" : ""}" data-a="presente" data-v="${ci}-${i}-${jj}">
-                <span class="capa">${img(x.capa || curso.capa, "")}<span class="prox-play">${e.fech ? '<span class="cadeado"></span>' : ""}</span></span>
+                <span class="capa">${img(x.capa, "")}<span class="prox-play">${e.fech ? '<span class="cadeado"></span>' : ""}</span></span>
                 <span class="prox-info"><b>${h(curso.nome)} · ${jj + 1}</b><span>${h(x.titulo)}</span>${e.fech ? `<span class="aviso-lib">${ICONES.cadeado}${h(e.txt)}</span>` : `<em>${h(e.txt)}</em>`}</span>
                 ${e.fech ? "" : `<span class="la-assistir" aria-hidden="true">${ICONES.play}${h(R.tocar)}</span>`}
               </button>`; }).join("")}
