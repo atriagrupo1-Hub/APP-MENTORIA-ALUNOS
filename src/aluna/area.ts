@@ -1487,7 +1487,7 @@ export function montar(raiz: HTMLElement) {
     ${cssProprio ? `<style>${cssProprio}</style>` : ""}<article class="cur-card" data-cid="${curso.id}" style="--mc:${COR}">
       <button class="cur-capa" data-a="curso-pres" data-v="${key}" aria-label="Abrir ${h(curso.nome)}">${img(curso.capa, "")}</button>
       <div class="cur-info">
-        ${rot ? `<p class="cur-rot"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>${h(rot)}</p>` : ""}
+        ${rot ? `<p class="cur-rot">${curso.itens.length && curso.itens.every((x) => (MIDIA.get(x.id) || {}).tipo === "pdf") ? "" : `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>`}${h(rot)}</p>` : ""}
         <button class="cur-cab" data-a="curso-pres" data-v="${key}"><b class="cur-tit serif">${h(curso.nome)}</b></button>
         ${curso.descricao ? `<p class="cur-desc">${h(curso.descricao)}</p>` : ""}
         <div class="cur-prog" aria-label="${pct}% concluído"><span><i style="width:${pct}%"></i></span><em>${pct}%</em></div>
