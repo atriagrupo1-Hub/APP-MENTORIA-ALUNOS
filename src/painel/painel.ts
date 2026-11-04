@@ -3842,6 +3842,14 @@ export function montar(app: HTMLElement) {
     const raiz = document.querySelector<HTMLElement>(".ce-mod"); const x = ui.modPagina ? acharModulo(ui.modPagina) : null; if (!raiz || !x) return;
     pintarPassosEm(raiz, passosMod(x.m));
   }
+  /** Publicado (azul) ou Não publicado (vermelho), com menu para trocar. Usa o mesmo campo "publicado" do módulo. */
+  function seletorPub(m: Modulo) {
+    const k = "mpub:" + m.id;
+    return `<span class="est3 mpub"><button type="button" class="mpub-pil ${m.pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${m.pub ? "Publicado" : "Não publicado"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+      <button type="button" role="menuitemradio" aria-checked="${m.pub}" data-a="estado-set" data-v="mod:${m.id}:${m.ativo ? "ativo" : "bloqueado"}"><span class="mpub-pil on">Publicado</span></button>
+      <button type="button" role="menuitemradio" aria-checked="${!m.pub}" data-a="estado-set" data-v="mod:${m.id}:desativado"><span class="mpub-pil off">Não publicado</span></button>
+    </span>` : ""}</span>`;
+  }
   function modulosCurso(c: Curso) {
     const q = norm(ui.modBusca || "").trim();
     return `
@@ -3887,7 +3895,7 @@ export function montar(app: HTMLElement) {
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
-              ${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}
+              ${i === 0 ? seletorPub(m) : ""}${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
                 <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>

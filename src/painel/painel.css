@@ -4510,3 +4510,10 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ms-sep { width: 1px; height: 26px; background: #d9c8a0; }
 .cs-mods .cs-mod.ms-on { background: #fbf4e4; border-color: #e3d2a8; }
 @media (max-width: 760px) { .ms-bts { margin-left: 0; } .ms-sep { display: none; } }
+/* Publicado (azul) / Não publicado (vermelho) no módulo */
+.mpub { position: relative; flex: none; }
+.mpub-pil { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; font: inherit; font-size: 13px; font-weight: 700; border: 0; border-radius: 99px; cursor: pointer; white-space: nowrap; }
+.mpub-pil svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.mpub-pil.on { color: #2f4ea3; background: #e6ecfb; }
+.mpub-pil.off { color: #b3261e; background: #fbe4e2; }
+.cs-mod-linha .mpub + .est3 { min-width: 200px; }
