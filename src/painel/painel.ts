@@ -3850,7 +3850,7 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
     const op = (v: string, t: string, dis = false) => `<label class="pm-op${dis ? " dis" : ""}"><input type="radio" name="libModo" value="${v}" form="formMod" ${modo === v ? "checked" : ""} ${dis ? "disabled" : ""} data-pm />${t}</label>`;
     const sel = (nome: string, ops: [string, string][], val: string) => `<select class="campo pm-sel" name="${nome}" form="formMod" data-pm>${ops.map(([v, t]) => `<option value="${v}" ${v === val ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
-      <section class="cs-cartao pm" data-pm-box data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant ? ant.ant.rot + " " + ant.num : "")}">
+      <section class="cs-cartao pm" data-pm-box data-criado="${h(m.libera && new Date(m.libera) <= new Date() ? m.libera : m.criado)}" data-ant="${h(ant?.data || "")}" data-ant-nome="${h(ant ? ant.ant.rot + " " + ant.num : "")}">
         <div class="pm-cab"><span class="pm-num">${numModulo(c, i)}</span><div><b>${h(m.rot)} ${numModulo(c, i)} — ${h(tituloApp(m.nome))}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></div><span class="pm-passo">4. Publicação e liberação</span></div>
         <div class="pm-grade">
           <div class="pm-col"><h4>${IC.pub}Publicação ${dicaCampo(`Não publicado: fica como rascunho; as alunas não veem nem acessam. Publicado: você escolhe o acesso.`, "pm.pub")}</h4>${sel("pubSel", [["1", "Publicado"], ["0", "Não publicado"]], m.rascunho ? "0" : "1")}</div>
@@ -3903,7 +3903,7 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
       if (modo === "prazo") { const d = dias("libDiasPrazo"), a = bx.dataset.ant || ""; t = "Publicado • Liberado em " + p(d, "dia", "dias"); sub = a ? "Após a última aula do " + bx.dataset.antNome + " (" + br(diaDe(a)) + "): libera em " + br(diaDe(new Date(new Date(a).getTime() + d * 864e5).toISOString())) + "." : "Aguardando a liberação do módulo anterior."; }
       else if (modo === "data") { const dt = val("libera"); t = "Publicado • Liberado " + (dt ? "em " + dataHoraCurta(new Date(dt).toISOString()) : "(escolha a data)"); sub = "Para todas as alunas, inclusive as que entrarem depois."; }
       else if (modo === "cadastro") { t = "Publicado • Liberado " + p(dias("libDiasCad"), "dia", "dias") + " após o cadastro"; sub = "Contados do cadastro de cada aluna, entrando no app ou não."; }
-      else { t = "Publicado • Liberado imediatamente"; sub = "Disponível agora para as alunas com acesso."; }
+      else { const cr = bx.dataset.criado || ""; t = "Publicado • Liberado imediatamente"; sub = cr ? "Liberado desde " + br(diaDe(cr)) + " (data de criação), para as alunas com acesso." : "Disponível agora para as alunas com acesso."; }
     }
     const r = bx.querySelector<HTMLElement>("[data-pm-res]")!; r.className = "pm-res " + cls; r.innerHTML = `<b>${h(t)}</b><span>${h(sub)}</span>`;
   }
