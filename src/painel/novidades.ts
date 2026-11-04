@@ -5,6 +5,11 @@
 export type Novidade = { data: string; titulo: string; itens: string[] };
 
 export const NOVIDADES: Novidade[] = [
+  { data: "2026-11-04", titulo: "Publicação e liberação em tudo", itens: [
+    "Todos os módulos, aulas, cursos e categorias usam agora a publicação separada do acesso (Liberado, Bloqueado, Oculto ou Rascunho).",
+    "Na mentoria, depois da Aula 2 do Módulo 1, tudo está Publicado e Bloqueado até ser liberado numa data.",
+    "Botão Atualizar recarrega o painel e volta para a mesma página.",
+  ] },
   { data: "2026-11-04", titulo: "Publicação e liberação (em teste)", itens: [
     "Módulo 0, curso Bênçãos Ilimitadas e aulas do Módulo 0: publicação separada do acesso (Liberado, Bloqueado, Oculto ou Rascunho).",
     "Quatro formas de liberar: imediatamente, após um prazo, em uma data ou X dias após o cadastro da aluna.",

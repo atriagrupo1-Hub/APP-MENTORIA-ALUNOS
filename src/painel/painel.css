@@ -4630,3 +4630,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .nov .rodape-modal { justify-content: flex-end; }
 .nov-item ul { list-style: disc; } .nov-item li { margin: 2px 0; }
 .kg-vis { gap: 6px; } .kg-vis .est3-menu { left: 0; right: auto; }
+.mest-aula { width: 250px; justify-content: flex-start; } @media (max-width: 1100px) { .mest-aula { width: auto; } }
