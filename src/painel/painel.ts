@@ -86,7 +86,7 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -446,7 +446,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const cd: Record<string, any> = versaoCfg === "geral" ? comModulosDaBase({ ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia }, cfgBase) : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "", rascunho: !!x.rascunho, libera: x.libera_em ?? "" })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "", rascunho: !!x.rascunho, libera: x.libera_em ?? "", liberaModo: x.libera_modo ?? "", liberaDias: (x.libera_dias as unknown as number) ?? null, publicadoEm: x.publicado_em ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
@@ -3119,7 +3119,6 @@ export function montar(app: HTMLElement) {
    * categoria; embaixo, os cartões das categorias, lado a lado, como em
    * Cursos e conteúdos. O menu do app terá a sua própria tela.
    */
-  const IC_CHECK_PUB = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 21h14"/></svg>`;
   /** Só cursos de verdade: os antigos produtos com o mesmo nome de uma categoria (Descobertas, E-books…) são a própria categoria, não um curso. */
   const cursosDeVerdade = () => S.cursos.filter((c) => ehCursoReal(c.id));
   function telaCategorias() {
@@ -3213,14 +3212,7 @@ export function montar(app: HTMLElement) {
                 <button type="button" class="al-botao-ouro" data-a="catx-item-add" data-id="${x.id}">${IC_ABAC.mais}Adicionar</button>
               </div>
             </section>
-            <section class="cs-cartao ce-bloco" data-ce-bloco="5">
-              ${cab("5", "Publicação e liberação", dicaCampo(`A categoria é que manda: se ela liberar numa data, nada do que está dentro dela (cursos, módulos e aulas) abre antes dessa data.`, "cat.libera"))}
-              <div class="ce-pl">
-                <label class="cs-campo"><span>Visibilidade</span><select class="campo" data-vis-est="catx:${x.id}">${([["ativo", "Ativa — visível e liberada na área da aluna"], ["bloqueado", "Bloqueada — aparece com cadeado"], ["desativado", "Oculta — não aparece na área da aluna"]] as [Estado3, string][]).map(([v, t]) => `<option value="${v}" ${estado3(x.pub, x.bloq) === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-                <label class="cs-campo"><span>Liberação</span><select class="campo" name="libModo" form="catxForm" data-lib-modo>${[["ja", "Imediata"], ["data", "Escolher data"]].map(([v, t]) => `<option value="${v}" ${(x.libera ? "data" : "ja") === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-                <input type="datetime-local" class="campo ce-pl-data" name="libera" form="catxForm" value="${h(dataLocal(x.libera))}" ${x.libera ? "" : "hidden"} aria-label="Data de liberação" />
-              </div>
-            </section>
+            <div class="pm-aula pm-cat">${blocoPubCat(x)}</div>
           </div>
           <div class="cat-dir">
             <section class="cs-cartao cs-prev-curso cat-prev">
@@ -3238,13 +3230,7 @@ export function montar(app: HTMLElement) {
             </section>
           </div>
         </div>
-        <footer class="kx-pe ce-cat-pe"><div class="cs-ed-pe kx-pe-in ce-pe2">
-          <span class="ce-pub${x.rascunho ? "" : " ok"}">${x.rascunho ? "● Não publicada" : "✓ Publicada"}</span>
-          <span class="ce-falta" data-ce-falta></span>
-          <button type="button" class="al-botao" data-a="catx-fechar">Cancelar</button>
-          <button type="submit" form="catxForm" class="${x.rascunho ? "al-botao" : "al-botao-ouro"}">Salvar alterações</button>
-          ${x.rascunho ? `<button type="button" class="al-botao-ouro ce-publicar" data-a="catx-publicar">${IC_CHECK_PUB}Publicar categoria</button>` : ""}
-        </div></footer>
+
       </aside>`;
   }
   /** Dentro da categoria: só os cursos dela, em cartões. */
@@ -3852,7 +3838,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     pintarPassosEm(raiz, passosMod(x.m));
   }
   /** Item 4 do Editar módulo (primeiro módulo): publicação, acesso, como liberar e o resumo; tudo grava ao Salvar módulo. */
-  type PubOpts = { extra?: string; form: string; num: string; quem: string; criado: string; publicadoEm: string; rascunho: boolean; pub: boolean; bloq: boolean; libera: string; liberaModo: string; liberaDias: number | null; ant: { data: string; nome: string } | null; semPrazo: string; cats: string[] };
+  type PubOpts = { catsRot?: string; extra?: string; form: string; num: string; quem: string; criado: string; publicadoEm: string; rascunho: boolean; pub: boolean; bloq: boolean; libera: string; liberaModo: string; liberaDias: number | null; ant: { data: string; nome: string } | null; semPrazo: string; cats: string[] };
   /** Item "Publicação e liberação" (módulo e curso): publicação, acesso, como liberar e o resumo; grava ao Salvar. */
   function blocoPub(o: PubOpts) {
     const ant = o.ant, e = estado3(o.pub, o.bloq), F = o.form;
@@ -3877,7 +3863,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
           <div class="pm-col"><h4>${IC.est}Resumo do status</h4>${ui.pmEditar ? `<div class="pm-res" data-pm-res></div>` : ""}</div>
         </div>
         <div class="pm-pe">
-          <span class="pm-info">${IC.tag}<b>Categorias:</b> ${o.cats.length ? o.cats.map((n) => `<span class="pm-cat">${h(n)}</span>`).join("") : `<em class="pm-sem">Nenhuma categoria</em>`}</span>
+          <span class="pm-info">${IC.tag}<b>${o.catsRot || "Categorias"}:</b> ${o.cats.length ? o.cats.map((n) => `<span class="pm-cat">${h(n)}</span>`).join("") : `<em class="pm-sem">Nenhuma categoria</em>`}</span>
           ${o.extra || ""}
           <span class="ce-falta" data-ce-falta></span>
           <span class="pm-bts"${ui.pmEditar ? "" : " hidden"}><button type="button" class="al-botao" data-a="pm-cancelar">Cancelar</button><button type="submit" form="${F}" class="al-botao-ouro">${IC_SALVAR}Salvar</button></span>
@@ -3889,6 +3875,9 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cats = [...new Set(S.catItens.filter((x) => (x.tipo === "curso" && x.item === c.id) || (x.tipo === "modulo" && x.item === m.id)).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
     return blocoPub({ form: "formMod", num: "4", quem: "o módulo", criado: m.criado, publicadoEm: m.publicadoEm, rascunho: m.rascunho, pub: m.pub, bloq: !m.ativo, libera: m.libera, liberaModo: m.liberaModo, liberaDias: m.liberaDias, ant: a ? { data: a.data, nome: a.ant.rot + " " + a.num } : null, semPrazo: "Primeiro módulo do curso: não há módulo anterior para contar o prazo.", cats });
   }
+  function blocoPubCat(x: CatAba) {
+    return blocoPub({ form: "catxForm", num: "5", quem: "a categoria", criado: x.criado, publicadoEm: x.publicadoEm, rascunho: x.rascunho, pub: x.pub, bloq: x.bloq, libera: x.libera, liberaModo: x.liberaModo, liberaDias: x.liberaDias, ant: null, semPrazo: "-", catsRot: "Botão do app", cats: [cat(x.aba)?.nome || ""].filter(Boolean) });
+  }
   function blocoPubCurso(c: Curso) {
     const cats = [...new Set(S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
     return blocoPub({ form: "formCurso", num: "5", quem: "o curso", criado: c.criado, publicadoEm: c.publicadoEm, rascunho: c.rascunho, pub: c.visivel, bloq: c.bloq, libera: c.libera, liberaModo: c.liberaModo, liberaDias: c.liberaDias, ant: null, semPrazo: "-", cats });
@@ -3898,8 +3887,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cats = [...new Set(S.catItens.filter((x) => (x.tipo === "curso" && x.item === c.id) || (x.tipo === "modulo" && x.item === m.id) || (x.tipo === "aula" && x.item === a.id)).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
     return `<div class="pm-aula">${blocoPub({ form: "formAula", num: "", quem: "a aula", criado: a.criado, publicadoEm: a.publicadoEm, rascunho: a.rascunho, pub: a.pub, bloq: a.acesso === "bloqueada", libera: a.libera, liberaModo: a.liberaModo, liberaDias: a.liberaDias, ant: ant ? { data: ant.libera || ant.liberadaEm, nome: (ant.rot || "Aula") + " " + ant.num } : null, semPrazo: "Primeira aula do módulo: não há aula anterior para contar o prazo.", cats, extra: `<span class="pm-info"><b>Liberação para alunas:</b> ${botaoLiberacao(a)}</span>` })}</div>`;
   }
-  /** Por enquanto, a nova publicação/liberação do curso vale só no Bênçãos Ilimitadas (em teste). */
-  const ehCursoTeste = (c: Curso) => c.id === "72894a27-1b7a-4c1f-8f0b-fdd765aa075d";
+  /** A publicação/liberação nova vale para todos os cursos. */
+  const ehCursoTeste = (_c: Curso) => true;
 
   /** O que o item 4 grava no módulo. */
   function pubLibMod(form: HTMLFormElement): Record<string, unknown> {
@@ -6237,7 +6226,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "catx-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["catx-" + ui.catxEditar]; ui.catxEditar = ""; ui.sujo = null; break;
+      case "catx-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; delete previas["catx-" + ui.catxEditar]; ui.catxEditar = ""; ui.sujo = null; ui.pmEditar = false; break;
       case "catx-imagem": imgPara = alvoCapa("catx", d.id); arquivoImg.click(); return;
       case "capa-editar": {
         // Editar a capa atual: arrastar, aproximar e salvar o recorte.
@@ -7239,17 +7228,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "catx-salvar": {
-        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, rascunho: x.rascunho };
+        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, libera_modo: x.liberaModo || null, libera_dias: x.liberaDias, rascunho: x.rascunho, publicado: x.pub, bloqueada_geral: x.bloq };
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
-        // Liberação: imediata (sem data) ou na data escolhida.
-        const modoLib = (form.elements.namedItem("libModo") as RadioNodeList | null)?.value || "ja", dLib = (form.elements.namedItem("libera") as HTMLInputElement | null)?.value || "";
-        if (modoLib === "data" && (!dLib || isNaN(+new Date(dLib)))) { toast("Escolha a data de liberação da categoria."); return; }
-        const libera_em = modoLib === "data" ? new Date(dLib).toISOString() : null;
-        const publicar = v("publicar") === "1"; const campoPub = form.elements.namedItem("publicar") as HTMLInputElement | null; if (campoPub) campoPub.value = "";
+        // Publicação e liberação: as mesmas regras do módulo (o campo de bloqueio na categoria chama bloqueada_geral).
+        const pl = form.elements.namedItem("pubSel") ? pubLibMod(form) : {};
+        if ("bloqueado_geral" in pl) { pl.bloqueada_geral = pl.bloqueado_geral; delete pl.bloqueado_geral; }
+        if (pl.libera_modo === "data" && !pl.libera_em) { toast("Escolha a data de liberação da categoria."); return; }
         void executar(async () => {
-          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null, libera_em, ...(publicar ? { rascunho: false } : {}) }).eq("id", id).select("id").single());
-          await registrar(null, (publicar ? "Publicou a categoria " : "Editou a categoria ") + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null;
-          return { msg: publicar ? "Categoria salva e publicada." : x.rascunho ? "Categoria salva (ainda não publicada)." : "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
+          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null, ...pl }).eq("id", id).select("id").single());
+          await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null; ui.pmEditar = false;
+          return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
         return;
       }
@@ -7811,7 +7799,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if ((e.target as HTMLElement).closest?.("#catxForm")) pintarPassosCat();
     if ((e.target as HTMLElement).hasAttribute?.("data-pm")) pintarPubMod();
     // Editar módulo: Salvar e Cancelar só aparecem quando algo muda.
-    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formMod, #formCurso, #formAula") || ["formMod", "formCurso", "formAula"].includes(ti.getAttribute?.("form") || "")) document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); }
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formMod, #formCurso, #formAula, #catxForm") || ["formMod", "formCurso", "formAula", "catxForm"].includes(ti.getAttribute?.("form") || "")) document.querySelector<HTMLElement>(".pm-bts")?.removeAttribute("hidden"); }
     // Editar módulo: a prévia acompanha os textos.
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.ceAlvo; if (k && ti.closest?.("#formMod")) { const el = document.querySelector<HTMLElement>(`[data-mpv="${k}"]`); if (el) { const num = (ti.form?.elements.namedItem("numero") as HTMLInputElement | null)?.value ?? ""; el.textContent = k === "mrot" ? (ti.value + " " + num).trim() : k === "mbot" ? ti.value || "Ver aulas" : k === "mtit" ? tituloApp(ti.value) : ti.value; if (k === "mdesc") el.hidden = !ti.value.trim(); } } if (ti.closest?.("#formMod")) pintarPassosMod(); }
     const t = e.target as HTMLInputElement;
