@@ -3469,7 +3469,7 @@ export function montar(app: HTMLElement) {
     const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>`; };
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
     // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
-    const tipoNome = (c: Curso) => { const t = (c.cardRotulo || S.config.telas.curRotulo || "Curso").trim(); return `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}`; };
+    const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
     const card2 = (c: Curso) => `
       <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-capa")}
@@ -4143,10 +4143,10 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
           <section class="cs-cartao ce-bloco" data-ce-bloco="2">
             ${cab("2", "Textos do card", "")}
             <div class="cs-duas">
-              <div class="cs-campo"><span>${pino("A")}Texto em cima do nome ${dicaCampo(`O texto pequeno em cima do nome no card (ex.: "Curso completo"). Vazio: usa o texto padrão.`, "curso.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" data-ce-alvo="cardRotulo" value="${h(c.cardRotulo)}" maxlength="40" placeholder="${h(S.config.telas.curRotulo ?? "Curso completo")}" />${aaC("rot", "Texto em cima do nome")}</span></div>
-              <div class="cs-campo"><span>${pino("B")}Nome do curso ${dicaCampo(`O nome que aparece no card e no alto do curso.`, "curso.nome")}</span><span class="kx-campo-aa"><input class="campo" name="nome" data-ce-alvo="nome" value="${h(c.nome)}" required />${aaC("titulo", "Nome do curso")}</span></div>
+              <div class="cs-campo"><span>${pino("A")}Texto em cima do nome * ${dicaCampo(`Obrigatório. O texto pequeno em cima do nome no card e antes do nome na lista do painel (ex.: "Curso completo", "E-book", "Frequência").`, "curso.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" data-ce-alvo="cardRotulo" value="${h(c.cardRotulo)}" maxlength="40" required placeholder="${h(S.config.telas.curRotulo ?? "Curso completo")}" />${aaC("rot", "Texto em cima do nome")}</span></div>
+              <div class="cs-campo"><span>${pino("B")}Nome do curso * ${dicaCampo(`Obrigatório. O nome que aparece no card e no alto do curso.`, "curso.nome")}</span><span class="kx-campo-aa"><input class="campo" name="nome" data-ce-alvo="nome" value="${h(c.nome)}" required />${aaC("titulo", "Nome do curso")}</span></div>
               <div class="cs-campo ce-largo"><span>${pino("C")}Descrição ${dicaCampo(AJ.desc)}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" data-ce-alvo="descricao" rows="2" maxlength="500" data-conta-max="500">${h(c.descricao)}</textarea>${aaC("desc", "Descrição")}</span><em class="cs-conta">${c.descricao.length}/500</em></div>
-              <div class="cs-campo"><span>${pino("D")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: usa o texto padrão.`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" data-ce-alvo="cardBotao" value="${h(c.cardBotao)}" maxlength="30" placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
+              <div class="cs-campo"><span>${pino("D")}Texto do botão * ${dicaCampo(`Obrigatório. O que está escrito no botão do card (ex.: "Ver curso", "Ler e-book").`, "curso.botao")}</span><span class="kx-campo-aa"><input class="campo" name="cardBotao" data-ce-alvo="cardBotao" value="${h(c.cardBotao)}" maxlength="30" required placeholder="${h(S.config.telas.curBotao || "Ver curso")}" />${aaC("botaotx", "Texto do botão")}</span></div>
             </div>
           </section>
           <section class="cs-cartao ce-bloco" data-ce-bloco="3">
@@ -4198,7 +4198,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const est = estCc(c);
     return [
       { nome: "Capa", ok: capa, falta: "pôr a capa" },
-      { nome: "Textos", ok: !!val("nome", c.nome).trim() && !!val("descricao", c.descricao).trim(), falta: "escrever o nome e a descrição" },
+      { nome: "Textos", ok: !!val("nome", c.nome).trim() && !!val("cardRotulo", c.cardRotulo).trim() && !!val("cardBotao", c.cardBotao).trim(), falta: "preencher o texto em cima do nome, o nome e o texto do botão" },
       { nome: "Onde aparece", ok: cats > 0, falta: "escolher onde o curso aparece" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: estado3(c.visivel, c.bloq) === "ativo", falta: "deixar o curso Ativo" },
@@ -7433,6 +7433,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           void executar(async () => { falhou(await supabase.from("categorias").update({ titulo: v("nome") }).eq("id", id).select("id").single()); ui.editando = null; return { msg: "Categoria renomeada.", texto: "nome da categoria " + velho, desfazer: async () => { falhou(await supabase.from("categorias").update({ titulo: velho }).eq("id", id).select("id").single()); } }; }); }
         return;
       case "curso-config": {
+        if (!v("cardRotulo").trim() || !v("nome").trim() || !v("cardBotao").trim()) { toast("Preencha o texto em cima do nome, o nome do curso e o texto do botão."); return; }
         const c = curso(ui.curso)!; const cid = c.id;
         // Categorias marcadas, só das abas ligadas.
         const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value);
