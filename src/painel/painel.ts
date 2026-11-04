@@ -3790,7 +3790,7 @@ export function montar(app: HTMLElement) {
           </section>
         </div>
       </div>
-${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
+${ehModTeste(m) ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
         <span class="cs-ed-st"><b><i class="ce-num ce-num-n">4</i>Status ${dicaCampo(AJ.statusMod)}</b>${seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
         <label class="ce-libera">${IC_CUR.cal}<span>Liberar em ${dicaCampo(AJ.liberaMod)}</span><input type="datetime-local" class="campo" name="libera" form="formMod" value="${h(dataLocal(m.libera))}" /></label>
         <span class="ce-mod-info">${situacaoModulo(m)}<span class="ce-mod-cats"><em>Também nas categorias:</em> ${naCategoria("modulo", m.id)}</span></span>
@@ -3912,6 +3912,8 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
     const r0 = bx.querySelector<HTMLElement>("[data-pm-res]")!; r0.className = "pm-res " + cls;
     r0.innerHTML = `<b>${h(t)}</b><dl><dt>Data de criação:</dt><dd>${dia(criado)}</dd><dt>Data de publicação:</dt><dd>${pubEm === "ao salvar" ? "Ao salvar" : pubEm ? dia(pubEm) : "—"}</dd><dt>Data de liberação:</dt><dd>${h(libTx)}</dd></dl>`;
   }
+  /** Por enquanto, a nova publicação/liberação vale só no Módulo 0 do curso Bênçãos Ilimitadas (em teste). */
+  const ehModTeste = (m: Modulo) => m.id === "76e20306-7f78-4502-8633-918f3e2d5f07";
   /** Módulo anterior no curso e a data em que a última aula dele foi liberada (para a regra "prazo"). */
   function anteriorDe(m: Modulo) {
     const x = acharModulo(m.id); if (!x || x.i < 1) return null;
@@ -3990,7 +3992,7 @@ ${i === 0 ? blocoPubMod(c, m, i) : `      <footer class="cs-ed-pe">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
-              <span class="mest">${i === 0 ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
+              <span class="mest">${ehModTeste(m) ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
                 <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
