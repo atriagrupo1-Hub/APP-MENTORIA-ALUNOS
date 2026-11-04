@@ -4604,3 +4604,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-res-so { margin: 16px 20px; }
 .pm-res-so dl { grid-template-columns: repeat(3, auto 1fr); }
 @media (max-width: 760px) { .pm-res-so dl { grid-template-columns: auto 1fr; } }
+.pm-bts { display: flex; gap: 10px; } .pm-bts[hidden] { display: none; }
