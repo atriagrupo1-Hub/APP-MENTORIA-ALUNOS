@@ -3468,11 +3468,13 @@ export function montar(app: HTMLElement) {
       </span>` : ""}</span>`; };
     const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>`; };
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
+    // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
+    const tipoNome = (c: Curso) => { const t = (c.cardRotulo || S.config.telas.curRotulo || "Curso").trim(); return `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}`; };
     const card2 = (c: Curso) => `
       <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
-          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>${menu(c)}</div>
+          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${tipoNome(c)}</button>${menu(c)}</div>
           ${cats(c)}${selos(c)}${stats(c)}${quando(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
@@ -3480,7 +3482,7 @@ export function montar(app: HTMLElement) {
     const linha2 = (c: Curso) => `
       <article class="cc2-linha${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-mini")}
-        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button>${cats(c)}${selos(c)}</div>
+        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${tipoNome(c)}</button>${cats(c)}${selos(c)}</div>
         ${stats(c)}
         <div class="cc2-bts">${bts(c)}${menu(c)}</div>
       </article>`;
