@@ -3892,6 +3892,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cats = [...new Set(S.catItens.filter((x) => (x.tipo === "curso" && x.item === c.id) || (x.tipo === "modulo" && x.item === m.id)).map((x) => x.cat))].map((id) => catAba(id)?.nome).filter(Boolean) as string[];
     return blocoPub({ form: "formMod", num: "4", quem: "o módulo", criado: m.criado, publicadoEm: m.publicadoEm, rascunho: m.rascunho, pub: m.pub, bloq: !m.ativo, libera: m.libera, liberaModo: m.liberaModo, liberaDias: m.liberaDias, ant: a ? { data: a.data, nome: a.ant.rot + " " + a.num } : null, semPrazo: "Primeiro módulo do curso: não há módulo anterior para contar o prazo.", cats });
   }
+  /** E-book: todas as aulas do curso são PDF (aí o card não mostra o ícone de vídeo). */
+  const ehEbook = (c: Curso) => { const as = c.modulos.flatMap((m) => m.aulas); return as.length > 0 && as.every((a) => a.tipo === "pdf"); };
   function blocoPubCat(x: CatAba) {
     return blocoPub({ form: "catxForm", num: "5", quem: "a categoria", criado: x.criado, publicadoEm: x.publicadoEm, rascunho: x.rascunho, pub: x.pub, bloq: x.bloq, libera: x.libera, liberaModo: x.liberaModo, liberaDias: x.liberaDias, ant: null, semPrazo: "-", catsRot: "Botão do app", cats: [cat(x.aba)?.nome || ""].filter(Boolean) });
   }
@@ -4198,7 +4200,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
             <div class="cc-cel ce-cel${ui.catxPrevia === "computador" ? " kx-comp" : ""}"><article class="cc-card${estado3(c.visivel, c.bloq) === "ativo" ? "" : " cc-off"}">
               <span class="cc-capa" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
               <div class="cc-info">
-                <p class="cc-rot" data-ce-pino="A"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg><span data-cc="cardRotulo">${h(c.cardRotulo || (S.config.telas.curRotulo ?? "Curso completo"))}</span></p>
+                <p class="cc-rot" data-ce-pino="A">${ehEbook(c) ? "" : `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.3v5.4l4.6-2.7z"/></svg>`}<span data-cc="cardRotulo">${h(c.cardRotulo || (S.config.telas.curRotulo ?? "Curso completo"))}</span></p>
                 <b class="cc-tit" data-cc="nome" data-ce-pino="B">${h(c.nome)}</b>
                 <p class="cc-desc" data-cc="descricao" data-ce-pino="C"${c.descricao ? "" : " hidden"}>${h(c.descricao)}</p>
                 <div class="cc-prog"><span><i style="width:38%"></i></span><em>38%</em></div>
