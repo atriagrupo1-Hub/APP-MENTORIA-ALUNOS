@@ -3456,9 +3456,10 @@ export function montar(app: HTMLElement) {
     const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
     const nAl = (c: Curso) => numerosCurso(c).alunas;
     const lista2 = S.cursos.filter((c) => (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
-        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq : c.bloq)) && (!fPub || (fPub === "pub" ? c.visivel : !c.visivel)))
+        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
-    const selos = (c: Curso) => `<span class="cc2-selos"><span class="cc2-selo ${c.bloq ? "am" : "vd"}">${c.bloq ? "Bloqueado" : "Ativo"}</span><span class="cc2-selo ${c.visivel ? "az" : "cz"}">${c.visivel ? "Publicado" : "Rascunho"}</span></span>`;
+    const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
+      : `<span class="cc2-selos"><span class="cc2-selo az">Publicado</span><span class="cc2-selo ${!c.visivel ? "vm" : c.bloq ? "am" : "vd"}">${!c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Liberado"}</span></span>`;
     const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
     const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Aula" : "Aulas"}</em></span></div>`; };
     const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
