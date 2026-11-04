@@ -86,7 +86,7 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
-type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string };
+type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string; cardRotulo: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
   id: string; nome: string; login: string; codigo: string;
@@ -446,7 +446,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const cd: Record<string, any> = versaoCfg === "geral" ? comModulosDaBase({ ...cfgBase, menu_botoes: null, ...geralRaw, produto_jornada: cfgBase.produto_jornada, capa_guia: cfgBase.capa_guia }, cfgBase) : cfgBase;
   return {
     cats: (cats.data ?? []).map((k) => ({ id: k.id, nome: k.titulo, visivel: !k.bloqueada_geral, pub: k.publicado !== false, icone: k.icone || "presentes", capa: k.capa_path ?? "", descricao: k.descricao ?? "", criado: k.criada_em ?? "" })),
-    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "", rascunho: !!x.rascunho, libera: x.libera_em ?? "", liberaModo: x.libera_modo ?? "", liberaDias: (x.libera_dias as unknown as number) ?? null, publicadoEm: x.publicado_em ?? "" })),
+    catsAba: ((catsAbaR.data ?? []) as Record<string, string & boolean>[]).map((x) => ({ id: x.id, aba: x.aba_id, nome: x.titulo, descricao: x.descricao ?? "", capa: x.capa_path ?? "", pub: x.publicado !== false, bloq: !!x.bloqueada_geral, criado: x.criada_em ?? "", icone: x.icone ?? "", cor: x.cor ?? "", estilo: limparEstilo(x.estilo), botao: x.botao_texto ?? "", rascunho: !!x.rascunho, libera: x.libera_em ?? "", liberaModo: x.libera_modo ?? "", liberaDias: (x.libera_dias as unknown as number) ?? null, publicadoEm: x.publicado_em ?? "", cardRotulo: x.card_rotulo ?? "" })),
     catItens: ((catItensR.data ?? []) as Record<string, string>[]).map((x) => ({ id: x.id, cat: x.categoria_aba_id, tipo: x.tipo as "curso" | "modulo" | "aula", item: x.item_id })),
     cursos, alunas: listaAlunas, comentarios, removidos, equipe,
     config: { marcaTitulo: cd.marca_titulo ?? "", marcaSub: cd.marca_sub ?? "", marcaTipo: cd.marca_tipo === "logo" ? "logo" : "texto", marcaLogo: cd.marca_logo ?? "", topoSaud: typeof cd.topo_saudacao === "string" ? cd.topo_saudacao : "Bem-vindo(a), {nome_completo}", topoEstilo: (cd.topo_estilo && typeof cd.topo_estilo === "object" ? cd.topo_estilo : {}) as Record<string, string>, fraseRetorno: cd.frase_retorno ?? "", saudacao: cd.inicio_saudacao ?? "Bem-vindo(a), {nome}", comece: typeof cd.inicio_comece === "string" ? cd.inicio_comece : "Comece por aqui", exibirDestaques: cd.exibir_destaques !== false, jornada: cd.produto_jornada ?? "", banner: cd.inicio_banner ?? "card", bannerImg: cd.inicio_banner_imagem ?? "", bannerVideo: cd.inicio_banner_video ?? "", estilo: cd.inicio_estilo ?? "padrao",
@@ -2434,6 +2434,7 @@ export function montar(app: HTMLElement) {
   const PARTES_KX: ParteTela[] = [
     { k: "card", nome: "Card", desc: "", tipo: "card", sel: ".kx-card" },
     { k: "botao", nome: "Botão", desc: "", tipo: "botao", sel: ".kx-card .kx-bt" },
+    { k: "rot", nome: "Texto em cima do nome", desc: "", tipo: "texto", sel: ".kx-card .kx-rot" },
     { k: "nome", nome: "Nome da categoria", desc: "", tipo: "texto", sel: ".kx-card .kx-tit" },
     { k: "desc", nome: "Descrição", desc: "", tipo: "texto", sel: ".kx-card .kx-desc" },
     { k: "botaotx", nome: "Texto do botão", desc: "", tipo: "texto", sel: ".kx-card .kx-bt b, .kx-card .kx-bt svg, .kx-card .kx-bt i" },
@@ -3156,14 +3157,14 @@ export function montar(app: HTMLElement) {
     const cartao = (x: CatAba) => `
       <article class="kg-card${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
         <div class="kg-capa-box">${capa(x, "kg-capa")}${alca}</div>
-        <button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}</button>
+        <button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button>
         <p class="kg-info">${info(x)}</p>
         <div class="kg-pe">${vis3(x)}<span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span></div>
       </article>`;
     const linha = (x: CatAba) => `
       <article class="kg-linha${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
         ${alca}${capa(x, "kg-mini")}
-        <div class="kg-ltxt"><button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}</button><p class="kg-info">${info(x)}</p></div>
+        <div class="kg-ltxt"><button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button><p class="kg-info">${info(x)}</p></div>
         ${vis3(x)}
         <span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span>
       </article>`;
@@ -3208,9 +3209,10 @@ export function montar(app: HTMLElement) {
               <section class="cs-cartao ce-bloco" data-ce-bloco="2">
                 ${cab("2", "Textos do card", "")}
                 <div class="cs-duas">
-                  <div class="cs-campo"><span>${pino("A")}Nome da categoria ${dicaCampo(`O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" data-ce-alvo="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
-                  <div class="cs-campo"><span>${pino("C")}Texto do botão ${dicaCampo(`O que está escrito no botão do card. Vazio: "Ver categoria".`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" data-ce-alvo="botaoTexto" value="${h(x.botao || "")}" maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
-                  <div class="cs-campo ce-largo"><span>${pino("B")}Descrição (opcional) ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" data-ce-alvo="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
+                  <div class="cs-campo"><span>${pino("A")}Texto em cima do nome * ${dicaCampo(`Obrigatório. O texto pequeno em cima do nome no card e antes do nome na lista do painel (ex.: "Categoria", "Coleção").`, "cat.rotulo")}</span><span class="kx-campo-aa"><input class="campo" name="cardRotulo" data-ce-alvo="cardRotulo" value="${h(x.cardRotulo)}" required maxlength="40" placeholder="Categoria" />${aa("rot", "Texto em cima do nome")}</span></div>
+                  <div class="cs-campo"><span>${pino("B")}Nome da categoria * ${dicaCampo(`Obrigatório. O nome que aparece no card e no alto da categoria.`, "cat.nome")}</span><span class="kx-campo-aa"><input id="catxNome" class="campo" name="nome" data-ce-alvo="nome" value="${h(x.nome)}" required maxlength="80" />${aa("nome", "Nome da categoria")}</span></div>
+                  <div class="cs-campo ce-largo"><span>${pino("C")}Descrição ${dicaCampo(`O texto embaixo do nome no card. Vazio: não aparece.`, "cat.desc")}</span><span class="kx-campo-aa kx-ta"><textarea class="campo" name="descricao" data-ce-alvo="descricao" rows="2" maxlength="200">${h(x.descricao)}</textarea>${aa("desc", "Descrição")}</span></div>
+                  <div class="cs-campo"><span>${pino("D")}Texto do botão * ${dicaCampo(`Obrigatório. O que está escrito no botão do card (ex.: "Ver categoria").`, "cat.botao")}</span><span class="kx-campo-aa"><input class="campo" name="botaoTexto" data-ce-alvo="botaoTexto" value="${h(x.botao || "")}" required maxlength="30" placeholder="Ver categoria" />${aa("botaotx", "Texto do botão")}</span></div>
                 </div>
               </section>
             </form>
@@ -3232,9 +3234,10 @@ export function montar(app: HTMLElement) {
               <div class="kx-cel ce-cel${comp ? " kx-comp" : ""}"><article class="kx-card">
                 <span class="kx-capa" data-previa="catx-${x.id}">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
                 <div class="kx-info">
-                  <b class="kx-tit" data-kx="nome" data-ce-pino="A">${h(x.nome)}</b>
-                  <p class="kx-desc" data-kx="descricao" data-ce-pino="B"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
-                  <span class="kx-bt" data-ce-pino="C"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-kx="botaoTexto">${h(x.botao || "Ver categoria")}</b><i aria-hidden="true">›</i></span>
+                  <p class="kx-rot" data-kx="cardRotulo" data-ce-pino="A"${x.cardRotulo ? "" : " hidden"}>${h(x.cardRotulo)}</p>
+                  <b class="kx-tit" data-kx="nome" data-ce-pino="B">${h(x.nome)}</b>
+                  <p class="kx-desc" data-kx="descricao" data-ce-pino="C"${x.descricao ? "" : " hidden"}>${h(x.descricao)}</p>
+                  <span class="kx-bt" data-ce-pino="D"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b data-kx="botaoTexto">${h(x.botao || "Ver categoria")}</b><i aria-hidden="true">›</i></span>
                 </div>
               </article><span class="ce-pinos"></span></div>
               <div class="ce-visual"><span class="ce-vis-tit"><i class="ce-num ce-num-n">4</i>Visual <small>(opcional)</small></span><div class="kx-visual ce-vis-lado">${vis("card", "Card")}${vis("botao", "Botão")}</div></div>
@@ -4252,7 +4255,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const est = estKx(x);
     return [
       { nome: "Capa", ok: !!(previas["catx-" + x.id] || val("capa", x.capa)), falta: "pôr a capa" },
-      { nome: "Textos", ok: !!val("nome", x.nome).trim(), falta: "escrever o nome" },
+      { nome: "Textos", ok: !!val("nome", x.nome).trim() && !!val("cardRotulo", x.cardRotulo).trim() && !!val("botaoTexto", x.botao).trim(), falta: "preencher o texto em cima do nome, o nome e o texto do botão" },
       { nome: "O que fica dentro", ok: itensReais(x.id).length > 0, falta: "pôr pelo menos um curso, módulo ou aula" },
       { nome: "Visual", ok: !!(est.card || est.botao), opcional: true, falta: "" },
       { nome: "Publicar", ok: !x.rascunho, falta: "publicar a categoria" },
@@ -6230,7 +6233,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "catx-filtro": ui.catxFiltro = d.v || ""; break;
       case "catx-entrar": ui.catxSel = d.id; ui.tab = "catAba"; ui.estMenu = ""; window.scrollTo(0, 0); break;
       case "lay-aba-ir": ui.layAba = d.v; ui.tab = "layout"; window.scrollTo(0, 0); break;
-      case "catx-editar": ui.catxEditar = d.id; break;
+      case "catx-editar": ui.catxEditar = d.id; ui.estMenu = ""; break;
       case "oc-aba": {
         const on = el.getAttribute("aria-pressed") !== "true"; el.setAttribute("aria-pressed", String(on));
         const g = document.querySelector<HTMLElement>('[data-oc-aba="' + d.id + '"]'); if (g) g.hidden = !on;
@@ -7280,14 +7283,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "catx-salvar": {
-        const x = catAba(id)!; const velho = { titulo: x.nome, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, libera_modo: x.liberaModo || null, libera_dias: x.liberaDias, rascunho: x.rascunho, publicado: x.pub, bloqueada_geral: x.bloq };
+        const x = catAba(id)!; const velho = { titulo: x.nome, card_rotulo: x.cardRotulo || null, descricao: x.descricao || null, capa_path: x.capa || null, botao_texto: x.botao || null, libera_em: x.libera || null, libera_modo: x.liberaModo || null, libera_dias: x.liberaDias, rascunho: x.rascunho, publicado: x.pub, bloqueada_geral: x.bloq };
         const desc = (form.elements.namedItem("descricao") as HTMLTextAreaElement).value.trim();
+        if (!v("cardRotulo").trim() || !v("nome").trim() || !v("botaoTexto").trim()) { toast("Preencha o texto em cima do nome, o nome da categoria e o texto do botão."); return; }
         // Publicação e liberação: as mesmas regras do módulo (o campo de bloqueio na categoria chama bloqueada_geral).
         const pl = form.elements.namedItem("pubSel") ? pubLibMod(form) : {};
         if ("bloqueado_geral" in pl) { pl.bloqueada_geral = pl.bloqueado_geral; delete pl.bloqueado_geral; }
         if (pl.libera_modo === "data" && !pl.libera_em) { toast("Escolha a data de liberação da categoria."); return; }
         void executar(async () => {
-          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null, ...pl }).eq("id", id).select("id").single());
+          falhou(await supabase.from("categorias_aba").update({ titulo: v("nome"), descricao: desc || null, capa_path: v("capa") || null, botao_texto: v("botaoTexto").trim() || null, card_rotulo: v("cardRotulo").trim() || null, ...pl }).eq("id", id).select("id").single());
           await registrar(null, "Editou a categoria " + v("nome"), ["catx", id]); delete previas["catx-" + id]; ui.sujo = null; ui.pmEditar = false;
           return { msg: "Categoria salva.", texto: "edição da categoria " + x.nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").update(velho).eq("id", id).select("id").single()); } };
         });
@@ -7844,7 +7848,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   });
   app.addEventListener("input", (e) => {
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
-    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto" || ti.name === "cardRotulo")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "cardRotulo" || ti.name === "cardBotao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) el.textContent = ti.value || ti.placeholder; } }
     // Sobre o curso: o card de prévia acompanha o nome e a descrição enquanto escreve.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "nome" || ti.name === "descricao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) { el.textContent = ti.value; el.hidden = !ti.value.trim(); } } }
