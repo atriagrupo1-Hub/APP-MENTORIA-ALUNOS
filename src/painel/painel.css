@@ -4612,3 +4612,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-aula .pm-col:last-child { grid-column: 1 / -1; }
 .pm-aula .pm-ops { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 @media (max-width: 760px) { .pm-aula .pm-grade, .pm-aula .pm-ops { grid-template-columns: 1fr; } }
+.mest-aula { display: flex; align-items: flex-start; gap: 8px; } .mest-aula .est3 { min-width: 0; } .mest-aula em { max-width: 170px; }
