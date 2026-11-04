@@ -4613,3 +4613,19 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .pm-aula .pm-ops { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 @media (max-width: 760px) { .pm-aula .pm-grade, .pm-aula .pm-ops { grid-template-columns: 1fr; } }
 .mest-aula { display: flex; align-items: flex-start; gap: 8px; } .mest-aula .est3 { min-width: 0; } .mest-aula em { max-width: 170px; }
+
+/* Topo: Atualizar e Novidades; chave do dono no menu do perfil; janela de novidades */
+.topo-atu svg, .topo-nov svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.topo-atu.girando svg { animation: girar .8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+.topo-nov { color: #8a6416; border-color: #d8b46e; }
+.pf-nov { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+.pf-chave { padding: 2px 9px; font-size: 11.5px; font-weight: 700; color: #6b645a; background: #ece8e1; border-radius: 99px; }
+.pf-chave.on { color: #2f6b3a; background: #e7f3e9; }
+.nov { display: flex; flex-direction: column; gap: 12px; min-width: min(560px, 86vw); max-height: 75vh; overflow: auto; }
+.nov-item { padding: 12px 14px; border: 1px solid var(--linha-suave); border-radius: 12px; background: #faf8f4; }
+.nov-data { font-size: 12px; font-weight: 700; color: #9a7230; }
+.nov-item h3 { margin: 4px 0 6px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 20px; font-weight: 600; }
+.nov-item ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
+.nov .rodape-modal { justify-content: flex-end; }
+.nov-item ul { list-style: disc; } .nov-item li { margin: 2px 0; }
