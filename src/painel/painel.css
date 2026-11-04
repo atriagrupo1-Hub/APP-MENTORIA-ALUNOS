@@ -4446,3 +4446,34 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 @media (max-width: 700px) { .ce-pl { grid-template-columns: 1fr; } }
 .ce-pe2 { flex-wrap: wrap; }
 .ce-pe2 .ce-falta { flex: 1; min-width: 160px; white-space: normal !important; }
+
+/* Módulos e aulas (referência): cada módulo é um cartão; aulas num painel interno; botões padronizados */
+.cs-cartao.cs-mods { padding: 0; background: none; border: 0; box-shadow: none; display: flex; flex-direction: column; gap: 10px; }
+.cs-mods .cs-mod { background: var(--aa-cartao, #fff); border: 1px solid var(--linha-suave); border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+.cs-mods .cs-mod.aberto { box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+.cs-mods .cs-mod-linha { gap: 14px; padding: 12px 16px; }
+.cs-mods .cs-alca { color: #b98d43; }
+.cs-mods .cs-mod-capa { width: 96px; border-radius: 8px; }
+.cs-mods .cs-mod-txt b { font-size: 15.5px; }
+.cs-mods .cs-mod-acoes { gap: 6px; }
+.cs-mods .cs-mod-acoes button { width: 36px; height: 36px; border-radius: 9px; }
+.cs-mods .cs-mod-acoes button:hover { background: #f4efe4; }
+.cs-mods .cs-mod-abre svg { transition: transform .15s; }
+.cs-mods .cs-mod.aberto .cs-mod-abre svg { transform: rotate(180deg); }
+.cs-mods .cs-mod-aulas { margin: 0 14px 14px; padding: 10px 12px 12px; background: #faf8f4; border: 1px solid var(--linha-suave); border-radius: 12px; }
+.cs-mods .cs-mod-aulas .mp-lista { display: flex; flex-direction: column; gap: 0; margin: 0; }
+.cs-mods .cs-mod-aulas .mp-aula { border: 0; border-bottom: 1px solid var(--linha-suave); border-radius: 0; background: transparent; }
+.cs-mods .cs-mod-aulas .mp-aula:last-child { border-bottom: 0; }
+.cs-mods .cs-mod-aulas .mp-aula-linha { grid-template-columns: auto 104px minmax(0, 1fr) auto auto auto; gap: 14px; padding: 9px 4px; }
+.cs-mods .cs-mod-aulas .mp-aula-capa { width: 104px; aspect-ratio: 16 / 9; border-radius: 7px; }
+.cs-mods .cs-mod-aulas .mp-aula-capa i svg { width: 26px; height: 26px; }
+.cs-mods .cs-mod-aulas .mp-aula-txt { gap: 3px; }
+.cs-mods .cs-mod-aulas .mp-aula-txt b { font-size: 14.5px; }
+.cs-mods .cs-mod-aulas .mp-aula-data { font-size: 13px; }
+.cs-mods .cs-mod-aulas .mp-aula-data svg { width: 18px; height: 18px; }
+.cs-mods .cs-mod-aulas .mp-aula-acoes { gap: 8px; }
+.cs-mods .cs-mod-aulas .mp-ic, .cs-mods .cs-mod-aulas .mp-aula-acoes .al-botao { height: 36px; min-height: 36px; border-radius: 9px; }
+.cs-mods .cs-mod-aulas .mp-ic { width: 36px; }
+.cs-mods .cs-add-aula { margin-top: 10px; background: #fff; }
+.cs-mods .cs-mod-aulas .mp-aula-mais { padding-left: 128px; }
+@media (max-width: 900px) { .cs-mods .cs-mod-aulas { margin: 0 8px 10px; } .cs-mods .cs-mod-aulas .mp-aula-linha { grid-template-columns: auto 90px minmax(0, 1fr) auto; } .cs-mods .cs-mod-aulas .mp-aula-capa { width: 90px; } .cs-mods .cs-mod-aulas .mp-aula-mais { padding-left: 12px; } }
