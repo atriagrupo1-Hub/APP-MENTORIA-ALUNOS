@@ -4694,3 +4694,15 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-falta { margin-top: -6px; }
 .cn-ia .al-botao-ouro { min-height: 38px; padding: 0 14px; font-size: 13px; }
 .cn-ia .al-botao-ouro:disabled { opacity: .6; cursor: default; }
+.cn-doc-nome em { flex: none; font-size: 12px; font-style: normal; color: var(--texto-2); }
+.cn-reduzido { flex: 1 1 100%; font-size: 13px; color: var(--texto); }
+.cn-reduzido a, .rp-res a.link { color: #9a7230; font-weight: 600; }
+.cn-doc .al-botao-ouro { min-height: 46px; }
+.rp { max-width: 720px; }
+.rp-res { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 16px; border: 1px solid var(--linha); border-radius: 12px; }
+.rp-res p { margin: 0; font-size: 14px; color: var(--texto); }
+.rp-res a.al-botao-ouro { text-decoration: none; }
+.rp svg { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.rp .cn-doc-vazio { padding: 24px; }
+.rp-res .cn-doc-nome { width: 100%; }
+.rp-res .cn-doc-nome b { white-space: normal; }
