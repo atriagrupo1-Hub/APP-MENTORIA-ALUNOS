@@ -3697,6 +3697,23 @@ export function montar(app: HTMLElement) {
   }
   const pdfGrande = (d: DocIA) => ehPdfIA(d) && d.arq.size > 30 * 1048576;
   const ehPdfIA = (d: DocIA) => d.tipo === "application/pdf" || /\.pdf$/i.test(d.nome);
+  /** Mudou o tipo (e-book ↔ outro): a capa muda de formato. Recorta a original ao centro no formato novo e redesenha. */
+  async function ajustarCapaCn() {
+    const n = ui.cn; if (!n) return;
+    const c = n.capa;
+    if (c) {
+      try {
+        const bm = await createImageBitmap(c.orig); const pr = propCn();
+        let sw = bm.width, sh = Math.round(sw / pr); if (sh > bm.height) { sh = bm.height; sw = Math.round(sh * pr); }
+        const TW = pr >= 1 ? 1920 : 1024, TH = Math.round(TW / pr);
+        const cv = document.createElement("canvas"); cv.width = TW; cv.height = TH;
+        cv.getContext("2d")!.drawImage(bm, (bm.width - sw) / 2, (bm.height - sh) / 2, sw, sh, 0, 0, TW, TH); bm.close();
+        const b = await new Promise<Blob | null>((ok) => cv.toBlob(ok, "image/webp", 0.9));
+        if (b && ui.cn?.capa === c) { URL.revokeObjectURL(c.url); const f = new File([b], "capa.webp", { type: "image/webp" }); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; }
+      } catch { /* fica a anterior */ }
+    }
+    if (ui.tab === "cursoNovo") render();
+  }
   const propCn = () => (ui.cn?.tipo === "ebook" ? 2 / 3 : 16 / 9);
   const tamArq = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
   const LIM_TEXTO_IA = 600000;
@@ -8113,7 +8130,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   });
   app.addEventListener("input", (e) => {
     { const ti = e.target as HTMLInputElement; if (ti.dataset?.cnIa && ui.cn?.ia) (ui.cn.ia as unknown as Record<string, string>)[ti.dataset.cnIa] = ti.value; }
-    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
+    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; const eraPe = n.tipo === "ebook", virouPe = ti.value === "ebook"; if (eraPe !== virouPe) queueMicrotask(() => void ajustarCapaCn()); const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto" || ti.name === "cardRotulo")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "cardRotulo" || ti.name === "cardBotao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) el.textContent = ti.value || ti.placeholder; } }
