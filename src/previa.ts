@@ -5,6 +5,7 @@
  * público `previa` do Supabase (não no site). Esta tela carrega essa versão e
  * confere a cada segundo se saiu outra: se saiu, guarda onde a pessoa está e
  * recarrega sozinha. O site oficial só muda quando alguém publica de verdade.
+ * Na prévia nada é gravado (ver soLayout): ela serve só para ver o layout.
  */
 const BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/previa/`;
 const CHAVE = "aion-previa";
@@ -36,13 +37,47 @@ function selo(texto: string) {
   el.innerHTML = `<span>● ${texto}</span><a href="?previa=0" style="color:#1a1408;text-decoration:underline">Sair da prévia</a>`;
 }
 
+/*
+ * Prévia é só layout: nada é gravado. Toda escrita no banco, no depósito de
+ * arquivos e nas funções (IA, cadastro) é barrada aqui, antes de sair da tela.
+ * Leituras continuam, para a tela mostrar os dados de verdade.
+ */
+const SUPA = String(import.meta.env.VITE_SUPABASE_URL || "");
+const RPC_LEITURA = /^(pode|eh_|conferir|listar|meu_|meus_|minha_|minhas_|resumo_|relatorio_|engajamento_|equipe_do_|alunas_do_|contatos_|comentarios_para|comentarios_do|curtidas_da|aulas_concluidas|atividades_|opcoes_|lixeira_listar|sinal_painel)/;
+function barrar(url: string, metodo: string): boolean {
+  if (!url.startsWith(SUPA) || metodo === "GET" || metodo === "HEAD") return false;
+  const c = url.slice(SUPA.length).split("?")[0];
+  if (c.startsWith("/auth/v1/")) return false; // entrar e renovar a sessão
+  if (c === "/functions/v1/entrar") return false;
+  if (c.startsWith("/rest/v1/rpc/")) return !RPC_LEITURA.test(c.slice(13));
+  return c.startsWith("/rest/v1/") || c.startsWith("/storage/v1/object") || c.startsWith("/functions/v1/");
+}
+function soLayout() {
+  const original = window.fetch.bind(window);
+  window.fetch = (entrada: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
+    const metodo = (init?.method || (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
+    if (barrar(url, metodo)) {
+      aviso();
+      return Promise.resolve(new Response(JSON.stringify({ message: "Prévia é só layout: nada foi salvo.", mensagem: "Prévia é só layout: nada foi salvo." }), { status: 403, headers: { "Content-Type": "application/json" } }));
+    }
+    return original(entrada, init);
+  };
+}
+let avisoT = 0;
+function aviso() {
+  selo("Prévia: só layout — nada foi salvo");
+  clearTimeout(avisoT); avisoT = window.setTimeout(() => selo("Prévia ao vivo · só layout"), 3500);
+}
+
 export async function iniciar(raiz: HTMLElement, normal: () => void) {
+  soLayout();
   const v = await versaoAtual();
   if (!v) { normal(); selo("Prévia sem versão em edição — mostrando o site"); return; }
   const links = v.css.map((c) => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = BASE + c; document.head.appendChild(l); return l; });
   const m = await import(/* @vite-ignore */ BASE + v.entrada);
   m.montar(raiz);
-  selo("Prévia ao vivo");
+  selo("Prévia ao vivo · só layout");
   let atual = v.id, entrada = v.entrada;
   setInterval(async () => {
     const n = await versaoAtual();
