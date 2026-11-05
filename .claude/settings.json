@@ -3,7 +3,6 @@
     "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npm run build)",
-
       "Bash(curl -sS -X POST https://api.supabase.com/v1/projects/crcclhmamknqkamvavyp/database/query *)",
       "Bash(npx tsc --noEmit *)",
       "mcp__ATOMICAT__atomicat_capture_webpage",
@@ -11,7 +10,25 @@
       "mcp__Supabase__list_edge_functions",
       "mcp__Supabase__list_organizations",
       "mcp__Supabase__list_projects",
-      "mcp__Supabase__query_logs"
+      "mcp__Supabase__query_logs",
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill",
+      "ToolSearch",
+      "mcp__claude-code-remote__report_preview_port",
+      "mcp__claude-code-remote__read_documentation",
+      "mcp__claude-code-remote__get_session",
+      "mcp__Supabase__*",
+      "mcp__github__*",
+      "mcp__Google_Drive__*",
+      "mcp__Netlify__*"
     ]
   }
 }
