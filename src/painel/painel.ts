@@ -8675,7 +8675,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, doc: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
