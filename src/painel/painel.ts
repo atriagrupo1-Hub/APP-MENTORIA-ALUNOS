@@ -512,6 +512,8 @@ async function chamarFuncao(nome: string, corpo: unknown): Promise<Record<string
 }
 
 type SlotCn = "capa" | "capaPe";
+type ItemEb = { tipo: "resumo" | "oracoes" | "oracao" | "outro"; titulo: string; texto: string; aberto?: boolean; chave: string };
+type ExtraidoEb = { resumo: string; oracoes: { titulo: string; texto: string }[]; outros: { tipo: string; titulo: string; texto: string }[] };
 type CapaCn = { orig: File; arq: File; url: string };
 /** Documento escolhido para a IA (criar curso e aula). */
 type DocIA = { nome: string; tipo: string; arq: File; caminho: string; texto?: string; original?: number; url?: string };
@@ -539,7 +541,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; extr: null | { lendo: boolean; etapa: string; achou: null | ExtraidoEb }; itens: ItemEb[]; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3619,7 +3621,7 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", ebook: null, passo: 1, mods: [{ nome: "", aulas: [{ nome: "" }] }], partes: [], hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", ebook: null, passo: 1, extr: null, itens: [], mods: [{ nome: "", aulas: [{ nome: "" }] }], partes: [], hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
@@ -3689,6 +3691,31 @@ export function montar(app: HTMLElement) {
   /* --- Criar novo curso · 02 Conteúdo: o que o curso tem dentro, conforme o tipo --- */
   /** PDF acima de 30 MB: aviso com Reduzir PDF, Trocar e Remover (Dados iniciais e Conteúdo). */
   const avisoGrandeCn = (n: NonNullable<typeof ui.cn>, qual: "doc" | "ebook" = "doc") => { const dc = n[qual]; const tr = qual === "ebook" ? "cn-eb-add" : "cn-doc", rm = qual === "ebook" ? "cn-eb-tirar" : "cn-doc-tirar"; return dc && pdfGrande(dc) ? `<div class="cn-grande" role="alert"><b>PDF muito grande (${tamArq(dc.arq.size)}).</b> O máximo é 30 MB. Reduza o PDF para continuar.<span class="cn-grande-bts"><button type="button" class="al-botao-ouro" data-a="cn-reduzir" data-v="${qual}" ${n.reduzindo ? "disabled" : ""}>${n.reduzindo ? "Reduzindo…" : "Reduzir PDF"}</button><button type="button" class="al-botao" data-a="${tr}" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="${rm}" ${n.reduzindo ? "disabled" : ""}>Remover</button></span><em data-cn-prog-red>${n.reduzindo ? h(n.etapa) : ""}</em></div>` : ""; };
+  /* Bloco 2 do e-book: a IA lê o e-book completo e mostra o que dá para separar (resumo, orações juntas ou separadas, práticas). */
+  const ROT_ITEM: Record<string, string> = { resumo: "Resumo", oracoes: "Orações juntas", oracao: "Oração", outro: "Prática" };
+  const ROT_OUTRO: Record<string, string> = { receita: "Receita", ritual: "Ritual", pratica: "Prática", meditacao: "Meditação", afirmacao: "Afirmação", outro: "Outro" };
+  function blocoExtrasCn(n: NonNullable<typeof ui.cn>) {
+    const x = n.extr, ach = x?.achou, tem = (ch: string) => n.itens.some((i) => i.chave === ch);
+    const op = (ch: string, rot: string, tit: string, sub: string) => `<li class="cn-op${tem(ch) ? " ok" : ""}"><span class="cn-op-tipo">${h(rot)}</span><span class="cn-op-txt"><b>${h(tit)}</b><em>${h(sub)}</em></span>${tem(ch) ? `<span class="cn-op-ok">✓ Adicionado</span>` : `<button type="button" class="al-botao" data-a="cn-ex-add" data-v="${ch}">${IC_CURSO.mais}Adicionar</button>`}</li>`;
+    const resumoTxt = (t: string) => t.replace(/\s+/g, " ").trim().slice(0, 110) + (t.length > 110 ? "…" : "");
+    return `<div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">2</span><div><b>Resumo e orações do e-book <i>(opcional)</i></b><em>A IA lê o e-book completo e mostra o que dá para separar. Escolha o que adicionar.</em></div>
+        <button type="button" class="al-botao-ouro" data-a="cn-ex-puxar" ${n.ebook && !pdfGrande(n.ebook) && !x?.lendo ? "" : "disabled"} title="${n.ebook ? "" : "Adicione o e-book completo no bloco 1"}">${IC_IA}${x?.lendo ? "Lendo o e-book…" : ach ? "Puxar de novo" : "Puxar do e-book"}</button></div>
+      ${!n.ebook ? `<p class="cn-nota">Adicione o e-book completo no bloco 1 para puxar o resumo e as orações.</p>` : ""}
+      ${x?.lendo ? `<p class="cn-nota" data-cn-ex-prog>${h(x.etapa || "Lendo o e-book…")}</p>` : ""}
+      ${ach ? `<div class="cn-achou"><span class="cn-rot">Encontrado no e-book</span><ul class="cn-ops">
+          ${ach.resumo ? op("resumo", "Resumo", "Resumo do e-book", resumoTxt(ach.resumo)) : ""}
+          ${ach.oracoes.length ? op("oracoes", "Orações juntas", `Todas as ${ach.oracoes.length} orações juntas`, ach.oracoes.map((o) => o.titulo).join(" · ")) : ""}
+          ${ach.oracoes.length ? `<li class="cn-op-grupo"><span class="cn-rot">Orações separadas</span>${ach.oracoes.some((_, i) => !tem("o" + i)) ? `<button type="button" class="al-botao" data-a="cn-ex-add-todas">${IC_CURSO.mais}Adicionar todas</button>` : ""}</li>${ach.oracoes.map((o, i) => op("o" + i, "Oração", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
+          ${ach.outros.length ? `<li class="cn-op-grupo"><span class="cn-rot">Práticas</span></li>${ach.outros.map((o, i) => op("p" + i, ROT_OUTRO[o.tipo] || "Prática", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
+          ${!ach.resumo && !ach.oracoes.length && !ach.outros.length ? `<li class="cn-nota">A IA não encontrou resumo nem orações neste e-book.</li>` : ""}
+        </ul></div>` : ""}
+      ${n.itens.length ? `<div class="cn-achou"><span class="cn-rot">Adicionados (${n.itens.length})</span><ol class="cn-itens">${n.itens.map((it, i) => `<li class="cn-item">
+          <div class="cn-item-cab"><span class="cn-num">${i + 1}</span><span class="cn-op-tipo">${h(ROT_ITEM[it.tipo] || "Prática")}</span><input class="campo" value="${h(it.titulo)}" data-cn-caminho="itens.${i}.titulo" />
+            <button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.-1" ${i ? "" : "disabled"} aria-label="Subir">↑</button><button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.1" ${i < n.itens.length - 1 ? "" : "disabled"} aria-label="Descer">↓</button>
+            <button type="button" class="al-botao pequeno" data-a="cn-it-abrir" data-v="${i}">${it.aberto ? "Fechar" : "Ver texto"}</button><button type="button" class="cn-x" data-a="cn-it-tirar" data-v="${i}" aria-label="Remover">×</button></div>
+          ${it.aberto ? `<textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea>` : ""}</li>`).join("")}</ol></div>` : ""}
+    </div>`;
+  }
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
     const tipo = n.tipo, IC_VID = IC_CURSO.play, IC_AUD = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6.5" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6.5" rx="1.5"/></svg>`;
     const pe = `<div class="cn-pe"><button type="button" class="al-botao" data-a="cn-passo" data-v="1">← Dados iniciais</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button><button type="button" class="al-botao-ouro" disabled>Continuar →</button></div>`;
@@ -3698,8 +3725,7 @@ export function montar(app: HTMLElement) {
       <div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">1</span><div><b>E-book completo *</b><em>O PDF completo que a aluna lê.</em></div></div>
         ${avisoGrandeCn(n, "ebook")}<div class="cn-doc"${n.ebook && pdfGrande(n.ebook) ? " hidden" : ""}>${n.ebook ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.ebook.nome)}</b><em>${tamArq(n.ebook.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-eb-add">Trocar</button><button type="button" class="al-botao" data-a="cn-eb-tirar">Remover</button>${n.ebook.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.ebook.original)} para ${tamArq(n.ebook.arq.size)}.</span>` : ""}`
           : `<div class="cn-eb-vazio">${IC_ARQ_CN}<b>Adicione o PDF do e-book</b><em>Até 30 MB.</em><span class="cn-capa-vazia-bts"><button type="button" class="al-botao-ouro" data-a="cn-eb-add">${IC_CURSO.mais}Adicionar e-book</button><button type="button" class="al-botao" data-a="cn-eb-usar" ${n.doc && ehPdfIA(n.doc) ? "" : "disabled"} title="${n.doc ? "" : "Nenhum documento nos Dados iniciais"}">Usar o dos Dados iniciais</button></span></div>`}</div></div>
-      <div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">2</span><div><b>Partes do e-book <i>(opcional)</i></b><em>Orações, capítulos ou bônus que aparecem como botões separados embaixo do e-book. No Código de Lourdes são as 7 orações, cada uma com o seu texto.</em></div><button type="button" class="al-botao" data-a="cn-parte-add">${IC_CURSO.mais}Adicionar parte</button></div>
-        ${n.partes.length ? `<ol class="cn-lista">${n.partes.map((x, i) => `<li><span class="cn-num">${i + 1}</span><input class="campo" placeholder="Ex.: Oração da Cura Celestial" value="${h(x.nome)}" data-cn-caminho="partes.${i}.nome" /><button type="button" class="al-botao pequeno" disabled>${IC_ARQ_CN}Arquivo</button><button type="button" class="cn-x" data-a="cn-parte-tirar" data-v="${i}" aria-label="Tirar">×</button></li>`).join("")}</ol>` : `<p class="cn-nota">Nenhuma parte. Se o e-book não tiver partes separadas, pode seguir sem.</p>`}</div>
+      ${blocoExtrasCn(n)}
       ${pe}</section>`;
     const ehAudio = tipo === "audio", rotA = ehAudio ? "Áudio" : "Aula", ic = ehAudio ? IC_AUD : IC_VID;
     return `<section class="cn-card">
@@ -6703,6 +6729,35 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cn-mod-tirar": ui.cn!.mods.splice(Number(d.v), 1); break;
       case "cn-aula-add": ui.cn!.mods[Number(d.v)].aulas.push({ nome: "" }); break;
       case "cn-aula-tirar": { const [mi, ai] = d.v.split(".").map(Number); ui.cn!.mods[mi].aulas.splice(ai, 1); break; }
+      case "cn-ex-puxar": {
+        const n = ui.cn!; const eb = n.ebook; if (!eb || n.extr?.lendo) return;
+        n.extr = { lendo: true, etapa: "Lendo o e-book…", achou: n.extr?.achou || null }; render();
+        void (async () => {
+          const x = n.extr!; const prog = (t: string) => { x.etapa = t; const el = document.querySelector("[data-cn-ex-prog]"); if (el) el.textContent = t; };
+          try {
+            if (eb.texto === undefined) { const m = await import("./pdf"); eb.texto = (await m.textoDoPdf(eb.arq, (a, t) => prog(`Lendo o e-book: página ${a} de ${t}…`))).texto; }
+            if (!eb.texto || eb.texto.trim().length < 200) throw new Error("Não encontrei texto neste PDF.");
+            prog("A IA está separando o resumo e as orações…");
+            const j = await chamarFuncao("extrair-ebook", { nome: eb.nome, texto: eb.texto.slice(0, LIM_TEXTO_IA) });
+            x.achou = { resumo: String(j.resumo || ""), oracoes: (j.oracoes as ExtraidoEb["oracoes"]) || [], outros: (j.outros as ExtraidoEb["outros"]) || [] };
+          } catch (e) { toast(e instanceof Error && /PDF/.test(e.message) ? e.message : motivo(e)); }
+          x.lendo = false; if (ui.cn === n) render();
+        })();
+        return;
+      }
+      case "cn-ex-add": {
+        const n = ui.cn!; const a = n.extr?.achou; if (!a) return; const ch = d.v;
+        if (n.itens.some((i) => i.chave === ch)) return;
+        if (ch === "resumo") n.itens.push({ tipo: "resumo", titulo: "Resumo do e-book", texto: a.resumo, chave: ch });
+        else if (ch === "oracoes") n.itens.push({ tipo: "oracoes", titulo: "Orações", texto: a.oracoes.map((o) => o.titulo + "\n\n" + o.texto).join("\n\n———\n\n"), chave: ch });
+        else if (ch[0] === "o") { const o = a.oracoes[Number(ch.slice(1))]; if (o) n.itens.push({ tipo: "oracao", titulo: o.titulo, texto: o.texto, chave: ch }); }
+        else if (ch[0] === "p") { const o = a.outros[Number(ch.slice(1))]; if (o) n.itens.push({ tipo: "outro", titulo: o.titulo, texto: o.texto, chave: ch }); }
+        break;
+      }
+      case "cn-ex-add-todas": { const n = ui.cn!; const a = n.extr?.achou; if (!a) return; a.oracoes.forEach((o, i) => { if (!n.itens.some((x) => x.chave === "o" + i)) n.itens.push({ tipo: "oracao", titulo: o.titulo, texto: o.texto, chave: "o" + i }); }); break; }
+      case "cn-it-tirar": ui.cn!.itens.splice(Number(d.v), 1); break;
+      case "cn-it-abrir": { const it = ui.cn!.itens[Number(d.v)]; if (it) it.aberto = !it.aberto; break; }
+      case "cn-it-mover": { const [i, dl] = d.v.split(".").map(Number); const L = ui.cn!.itens; const j = i + dl; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; break; }
       case "cn-parte-add": ui.cn!.partes.push({ nome: "" }); break;
       case "cn-parte-tirar": ui.cn!.partes.splice(Number(d.v), 1); break;
       case "cn-capa": {
@@ -8685,7 +8740,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });

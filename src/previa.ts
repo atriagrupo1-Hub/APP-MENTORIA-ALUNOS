@@ -49,6 +49,8 @@ function barrar(url: string, metodo: string): boolean {
   const c = url.slice(SUPA.length).split("?")[0];
   if (c.startsWith("/auth/v1/")) return false; // entrar e renovar a sessão
   if (c === "/functions/v1/entrar") return false;
+  // IA que só lê e devolve texto ou imagem (não grava nada): liberada, para ver o layout com o resultado.
+  if (["/functions/v1/extrair-ebook", "/functions/v1/gerar-descricao-curso", "/functions/v1/gerar-capa"].includes(c)) return false;
   if (c.startsWith("/rest/v1/rpc/")) return !RPC_LEITURA.test(c.slice(13));
   return c.startsWith("/rest/v1/") || c.startsWith("/storage/v1/object") || c.startsWith("/functions/v1/");
 }
