@@ -78,18 +78,43 @@ export async function iniciar(raiz: HTMLElement, normal: () => void) {
   const m = await import(/* @vite-ignore */ BASE + v.entrada);
   m.montar(raiz);
   selo("Prévia ao vivo · só layout");
-  let atual = v.id, entrada = v.entrada;
-  setInterval(async () => {
-    const n = await versaoAtual();
-    if (n && n.id !== atual) {
-      atual = n.id;
-      // Só o estilo mudou: troca o CSS na hora, sem recarregar a tela.
-      if (n.entrada === entrada && n.css.length === links.length) {
-        n.css.forEach((c, i) => { if (!links[i].href.endsWith(c)) { const velho = links[i], nl = velho.cloneNode() as HTMLLinkElement; nl.href = BASE + c; nl.onload = () => velho.remove(); velho.after(nl); links[i] = nl; } });
-        return;
-      }
-      try { (window as unknown as { __aionGuardar?: () => void }).__aionGuardar?.(); } catch { /* recarrega mesmo assim */ }
-      location.reload();
+  let atual = v.id, entrada = v.entrada, tela = raiz, trocando = false;
+  // Troca o CSS sem piscar: o novo entra, e o velho só sai depois que o novo carregou.
+  const trocarCss = (css: string[]) => Promise.all(css.map((c, i) => new Promise<void>((ok) => {
+    if (links[i] && links[i].href.endsWith(c)) return ok();
+    const velho = links[i], nl = document.createElement("link"); nl.rel = "stylesheet"; nl.href = BASE + c;
+    nl.onload = nl.onerror = () => { velho?.remove(); ok(); };
+    if (velho) velho.after(nl); else document.head.appendChild(nl);
+    links[i] = nl;
+  })));
+  // Troca o código sem recarregar: monta a versão nova escondida, espera ela desenhar e só então troca.
+  async function trocarCodigo(n: Versao) {
+    try { (window as unknown as { __aionGuardar?: () => void }).__aionGuardar?.(); } catch { /* segue */ }
+    const y = window.scrollY;
+    const mod = await import(/* @vite-ignore */ BASE + n.entrada);
+    const nova = document.createElement("div");
+    nova.style.cssText = "position:absolute;left:0;top:0;width:100%;visibility:hidden;pointer-events:none";
+    tela.after(nova);
+    mod.montar(nova);
+    const t0 = Date.now();
+    while (Date.now() - t0 < 10000) {
+      await new Promise((r) => setTimeout(r, 120));
+      if (nova.querySelector(".conteudo, form[data-f=\"entrar\"]")) { await new Promise((r) => setTimeout(r, 250)); break; }
     }
+    nova.style.cssText = ""; nova.id = tela.id;
+    tela.remove(); tela = nova;
+    window.scrollTo(0, y);
+  }
+  setInterval(async () => {
+    if (trocando) return;
+    const n = await versaoAtual();
+    if (!n || n.id === atual) return;
+    trocando = true;
+    try {
+      atual = n.id;
+      await trocarCss(n.css);
+      if (n.entrada !== entrada) { entrada = n.entrada; await trocarCodigo(n); }
+    } catch { /* tenta na próxima versão */ }
+    trocando = false;
   }, 400);
 }
