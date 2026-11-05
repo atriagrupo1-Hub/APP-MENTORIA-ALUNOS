@@ -3698,7 +3698,7 @@ export function montar(app: HTMLElement) {
   const ROT_OUTRO: Record<string, string> = { receita: "Receita", ritual: "Ritual", pratica: "Prática", meditacao: "Meditação", afirmacao: "Afirmação", outro: "Outro" };
   function blocoExtrasCn(n: NonNullable<typeof ui.cn>) {
     const x = n.extr, ach = x?.achou, tem = (ch: string) => n.itens.some((i) => i.chave === ch);
-    const op = (ch: string, rot: string, tit: string, sub: string) => `<li class="cn-op${tem(ch) ? " ok" : ""}"><span class="cn-op-tipo">${h(rot)}</span><span class="cn-op-txt"><b>${h(tit)}</b><em>${h(sub)}</em></span>${tem(ch) ? `<span class="cn-op-ok">✓ Adicionado</span>` : `<button type="button" class="al-botao" data-a="cn-ex-add" data-v="${ch}">${IC_CURSO.mais}Adicionar</button>`}</li>`;
+    const op = (ch: string, rot: string, tit: string, sub: string) => `<li class="cn-op${tem(ch) ? " ok" : ""}"><span class="cn-op-tipo">${h(rot)}</span><span class="cn-op-txt"><b>${h(tit)}</b><em>${h(sub)}</em></span>${tem(ch) ? `<span class="cn-op-ok">✓ Adicionado</span><button type="button" class="al-botao" data-a="cn-ex-desfazer" data-v="${ch}">Desfazer</button>` : `<button type="button" class="al-botao" data-a="cn-ex-add" data-v="${ch}">${IC_CURSO.mais}Adicionar</button>`}</li>`;
     const resumoTxt = (t: string) => t.replace(/\s+/g, " ").trim().slice(0, 110) + (t.length > 110 ? "…" : "");
     return `<div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">2</span><div><b>Resumo e orações do e-book <i>(opcional)</i></b><em>A IA lê o e-book completo e mostra o que dá para separar. Escolha o que adicionar.</em></div>
         <button type="button" class="al-botao-ouro" data-a="cn-ex-puxar" ${n.ebook && !pdfGrande(n.ebook) && !x?.lendo ? "" : "disabled"} title="${n.ebook ? "" : "Adicione o e-book completo no bloco 1"}">${IC_IA}${x?.lendo ? "Lendo o e-book…" : ach ? "Puxar de novo" : "Puxar do e-book"}</button></div>
@@ -6796,6 +6796,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "cn-ex-add-todas": { const n = ui.cn!; const a = n.extr?.achou; if (!a) return; a.oracoes.forEach((o, i) => { if (!n.itens.some((x) => x.chave === "o" + i)) n.itens.push({ tipo: "oracao", titulo: o.titulo, comoUsar: o.como_usar || "", texto: o.texto, chave: "o" + i }); }); break; }
+      case "cn-ex-desfazer": { const L = ui.cn!.itens; const i = L.findIndex((x) => x.chave === d.v); if (i >= 0) L.splice(i, 1); break; }
       case "cn-it-tirar": ui.cn!.itens.splice(Number(d.v), 1); break;
       case "cn-it-abrir": { const it = ui.cn!.itens[Number(d.v)]; if (it) it.aberto = !it.aberto; break; }
       case "cn-it-mover": { const [i, dl] = d.v.split(".").map(Number); const L = ui.cn!.itens; const j = i + dl; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; break; }
