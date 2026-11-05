@@ -4692,3 +4692,5 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-col { display: flex; flex-direction: column; gap: 18px; }
 .cn-card select.campo { cursor: pointer; }
 .cn-falta { margin-top: -6px; }
+.cn-ia .al-botao-ouro { min-height: 38px; padding: 0 14px; font-size: 13px; }
+.cn-ia .al-botao-ouro:disabled { opacity: .6; cursor: default; }
