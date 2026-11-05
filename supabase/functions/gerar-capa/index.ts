@@ -7,6 +7,10 @@
  * (primeiro as do mesmo módulo), junto com as orientações de estilo que a
  * equipe guardou em Configurações (configuracoes.capa_guia, 0094).
  *
+ * Capa de CURSO (alvo "curso", Criar novo curso): o curso ainda não existe.
+ * Vão o nome, o texto em cima do nome, o contexto (descrição e trecho do
+ * documento) e até 3 imagens de modelo que a equipe escolheu.
+ *
  * Quem pode: quem cria e edita aulas — pode('cur_editar'), conferido no
  * banco com a sessão de quem chamou. A chave da OpenAI vive só aqui.
  */
@@ -36,21 +40,26 @@ Deno.serve(async (req) => {
   if (pode !== true) return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403);
   if (!CHAVE_IMG) return resposta({ erro: "sem_chave", mensagem: "A chave da IA de imagens ainda não foi cadastrada no Supabase." }, 503);
 
-  let alvo = "aula", aulaId = "", moduloId = "", descricao = "", titulo = "", linha1 = "", retrato = false;
+  let alvo = "aula", aulaId = "", moduloId = "", descricao = "", titulo = "", linha1 = "", retrato = false, contexto = "";
+  let refs: string[] = [];
   try {
     const c = await req.json();
-    alvo = ["modh", "modv"].includes(c.alvo) ? c.alvo : "aula"; moduloId = String(c.modulo_id ?? "");
+    alvo = ["modh", "modv", "curso"].includes(c.alvo) ? c.alvo : "aula"; moduloId = String(c.modulo_id ?? "");
+    contexto = String(c.contexto ?? "").slice(0, 4000);
+    refs = (Array.isArray(c.referencias) ? c.referencias : []).map(String).filter((x: string) => /^data:image\/(png|jpeg|webp);base64,/.test(x) && x.length < 8_000_000).slice(0, 3);
     aulaId = String(c.aula_id ?? ""); descricao = String(c.descricao ?? "").slice(0, 1500);
     titulo = String(c.titulo ?? "").slice(0, 160); linha1 = String(c.linha1 ?? "").slice(0, 80); retrato = c.formato === "retrato";
   } catch { return resposta({ erro: "corpo_invalido" }, 400); }
-  if (!/^[0-9a-f-]{36}$/.test(alvo === "aula" ? aulaId : moduloId) || !titulo.trim()) return resposta({ erro: "corpo_invalido" }, 400);
+  if ((alvo !== "curso" && !/^[0-9a-f-]{36}$/.test(alvo === "aula" ? aulaId : moduloId)) || !titulo.trim()) return resposta({ erro: "corpo_invalido" }, 400);
 
   // Os modelos: capas já feitas do mesmo tipo (aula; módulo deitada; módulo em pé), primeiro as mais próximas.
   const admin = createClient(URL_SUPABASE, CHAVE_SERVICO, { auth: { persistSession: false } });
   const { data: cfg } = await admin.from("configuracoes").select("capa_guia").maybeSingle();
   let caminhos: string[] = [];
   const valido = (p: unknown) => !!p && !String(p).startsWith("/") && !/^https?:/.test(String(p));
-  if (alvo === "aula") {
+  if (alvo === "curso") {
+    caminhos = [];
+  } else if (alvo === "aula") {
     const { data: aula } = await admin.from("aulas").select("modulo_id").eq("id", aulaId).maybeSingle();
     const { data: capas } = await admin.from("aulas").select("capa_path, modulo_id").not("capa_path", "is", null).neq("id", aulaId).limit(60);
     caminhos = (capas ?? []).filter((x) => valido(x.capa_path))
@@ -70,9 +79,17 @@ Deno.serve(async (req) => {
   caminhos = caminhos.slice(0, 3);
   const modelos: Blob[] = [];
   for (const p of caminhos) { const { data } = await admin.storage.from("capas").download(p); if (data) modelos.push(data); }
+  for (const d of refs) { const [cab, b64] = d.split(","); const tipo = cab.slice(5, cab.indexOf(";")); modelos.push(new Blob([Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0))], { type: tipo })); }
 
   const guia = String(cfg?.capa_guia ?? "").trim();
-  const prompt = [
+  const prompt = alvo === "curso" ? [
+    modelos.length ? "As imagens enviadas são modelos de referência escolhidos pela equipe. Siga o estilo, a composição, as cores e a tipografia delas, criando UMA capa nova e original." : "Capa de curso de uma área de membros de mentoria cristã: arte cinematográfica e elegante, fundo escuro, luz dourada, tipografia refinada.",
+    guia ? `Orientações de estilo da mentoria (siga à risca):\n${guia}` : "",
+    `Escreva na capa, exatamente assim, com acentos corretos e sem outras palavras:${linha1.trim() ? `\n- Linha pequena: "${linha1.toUpperCase()}"` : ""}\n- Título: "${titulo.toUpperCase()}"`,
+    contexto.trim() ? `Sobre o conteúdo do curso (use para escolher a arte, não escreva este texto na capa):\n${contexto.trim()}` : "",
+    descricao.trim() ? `Como a equipe quer a capa (prioridade máxima): ${descricao.trim()}` : "",
+    "Formato horizontal 16:9. Deixe todo o texto e o elemento principal dentro da faixa central (nada importante colado nas bordas).",
+  ].filter(Boolean).join("\n\n") : [
     modelos.length ? "As imagens enviadas são capas desta mesma mentoria. Crie UMA capa nova que pareça da mesma coleção: mesmo estilo de arte, mesma luz dourada sobre fundo escuro, mesma tipografia, mesmo tamanho e posição dos textos, mesmas cores." : "Capa de aula de mentoria cristã: arte cinematográfica, fundo escuro, luz dourada, tipografia condensada dourada.",
     guia ? `Orientações de estilo da mentoria (siga à risca):\n${guia}` : "",
     `Escreva na capa, exatamente assim, com acentos corretos e sem outras palavras:\n- Linha pequena: "${linha1.toUpperCase()}"\n- Título: "${titulo.toUpperCase()}"`,
