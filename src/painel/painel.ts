@@ -200,6 +200,7 @@ const tipoDoBanco = (b: string) => (TIPOS.find((x) => x.banco === b) ?? TIPOS[2]
 
 /** O que o banco recusa, dito para gente. */
 const MOTIVOS: Record<string, string> = {
+  "Prévia é só layout": "Prévia é só layout: nada foi salvo.",
   sem_permissao: "Acesso bloqueado.",
   "Acesso bloqueado.": "Acesso bloqueado.",
   "row-level security": "Acesso bloqueado.",
