@@ -4737,3 +4737,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ec-janela { background: #111; }
 .ec-rec { margin-top: -6px; font-size: 13px; color: var(--texto-2); }
 .cn-rec { margin-left: 6px; font-size: 12px; font-weight: 500; font-style: normal; color: var(--texto-2); }
+.cn-capa-vazia.cn-em-pe { max-width: 220px; aspect-ratio: 2 / 3; }
+.cn-em-pe .ce-capa-img { width: 200px !important; aspect-ratio: 2 / 3 !important; height: auto !important; }
+.cn-ia-pronta img { aspect-ratio: auto; max-height: 60vh; object-fit: contain; }

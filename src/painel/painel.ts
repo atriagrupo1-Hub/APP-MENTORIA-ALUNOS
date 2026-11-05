@@ -3675,10 +3675,10 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota" data-cn-prog>${h(n.etapa || "Dá para voltar até 3 versões anteriores.")}</em></div>
-        <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Capa do curso ${dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "curso.formato")} <em class="cn-rec">Recomendado 1280 × 720 px</em></span><span class="cc2-selo ${n.capa ? "vd" : "am"}">${n.capa ? "Configurado" : "Falta"}</span></div>
-          ${n.capa ? `<div class="ce-capa"><span class="ce-capa-img"><img src="${n.capa.url}" alt="" /></span>
+        <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">${n.tipo === "ebook" ? "Capa do e-book" : "Capa do curso"} ${dicaCampo(n.tipo === "ebook" ? `Capa do e-book em pé: 1024 × 1536 px (2:3).` : `Formato da capa: 1280 × 720 px (16:9).`, "curso.formato")} <em class="cn-rec">Recomendado ${n.tipo === "ebook" ? "1024 × 1536 px (em pé)" : "1280 × 720 px"}</em></span><span class="cc2-selo ${n.capa ? "vd" : "am"}">${n.capa ? "Configurado" : "Falta"}</span></div>
+          ${n.capa ? `<div class="ce-capa${n.tipo === "ebook" ? " cn-em-pe" : ""}"><span class="ce-capa-img"><img src="${n.capa.url}" alt="" /></span>
             <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="cn-capa-recortar">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia">${IC_IA}Gerar com IA</button><button type="button" class="al-botao botao-remover" data-a="cn-capa-tirar">${IC_MOD.lixo}Remover</button></div></div>`
-          : `<div class="cn-capa-vazia"><span class="cn-capa-vazia-ic">${IC_IMG}</span><span class="cn-capa-vazia-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Adicionar capa</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia">${IC_IA}Gerar com IA</button></span><em>1280 × 720 px (16:9)</em></div>`}
+          : `<div class="cn-capa-vazia${n.tipo === "ebook" ? " cn-em-pe" : ""}"><span class="cn-capa-vazia-ic">${IC_IMG}</span><span class="cn-capa-vazia-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Adicionar capa</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia">${IC_IA}Gerar com IA</button></span><em>${n.tipo === "ebook" ? "1024 × 1536 px (2:3)" : "1280 × 720 px (16:9)"}</em></div>`}
           ${n.ia ? cnCapaIaCard(n) : ""}</div>
         <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
         <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
@@ -3697,6 +3697,7 @@ export function montar(app: HTMLElement) {
   }
   const pdfGrande = (d: DocIA) => ehPdfIA(d) && d.arq.size > 30 * 1048576;
   const ehPdfIA = (d: DocIA) => d.tipo === "application/pdf" || /\.pdf$/i.test(d.nome);
+  const propCn = () => (ui.cn?.tipo === "ebook" ? 2 / 3 : 16 / 9);
   const tamArq = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
   const LIM_TEXTO_IA = 600000;
   const textoB64 = (t: string) => { const u = new TextEncoder().encode(t); let bin = ""; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(bin); };
@@ -6653,10 +6654,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "cn-capa": {
         const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
-        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0 || !ui.cn) return; const f = await editarCapa(f0, 16 / 9, f0.name); if (!f || !ui.cn) return; if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; render(); };
+        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0 || !ui.cn) return; const f = await editarCapa(f0, propCn(), f0.name); if (!f || !ui.cn) return; if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; render(); };
         inp.click(); return;
       }
-      case "cn-capa-recortar": { const c = ui.cn?.capa; if (!c) return; void (async () => { const f = await editarCapa(c.orig, 16 / 9, c.orig.name); if (!f || !ui.cn?.capa) return; URL.revokeObjectURL(c.url); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; render(); })(); return; }
+      case "cn-capa-recortar": { const c = ui.cn?.capa; if (!c) return; void (async () => { const f = await editarCapa(c.orig, propCn(), c.orig.name); if (!f || !ui.cn?.capa) return; URL.revokeObjectURL(c.url); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; render(); })(); return; }
       case "cn-capa-ia": ui.cn!.ia = ui.cn!.ia || { texto: "", refs: [], doc: null, gerando: false, pronta: "", lendo: false }; ui.cn!.ia.pronta = ""; break;
       case "cn-ia-fechar": ui.cn!.ia = null; break;
       case "cn-ia-fechar-fora": if ((alvo as HTMLElement | null)?.classList?.contains("cn-ia-fundo") && !ui.cn?.ia?.gerando) ui.cn!.ia = null; else return; break;
@@ -6683,7 +6684,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         a.gerando = true; render();
         void (async () => {
           try {
-            const j = await chamarFuncao("gerar-capa", { alvo: "curso", titulo: n.nome.trim(), linha1: n.rotulo.trim(), descricao: a.texto.trim(), contexto, referencias: a.refs.map((r) => r.url), formato: "paisagem" });
+            const j = await chamarFuncao("gerar-capa", { alvo: "curso", titulo: n.nome.trim(), linha1: n.rotulo.trim(), descricao: a.texto.trim(), contexto, referencias: a.refs.map((r) => r.url), formato: n.tipo === "ebook" ? "retrato" : "paisagem" });
             if (j.imagem) a.pronta = String(j.imagem); else toast("A IA não devolveu a imagem. Tente de novo.");
           } catch (e) { toast(motivo(e)); }
           a.gerando = false; if (ui.cn?.ia === a) render();
@@ -6694,7 +6695,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = ui.cn!; const a = n.ia!; if (!a.pronta) return;
         void (async () => {
           const bl = await (await fetch(a.pronta)).blob(); const f0 = new File([bl], "capa-ia.png", { type: "image/png" });
-          const f = await editarCapa(f0, 16 / 9, "capa-ia.png"); if (!f || !ui.cn) return;
+          const f = await editarCapa(f0, propCn(), "capa-ia.png"); if (!f || !ui.cn) return;
           if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; ui.cn.ia = null; render();
         })();
         return;
