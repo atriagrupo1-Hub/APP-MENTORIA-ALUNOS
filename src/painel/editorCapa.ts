@@ -16,9 +16,10 @@ export function editarCapa(fonte: File | string, proporcao: number, nome = "capa
     fundo.innerHTML = `
       <div class="ec-caixa" role="dialog" aria-modal="true" aria-label="Editar a capa">
         <h2>Editar capa</h2>
-        <p>Arraste a imagem para os lados. Use a barra (ou a roda do mouse) para aproximar ou afastar.</p>
+        <p>Arraste a imagem para os lados, para cima ou para baixo. Use a barra (ou a roda do mouse) para aproximar ou afastar.</p>
+        <p class="ec-rec">Recomendado: <b>${proporcao >= 1 ? `1280 × ${Math.round(1280 / proporcao)}` : `${Math.round(1280 * proporcao)} × 1280`} px</b></p>
         <div class="ec-janela" style="width:${JW}px;height:${JH}px"><img class="ec-img" alt="" draggable="false" /></div>
-        <div class="ec-zoom"><span aria-hidden="true">−</span><input type="range" min="1" max="4" step="0.01" value="1" aria-label="Aproximar ou afastar" /><span aria-hidden="true">+</span></div>
+        <div class="ec-zoom"><span aria-hidden="true">−</span><input type="range" min="0.5" max="4" step="0.01" value="1" aria-label="Aproximar ou afastar" /><span aria-hidden="true">+</span></div>
         <div class="ec-botoes">
           <button type="button" class="botao-neutro grande ec-centro">Centralizar</button>
           <span style="flex:1"></span>
@@ -35,7 +36,8 @@ export function editarCapa(fonte: File | string, proporcao: number, nome = "capa
     // Escala em que a imagem cobre a janela inteira (zoom 1).
     const base = () => Math.max(JW / F.w, JH / F.h);
     const limitar = () => {
-      const sc = base() * F.z, mx = Math.max(0, (F.w * sc - JW) / 2), my = Math.max(0, (F.h * sc - JH) / 2);
+      // Move livre para os lados e para cima/baixo, com ou sem zoom (sobra fica escura).
+      const sc = base() * F.z, mx = Math.max(0, (F.w * sc - JW) / 2) + JW * 0.4, my = Math.max(0, (F.h * sc - JH) / 2) + JH * 0.4;
       F.x = Math.max(-mx, Math.min(mx, F.x)); F.y = Math.max(-my, Math.min(my, F.y));
     };
     const desenhar = () => {
@@ -56,7 +58,7 @@ export function editarCapa(fonte: File | string, proporcao: number, nome = "capa
     jan.addEventListener("pointerdown", (e) => { arr = { px: e.clientX, py: e.clientY, x: F.x, y: F.y }; jan.setPointerCapture(e.pointerId); });
     jan.addEventListener("pointermove", (e) => { if (!arr) return; F.x = arr.x + (e.clientX - arr.px); F.y = arr.y + (e.clientY - arr.py); desenhar(); });
     jan.addEventListener("pointerup", () => { arr = null; }); jan.addEventListener("pointercancel", () => { arr = null; });
-    jan.addEventListener("wheel", (e) => { e.preventDefault(); F.z = Math.max(1, Math.min(4, F.z - e.deltaY * 0.002)); desenhar(); }, { passive: false });
+    jan.addEventListener("wheel", (e) => { e.preventDefault(); F.z = Math.max(0.5, Math.min(4, F.z - e.deltaY * 0.002)); desenhar(); }, { passive: false });
     zoom.addEventListener("input", () => { F.z = +zoom.value; desenhar(); });
     fundo.addEventListener("click", (e) => { if (e.target === fundo) fechar(null); });
     fundo.querySelector(".ec-centro")!.addEventListener("click", () => { F.z = 1; F.x = 0; F.y = 0; desenhar(); });
@@ -66,7 +68,7 @@ export function editarCapa(fonte: File | string, proporcao: number, nome = "capa
       const TW = proporcao >= 1 ? 1920 : 1024, TH = Math.round(TW / proporcao), k = TW / JW;
       const sc = base() * F.z, dw = F.w * sc * k, dh = F.h * sc * k;
       const c = document.createElement("canvas"); c.width = TW; c.height = TH;
-      const g = c.getContext("2d")!; g.imageSmoothingQuality = "high";
+      const g = c.getContext("2d")!; g.imageSmoothingQuality = "high"; g.fillStyle = "#111"; g.fillRect(0, 0, TW, TH);
       g.drawImage(im, TW / 2 - dw / 2 + F.x * k, TH / 2 - dh / 2 + F.y * k, dw, dh);
       try {
         c.toBlob((b) => {
