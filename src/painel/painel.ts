@@ -3653,9 +3653,10 @@ export function montar(app: HTMLElement) {
           <label class="cn-grupo${err("nome")}"><span class="cn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
         </div>
         <div class="cn-grupo"><span class="cn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
-          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b><em>${tamArq(n.doc.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-doc" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar" ${n.reduzindo ? "disabled" : ""}>Remover</button>${n.doc.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.doc.original)} para ${tamArq(n.doc.arq.size)}.${n.doc.url ? ` <a href="${n.doc.url}" download="${h(n.doc.nome)}">Baixar PDF reduzido</a>` : ""}</span>` : ""}` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição. PDF muito grande pode ser reduzido aqui mesmo.</em></button>`}</div></div>
+          ${n.doc && pdfGrande(n.doc) ? `<div class="cn-grande" role="alert"><b>PDF muito grande (${tamArq(n.doc.arq.size)}).</b> O máximo é 30 MB. Reduza o PDF para continuar.<span class="cn-grande-bts"><button type="button" class="al-botao-ouro" data-a="cn-reduzir" ${n.reduzindo ? "disabled" : ""}>${n.reduzindo ? "Reduzindo…" : "Reduzir PDF"}</button><button type="button" class="al-botao" data-a="cn-doc" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar" ${n.reduzindo ? "disabled" : ""}>Remover</button></span><em data-cn-prog-red>${n.reduzindo ? h(n.etapa) : ""}</em></div>` : ""}
+          <div class="cn-doc"${n.doc && pdfGrande(n.doc) ? " hidden" : ""}>${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b><em>${tamArq(n.doc.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-doc" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar" ${n.reduzindo ? "disabled" : ""}>Remover</button>${n.doc.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.doc.original)} para ${tamArq(n.doc.arq.size)}.${n.doc.url ? ` <a href="${n.doc.url}" download="${h(n.doc.nome)}">Baixar PDF reduzido</a>` : ""}</span>` : ""}` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição. PDF muito grande pode ser reduzido aqui mesmo.</em></button>`}</div></div>
         <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Descrição (opcional)</span><span class="cn-ia">
-            <button type="button" class="al-botao-ouro" data-a="cn-gerar" ${n.doc && !n.gerando && !n.reduzindo ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
+            <button type="button" class="al-botao-ouro" data-a="cn-gerar" ${n.doc && !n.gerando && !n.reduzindo && !pdfGrande(n.doc) ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota" data-cn-prog>${h(n.etapa || "Dá para voltar até 3 versões anteriores.")}</em></div>
@@ -3674,6 +3675,7 @@ export function montar(app: HTMLElement) {
     falhou(await supabase.storage.from("materiais").upload(c, dc.arq, { contentType: dc.tipo || undefined }));
     dc.caminho = c;
   }
+  const pdfGrande = (d: DocIA) => ehPdfIA(d) && d.arq.size > 30 * 1048576;
   const ehPdfIA = (d: DocIA) => d.tipo === "application/pdf" || /\.pdf$/i.test(d.nome);
   const tamArq = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
   const LIM_TEXTO_IA = 600000;
@@ -6611,12 +6613,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = ui.cn!; const dc = n.doc; if (!dc || n.reduzindo) return;
         n.reduzindo = true; render();
         void (async () => {
-          const prog = (t: string) => { n.etapa = t; const el = document.querySelector("[data-cn-prog]"); if (el) el.textContent = t; };
+          const prog = (t: string) => { n.etapa = t; document.querySelectorAll("[data-cn-prog], [data-cn-prog-red]").forEach((el) => { el.textContent = t; }); };
           try {
             const m = await import("./pdf");
             const r = await m.reduzirPdf(dc.arq, (a, t) => prog(`Reduzindo o PDF: imagem ${a} de ${t}…`));
             if (r.arquivo.size >= dc.arq.size) toast("Este PDF já está no menor tamanho possível.");
-            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: dc.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast("PDF reduzido."); }
+            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: dc.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast(r.arquivo.size > 30 * 1048576 ? "Reduzido para " + tamArq(r.arquivo.size) + ", ainda acima de 30 MB." : "PDF reduzido para " + tamArq(r.arquivo.size) + "."); }
           } catch { toast("Não consegui reduzir este PDF."); }
           n.reduzindo = false; n.etapa = ""; if (ui.cn === n) render();
         })();
@@ -6643,6 +6645,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = ui.cn!; const falta = [!n.tipo && "tipo", !catAba(n.cat) && "cat", !n.rotulo.trim() && "rotulo", !n.nome.trim() && "nome"].filter(Boolean) as string[];
         n.erro = falta.join(",");
         if (falta.length) { toast("Preencha os campos obrigatórios."); break; }
+        if (n.doc && pdfGrande(n.doc)) { toast("O PDF passa de 30 MB. Reduza o PDF ou remova."); break; }
         const xa = catAba(n.cat)!; const seguir = d.v === "continuar"; const nome = n.nome.trim();
         void executar(async () => {
           const r = falhou(await supabase.from("produtos").insert({ titulo: nome, card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
