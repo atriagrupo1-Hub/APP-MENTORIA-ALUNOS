@@ -39,17 +39,22 @@ function selo(texto: string) {
 export async function iniciar(raiz: HTMLElement, normal: () => void) {
   const v = await versaoAtual();
   if (!v) { normal(); selo("Prévia sem versão em edição — mostrando o site"); return; }
-  for (const c of v.css) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = BASE + c; document.head.appendChild(l); }
+  const links = v.css.map((c) => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = BASE + c; document.head.appendChild(l); return l; });
   const m = await import(/* @vite-ignore */ BASE + v.entrada);
   m.montar(raiz);
   selo("Prévia ao vivo");
-  let atual = v.id;
+  let atual = v.id, entrada = v.entrada;
   setInterval(async () => {
     const n = await versaoAtual();
     if (n && n.id !== atual) {
       atual = n.id;
+      // Só o estilo mudou: troca o CSS na hora, sem recarregar a tela.
+      if (n.entrada === entrada && n.css.length === links.length) {
+        n.css.forEach((c, i) => { if (!links[i].href.endsWith(c)) { const nl = links[i].cloneNode() as HTMLLinkElement; nl.href = BASE + c; nl.onload = () => links[i].remove(); links[i].after(nl); links[i] = nl; } });
+        return;
+      }
       try { (window as unknown as { __aionGuardar?: () => void }).__aionGuardar?.(); } catch { /* recarrega mesmo assim */ }
       location.reload();
     }
-  }, 1000);
+  }, 400);
 }

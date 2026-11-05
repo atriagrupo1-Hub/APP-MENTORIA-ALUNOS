@@ -27,3 +27,4 @@ previa/*
 # pesar: a cada envio seria um arquivo novo de megabytes.
 *.zip
 dist-previa
+src/.previa-rapida.ts
