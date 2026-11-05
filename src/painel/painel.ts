@@ -3618,7 +3618,7 @@ export function montar(app: HTMLElement) {
   }
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
-  const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"], ["mentoria", "Mentoria"], ["curso", "Curso"]];
+  const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"]];
   const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
@@ -3699,7 +3699,7 @@ export function montar(app: HTMLElement) {
   /*
    * Capas por tipo (o tipo escolhido no topo decide):
    * - E-book: só a capa em pé (2:3, 1024 × 1536), que é a capa do e-book no app.
-   * - Videoaula, Áudio, Mentoria e Curso: capa deitada (16:9, 1280 × 720, a do card) e capa em pé (2:3, 1024 × 1536).
+   * - Videoaula e Áudio: capa deitada (16:9, 1280 × 720, a do card) e capa em pé (2:3, 1024 × 1536).
    */
   const slotsCn = (n: { tipo: string }): SlotCn[] => (n.tipo === "ebook" ? ["capaPe"] : ["capa", "capaPe"]);
   const propCn = (sl: SlotCn) => (sl === "capaPe" ? 2 / 3 : 16 / 9);
