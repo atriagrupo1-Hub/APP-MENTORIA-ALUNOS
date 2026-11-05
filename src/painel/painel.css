@@ -4688,3 +4688,7 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-falta { margin: 0; font-size: 13px; font-weight: 600; color: var(--perigo); }
 .cn-pe { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--linha); }
 @media (max-width: 700px) { .cn-card { padding: 20px 16px; } .cn-duas { grid-template-columns: 1fr; } .cn-linha { flex-wrap: wrap; } .cn-pe > span { display: none; } .cn-pe button { flex: 1 1 100%; justify-content: center; } }
+.cn-rot { font-size: 14px; font-weight: 600; color: var(--texto); }
+.cn-col { display: flex; flex-direction: column; gap: 18px; }
+.cn-card select.campo { cursor: pointer; }
+.cn-falta { margin-top: -6px; }
