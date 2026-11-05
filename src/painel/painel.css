@@ -4768,3 +4768,11 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-eb-vazio em { font-size: 12px; font-style: normal; color: var(--texto-2); }
 .cn-eb-vazio .cn-capa-vazia-bts { margin-top: 6px; }
 .cn-eb-vazio .al-botao:disabled { opacity: .5; cursor: default; }
+.cn-bloco { display: flex; flex-direction: column; gap: 12px; padding: 16px 18px; border: 1px solid var(--linha); border-radius: 12px; background: rgba(184, 148, 79, .03); }
+.cn-bloco-cab { display: flex; align-items: flex-start; gap: 12px; }
+.cn-bloco-cab > div { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.cn-bloco-cab b { font-size: 15px; color: var(--texto); }
+.cn-bloco-cab b i { font-style: normal; font-weight: 500; color: var(--texto-2); }
+.cn-bloco-cab em { font-size: 13px; font-style: normal; color: var(--texto-2); }
+.cn-bloco-n { flex: none; display: grid; place-items: center; width: 26px; height: 26px; font-size: 13px; font-weight: 700; color: var(--al-ouro-txt); background: var(--al-ouro); border-radius: 50%; }
+.cn-bloco-cab .al-botao svg { width: 16px; height: 16px; }
