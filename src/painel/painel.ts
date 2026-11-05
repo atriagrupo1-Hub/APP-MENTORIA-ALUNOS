@@ -759,7 +759,6 @@ export function montar(app: HTMLElement) {
   const SUB_ABA: Record<string, string> = { lixeira: "O que foi apagado fica aqui por 30 dias e pode ser restaurado.", inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
-    cursos: `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button>`,
   };
   ACAO_ABA.layout = `<button class="al-botao cl-ver" data-a="cs-ver-aluna">Ver como aluna <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg></button><button class="al-botao-ouro" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova categoria</button>`;
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
@@ -780,8 +779,8 @@ export function montar(app: HTMLElement) {
       case "registro": return ["Registro", p(S.historico.length, "ação registrada", "ações registradas")];
       case "alunas": return ["Alunas", p(S.alunas.length, "aluna", "alunas") + " · " + p(ativas, "ativa", "ativas")];
       case "layout": return ["Categorias", p(S.catsAba.length, "categoria", "categorias")];
-      case "cursos": return ["Cursos e conteúdos", p(S.cursos.length, "produto", "produtos") + " · " + p(totalModulos(), "módulo", "módulos") + " · " + p(S.cursos.reduce((s, k) => s + totalAulas(k), 0), "aula", "aulas")];
-      case "curso": return c ? [c.nome, p(c.modulos.length, "módulo", "módulos") + " · " + p(totalAulas(c), "aula", "aulas")] : ["Curso aberto", "nenhum curso aberto"];
+      case "cursos": return ["Cursos e conteúdos", p(S.cursos.length, "produto", "produtos") + " · " + p(totalModulos(), "módulo", "módulos") + " · " + p(S.cursos.reduce((s, k) => s + totalAulas(k), 0), "conteúdo", "conteúdos")];
+      case "curso": return c ? [c.nome, p(c.modulos.length, "módulo", "módulos") + " · " + p(totalAulas(c), "conteúdo", "conteúdos")] : ["Curso aberto", "nenhum curso aberto"];
       case "aula": return x ? [x.a.nome, localAula(x.a.id)] : ["Aula aberta", "nenhuma aula aberta"];
       case "catAba": { const xa = catAba(ui.catxSel); return [xa ? xa.nome : "Categoria", "Categoria · cursos desta categoria"]; }
       case "comentarios": return ["Comentários", p(moderar, "para moderar", "para moderar")];
@@ -3272,7 +3271,7 @@ export function montar(app: HTMLElement) {
       <article class="ka-card${cls3(estado3(c.visivel, c.bloq))}">
         ${capaC(c, "ka-capa")}
         <div class="ka-corpo">
-          <button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button>
+          <button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>
           ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}
           ${stats(c)}
           <div class="ka-bts">${bts(c)}</div>
@@ -3281,7 +3280,7 @@ export function montar(app: HTMLElement) {
     const linha = (c: Curso) => `
       <article class="ka-linha${cls3(estado3(c.visivel, c.bloq))}">
         ${capaC(c, "ka-mini")}
-        <div class="ka-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
+        <div class="ka-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
         ${stats(c)}
         <div class="ka-bts">${bts(c)}</div>
       </article>`;
@@ -3480,7 +3479,7 @@ export function montar(app: HTMLElement) {
       <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
-          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${tipoNome(c)}</button>${menu(c)}</div>
+          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
           ${cats(c)}${selos(c)}${stats(c)}${quando(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
@@ -3488,7 +3487,7 @@ export function montar(app: HTMLElement) {
     const linha2 = (c: Curso) => `
       <article class="cc2-linha${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-mini")}
-        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}">${tipoNome(c)}</button>${cats(c)}${selos(c)}</div>
+        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${cats(c)}${selos(c)}</div>
         ${stats(c)}
         <div class="cc2-bts">${bts(c)}${menu(c)}</div>
       </article>`;
@@ -3496,6 +3495,7 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa cur cc2">
       <p class="cur-sub cc2-sub">Gerencie todos os cursos criados, acompanhe status, publicação e organização por categoria.</p>
+      <div class="cc2-criar"><button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button></div>
       <div class="kg-barra">
         <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
         ${sel("data-curso-cat", fCat, [["", "Todas as categorias"], ...S.catsAba.map((x) => [x.id, x.nome])], "Categoria")}
