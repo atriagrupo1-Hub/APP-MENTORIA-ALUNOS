@@ -3650,7 +3650,7 @@ export function montar(app: HTMLElement) {
   function telaCursoNovo() {
     const n = ui.cn || (ui.cn = novoCn());
     const temCat = S.catsAba.length > 0;
-    const passos = ["Dados iniciais", "Apresentação", "Módulos e aulas", "Acesso", "Revisão"];
+    const passos = ["Dados iniciais", "Conteúdo", "Apresentação", "Acesso", "Revisão"];
     const err = (k: string) => (n.erro.split(",").includes(k) ? " cn-erro" : "");
     return `
       <nav class="ka-trilha"><button type="button" data-a="cn-voltar">Cursos e conteúdos</button><span>/</span><b>Criar novo curso</b></nav>
