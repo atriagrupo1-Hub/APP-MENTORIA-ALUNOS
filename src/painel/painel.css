@@ -4649,3 +4649,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cs-tres .cs-cartao > header { gap: 10px; }
 .cs-tres .cs-cartao > header h3 { white-space: nowrap; font-size: clamp(16px, 1.2vw, 20px); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .cs-tres .cs-cartao > header .cs-ver { white-space: nowrap; }
+.ka-nome { display: block; max-width: 100%; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cc2-ltxt, .ka-ltxt { min-width: 0; }
+.cc2-criar { margin: 4px 0 18px; }
