@@ -533,6 +533,7 @@ export function montar(app: HTMLElement) {
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | { nome: string; tipo: string; b64: string }; hist: string[]; gerando: boolean; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -945,7 +946,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, cursos: telaCursos, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, cursos: telaCursos, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -953,7 +954,7 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
       </aside>
       <div class="principal">
@@ -975,7 +976,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3608,6 +3609,47 @@ export function montar(app: HTMLElement) {
       </div>
       ${lista.map(cartaoComentario).join("") || `<div class="vazio">${{ moderar: "Nada esperando moderação neste curso.", publicado: "Nenhum comentário publicado neste curso.", oculto: "Nenhum comentário oculto neste curso.", removido: "" }[f]}</div>`}`;
   }
+
+  /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
+  const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"], ["mentoria", "Mentoria"], ["curso", "Curso"]];
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, hist: [], gerando: false, novaCat: false, novaCatNome: "", erro: "" });
+  function telaCursoNovo() {
+    const n = ui.cn || (ui.cn = novoCn());
+    const temCat = S.catsAba.length > 0;
+    const passos = ["Dados iniciais", "Apresentação", "Módulos e aulas", "Acesso", "Revisão"];
+    const err = (k: string) => (n.erro.split(",").includes(k) ? " cn-erro" : "");
+    return `
+      <nav class="ka-trilha"><button type="button" data-a="cn-voltar">Cursos e conteúdos</button><span>/</span><b>Criar novo curso</b></nav>
+      <div class="cn-cab"><h1>Criar novo curso</h1><span class="cn-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span></div>
+      <ol class="cn-passos">${passos.map((t, i) => `<li class="${i === 0 ? "on" : ""}" ${i ? 'aria-disabled="true"' : 'aria-current="step"'}>${String(i + 1).padStart(2, "0")} · ${t}</li>`).join("")}</ol>
+      <form id="cnForm" class="cn-card" onsubmit="return false">
+        <h2>Informações do curso</h2>
+        <p class="cn-sub">Preencha os dados para começar a criar o curso. Os campos com * são obrigatórios.</p>
+        <div class="cn-grupo${err("tipo")}"><span class="kn-rot">Tipo de curso *</span>
+          <div class="cn-tipos" role="radiogroup">${TIPOS_CURSO.map(([v, t]) => `<button type="button" role="radio" aria-checked="${n.tipo === v}" class="cn-tipo" data-a="cn-tipo" data-v="${v}">${t}</button>`).join("")}</div></div>
+        <div class="cn-grupo${err("cat")}"><span class="kn-rot">Categoria *</span>
+          <div class="cn-linha"><select class="campo" name="cat" data-cn="cat"><option value="">${temCat ? "Selecione a categoria" : "Nenhuma categoria criada"}</option>${opcoesCatAba(n.cat)}</select>
+            <button type="button" class="al-botao" data-a="cn-cat-nova">${IC_CURSO.mais}Criar nova</button></div>
+          ${n.novaCat ? `<div class="cn-linha cn-novacat"><input id="cnNovaCat" class="campo" maxlength="80" placeholder="Nome da nova categoria" value="${h(n.novaCatNome)}" data-cn="novaCatNome" /><button type="button" class="al-botao-ouro" data-a="cn-cat-criar">Criar categoria</button><button type="button" class="al-botao" data-a="cn-cat-nova">Cancelar</button></div><em class="cn-nota">A categoria nova fica como rascunho, sem aparecer para as alunas.</em>` : ""}</div>
+        <div class="cn-duas">
+          <label class="cn-grupo${err("rotulo")}"><span class="kn-rot">Texto em cima do nome *</span><input class="campo" maxlength="40" placeholder="Ex.: E-book, Curso, Mentoria" value="${h(n.rotulo)}" data-cn="rotulo" /></label>
+          <label class="cn-grupo${err("nome")}"><span class="kn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
+        </div>
+        <div class="cn-grupo"><span class="kn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
+          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt). A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
+        <div class="cn-grupo"><div class="cn-desc-cab"><span class="kn-rot">Descrição</span><span class="cn-ia">
+            <button type="button" class="al-botao" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
+            <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
+          <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
+          <em class="cn-nota">Dá para voltar até 3 versões anteriores.</em></div>
+        <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
+        ${n.erro ? `<p class="cn-falta">Preencha os campos obrigatórios marcados.</p>` : ""}
+        <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
+          <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
+          <button type="button" class="al-botao-ouro" data-a="cn-criar" data-v="continuar">Criar curso e continuar →</button></div>
+      </form>`;
+  }
+  const IC_ARQ_CN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/></svg>`;
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
     const ativas = todas.filter((x) => !x.a.bloqueada && !vencida(x.a));
@@ -6474,7 +6516,66 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
       }
-      case "curso-novo": ui.modal = { tipo: "curso" }; break;
+      case "curso-novo": ui.cn = novoCn(); ui.tab = "cursoNovo"; ui.focar = "cnNome"; window.scrollTo(0, 0); break;
+      case "cn-voltar": ui.cn = null; ui.tab = "cursos"; window.scrollTo(0, 0); break;
+      case "cn-tipo": { const n = ui.cn!; const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; n.tipo = d.v; if (!n.rotulo.trim() || n.rotulo === velho) n.rotulo = TIPOS_CURSO.find((x) => x[0] === d.v)?.[1] || ""; n.erro = n.erro.split(",").filter((k) => k && k !== "tipo" && !(k === "rotulo" && n.rotulo)).join(","); break; }
+      case "cn-cat-nova": ui.cn!.novaCat = !ui.cn!.novaCat; ui.cn!.novaCatNome = ""; if (ui.cn!.novaCat) ui.focar = "cnNovaCat"; break;
+      case "cn-cat-criar": {
+        const n = ui.cn!; const nome = n.novaCatNome.trim(); if (!nome) { toast("Escreva o nome da categoria."); return; }
+        const jor = curso(S.config.jornada)?.cat || ""; const aba = (S.cats.find((k) => k.id !== jor) || S.cats[0])?.id || "";
+        if (!aba) { toast("Não há onde guardar a categoria."); return; }
+        void executar(async () => {
+          const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: nome, ordem: S.catsAba.filter((y) => y.aba === aba).length, publicado: false, rascunho: true }).select("id").single());
+          await registrar(null, "Criou a categoria " + nome, ["catx", r.data!.id]);
+          n.cat = r.data!.id; n.novaCat = false; n.novaCatNome = ""; n.erro = n.erro.split(",").filter((k) => k && k !== "cat").join(",");
+          return "Categoria criada como rascunho.";
+        });
+        return;
+      }
+      case "cn-doc": {
+        const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" });
+        inp.addEventListener("change", () => {
+          const f = inp.files?.[0]; if (!f || !ui.cn) return;
+          if (f.size > 20 * 1024 * 1024) { toast("O arquivo passa de 20 MB."); return; }
+          const leitor = new FileReader();
+          leitor.onload = () => { if (!ui.cn) return; ui.cn.doc = { nome: f.name, tipo: f.type, b64: String(leitor.result).split(",")[1] || "" }; render(); };
+          leitor.readAsDataURL(f);
+        });
+        inp.click();
+        return;
+      }
+      case "cn-doc-tirar": ui.cn!.doc = null; break;
+      case "cn-gerar": {
+        const n = ui.cn!; if (!n.doc || n.gerando) return;
+        n.gerando = true; render();
+        void (async () => {
+          try {
+            const x = await chamarFuncao("gerar-descricao-curso", { arquivo_nome: n.doc!.nome, arquivo_tipo: n.doc!.tipo, base64: n.doc!.b64, nome: n.nome, rotulo: n.rotulo, tipo: TIPOS_CURSO.find((t) => t[0] === n.tipo)?.[1] || "", categoria: catAba(n.cat)?.nome || "", anterior: n.desc });
+            const nova = String(x.descricao || "").trim();
+            if (nova) { if (n.desc.trim()) n.hist = [n.desc, ...n.hist].slice(0, 3); n.desc = nova; toast("Descrição gerada."); } else toast("A IA não devolveu texto. Tente de novo.");
+          } catch (e) { toast(motivo(e)); }
+          n.gerando = false; if (ui.cn === n) render();
+        })();
+        return;
+      }
+      case "cn-desfazer": { const n = ui.cn!; if (!n.hist.length) return; n.desc = n.hist[0]; n.hist = n.hist.slice(1); break; }
+      case "cn-criar": {
+        const n = ui.cn!; const falta = [!n.tipo && "tipo", !catAba(n.cat) && "cat", !n.rotulo.trim() && "rotulo", !n.nome.trim() && "nome"].filter(Boolean) as string[];
+        n.erro = falta.join(",");
+        if (falta.length) { toast("Preencha os campos obrigatórios."); break; }
+        const xa = catAba(n.cat)!; const seguir = d.v === "continuar"; const nome = n.nome.trim();
+        void executar(async () => {
+          const r = falhou(await supabase.from("produtos").insert({ titulo: nome, card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
+          falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
+          await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
+          await registrar(null, "Criou o curso " + nome);
+          ui.cn = null;
+          if (seguir) { ui.curso = r.data!.id; ui.tab = "curso"; ui.cursoAba = "config"; } else ui.tab = "cursos";
+          window.scrollTo(0, 0);
+          return { msg: seguir ? "Curso criado como rascunho." : "Curso salvo como rascunho.", texto: "criação do curso " + nome, desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); if (ui.curso === r.data!.id) { ui.curso = null; ui.tab = "cursos"; } } };
+        });
+        return;
+      }
       case "curso-cancelar": toast("Alterações descartadas."); break;
       case "curso-remover": {
         const c = curso(d.id)!;
@@ -7850,6 +7951,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
+    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto" || ti.name === "cardRotulo")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "cardRotulo" || ti.name === "cardBotao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) el.textContent = ti.value || ti.placeholder; } }
