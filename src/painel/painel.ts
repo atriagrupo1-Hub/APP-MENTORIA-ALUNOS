@@ -541,7 +541,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; extr: null | { lendo: boolean; etapa: string; achou: null | ExtraidoEb }; itens: ItemEb[]; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; extr: null | { lendo: boolean; etapa: string; achou: null | ExtraidoEb; aba?: string; modo?: string; ver?: string }; itens: ItemEb[]; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3697,20 +3697,30 @@ export function montar(app: HTMLElement) {
   const ROT_OUTRO: Record<string, string> = { receita: "Receita", ritual: "Ritual", pratica: "Prática", meditacao: "Meditação", afirmacao: "Afirmação", outro: "Outro" };
   function blocoExtrasCn(n: NonNullable<typeof ui.cn>) {
     const x = n.extr, ach = x?.achou, tem = (ch: string) => n.itens.some((i) => i.chave === ch);
-    const op = (ch: string, rot: string, tit: string, sub: string) => `<li class="cn-op${tem(ch) ? " ok" : ""}"><span class="cn-op-tipo">${h(rot)}</span><span class="cn-op-txt"><b>${h(tit)}</b><em>${h(sub)}</em></span>${tem(ch) ? `<span class="cn-op-ok">✓ Adicionado</span><button type="button" class="al-botao" data-a="cn-ex-desfazer" data-v="${ch}">Desfazer</button>` : `<button type="button" class="al-botao" data-a="cn-ex-add" data-v="${ch}">${IC_CURSO.mais}Adicionar</button>`}</li>`;
-    const resumoTxt = (t: string) => t.replace(/\s+/g, " ").trim().slice(0, 110) + (t.length > 110 ? "…" : "");
-    return `<div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">2</span><div><b>Resumo e orações do e-book <i>(opcional)</i></b><em>A IA lê o e-book completo e mostra o que dá para separar. Escolha o que adicionar.</em></div>
-        <button type="button" class="al-botao-ouro" data-a="cn-ex-puxar" ${n.ebook && !pdfGrande(n.ebook) && !x?.lendo ? "" : "disabled"} title="${n.ebook ? "" : "Adicione o e-book completo no bloco 1"}">${IC_IA}${x?.lendo ? "Lendo o e-book…" : ach ? "Puxar de novo" : "Puxar do e-book"}</button></div>
-      ${!n.ebook ? `<p class="cn-nota">Adicione o e-book completo no bloco 1 para puxar o resumo e as orações.</p>` : ""}
-      ${x?.lendo ? `<p class="cn-nota" data-cn-ex-prog>${h(x.etapa || "Lendo o e-book…")}</p>` : ""}
-      ${ach ? `<div class="cn-achou"><span class="cn-rot">Encontrado no e-book</span><ul class="cn-ops">
-          ${ach.resumo ? op("resumo", "Resumo", "Resumo do e-book", resumoTxt(ach.resumo)) : ""}
-          ${ach.oracoes.length ? op("oracoes", "Orações juntas", `Todas as ${ach.oracoes.length} orações juntas`, ach.oracoes.map((o) => o.titulo).join(" · ")) : ""}
-          ${ach.oracoes.length ? `<li class="cn-op-grupo"><span class="cn-rot">Orações separadas</span>${ach.oracoes.some((_, i) => !tem("o" + i)) ? `<button type="button" class="al-botao" data-a="cn-ex-add-todas">${IC_CURSO.mais}Adicionar todas</button>` : ""}</li>${ach.oracoes.map((o, i) => op("o" + i, o.como_usar?.trim() ? "Oração + como usar" : "Oração", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
-          ${ach.outros.length ? `<li class="cn-op-grupo"><span class="cn-rot">Práticas sem oração</span></li>${ach.outros.map((o, i) => op("p" + i, ROT_OUTRO[o.tipo] || "Prática", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
-          ${!ach.resumo && !ach.oracoes.length && !ach.outros.length ? `<li class="cn-nota">A IA não encontrou resumo nem orações neste e-book.</li>` : ""}
-        </ul></div>` : ""}
-      ${/* A lista do que foi adicionado (nomes, ordem) aparece na 03 · Apresentação. */ ""}
+    const aba = x?.aba || "oracoes", modo = x?.modo || "separadas";
+    const marca = (ch: string, tit: string, tag: string, texto: string, largo = false) => `<div class="cn-mk${tem(ch) ? " ok" : ""}${largo ? " largo" : ""}">
+      <button type="button" class="cn-ck" role="checkbox" aria-checked="${tem(ch)}" data-a="cn-ex-marcar" data-v="${ch}" aria-label="Marcar ${h(tit)}">${tem(ch) ? "✓" : ""}</button>
+      <button type="button" class="cn-mk-nome" data-a="cn-ex-ver" data-v="${ch}">${h(tit)}</button>${tag ? `<span class="cn-mk-tag">${h(tag)}</span>` : ""}
+      ${x?.ver === ch ? `<div class="cn-mk-txt">${h(texto)}</div>` : ""}</div>`;
+    const cab = `<div class="cn-bloco-cab"><span class="cn-bloco-n">2</span><div><b>Resumo e orações do e-book <i>(opcional)</i></b><em>${ach ? "A IA leu o e-book. Marque o que a aluna vai receber separado." : "A IA lê o e-book completo e mostra o que dá para separar."}</em></div>
+        <button type="button" class="${ach ? "al-botao" : "al-botao-ouro"}" data-a="cn-ex-puxar" ${n.ebook && !pdfGrande(n.ebook) && !x?.lendo ? "" : "disabled"} title="${n.ebook ? "" : "Adicione o e-book completo no bloco 1"}">${ach ? "" : IC_IA}${x?.lendo ? "Lendo o e-book…" : ach ? "Puxar de novo" : "Puxar do e-book"}</button></div>`;
+    if (!ach) return `<div class="cn-bloco">${cab}${!n.ebook ? `<p class="cn-nota">Adicione o e-book completo no bloco 1 para puxar o resumo e as orações.</p>` : ""}${x?.lendo ? `<p class="cn-nota" data-cn-ex-prog>${h(x.etapa || "Lendo o e-book…")}</p>` : ""}</div>`;
+    const nO = ach.oracoes.length, nP = ach.outros.length;
+    const abas = [["resumo", "Resumo", ach.resumo ? 1 : 0], ["oracoes", "Orações", nO], ["praticas", "Práticas", nP]] as [string, string, number][];
+    let corpo = "", chaves: string[] = [];
+    if (aba === "resumo") { corpo = ach.resumo ? marca("resumo", "Resumo do e-book", "", ach.resumo, true) : `<p class="cn-nota">A IA não encontrou um resumo.</p>`; chaves = ach.resumo ? ["resumo"] : []; }
+    else if (aba === "praticas") { chaves = ach.outros.map((_, i) => "p" + i); corpo = nP ? `<div class="cn-mks">${ach.outros.map((o, i) => marca("p" + i, o.titulo, ROT_OUTRO[o.tipo] || "Prática", o.texto)).join("")}</div>` : `<p class="cn-nota">Nenhuma prática separada das orações.</p>`; }
+    else {
+      corpo = `<div class="cn-modo"><span class="cn-seg"><button type="button" class="${modo === "juntas" ? "on" : ""}" data-a="cn-ex-modo" data-v="juntas">Todas juntas</button><button type="button" class="${modo === "separadas" ? "on" : ""}" data-a="cn-ex-modo" data-v="separadas">Separadas</button></span><span class="cn-nota">${modo === "juntas" ? "Todas as orações num item só, cada uma com o seu “como usar”." : "Cada oração vira um item, com o seu “como usar”."}</span></div>`;
+      if (!nO) corpo = `<p class="cn-nota">A IA não encontrou orações.</p>`;
+      else if (modo === "juntas") { chaves = ["oracoes"]; corpo += marca("oracoes", `Todas as ${nO} orações juntas`, "", ach.oracoes.map((o) => o.titulo).join(" · "), true); }
+      else { chaves = ach.oracoes.map((_, i) => "o" + i); corpo += `<div class="cn-mks">${ach.oracoes.map((o, i) => marca("o" + i, o.titulo, o.como_usar?.trim() ? "+ como usar" : "", (o.como_usar?.trim() ? "Como usar: " + o.como_usar.trim() + "\n\n" : "") + o.texto)).join("")}</div>`; }
+    }
+    const marcadas = chaves.filter(tem).length;
+    return `<div class="cn-bloco">${cab}${x?.lendo ? `<p class="cn-nota" data-cn-ex-prog>${h(x.etapa || "Lendo o e-book…")}</p>` : ""}
+      <div class="cn-abas">${abas.map(([v, t, q]) => `<button type="button" class="${aba === v ? "on" : ""}" data-a="cn-ex-aba" data-v="${v}">${t}<i>${q}</i></button>`).join("")}</div>
+      ${corpo}
+      ${chaves.length > 1 ? `<div class="cn-mk-pe"><span><b>${marcadas} de ${chaves.length}</b> marcadas · clique no nome para ver o texto</span><span><button type="button" class="al-botao" data-a="cn-ex-todas" data-v="${chaves.join(",")}">Marcar todas</button><button type="button" class="al-botao" data-a="cn-ex-nenhuma" data-v="${chaves.join(",")}">Desmarcar</button></span></div>` : ""}
     </div>`;
   }
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
@@ -6791,6 +6801,18 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "cn-ex-add-todas": { const n = ui.cn!; const a = n.extr?.achou; if (!a) return; a.oracoes.forEach((o, i) => { if (!n.itens.some((x) => x.chave === "o" + i)) n.itens.push({ tipo: "oracao", titulo: o.titulo, comoUsar: o.como_usar || "", texto: o.texto, chave: "o" + i }); }); break; }
+      case "cn-ex-aba": ui.cn!.extr!.aba = d.v; ui.cn!.extr!.ver = ""; break;
+      case "cn-ex-modo": ui.cn!.extr!.modo = d.v; break;
+      case "cn-ex-ver": { const x = ui.cn!.extr!; x.ver = x.ver === d.v ? "" : d.v; break; }
+      case "cn-ex-marcar": {
+        const n = ui.cn!; const L = n.itens; const i = L.findIndex((y) => y.chave === d.v);
+        if (i >= 0) { L.splice(i, 1); break; }
+        // Juntas e separadas não se misturam: marcar um jeito tira o outro.
+        if (d.v === "oracoes") n.itens = L.filter((y) => !/^o\d+$/.test(y.chave)); else if (/^o\d+$/.test(d.v)) n.itens = L.filter((y) => y.chave !== "oracoes");
+        return acao("cn-ex-add", d, el, alvo);
+      }
+      case "cn-ex-todas": { const n = ui.cn!; for (const ch of d.v.split(",")) if (!n.itens.some((y) => y.chave === ch)) { if (/^o\d+$/.test(ch)) n.itens = n.itens.filter((y) => y.chave !== "oracoes"); acao("cn-ex-add", { ...d, v: ch }, el, alvo); } return; }
+      case "cn-ex-nenhuma": { const set = new Set(d.v.split(",")); ui.cn!.itens = ui.cn!.itens.filter((y) => !set.has(y.chave)); break; }
       case "cn-ex-desfazer": { const L = ui.cn!.itens; const i = L.findIndex((x) => x.chave === d.v); if (i >= 0) L.splice(i, 1); break; }
       case "cn-it-tirar": ui.cn!.itens.splice(Number(d.v), 1); break;
       case "cn-it-abrir": { const it = ui.cn!.itens[Number(d.v)]; if (it) it.aberto = !it.aberto; break; }
