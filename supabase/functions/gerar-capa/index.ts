@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
     `Escreva na capa, exatamente assim, com acentos corretos e sem outras palavras:${linha1.trim() ? `\n- Linha pequena: "${linha1.toUpperCase()}"` : ""}\n- Título: "${titulo.toUpperCase()}"`,
     contexto.trim() ? `Sobre o conteúdo do curso (use para escolher a arte, não escreva este texto na capa):\n${contexto.trim()}` : "",
     descricao.trim() ? `Como a equipe quer a capa (prioridade máxima): ${descricao.trim()}` : "",
-    "Formato horizontal 16:9. Deixe todo o texto e o elemento principal dentro da faixa central (nada importante colado nas bordas).",
+    retrato ? "Capa de e-book em pé (formato de livro 2:3), com o título bem legível." : "Formato horizontal 16:9. Deixe todo o texto e o elemento principal dentro da faixa central (nada importante colado nas bordas).",
   ].filter(Boolean).join("\n\n") : [
     modelos.length ? "As imagens enviadas são capas desta mesma mentoria. Crie UMA capa nova que pareça da mesma coleção: mesmo estilo de arte, mesma luz dourada sobre fundo escuro, mesma tipografia, mesmo tamanho e posição dos textos, mesmas cores." : "Capa de aula de mentoria cristã: arte cinematográfica, fundo escuro, luz dourada, tipografia condensada dourada.",
     guia ? `Orientações de estilo da mentoria (siga à risca):\n${guia}` : "",
