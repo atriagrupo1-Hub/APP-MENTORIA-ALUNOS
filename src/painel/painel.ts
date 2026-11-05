@@ -864,6 +864,8 @@ export function montar(app: HTMLElement) {
   }, true);
 
   function render() {
+    if (ui.tab === "cursoNovo" && ui.cn) guardarCn();
+    if (cnPronto) try { sessionStorage.setItem("aion-cn-aberto", ui.tab === "cursoNovo" ? "1" : "0"); } catch { /* ignora */ }
     const ae = document.activeElement as HTMLInputElement | null;
     const fid = ae && ae.id;
     const sel = fid && typeof ae.selectionStart === "number" ? [ae.selectionStart, ae.selectionEnd] : null;
@@ -3784,6 +3786,44 @@ export function montar(app: HTMLElement) {
     cv.getContext("2d")!.drawImage(bm, 0, 0, cv.width, cv.height); bm.close();
     return cv.toDataURL("image/jpeg", 0.85);
   }
+  /*
+   * Rascunho do Criar novo curso: o que foi digitado fica na sessão do navegador
+   * e os arquivos (PDF, capas) no IndexedDB, só como cópia local descartável,
+   * para o F5 não apagar a tela. Some ao criar o curso ou ao voltar aos cursos.
+   */
+  const RASC_CN = "aion-cn-rascunho";
+  const idbCn = () => new Promise<IDBDatabase>((ok, falha) => { const r = indexedDB.open("aion-rascunho", 1); r.onupgradeneeded = () => r.result.createObjectStore("arquivos"); r.onsuccess = () => ok(r.result); r.onerror = () => falha(r.error); });
+  async function idbCnFazer(f: (st: IDBObjectStore) => IDBRequest | void): Promise<unknown> { const db = await idbCn(); return new Promise((ok, falha) => { const tx = db.transaction("arquivos", "readwrite"); const rq = f(tx.objectStore("arquivos")); tx.oncomplete = () => { ok(rq ? (rq as IDBRequest).result : undefined); db.close(); }; tx.onerror = () => falha(tx.error); }); }
+  let cnTimer = 0, cnArqAntes = "", cnPronto = false;
+  function guardarCn() {
+    clearTimeout(cnTimer);
+    cnTimer = window.setTimeout(() => {
+      const n = ui.cn; if (!n) return;
+      try { sessionStorage.setItem(RASC_CN, JSON.stringify({ ...n, doc: null, ebook: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "", extr: n.extr ? { ...n.extr, lendo: false } : null })); } catch { /* sem armazenamento: segue */ }
+      const arqs = { doc: n.doc, ebook: n.ebook, capa: n.capa, capaPe: n.capaPe };
+      const marca = JSON.stringify(Object.entries(arqs).map(([k, v]) => [k, v ? (("arq" in v ? v.arq.name + v.arq.size : "") + (v as { original?: number }).original) : ""]));
+      if (marca === cnArqAntes) return; cnArqAntes = marca;
+      const limpo = (d: DocIA | null) => (d ? { nome: d.nome, tipo: d.tipo, arq: d.arq, texto: d.texto, original: d.original } : null);
+      void idbCnFazer((st) => st.put({ doc: limpo(n.doc), ebook: limpo(n.ebook), capa: n.capa ? { orig: n.capa.orig, arq: n.capa.arq } : null, capaPe: n.capaPe ? { orig: n.capaPe.orig, arq: n.capaPe.arq } : null }, "cn")).catch(() => {});
+    }, 250);
+  }
+  function apagarRascCn() { clearTimeout(cnTimer); cnArqAntes = ""; try { sessionStorage.removeItem(RASC_CN); } catch { /* ignora */ } void idbCnFazer((st) => st.delete("cn")).catch(() => {}); }
+  async function voltarRascCn() {
+    let o: Record<string, unknown> | null = null;
+    try { const t = sessionStorage.getItem(RASC_CN); o = t ? JSON.parse(t) : null; } catch { o = null; }
+    if (!o) return false;
+    ui.cn = { ...novoCn(), ...(o as object) } as NonNullable<typeof ui.cn>; ui.tab = "cursoNovo";
+    try {
+      const a = (await idbCnFazer((st) => st.get("cn"))) as Record<string, { nome?: string; tipo?: string; arq: File; orig?: File; texto?: string; original?: number } | null> | undefined;
+      const n = ui.cn; if (a && n) {
+        const doc = (d: typeof a.doc) => (d ? { nome: d.nome!, tipo: d.tipo!, arq: d.arq, caminho: "", texto: d.texto, original: d.original, url: d.original ? URL.createObjectURL(d.arq) : undefined } : null);
+        n.doc = doc(a.doc); n.ebook = doc(a.ebook);
+        const capa = (c: typeof a.capa) => (c ? { orig: c.orig!, arq: c.arq, url: URL.createObjectURL(c.arq) } : null);
+        n.capa = capa(a.capa); n.capaPe = capa(a.capaPe);
+      }
+    } catch { /* arquivos não voltaram: o resto volta */ }
+    return true;
+  }
   const tirarTempIA = (d?: { caminho: string; url?: string } | null) => { if (d?.url) URL.revokeObjectURL(d.url); if (d?.caminho) void supabase.storage.from("materiais").remove([d.caminho]); };
   const IC_ARQ_CN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/></svg>`;
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
@@ -6655,8 +6695,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
       }
-      case "curso-novo": ui.cn = novoCn(); ui.tab = "cursoNovo"; ui.focar = "cnNome"; window.scrollTo(0, 0); break;
-      case "cn-voltar": tirarTempIA(ui.cn?.doc); ui.cn = null; ui.tab = "cursos"; window.scrollTo(0, 0); break;
+      case "curso-novo": apagarRascCn(); ui.cn = novoCn(); ui.tab = "cursoNovo"; ui.focar = "cnNome"; window.scrollTo(0, 0); break;
+      case "cn-voltar": tirarTempIA(ui.cn?.doc); ui.cn = null; apagarRascCn(); ui.tab = "cursos"; window.scrollTo(0, 0); break;
       case "cn-tipo": { const n = ui.cn!; const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; n.tipo = d.v; if (!n.rotulo.trim() || n.rotulo === velho) n.rotulo = TIPOS_CURSO.find((x) => x[0] === d.v)?.[1] || ""; n.erro = n.erro.split(",").filter((k) => k && k !== "tipo" && !(k === "rotulo" && n.rotulo)).join(","); break; }
       case "cn-cat-nova": ui.cn!.novaCat = !ui.cn!.novaCat; ui.cn!.novaCatNome = ""; if (ui.cn!.novaCat) ui.focar = "cnNovaCat"; break;
       case "cn-cat-criar": {
@@ -6841,7 +6881,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o curso " + nome);
-          tirarTempIA(n.doc); ui.cn = null;
+          tirarTempIA(n.doc); ui.cn = null; apagarRascCn();
           if (seguir) { ui.curso = r.data!.id; ui.tab = "curso"; ui.cursoAba = "config"; } else ui.tab = "cursos";
           window.scrollTo(0, 0);
           return { msg: seguir ? "Curso criado como rascunho." : "Curso salvo como rascunho.", texto: "criação do curso " + nome, desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); if (ui.curso === r.data!.id) { ui.curso = null; ui.tab = "cursos"; } } };
@@ -8741,6 +8781,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
       try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.
+      try { if (ui.tab === "cursoNovo" || sessionStorage.getItem("aion-cn-aberto") === "1") await voltarRascCn(); } catch { /* ignora */ }
+      cnPronto = true;
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
