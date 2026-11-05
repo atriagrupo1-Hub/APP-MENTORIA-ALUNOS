@@ -4055,6 +4055,10 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     </span>` : ""}</span>`;
   }
   const VOLTA_KEY = "aion-painel-volta";
+  // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
+  (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
+  };
   /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
   type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
   let lixo: ItemLixo[] | null = null;
@@ -8541,7 +8545,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });

@@ -30,8 +30,10 @@ const raiz = document.getElementById("root")!;
 
 // O painel da equipe e a área da aluna são as maquetes aprovadas ligadas
 // ao banco, sem React: cada porta carrega só o que é dela.
+const abrirPainel = () => void import("./index.css").then(() => import("./painel/painel")).then((m) => m.montar(raiz));
 if (porta.ehPainel) {
-  void import("./index.css").then(() => import("./painel/painel")).then((m) => m.montar(raiz));
+  // /admin?previa=1: a versão em edição, que se atualiza sozinha (ver previa.ts).
+  void import("./previa").then((p) => (p.previaLigada() ? p.iniciar(raiz, abrirPainel) : abrirPainel()));
 } else {
   void import("./aluna/area").then((m) => m.montar(raiz));
 }
