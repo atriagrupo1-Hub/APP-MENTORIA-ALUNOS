@@ -3721,7 +3721,8 @@ export function montar(app: HTMLElement) {
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
     const tipo = n.tipo, IC_VID = IC_CURSO.play, IC_AUD = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6.5" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6.5" rx="1.5"/></svg>`;
     const pe = `<div class="cn-pe"><button type="button" class="al-botao" data-a="cn-passo" data-v="1">← Dados iniciais</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button><button type="button" class="al-botao-ouro" disabled>Continuar →</button></div>`;
-    if (!tipo) return `<section class="cn-card"><h2>Conteúdo do curso</h2><p class="cn-sub">Escolha o tipo de curso nos Dados iniciais para montar o conteúdo.</p>${pe}</section>`;
+    if (!tipo) return `<section class="cn-card"><h2>Conteúdo do curso</h2><p class="cn-sub">Escolha o tipo de curso para montar o conteúdo.</p>
+      <label class="cn-grupo cn-tipo-rapido"><span class="cn-rot">Tipo de curso *</span><select class="campo" data-cn="tipo"><option value="" disabled hidden selected>Selecione o tipo</option>${TIPOS_CURSO.map(([v, t]) => `<option value="${v}">${t}</option>`).join("")}</select></label>${pe}</section>`;
     if (tipo === "ebook") return `<section class="cn-card">
       <h2>Conteúdo do e-book</h2><p class="cn-sub">O arquivo do e-book e, se quiser, as partes que a aluna abre separadas.</p>
       <div class="cn-bloco"><div class="cn-bloco-cab"><span class="cn-bloco-n">1</span><div><b>E-book completo *</b><em>O PDF completo que a aluna lê.</em></div></div>
