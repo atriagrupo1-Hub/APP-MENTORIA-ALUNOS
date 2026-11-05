@@ -512,8 +512,8 @@ async function chamarFuncao(nome: string, corpo: unknown): Promise<Record<string
 }
 
 type SlotCn = "capa" | "capaPe";
-type ItemEb = { tipo: "resumo" | "oracoes" | "oracao" | "outro"; titulo: string; texto: string; aberto?: boolean; chave: string };
-type ExtraidoEb = { resumo: string; oracoes: { titulo: string; texto: string }[]; outros: { tipo: string; titulo: string; texto: string }[] };
+type ItemEb = { tipo: "resumo" | "oracoes" | "oracao" | "outro"; titulo: string; comoUsar?: string; texto: string; aberto?: boolean; chave: string };
+type ExtraidoEb = { resumo: string; oracoes: { titulo: string; como_usar?: string; texto: string }[]; outros: { tipo: string; titulo: string; texto: string }[] };
 type CapaCn = { orig: File; arq: File; url: string };
 /** Documento escolhido para a IA (criar curso e aula). */
 type DocIA = { nome: string; tipo: string; arq: File; caminho: string; texto?: string; original?: number; url?: string };
@@ -3707,15 +3707,15 @@ export function montar(app: HTMLElement) {
       ${ach ? `<div class="cn-achou"><span class="cn-rot">Encontrado no e-book</span><ul class="cn-ops">
           ${ach.resumo ? op("resumo", "Resumo", "Resumo do e-book", resumoTxt(ach.resumo)) : ""}
           ${ach.oracoes.length ? op("oracoes", "Orações juntas", `Todas as ${ach.oracoes.length} orações juntas`, ach.oracoes.map((o) => o.titulo).join(" · ")) : ""}
-          ${ach.oracoes.length ? `<li class="cn-op-grupo"><span class="cn-rot">Orações separadas</span>${ach.oracoes.some((_, i) => !tem("o" + i)) ? `<button type="button" class="al-botao" data-a="cn-ex-add-todas">${IC_CURSO.mais}Adicionar todas</button>` : ""}</li>${ach.oracoes.map((o, i) => op("o" + i, "Oração", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
-          ${ach.outros.length ? `<li class="cn-op-grupo"><span class="cn-rot">Práticas</span></li>${ach.outros.map((o, i) => op("p" + i, ROT_OUTRO[o.tipo] || "Prática", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
+          ${ach.oracoes.length ? `<li class="cn-op-grupo"><span class="cn-rot">Orações separadas</span>${ach.oracoes.some((_, i) => !tem("o" + i)) ? `<button type="button" class="al-botao" data-a="cn-ex-add-todas">${IC_CURSO.mais}Adicionar todas</button>` : ""}</li>${ach.oracoes.map((o, i) => op("o" + i, o.como_usar?.trim() ? "Oração + como usar" : "Oração", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
+          ${ach.outros.length ? `<li class="cn-op-grupo"><span class="cn-rot">Práticas sem oração</span></li>${ach.outros.map((o, i) => op("p" + i, ROT_OUTRO[o.tipo] || "Prática", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
           ${!ach.resumo && !ach.oracoes.length && !ach.outros.length ? `<li class="cn-nota">A IA não encontrou resumo nem orações neste e-book.</li>` : ""}
         </ul></div>` : ""}
       ${n.itens.length ? `<div class="cn-achou"><span class="cn-rot">Adicionados (${n.itens.length})</span><ol class="cn-itens">${n.itens.map((it, i) => `<li class="cn-item">
           <div class="cn-item-cab"><span class="cn-num">${i + 1}</span><span class="cn-op-tipo">${h(ROT_ITEM[it.tipo] || "Prática")}</span><input class="campo" value="${h(it.titulo)}" data-cn-caminho="itens.${i}.titulo" />
             <button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.-1" ${i ? "" : "disabled"} aria-label="Subir">↑</button><button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.1" ${i < n.itens.length - 1 ? "" : "disabled"} aria-label="Descer">↓</button>
             <button type="button" class="al-botao pequeno" data-a="cn-it-abrir" data-v="${i}">${it.aberto ? "Fechar" : "Ver texto"}</button><button type="button" class="cn-x" data-a="cn-it-tirar" data-v="${i}" aria-label="Remover">×</button></div>
-          ${it.aberto ? `<textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea>` : ""}</li>`).join("")}</ol></div>` : ""}
+          ${it.aberto ? `${it.tipo === "oracao" ? `<label class="cn-grupo"><span class="cn-rot">Como usar</span><textarea class="campo" rows="4" placeholder="Sem modo de usar" data-cn-caminho="itens.${i}.comoUsar">${h(it.comoUsar || "")}</textarea></label><label class="cn-grupo"><span class="cn-rot">Oração</span><textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea></label>` : `<textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea>`}` : ""}</li>`).join("")}</ol></div>` : ""}
     </div>`;
   }
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
@@ -6790,12 +6790,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = ui.cn!; const a = n.extr?.achou; if (!a) return; const ch = d.v;
         if (n.itens.some((i) => i.chave === ch)) return;
         if (ch === "resumo") n.itens.push({ tipo: "resumo", titulo: "Resumo do e-book", texto: a.resumo, chave: ch });
-        else if (ch === "oracoes") n.itens.push({ tipo: "oracoes", titulo: "Orações", texto: a.oracoes.map((o) => o.titulo + "\n\n" + o.texto).join("\n\n———\n\n"), chave: ch });
-        else if (ch[0] === "o") { const o = a.oracoes[Number(ch.slice(1))]; if (o) n.itens.push({ tipo: "oracao", titulo: o.titulo, texto: o.texto, chave: ch }); }
+        else if (ch === "oracoes") n.itens.push({ tipo: "oracoes", titulo: "Orações", texto: a.oracoes.map((o) => o.titulo + (o.como_usar?.trim() ? "\n\nComo usar:\n" + o.como_usar.trim() : "") + "\n\n" + o.texto).join("\n\n———\n\n"), chave: ch });
+        else if (ch[0] === "o") { const o = a.oracoes[Number(ch.slice(1))]; if (o) n.itens.push({ tipo: "oracao", titulo: o.titulo, comoUsar: o.como_usar || "", texto: o.texto, chave: ch }); }
         else if (ch[0] === "p") { const o = a.outros[Number(ch.slice(1))]; if (o) n.itens.push({ tipo: "outro", titulo: o.titulo, texto: o.texto, chave: ch }); }
         break;
       }
-      case "cn-ex-add-todas": { const n = ui.cn!; const a = n.extr?.achou; if (!a) return; a.oracoes.forEach((o, i) => { if (!n.itens.some((x) => x.chave === "o" + i)) n.itens.push({ tipo: "oracao", titulo: o.titulo, texto: o.texto, chave: "o" + i }); }); break; }
+      case "cn-ex-add-todas": { const n = ui.cn!; const a = n.extr?.achou; if (!a) return; a.oracoes.forEach((o, i) => { if (!n.itens.some((x) => x.chave === "o" + i)) n.itens.push({ tipo: "oracao", titulo: o.titulo, comoUsar: o.como_usar || "", texto: o.texto, chave: "o" + i }); }); break; }
       case "cn-it-tirar": ui.cn!.itens.splice(Number(d.v), 1); break;
       case "cn-it-abrir": { const it = ui.cn!.itens[Number(d.v)]; if (it) it.aberto = !it.aberto; break; }
       case "cn-it-mover": { const [i, dl] = d.v.split(".").map(Number); const L = ui.cn!.itens; const j = i + dl; if (j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; break; }
