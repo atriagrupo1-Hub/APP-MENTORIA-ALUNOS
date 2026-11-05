@@ -50,7 +50,7 @@ export async function iniciar(raiz: HTMLElement, normal: () => void) {
       atual = n.id;
       // Só o estilo mudou: troca o CSS na hora, sem recarregar a tela.
       if (n.entrada === entrada && n.css.length === links.length) {
-        n.css.forEach((c, i) => { if (!links[i].href.endsWith(c)) { const nl = links[i].cloneNode() as HTMLLinkElement; nl.href = BASE + c; nl.onload = () => links[i].remove(); links[i].after(nl); links[i] = nl; } });
+        n.css.forEach((c, i) => { if (!links[i].href.endsWith(c)) { const velho = links[i], nl = velho.cloneNode() as HTMLLinkElement; nl.href = BASE + c; nl.onload = () => velho.remove(); velho.after(nl); links[i] = nl; } });
         return;
       }
       try { (window as unknown as { __aionGuardar?: () => void }).__aionGuardar?.(); } catch { /* recarrega mesmo assim */ }
