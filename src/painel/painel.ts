@@ -3660,9 +3660,9 @@ export function montar(app: HTMLElement) {
         <h2>Informações do curso</h2>
         <p class="cn-sub">Preencha os campos para começar a criar o curso.</p>
         <div class="cn-duas"><label class="cn-grupo${err("tipo")}"><span class="cn-rot">Tipo de curso *</span>
-          <select class="campo" data-cn="tipo" data-cn-tipo><option value="">Selecione o tipo</option>${TIPOS_CURSO.map(([v, t]) => `<option value="${v}" ${n.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+          <select class="campo" data-cn="tipo" data-cn-tipo><option value="" disabled hidden ${n.tipo ? "" : "selected"}>Selecione o tipo</option>${TIPOS_CURSO.map(([v, t]) => `<option value="${v}" ${n.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
         <div class="cn-grupo${err("cat")}"><span class="cn-rot">Categoria *</span>
-          <div class="cn-linha"><select class="campo" name="cat" data-cn="cat"><option value="">${temCat ? "Selecione a categoria" : "Nenhuma categoria criada"}</option>${opcoesCatAba(n.cat)}</select>
+          <div class="cn-linha"><select class="campo" name="cat" data-cn="cat"><option value="" disabled hidden ${n.cat ? "" : "selected"}>${temCat ? "Selecione a categoria" : "Nenhuma categoria criada"}</option>${opcoesCatAba(n.cat)}</select>
             <button type="button" class="al-botao" data-a="cn-cat-nova">${IC_CURSO.mais}Criar nova</button></div>
           ${n.novaCat ? `<div class="cn-linha cn-novacat"><input id="cnNovaCat" class="campo" maxlength="80" placeholder="Nome da nova categoria" value="${h(n.novaCatNome)}" data-cn="novaCatNome" /><button type="button" class="al-botao-ouro" data-a="cn-cat-criar">Criar categoria</button><button type="button" class="al-botao" data-a="cn-cat-nova">Cancelar</button></div><em class="cn-nota">A categoria nova fica como rascunho, sem aparecer para as alunas.</em>` : ""}</div></div>
         <div class="cn-duas">
