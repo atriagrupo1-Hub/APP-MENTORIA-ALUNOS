@@ -510,6 +510,8 @@ async function chamarFuncao(nome: string, corpo: unknown): Promise<Record<string
   return r;
 }
 
+/** Documento escolhido para a IA (criar curso e aula). */
+type DocIA = { nome: string; tipo: string; arq: File; caminho: string; texto?: string; original?: number; url?: string };
 async function enviarArquivo(deposito: string, pasta: string, arquivo: File): Promise<string> {
   const limpo = arquivo.name.normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/[^a-zA-Z0-9.-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
@@ -533,9 +535,10 @@ export function montar(app: HTMLElement) {
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | { nome: string; tipo: string; arq: File; caminho: string }; hist: string[]; gerando: boolean; novaCat: boolean; novaCatNome: string; erro: string },
+    rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; arq: File; caminho: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -751,13 +754,14 @@ export function montar(app: HTMLElement) {
     layout: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>`,
     comentarios: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`,
     equipe: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.3"/><path d="M5.5 19.5c.6-3.4 3.3-5.3 6.5-5.3s5.9 1.9 6.5 5.3"/></svg>`,
+    reduzir: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M12.5 11v6M10 14.5l2.5 2.5 2.5-2.5"/></svg>`,
     lixeira: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5"/></svg>`,
     config: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>`,
     registro: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 3.5h8l3.5 3.5v13.5h-11.5z"/><path d="M9 11h6M9 14.5h6M9 18h4"/></svg>`,
     sair: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4.5H6.5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2H10"/><path d="M19.5 12h-10M16 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     ideia: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.7.5 1 1.2 1 2.1h5c0-.9.3-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg>`,
   };
-  const SUB_ABA: Record<string, string> = { lixeira: "O que foi apagado fica aqui por 30 dias e pode ser restaurado.", inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
+  const SUB_ABA: Record<string, string> = { reduzir: "Deixe um PDF grande leve para baixar no celular e para a IA ler mais rápido.", lixeira: "O que foi apagado fica aqui por 30 dias e pode ser restaurado.", inicio: "Visão geral da sua plataforma.", alunas: "Gerencie todas as alunas da mentoria.", comentarios: "Gerencie os comentários das alunas.", equipe: "Gerencie os colaboradores que têm acesso ao painel.", registro: "Acompanhe todas as atividades da equipe no painel.", config: "Personalize a aparência e o conteúdo da área de membros.", layout: "Crie categorias, coloque uma capa e escolha os cursos que ficam dentro de cada uma.", engajamento: "Acompanhe a participação das alunas e identifique quem precisa de atenção." };
   const ACAO_ABA: Record<string, string> = {
     alunas: `<button class="al-botao-ouro" data-a="aluna-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Cadastrar aluna</button>`,
   };
@@ -765,7 +769,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
   ACAO_ABA.config = `<button type="button" class="al-botao-ouro cfg-salvar-topo" data-a="cfg-salvar">Salvar alterações</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
-  const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"]];
+  const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Cursos e conteúdos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
@@ -946,7 +950,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, cursos: telaCursos, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: telaCursos, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -3612,7 +3616,19 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"], ["mentoria", "Mentoria"], ["curso", "Curso"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, hist: [], gerando: false, novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  function telaReduzir() {
+    const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
+    return `
+      <section class="cn-card rp">
+        <h2>Reduzir PDF</h2>
+        <p class="cn-sub">Escolha o PDF. Cada página é redesenhada como imagem leve: fica bem menor, rápido de abrir e de baixar no celular. O texto do PDF reduzido não fica selecionável.</p>
+        <button type="button" class="cn-doc-vazio" data-a="rp-escolher" ${r.rodando ? "disabled" : ""}>${IC_ARQ_CN}<b>${r.rodando ? "Reduzindo…" : "Escolher PDF"}</b><em>Até 500 MB. O arquivo não sai do seu computador enquanto é reduzido.</em></button>
+        <p class="cn-nota" data-rp-prog>${h(r.etapa)}</p>
+        ${r.erro ? `<p class="cn-falta">${h(r.erro)}</p>` : ""}
+        ${r.res ? `<div class="rp-res"><span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(r.res.nome)}</b></span><p>${p(r.res.paginas, "página", "páginas")} · de <b>${tamArq(r.res.antes)}</b> para <b>${tamArq(r.res.depois)}</b> (${Math.round((1 - r.res.depois / r.res.antes) * 100)}% menor).</p><a class="al-botao-ouro" href="${r.res.url}" download="${h(r.res.nome)}">Baixar PDF reduzido</a></div>` : ""}
+      </section>`;
+  }
   function telaCursoNovo() {
     const n = ui.cn || (ui.cn = novoCn());
     const temCat = S.catsAba.length > 0;
@@ -3636,12 +3652,12 @@ export function montar(app: HTMLElement) {
           <label class="cn-grupo${err("nome")}"><span class="cn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
         </div>
         <div class="cn-grupo"><span class="cn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
-          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
+          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b><em>${tamArq(n.doc.arq.size)}</em></span>${ehPdfIA(n.doc) && !n.doc.original && n.doc.arq.size > 10 * 1048576 ? `<button type="button" class="al-botao-ouro" data-a="cn-reduzir" ${n.reduzindo || n.gerando ? "disabled" : ""}>${n.reduzindo ? "Reduzindo…" : "Reduzir PDF"}</button>` : ""}<button type="button" class="al-botao" data-a="cn-doc" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar" ${n.reduzindo ? "disabled" : ""}>Remover</button>${n.doc.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.doc.original)} para ${tamArq(n.doc.arq.size)}.${n.doc.url ? ` <a href="${n.doc.url}" download="${h(n.doc.nome)}">Baixar PDF reduzido</a>` : ""}</span>` : ""}` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição. PDF muito grande pode ser reduzido aqui mesmo.</em></button>`}</div></div>
         <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Descrição (opcional)</span><span class="cn-ia">
-            <button type="button" class="al-botao-ouro" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
+            <button type="button" class="al-botao-ouro" data-a="cn-gerar" ${n.doc && !n.gerando && !n.reduzindo ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
-          <em class="cn-nota">Dá para voltar até 3 versões anteriores.</em></div>
+          <em class="cn-nota" data-cn-prog>${h(n.etapa || "Dá para voltar até 3 versões anteriores.")}</em></div>
         <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
         <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
           <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
@@ -3657,7 +3673,22 @@ export function montar(app: HTMLElement) {
     falhou(await supabase.storage.from("materiais").upload(c, dc.arq, { contentType: dc.tipo || undefined }));
     dc.caminho = c;
   }
-  const tirarTempIA = (d?: { caminho: string } | null) => { if (d?.caminho) void supabase.storage.from("materiais").remove([d.caminho]); };
+  const ehPdfIA = (d: DocIA) => d.tipo === "application/pdf" || /\.pdf$/i.test(d.nome);
+  const tamArq = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
+  const LIM_TEXTO_IA = 600000;
+  const textoB64 = (t: string) => { const u = new TextEncoder().encode(t); let bin = ""; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(bin); };
+  /** O que vai para a IA: o texto do PDF (lido aqui, rápido, qualquer tamanho) ou, sem texto, o arquivo pelo depósito. */
+  async function corpoDocIA(dc: DocIA, prog: (t: string) => void): Promise<Record<string, string>> {
+    if (ehPdfIA(dc) && dc.texto === undefined) {
+      try { const m = await import("./pdf"); dc.texto = (await m.textoDoPdf(dc.arq, (a, t) => prog(`Lendo o PDF: página ${a} de ${t}…`))).texto; }
+      catch { dc.texto = ""; }
+    }
+    if (dc.texto && dc.texto.trim().length > 300) { prog("A IA está escrevendo…"); return { nome: "documento.txt", tipo: "text/plain", base64: textoB64(dc.texto.slice(0, LIM_TEXTO_IA)) }; }
+    if (dc.arq.size > 150 * 1048576) throw new Error("Este PDF não tem texto para ler e é grande demais. Use Reduzir PDF primeiro.");
+    prog("Enviando o documento…"); await subirTempIA(dc); prog("A IA está lendo…");
+    return { nome: dc.nome, tipo: dc.tipo, caminho: dc.caminho };
+  }
+  const tirarTempIA = (d?: { caminho: string; url?: string } | null) => { if (d?.url) URL.revokeObjectURL(d.url); if (d?.caminho) void supabase.storage.from("materiais").remove([d.caminho]); };
   const IC_ARQ_CN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/></svg>`;
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
@@ -4993,8 +5024,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const anterior = alvo === "sobre" ? campo("texto")?.value : alvo === "instrucoes" ? campo("exercicio")?.value : alvo === "pdf" ? JSON.stringify(r.pdf?.conteudo ?? "") : "";
     r.gerando = alvo; atualizarIA();
     try {
-      if (alvo !== "montar") await subirTempIA(r.doc!);
-      const x = await chamarFuncao("gerar-material-aula", { aula_id: aulaId, alvo, extra: r.extra, anterior, ...(alvo === "montar" ? { pdf: pdfEditado } : { nome: r.doc!.nome, tipo: r.doc!.tipo, caminho: r.doc!.caminho }) });
+      const cp = alvo === "montar" ? null : await corpoDocIA(r.doc!, () => {});
+      const x = await chamarFuncao("gerar-material-aula", { aula_id: aulaId, alvo, extra: r.extra, anterior, ...(cp ? cp : { pdf: pdfEditado }) });
       if ((alvo === "tudo" || alvo === "sobre") && campo("texto")) { campo("texto")!.value = String(x.sobre || ""); r.sobre = campo("texto")!.value; }
       if ((alvo === "tudo" || alvo === "instrucoes") && campo("exercicio")) { campo("exercicio")!.value = String(x.instrucoes || ""); r.instrucoes = campo("exercicio")!.value; }
       if (x.pdf_path) { r.pdf = { path: String(x.pdf_path), url: String(x.pdf_url || ""), titulo: String(x.titulo_pdf || "Material da aula"), conteudo: x.pdf as IaPdf, salvo: false }; r.editando = false; }
@@ -6550,18 +6581,55 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         inp.click();
         return;
       }
+      case "rp-escolher": {
+        const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,application/pdf" });
+        inp.addEventListener("change", () => {
+          const f = inp.files?.[0]; const r = ui.rp; if (!f || !r || r.rodando) return;
+          if (f.size > 500 * 1048576) { toast("O arquivo passa de 500 MB."); return; }
+          if (r.res) URL.revokeObjectURL(r.res.url);
+          r.rodando = true; r.erro = ""; r.res = null; r.etapa = "Abrindo o PDF…"; render();
+          void (async () => {
+            const prog = (t: string) => { r.etapa = t; const el = document.querySelector("[data-rp-prog]"); if (el) el.textContent = t; };
+            try {
+              const m = await import("./pdf");
+              const x = await m.reduzirPdf(f, (a, t) => prog(`Reduzindo: página ${a} de ${t}…`));
+              r.res = { url: URL.createObjectURL(x.arquivo), nome: x.arquivo.name, antes: f.size, depois: x.arquivo.size, paginas: x.paginas };
+              if (x.arquivo.size >= f.size) r.erro = "Este PDF já estava leve: a versão reduzida não ficou menor.";
+            } catch { r.erro = "Não consegui reduzir este PDF."; }
+            r.rodando = false; r.etapa = ""; if (ui.tab === "reduzir") render();
+          })();
+        });
+        inp.click();
+        return;
+      }
+      case "cn-reduzir": {
+        const n = ui.cn!; const dc = n.doc; if (!dc || n.reduzindo) return;
+        n.reduzindo = true; render();
+        void (async () => {
+          const prog = (t: string) => { n.etapa = t; const el = document.querySelector("[data-cn-prog]"); if (el) el.textContent = t; };
+          try {
+            const m = await import("./pdf");
+            const r = await m.reduzirPdf(dc.arq, (a, t) => prog(`Reduzindo o PDF: página ${a} de ${t}…`));
+            if (r.arquivo.size >= dc.arq.size) toast("Este PDF já está no menor tamanho possível.");
+            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: r.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast("PDF reduzido."); }
+          } catch { toast("Não consegui reduzir este PDF."); }
+          n.reduzindo = false; n.etapa = ""; if (ui.cn === n) render();
+        })();
+        return;
+      }
       case "cn-doc-tirar": tirarTempIA(ui.cn!.doc); ui.cn!.doc = null; break;
       case "cn-gerar": {
         const n = ui.cn!; if (!n.doc || n.gerando) return;
         n.gerando = true; render();
         void (async () => {
           try {
-            const dc = n.doc!; await subirTempIA(dc);
-            const x = await chamarFuncao("gerar-descricao-curso", { arquivo_nome: dc.nome, arquivo_tipo: dc.tipo, caminho: dc.caminho, nome: n.nome, rotulo: n.rotulo, tipo: TIPOS_CURSO.find((t) => t[0] === n.tipo)?.[1] || "", categoria: catAba(n.cat)?.nome || "", anterior: n.desc });
+            const prog = (t: string) => { n.etapa = t; const el = document.querySelector("[data-cn-prog]"); if (el) el.textContent = t; };
+            const cp = await corpoDocIA(n.doc!, prog);
+            const x = await chamarFuncao("gerar-descricao-curso", { arquivo_nome: cp.nome, arquivo_tipo: cp.tipo, ...(cp.base64 ? { base64: cp.base64 } : { caminho: cp.caminho }), nome: n.nome, rotulo: n.rotulo, tipo: TIPOS_CURSO.find((t) => t[0] === n.tipo)?.[1] || "", categoria: catAba(n.cat)?.nome || "", anterior: n.desc });
             const nova = String(x.descricao || "").trim();
             if (nova) { if (n.desc.trim()) n.hist = [n.desc, ...n.hist].slice(0, 3); n.desc = nova; toast("Descrição gerada."); } else toast("A IA não devolveu texto. Tente de novo.");
-          } catch (e) { toast(motivo(e)); }
-          n.gerando = false; if (ui.cn === n) render();
+          } catch (e) { toast(e instanceof Error && /Reduzir PDF/.test(e.message) ? e.message : motivo(e)); }
+          n.gerando = false; n.etapa = ""; if (ui.cn === n) render();
         })();
         return;
       }
