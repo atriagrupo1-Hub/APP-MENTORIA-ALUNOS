@@ -3622,7 +3622,7 @@ export function montar(app: HTMLElement) {
     return `
       <section class="cn-card rp">
         <h2>Reduzir PDF</h2>
-        <p class="cn-sub">Escolha o PDF. Cada página é redesenhada como imagem leve: fica bem menor, rápido de abrir e de baixar no celular. O texto do PDF reduzido não fica selecionável.</p>
+        <p class="cn-sub">Escolha o PDF. Texto, fontes e layout ficam exatamente como no original; só as imagens de dentro do PDF são comprimidas. Fica mais leve para abrir e baixar no celular.</p>
         <button type="button" class="cn-doc-vazio" data-a="rp-escolher" ${r.rodando ? "disabled" : ""}>${IC_ARQ_CN}<b>${r.rodando ? "Reduzindo…" : "Escolher PDF"}</b><em>Até 500 MB. O arquivo não sai do seu computador enquanto é reduzido.</em></button>
         <p class="cn-nota" data-rp-prog>${h(r.etapa)}</p>
         ${r.erro ? `<p class="cn-falta">${h(r.erro)}</p>` : ""}
@@ -6592,7 +6592,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             const prog = (t: string) => { r.etapa = t; const el = document.querySelector("[data-rp-prog]"); if (el) el.textContent = t; };
             try {
               const m = await import("./pdf");
-              const x = await m.reduzirPdf(f, (a, t) => prog(`Reduzindo: página ${a} de ${t}…`));
+              const x = await m.reduzirPdf(f, (a, t) => prog(`Reduzindo: imagem ${a} de ${t}…`));
               r.res = { url: URL.createObjectURL(x.arquivo), nome: x.arquivo.name, antes: f.size, depois: x.arquivo.size, paginas: x.paginas };
               if (x.arquivo.size >= f.size) r.erro = "Este PDF já estava leve: a versão reduzida não ficou menor.";
             } catch { r.erro = "Não consegui reduzir este PDF."; }
@@ -6609,9 +6609,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           const prog = (t: string) => { n.etapa = t; const el = document.querySelector("[data-cn-prog]"); if (el) el.textContent = t; };
           try {
             const m = await import("./pdf");
-            const r = await m.reduzirPdf(dc.arq, (a, t) => prog(`Reduzindo o PDF: página ${a} de ${t}…`));
+            const r = await m.reduzirPdf(dc.arq, (a, t) => prog(`Reduzindo o PDF: imagem ${a} de ${t}…`));
             if (r.arquivo.size >= dc.arq.size) toast("Este PDF já está no menor tamanho possível.");
-            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: r.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast("PDF reduzido."); }
+            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: dc.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast("PDF reduzido."); }
           } catch { toast("Não consegui reduzir este PDF."); }
           n.reduzindo = false; n.etapa = ""; if (ui.cn === n) render();
         })();
