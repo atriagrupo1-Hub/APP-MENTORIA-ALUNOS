@@ -4798,3 +4798,26 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-item-cab .cn-x:disabled { opacity: .35; cursor: default; }
 .cn-item-cab .al-botao.pequeno { min-height: 36px; padding: 0 12px; font-size: 12px; }
 .cn-tipo-rapido { max-width: 360px; }
+.cn-abas { display: flex; gap: 4px; border-bottom: 1px solid var(--linha); }
+.cn-abas button { padding: 10px 14px; margin-bottom: -1px; font: inherit; font-size: 14px; font-weight: 700; color: var(--texto-2); background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer; }
+.cn-abas button.on { color: var(--texto); border-bottom-color: var(--al-ouro); }
+.cn-abas i { margin-left: 6px; padding: 1px 7px; font-size: 12px; font-style: normal; color: #9a7230; background: rgba(184, 148, 79, .14); border-radius: 999px; }
+.cn-modo { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.cn-seg { display: inline-flex; overflow: hidden; border: 1px solid var(--linha); border-radius: 10px; }
+.cn-seg button { padding: 8px 14px; font: inherit; font-size: 13px; font-weight: 700; color: var(--texto-2); background: var(--aa-cartao); border: 0; cursor: pointer; }
+.cn-seg button.on { color: #fff; background: #1c1a17; }
+.cn-mks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.cn-mk { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 9px 10px; background: var(--aa-cartao); border: 1px solid var(--linha); border-radius: 10px; }
+.cn-mk.largo { grid-column: 1 / -1; }
+.cn-mk.ok { background: rgba(184, 148, 79, .07); border-color: rgba(184, 148, 79, .45); }
+.cn-ck { flex: none; display: grid; place-items: center; width: 20px; height: 20px; padding: 0; font-size: 12px; font-weight: 700; color: #fff; background: transparent; border: 1.5px solid #b9b1a3; border-radius: 5px; cursor: pointer; }
+.cn-mk.ok .cn-ck { background: #b8944f; border-color: #b8944f; }
+.cn-mk-nome { flex: 1; min-width: 0; padding: 0; font: inherit; font-size: 14px; text-align: left; color: var(--texto); background: none; border: 0; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cn-mk-nome:hover { color: #9a7230; }
+.cn-mk-tag { flex: none; padding: 2px 7px; font-size: 10px; font-weight: 700; color: #9a7230; background: rgba(184, 148, 79, .14); border-radius: 999px; white-space: nowrap; }
+.cn-mk-txt { flex: 1 1 100%; max-height: 240px; overflow: auto; padding: 10px 12px; font-size: 13px; line-height: 1.6; color: var(--texto); white-space: pre-wrap; background: rgba(0, 0, 0, .03); border-radius: 8px; }
+.cn-mk-pe { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 10px; font-size: 13px; color: var(--texto-2); border-top: 1px solid var(--linha); }
+.cn-mk-pe b { color: var(--texto); }
+.cn-mk-pe > span:last-child { display: flex; gap: 8px; }
+.cn-mk-pe .al-botao { min-height: 34px; padding: 0 12px; font-size: 12px; }
+@media (max-width: 700px) { .cn-mks { grid-template-columns: 1fr; } }
