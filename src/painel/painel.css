@@ -4740,3 +4740,6 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-capa-vazia.cn-em-pe { max-width: 220px; aspect-ratio: 2 / 3; }
 .cn-em-pe .ce-capa-img { width: 200px !important; aspect-ratio: 2 / 3 !important; height: auto !important; }
 .cn-ia-pronta img { aspect-ratio: auto; max-height: 60vh; object-fit: contain; }
+.cn-capas { display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: start; }
+.cn-capas .cn-capa-vazia:not(.cn-em-pe) { max-width: none; }
+@media (max-width: 700px) { .cn-capas { grid-template-columns: 1fr; } }

@@ -511,6 +511,8 @@ async function chamarFuncao(nome: string, corpo: unknown): Promise<Record<string
   return r;
 }
 
+type SlotCn = "capa" | "capaPe";
+type CapaCn = { orig: File; arq: File; url: string };
 /** Documento escolhido para a IA (criar curso e aula). */
 type DocIA = { nome: string; tipo: string; arq: File; caminho: string; texto?: string; original?: number; url?: string };
 async function enviarArquivo(deposito: string, pasta: string, arquivo: File): Promise<string> {
@@ -537,7 +539,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | { orig: File; arq: File; url: string }; ia: null | { texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3617,7 +3619,7 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"], ["mentoria", "Mentoria"], ["curso", "Curso"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, ia: null, capaTexto: "", hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
@@ -3633,7 +3635,7 @@ export function montar(app: HTMLElement) {
   function cnCapaIaCard(n: NonNullable<typeof ui.cn>) {
     const a = n.ia!; const temBase = !!(n.desc.trim() || a.doc || n.doc?.texto);
     return `<div class="cn-ia-fundo" data-a="cn-ia-fechar-fora"><div class="cn-ia-card" role="dialog" aria-label="Gerar capa com IA">
-      <div class="cn-ia-cab"><b>${IC_IA}Gerar capa com IA</b><button type="button" class="eq-x" data-a="cn-ia-fechar" aria-label="Fechar">×</button></div>
+      <div class="cn-ia-cab"><b>${IC_IA}Gerar ${n.tipo === "ebook" ? "capa do e-book" : a.slot === "capaPe" ? "capa em pé" : "capa deitada"} com IA</b><button type="button" class="eq-x" data-a="cn-ia-fechar" aria-label="Fechar">×</button></div>
       ${a.pronta ? `<div class="cn-ia-pronta"><img src="${a.pronta}" alt="" /></div>
         <div class="cn-ia-pe"><button type="button" class="al-botao" data-a="cn-ia-gerar" ${a.gerando ? "disabled" : ""}>${a.gerando ? "Gerando…" : "Gerar outra"}</button><button type="button" class="al-botao-ouro" data-a="cn-ia-usar">Usar esta capa</button></div>`
       : `<p class="cn-nota">${temBase ? "A IA usa o nome, o texto em cima do nome e a descrição do curso. Se quiser, acrescente referências abaixo." : "Ainda não há descrição do curso. Escreva como quer a capa ou envie um documento de referência."}</p>
@@ -3675,11 +3677,8 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota" data-cn-prog>${h(n.etapa || "Dá para voltar até 3 versões anteriores.")}</em></div>
-        <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">${n.tipo === "ebook" ? "Capa do e-book" : "Capa do curso"} ${dicaCampo(n.tipo === "ebook" ? `Capa do e-book em pé: 1024 × 1536 px (2:3).` : `Formato da capa: 1280 × 720 px (16:9).`, "curso.formato")} <em class="cn-rec">Recomendado ${n.tipo === "ebook" ? "1024 × 1536 px (em pé)" : "1280 × 720 px"}</em></span><span class="cc2-selo ${n.capa ? "vd" : "am"}">${n.capa ? "Configurado" : "Falta"}</span></div>
-          ${n.capa ? `<div class="ce-capa${n.tipo === "ebook" ? " cn-em-pe" : ""}"><span class="ce-capa-img"><img src="${n.capa.url}" alt="" /></span>
-            <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="cn-capa-recortar">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia">${IC_IA}Gerar com IA</button><button type="button" class="al-botao botao-remover" data-a="cn-capa-tirar">${IC_MOD.lixo}Remover</button></div></div>`
-          : `<div class="cn-capa-vazia${n.tipo === "ebook" ? " cn-em-pe" : ""}"><span class="cn-capa-vazia-ic">${IC_IMG}</span><span class="cn-capa-vazia-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Adicionar capa</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia">${IC_IA}Gerar com IA</button></span><em>${n.tipo === "ebook" ? "1024 × 1536 px (2:3)" : "1280 × 720 px (16:9)"}</em></div>`}
-          ${n.ia ? cnCapaIaCard(n) : ""}</div>
+        ${slotsCn(n).length > 1 ? `<div class="cn-capas">${slotsCn(n).map((sl) => blocoCapaCn(n, sl)).join("")}</div>` : slotsCn(n).map((sl) => blocoCapaCn(n, sl)).join("")}
+        ${n.ia ? cnCapaIaCard(n) : ""}
         <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
         <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
           <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
@@ -3697,24 +3696,21 @@ export function montar(app: HTMLElement) {
   }
   const pdfGrande = (d: DocIA) => ehPdfIA(d) && d.arq.size > 30 * 1048576;
   const ehPdfIA = (d: DocIA) => d.tipo === "application/pdf" || /\.pdf$/i.test(d.nome);
-  /** Mudou o tipo (e-book ↔ outro): a capa muda de formato. Recorta a original ao centro no formato novo e redesenha. */
-  async function ajustarCapaCn() {
-    const n = ui.cn; if (!n) return;
-    const c = n.capa;
-    if (c) {
-      try {
-        const bm = await createImageBitmap(c.orig); const pr = propCn();
-        let sw = bm.width, sh = Math.round(sw / pr); if (sh > bm.height) { sh = bm.height; sw = Math.round(sh * pr); }
-        const TW = pr >= 1 ? 1920 : 1024, TH = Math.round(TW / pr);
-        const cv = document.createElement("canvas"); cv.width = TW; cv.height = TH;
-        cv.getContext("2d")!.drawImage(bm, (bm.width - sw) / 2, (bm.height - sh) / 2, sw, sh, 0, 0, TW, TH); bm.close();
-        const b = await new Promise<Blob | null>((ok) => cv.toBlob(ok, "image/webp", 0.9));
-        if (b && ui.cn?.capa === c) { URL.revokeObjectURL(c.url); const f = new File([b], "capa.webp", { type: "image/webp" }); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; }
-      } catch { /* fica a anterior */ }
-    }
-    if (ui.tab === "cursoNovo") render();
+  /*
+   * Capas por tipo (o tipo escolhido no topo decide):
+   * - E-book: só a capa em pé (2:3, 1024 × 1536), que é a capa do e-book no app.
+   * - Videoaula, Áudio, Mentoria e Curso: capa deitada (16:9, 1280 × 720, a do card) e capa em pé (2:3, 1024 × 1536).
+   */
+  const slotsCn = (n: { tipo: string }): SlotCn[] => (n.tipo === "ebook" ? ["capaPe"] : ["capa", "capaPe"]);
+  const propCn = (sl: SlotCn) => (sl === "capaPe" ? 2 / 3 : 16 / 9);
+  function blocoCapaCn(n: NonNullable<typeof ui.cn>, sl: SlotCn) {
+    const c = n[sl], pe = sl === "capaPe", ebook = n.tipo === "ebook";
+    const nome = ebook ? "Capa do e-book" : pe ? "Capa em pé" : "Capa deitada", rec = pe ? "1024 × 1536 px (em pé)" : "1280 × 720 px (deitada)";
+    return `<div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">${nome} ${dicaCampo(pe ? `Capa em pé: 1024 × 1536 px (2:3).` : `Capa deitada: 1280 × 720 px (16:9). É a capa do card do curso.`, "curso.formato")} <em class="cn-rec">Recomendado ${rec}</em></span><span class="cc2-selo ${c ? "vd" : "am"}">${c ? "Configurado" : "Falta"}</span></div>
+      ${c ? `<div class="ce-capa${pe ? " cn-em-pe" : ""}"><span class="ce-capa-img"><img src="${c.url}" alt="" /></span>
+        <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="cn-capa" data-v="${sl}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="cn-capa-recortar" data-v="${sl}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia" data-v="${sl}">${IC_IA}Gerar com IA</button><button type="button" class="al-botao botao-remover" data-a="cn-capa-tirar" data-v="${sl}">${IC_MOD.lixo}Remover</button></div></div>`
+      : `<div class="cn-capa-vazia${pe ? " cn-em-pe" : ""}"><span class="cn-capa-vazia-ic">${IC_IMG}</span><span class="cn-capa-vazia-bts"><button type="button" class="al-botao" data-a="cn-capa" data-v="${sl}">${IC_IMG}Adicionar capa</button><button type="button" class="al-botao-ouro" data-a="cn-capa-ia" data-v="${sl}">${IC_IA}Gerar com IA</button></span><em>${pe ? "1024 × 1536 px (2:3)" : "1280 × 720 px (16:9)"}</em></div>`}</div>`;
   }
-  const propCn = () => (ui.cn?.tipo === "ebook" ? 2 / 3 : 16 / 9);
   const tamArq = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB");
   const LIM_TEXTO_IA = 600000;
   const textoB64 = (t: string) => { const u = new TextEncoder().encode(t); let bin = ""; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); return btoa(bin); };
@@ -4105,7 +4101,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   const VOLTA_KEY = "aion-painel-volta";
   // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
   (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
-    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, capa: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
   };
   /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
   type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
@@ -6670,12 +6666,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "cn-capa": {
+        const sl = (d.v || "capa") as SlotCn;
         const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
-        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0 || !ui.cn) return; const f = await editarCapa(f0, propCn(), f0.name); if (!f || !ui.cn) return; if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; render(); };
+        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0 || !ui.cn) return; const f = await editarCapa(f0, propCn(sl), f0.name); if (!f || !ui.cn) return; const v = ui.cn[sl]; if (v) URL.revokeObjectURL(v.url); ui.cn[sl] = { orig: f0, arq: f, url: URL.createObjectURL(f) }; render(); };
         inp.click(); return;
       }
-      case "cn-capa-recortar": { const c = ui.cn?.capa; if (!c) return; void (async () => { const f = await editarCapa(c.orig, propCn(), c.orig.name); if (!f || !ui.cn?.capa) return; URL.revokeObjectURL(c.url); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; render(); })(); return; }
-      case "cn-capa-ia": ui.cn!.ia = ui.cn!.ia || { texto: "", refs: [], doc: null, gerando: false, pronta: "", lendo: false }; ui.cn!.ia.pronta = ""; break;
+      case "cn-capa-recortar": { const sl = (d.v || "capa") as SlotCn; const c = ui.cn?.[sl]; if (!c) return; void (async () => { const f = await editarCapa(c.orig, propCn(sl), c.orig.name); if (!f || !ui.cn?.[sl]) return; URL.revokeObjectURL(c.url); ui.cn[sl] = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; render(); })(); return; }
+      case "cn-capa-ia": { const sl = (d.v || "capa") as SlotCn; ui.cn!.ia = ui.cn!.ia ? { ...ui.cn!.ia, slot: sl, pronta: "" } : { slot: sl, texto: "", refs: [], doc: null, gerando: false, pronta: "", lendo: false }; break; }
       case "cn-ia-fechar": ui.cn!.ia = null; break;
       case "cn-ia-fechar-fora": if ((alvo as HTMLElement | null)?.classList?.contains("cn-ia-fundo") && !ui.cn?.ia?.gerando) ui.cn!.ia = null; else return; break;
       case "cn-ia-ref": {
@@ -6701,7 +6698,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         a.gerando = true; render();
         void (async () => {
           try {
-            const j = await chamarFuncao("gerar-capa", { alvo: "curso", titulo: n.nome.trim(), linha1: n.rotulo.trim(), descricao: a.texto.trim(), contexto, referencias: a.refs.map((r) => r.url), formato: n.tipo === "ebook" ? "retrato" : "paisagem" });
+            const j = await chamarFuncao("gerar-capa", { alvo: "curso", titulo: n.nome.trim(), linha1: n.rotulo.trim(), descricao: a.texto.trim(), contexto, referencias: a.refs.map((r) => r.url), formato: a.slot === "capaPe" ? "retrato" : "paisagem" });
             if (j.imagem) a.pronta = String(j.imagem); else toast("A IA não devolveu a imagem. Tente de novo.");
           } catch (e) { toast(motivo(e)); }
           a.gerando = false; if (ui.cn?.ia === a) render();
@@ -6712,12 +6709,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const n = ui.cn!; const a = n.ia!; if (!a.pronta) return;
         void (async () => {
           const bl = await (await fetch(a.pronta)).blob(); const f0 = new File([bl], "capa-ia.png", { type: "image/png" });
-          const f = await editarCapa(f0, propCn(), "capa-ia.png"); if (!f || !ui.cn) return;
-          if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; ui.cn.ia = null; render();
+          const sl = a.slot; const f = await editarCapa(f0, propCn(sl), "capa-ia.png"); if (!f || !ui.cn) return;
+          const v = ui.cn[sl]; if (v) URL.revokeObjectURL(v.url); ui.cn[sl] = { orig: f0, arq: f, url: URL.createObjectURL(f) }; ui.cn.ia = null; render();
         })();
         return;
       }
-      case "cn-capa-tirar": if (ui.cn?.capa) { URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = null; } break;
+      case "cn-capa-tirar": { const sl = (d.v || "capa") as SlotCn; const v = ui.cn?.[sl]; if (v) { URL.revokeObjectURL(v.url); ui.cn![sl] = null; } break; }
       case "cn-doc-tirar": tirarTempIA(ui.cn!.doc); ui.cn!.doc = null; break;
       case "cn-gerar": {
         const n = ui.cn!; if (!n.doc || n.gerando) return;
@@ -6742,8 +6739,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         if (n.doc && pdfGrande(n.doc)) { toast("O PDF passa de 30 MB. Reduza o PDF ou remova."); break; }
         const xa = catAba(n.cat)!; const seguir = d.v === "continuar"; const nome = n.nome.trim();
         void executar(async () => {
-          const capaPath = n.capa ? await enviarArquivo("capas", "cursos", n.capa.arq) : null;
-          const r = falhou(await supabase.from("produtos").insert({ titulo: nome, capa_path: capaPath, card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
+          const ebook = n.tipo === "ebook";
+          const deitada = !ebook && n.capa ? await enviarArquivo("capas", "cursos", n.capa.arq) : null;
+          const emPe = n.capaPe ? await enviarArquivo("capas", "cursos", n.capaPe.arq) : null;
+          const r = falhou(await supabase.from("produtos").insert({ titulo: nome, capa_path: ebook ? emPe : deitada, ...(!ebook && emPe ? { capa_vertical_path: emPe } : {}), card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
           falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o curso " + nome);
@@ -8130,7 +8129,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   });
   app.addEventListener("input", (e) => {
     { const ti = e.target as HTMLInputElement; if (ti.dataset?.cnIa && ui.cn?.ia) (ui.cn.ia as unknown as Record<string, string>)[ti.dataset.cnIa] = ti.value; }
-    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; const eraPe = n.tipo === "ebook", virouPe = ti.value === "ebook"; if (eraPe !== virouPe) queueMicrotask(() => void ajustarCapaCn()); const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
+    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; queueMicrotask(() => { if (ui.tab === "cursoNovo") render(); }); const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto" || ti.name === "cardRotulo")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "cardRotulo" || ti.name === "cardBotao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) el.textContent = ti.value || ti.placeholder; } }
