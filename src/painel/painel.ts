@@ -533,9 +533,9 @@ export function montar(app: HTMLElement) {
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | { nome: string; tipo: string; b64: string }; hist: string[]; gerando: boolean; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | { nome: string; tipo: string; arq: File; caminho: string }; hist: string[]; gerando: boolean; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; b64: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: { nome: string; tipo: string; arq: File; caminho: string }; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -3636,7 +3636,7 @@ export function montar(app: HTMLElement) {
           <label class="cn-grupo${err("nome")}"><span class="cn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
         </div>
         <div class="cn-grupo"><span class="cn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
-          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt). A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
+          <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
         <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Descrição (opcional)</span><span class="cn-ia">
             <button type="button" class="al-botao" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
@@ -3649,6 +3649,15 @@ export function montar(app: HTMLElement) {
         ${n.erro ? `<p class="cn-falta">Preencha os campos obrigatórios para continuar.</p>` : ""}
       </form>`;
   }
+  // Documento para a IA: sobe para materiais/ia-temp/ (até 500 MB) e a Edge Function lê de lá.
+  async function subirTempIA(dc: { nome: string; tipo: string; arq: File; caminho: string }) {
+    if (dc.caminho) return;
+    const limpo = dc.nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9.-]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() || "documento";
+    const c = `ia-temp/${crypto.randomUUID()}/${limpo}`;
+    falhou(await supabase.storage.from("materiais").upload(c, dc.arq, { contentType: dc.tipo || undefined }));
+    dc.caminho = c;
+  }
+  const tirarTempIA = (d?: { caminho: string } | null) => { if (d?.caminho) void supabase.storage.from("materiais").remove([d.caminho]); };
   const IC_ARQ_CN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/></svg>`;
   function visaoGeralCurso(c: Curso, todas: AlunaCurso[]) {
     const ini = hoje().slice(0, 8) + "01";
@@ -4919,7 +4928,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   const iaDa = (aulaId: string) => (ui.ia && ui.ia.aula === aulaId ? ui.ia : null);
   function iaEstado(aulaId: string) {
     const r = iaDa(aulaId), g = r?.gerando || "";
-    return `<span class="ea-ia-doc"><button type="button" class="al-botao pequeno" data-a="ia-doc" data-id="${aulaId}"${g ? " disabled" : ""}>${IC_PF.up}${r?.doc ? "Trocar documento" : "Escolher documento"}</button><em>${r?.doc ? h(r.doc.nome) : "PDF, Word (.docx) ou texto, até 20 MB"}</em></span>
+    return `<span class="ea-ia-doc"><button type="button" class="al-botao pequeno" data-a="ia-doc" data-id="${aulaId}"${g ? " disabled" : ""}>${IC_PF.up}${r?.doc ? "Trocar documento" : "Escolher documento"}</button><em>${r?.doc ? h(r.doc.nome) : "PDF, Word (.docx) ou texto, até 500 MB"}</em></span>
     `;
   }
   /** O botão Gerar com IA e o andamento, embaixo das informações adicionais. */
@@ -4965,17 +4974,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
   /** O estado da IA desta aula (cria na primeira vez). */
   function iaDe(aulaId: string) {
-    if (!iaDa(aulaId)) ui.ia = { aula: aulaId, gerando: "", extra: "", editando: false, pdf: null };
+    if (!iaDa(aulaId)) { tirarTempIA(ui.ia?.doc); ui.ia = { aula: aulaId, gerando: "", extra: "", editando: false, pdf: null }; }
     return ui.ia!;
   }
   function iaEscolherDoc(aulaId: string) {
     const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" });
     inp.addEventListener("change", () => {
       const f = inp.files?.[0]; if (!f) return;
-      if (f.size > 20 * 1024 * 1024) { toast("O arquivo passa de 20 MB."); return; }
-      const leitor = new FileReader();
-      leitor.onload = () => { iaDe(aulaId).doc = { nome: f.name, tipo: f.type, b64: String(leitor.result).split(",")[1] || "" }; atualizarIA(); };
-      leitor.readAsDataURL(f);
+      if (f.size > 500 * 1024 * 1024) { toast("O arquivo passa de 500 MB."); return; }
+      const r = iaDe(aulaId); tirarTempIA(r.doc); r.doc = { nome: f.name, tipo: f.type, arq: f, caminho: "" }; atualizarIA();
     });
     inp.click();
   }
@@ -4986,7 +4993,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const anterior = alvo === "sobre" ? campo("texto")?.value : alvo === "instrucoes" ? campo("exercicio")?.value : alvo === "pdf" ? JSON.stringify(r.pdf?.conteudo ?? "") : "";
     r.gerando = alvo; atualizarIA();
     try {
-      const x = await chamarFuncao("gerar-material-aula", { aula_id: aulaId, alvo, extra: r.extra, anterior, ...(alvo === "montar" ? { pdf: pdfEditado } : { nome: r.doc!.nome, tipo: r.doc!.tipo, base64: r.doc!.b64 }) });
+      if (alvo !== "montar") await subirTempIA(r.doc!);
+      const x = await chamarFuncao("gerar-material-aula", { aula_id: aulaId, alvo, extra: r.extra, anterior, ...(alvo === "montar" ? { pdf: pdfEditado } : { nome: r.doc!.nome, tipo: r.doc!.tipo, caminho: r.doc!.caminho }) });
       if ((alvo === "tudo" || alvo === "sobre") && campo("texto")) { campo("texto")!.value = String(x.sobre || ""); r.sobre = campo("texto")!.value; }
       if ((alvo === "tudo" || alvo === "instrucoes") && campo("exercicio")) { campo("exercicio")!.value = String(x.instrucoes || ""); r.instrucoes = campo("exercicio")!.value; }
       if (x.pdf_path) { r.pdf = { path: String(x.pdf_path), url: String(x.pdf_url || ""), titulo: String(x.titulo_pdf || "Material da aula"), conteudo: x.pdf as IaPdf, salvo: false }; r.editando = false; }
@@ -6517,7 +6525,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         window.scrollTo(0, 0); break;
       }
       case "curso-novo": ui.cn = novoCn(); ui.tab = "cursoNovo"; ui.focar = "cnNome"; window.scrollTo(0, 0); break;
-      case "cn-voltar": ui.cn = null; ui.tab = "cursos"; window.scrollTo(0, 0); break;
+      case "cn-voltar": tirarTempIA(ui.cn?.doc); ui.cn = null; ui.tab = "cursos"; window.scrollTo(0, 0); break;
       case "cn-tipo": { const n = ui.cn!; const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; n.tipo = d.v; if (!n.rotulo.trim() || n.rotulo === velho) n.rotulo = TIPOS_CURSO.find((x) => x[0] === d.v)?.[1] || ""; n.erro = n.erro.split(",").filter((k) => k && k !== "tipo" && !(k === "rotulo" && n.rotulo)).join(","); break; }
       case "cn-cat-nova": ui.cn!.novaCat = !ui.cn!.novaCat; ui.cn!.novaCatNome = ""; if (ui.cn!.novaCat) ui.focar = "cnNovaCat"; break;
       case "cn-cat-criar": {
@@ -6536,21 +6544,20 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" });
         inp.addEventListener("change", () => {
           const f = inp.files?.[0]; if (!f || !ui.cn) return;
-          if (f.size > 20 * 1024 * 1024) { toast("O arquivo passa de 20 MB."); return; }
-          const leitor = new FileReader();
-          leitor.onload = () => { if (!ui.cn) return; ui.cn.doc = { nome: f.name, tipo: f.type, b64: String(leitor.result).split(",")[1] || "" }; render(); };
-          leitor.readAsDataURL(f);
+          if (f.size > 500 * 1024 * 1024) { toast("O arquivo passa de 500 MB."); return; }
+          tirarTempIA(ui.cn.doc); ui.cn.doc = { nome: f.name, tipo: f.type, arq: f, caminho: "" }; render();
         });
         inp.click();
         return;
       }
-      case "cn-doc-tirar": ui.cn!.doc = null; break;
+      case "cn-doc-tirar": tirarTempIA(ui.cn!.doc); ui.cn!.doc = null; break;
       case "cn-gerar": {
         const n = ui.cn!; if (!n.doc || n.gerando) return;
         n.gerando = true; render();
         void (async () => {
           try {
-            const x = await chamarFuncao("gerar-descricao-curso", { arquivo_nome: n.doc!.nome, arquivo_tipo: n.doc!.tipo, base64: n.doc!.b64, nome: n.nome, rotulo: n.rotulo, tipo: TIPOS_CURSO.find((t) => t[0] === n.tipo)?.[1] || "", categoria: catAba(n.cat)?.nome || "", anterior: n.desc });
+            const dc = n.doc!; await subirTempIA(dc);
+            const x = await chamarFuncao("gerar-descricao-curso", { arquivo_nome: dc.nome, arquivo_tipo: dc.tipo, caminho: dc.caminho, nome: n.nome, rotulo: n.rotulo, tipo: TIPOS_CURSO.find((t) => t[0] === n.tipo)?.[1] || "", categoria: catAba(n.cat)?.nome || "", anterior: n.desc });
             const nova = String(x.descricao || "").trim();
             if (nova) { if (n.desc.trim()) n.hist = [n.desc, ...n.hist].slice(0, 3); n.desc = nova; toast("Descrição gerada."); } else toast("A IA não devolveu texto. Tente de novo.");
           } catch (e) { toast(motivo(e)); }
@@ -6569,7 +6576,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o curso " + nome);
-          ui.cn = null;
+          tirarTempIA(n.doc); ui.cn = null;
           if (seguir) { ui.curso = r.data!.id; ui.tab = "curso"; ui.cursoAba = "config"; } else ui.tab = "cursos";
           window.scrollTo(0, 0);
           return { msg: seguir ? "Curso criado como rascunho." : "Curso salvo como rascunho.", texto: "criação do curso " + nome, desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); if (ui.curso === r.data!.id) { ui.curso = null; ui.tab = "cursos"; } } };
