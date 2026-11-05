@@ -539,7 +539,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; passo: number; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3619,7 +3619,7 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", passo: 1, mods: [{ nome: "", aulas: [{ nome: "" }] }], partes: [], hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", ebook: null, passo: 1, mods: [{ nome: "", aulas: [{ nome: "" }] }], partes: [], hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
@@ -3688,7 +3688,7 @@ export function montar(app: HTMLElement) {
   }
   /* --- Criar novo curso · 02 Conteúdo: o que o curso tem dentro, conforme o tipo --- */
   /** PDF acima de 30 MB: aviso com Reduzir PDF, Trocar e Remover (Dados iniciais e Conteúdo). */
-  const avisoGrandeCn = (n: NonNullable<typeof ui.cn>) => n.doc && pdfGrande(n.doc) ? `<div class="cn-grande" role="alert"><b>PDF muito grande (${tamArq(n.doc.arq.size)}).</b> O máximo é 30 MB. Reduza o PDF para continuar.<span class="cn-grande-bts"><button type="button" class="al-botao-ouro" data-a="cn-reduzir" ${n.reduzindo ? "disabled" : ""}>${n.reduzindo ? "Reduzindo…" : "Reduzir PDF"}</button><button type="button" class="al-botao" data-a="cn-doc" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar" ${n.reduzindo ? "disabled" : ""}>Remover</button></span><em data-cn-prog-red>${n.reduzindo ? h(n.etapa) : ""}</em></div>` : "";
+  const avisoGrandeCn = (n: NonNullable<typeof ui.cn>, qual: "doc" | "ebook" = "doc") => { const dc = n[qual]; const tr = qual === "ebook" ? "cn-eb-add" : "cn-doc", rm = qual === "ebook" ? "cn-eb-tirar" : "cn-doc-tirar"; return dc && pdfGrande(dc) ? `<div class="cn-grande" role="alert"><b>PDF muito grande (${tamArq(dc.arq.size)}).</b> O máximo é 30 MB. Reduza o PDF para continuar.<span class="cn-grande-bts"><button type="button" class="al-botao-ouro" data-a="cn-reduzir" data-v="${qual}" ${n.reduzindo ? "disabled" : ""}>${n.reduzindo ? "Reduzindo…" : "Reduzir PDF"}</button><button type="button" class="al-botao" data-a="${tr}" ${n.reduzindo ? "disabled" : ""}>Trocar</button><button type="button" class="al-botao" data-a="${rm}" ${n.reduzindo ? "disabled" : ""}>Remover</button></span><em data-cn-prog-red>${n.reduzindo ? h(n.etapa) : ""}</em></div>` : ""; };
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
     const tipo = n.tipo, IC_VID = IC_CURSO.play, IC_AUD = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6.5" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6.5" rx="1.5"/></svg>`;
     const pe = `<div class="cn-pe"><button type="button" class="al-botao" data-a="cn-passo" data-v="1">← Dados iniciais</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button><button type="button" class="al-botao-ouro" disabled>Continuar →</button></div>`;
@@ -3696,7 +3696,8 @@ export function montar(app: HTMLElement) {
     if (tipo === "ebook") return `<section class="cn-card">
       <h2>Conteúdo do e-book</h2><p class="cn-sub">O arquivo do e-book e as partes que a aluna abre separadas (orações, capítulos, bônus).</p>
       <div class="cn-grupo"><span class="cn-rot">Arquivo do e-book *</span>
-        ${avisoGrandeCn(n)}<div class="cn-doc"${n.doc && pdfGrande(n.doc) ? " hidden" : ""}>${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b><em>${tamArq(n.doc.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button>${n.doc.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.doc.original)} para ${tamArq(n.doc.arq.size)}.</span>` : ""}` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar o PDF do e-book</b><em>Até 30 MB. O mesmo documento dos Dados iniciais serve aqui.</em></button>`}</div></div>
+        ${avisoGrandeCn(n, "ebook")}<div class="cn-doc"${n.ebook && pdfGrande(n.ebook) ? " hidden" : ""}>${n.ebook ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.ebook.nome)}</b><em>${tamArq(n.ebook.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-eb-add">Trocar</button><button type="button" class="al-botao" data-a="cn-eb-tirar">Remover</button>${n.ebook.original ? `<span class="cn-reduzido">Reduzido de ${tamArq(n.ebook.original)} para ${tamArq(n.ebook.arq.size)}.</span>` : ""}`
+          : `<div class="cn-eb-vazio">${IC_ARQ_CN}<b>Adicione o PDF do e-book</b><em>Até 30 MB.</em><span class="cn-capa-vazia-bts"><button type="button" class="al-botao-ouro" data-a="cn-eb-add">${IC_CURSO.mais}Adicionar e-book</button><button type="button" class="al-botao" data-a="cn-eb-usar" ${n.doc && ehPdfIA(n.doc) ? "" : "disabled"} title="${n.doc ? "" : "Nenhum documento nos Dados iniciais"}">Usar o dos Dados iniciais</button></span></div>`}</div></div>
       <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Partes do e-book</span><button type="button" class="al-botao" data-a="cn-parte-add">${IC_CURSO.mais}Adicionar parte</button></div>
         ${n.partes.length ? `<ol class="cn-lista">${n.partes.map((x, i) => `<li><span class="cn-num">${i + 1}</span><input class="campo" placeholder="Ex.: Oração da Cura Celestial" value="${h(x.nome)}" data-cn-caminho="partes.${i}.nome" /><button type="button" class="al-botao pequeno" disabled>${IC_ARQ_CN}Arquivo</button><button type="button" class="cn-x" data-a="cn-parte-tirar" data-v="${i}" aria-label="Tirar">×</button></li>`).join("")}</ol>` : `<p class="cn-nota">Nenhuma parte ainda. Use "Adicionar parte" para cada oração ou capítulo que a aluna abre separado.</p>`}</div>
       ${pe}</section>`;
@@ -4126,7 +4127,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   const VOLTA_KEY = "aion-painel-volta";
   // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
   (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
-    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
   };
   /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
   type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
@@ -6675,8 +6676,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         inp.click();
         return;
       }
+      case "cn-eb-usar": { const n = ui.cn!; if (n.doc) n.ebook = { ...n.doc, caminho: "" }; break; }
+      case "cn-eb-tirar": ui.cn!.ebook = null; break;
+      case "cn-eb-add": {
+        const inp = Object.assign(document.createElement("input"), { type: "file", accept: ".pdf,application/pdf" });
+        inp.addEventListener("change", () => { const f = inp.files?.[0]; if (!f || !ui.cn) return; if (f.size > 500 * 1048576) { toast("O arquivo passa de 500 MB."); return; } ui.cn.ebook = { nome: f.name, tipo: f.type || "application/pdf", arq: f, caminho: "" }; render(); });
+        inp.click(); return;
+      }
       case "cn-reduzir": {
-        const n = ui.cn!; const dc = n.doc; if (!dc || n.reduzindo) return;
+        const n = ui.cn!; const qual = (d.v === "ebook" ? "ebook" : "doc") as "doc" | "ebook"; const dc = n[qual]; if (!dc || n.reduzindo) return;
         n.reduzindo = true; render();
         void (async () => {
           const prog = (t: string) => { n.etapa = t; document.querySelectorAll("[data-cn-prog], [data-cn-prog-red]").forEach((el) => { el.textContent = t; }); };
@@ -6684,7 +6692,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             const m = await import("./pdf");
             const r = await m.reduzirPdf(dc.arq, (a, t) => prog(`Reduzindo o PDF: imagem ${a} de ${t}…`));
             if (r.arquivo.size >= dc.arq.size) toast("Este PDF já está no menor tamanho possível.");
-            else { tirarTempIA(dc); n.doc = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: dc.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast(r.arquivo.size > 30 * 1048576 ? "Reduzido para " + tamArq(r.arquivo.size) + ", ainda acima de 30 MB." : "PDF reduzido para " + tamArq(r.arquivo.size) + "."); }
+            else { if (dc !== n.doc && dc !== n.ebook) return; if (n.doc !== n.ebook) tirarTempIA(dc); n[qual] = { nome: r.arquivo.name, tipo: "application/pdf", arq: r.arquivo, caminho: "", texto: dc.texto, original: dc.arq.size, url: URL.createObjectURL(r.arquivo) }; toast(r.arquivo.size > 30 * 1048576 ? "Reduzido para " + tamArq(r.arquivo.size) + ", ainda acima de 30 MB." : "PDF reduzido para " + tamArq(r.arquivo.size) + "."); }
           } catch { toast("Não consegui reduzir este PDF."); }
           n.reduzindo = false; n.etapa = ""; if (ui.cn === n) render();
         })();
@@ -8677,7 +8685,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, doc: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
