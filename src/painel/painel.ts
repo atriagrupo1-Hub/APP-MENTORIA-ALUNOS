@@ -3711,11 +3711,7 @@ export function montar(app: HTMLElement) {
           ${ach.outros.length ? `<li class="cn-op-grupo"><span class="cn-rot">Práticas sem oração</span></li>${ach.outros.map((o, i) => op("p" + i, ROT_OUTRO[o.tipo] || "Prática", o.titulo, resumoTxt(o.texto))).join("")}` : ""}
           ${!ach.resumo && !ach.oracoes.length && !ach.outros.length ? `<li class="cn-nota">A IA não encontrou resumo nem orações neste e-book.</li>` : ""}
         </ul></div>` : ""}
-      ${n.itens.length ? `<div class="cn-achou"><span class="cn-rot">Adicionados (${n.itens.length})</span><ol class="cn-itens">${n.itens.map((it, i) => `<li class="cn-item">
-          <div class="cn-item-cab"><span class="cn-num">${i + 1}</span><span class="cn-op-tipo">${h(ROT_ITEM[it.tipo] || "Prática")}</span><input class="campo" value="${h(it.titulo)}" data-cn-caminho="itens.${i}.titulo" />
-            <button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.-1" ${i ? "" : "disabled"} aria-label="Subir">↑</button><button type="button" class="cn-x" data-a="cn-it-mover" data-v="${i}.1" ${i < n.itens.length - 1 ? "" : "disabled"} aria-label="Descer">↓</button>
-            <button type="button" class="al-botao pequeno" data-a="cn-it-abrir" data-v="${i}">${it.aberto ? "Fechar" : "Ver texto"}</button><button type="button" class="cn-x" data-a="cn-it-tirar" data-v="${i}" aria-label="Remover">×</button></div>
-          ${it.aberto ? `${it.tipo === "oracao" ? `<label class="cn-grupo"><span class="cn-rot">Como usar</span><textarea class="campo" rows="4" placeholder="Sem modo de usar" data-cn-caminho="itens.${i}.comoUsar">${h(it.comoUsar || "")}</textarea></label><label class="cn-grupo"><span class="cn-rot">Oração</span><textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea></label>` : `<textarea class="campo" rows="8" data-cn-caminho="itens.${i}.texto">${h(it.texto)}</textarea>`}` : ""}</li>`).join("")}</ol></div>` : ""}
+      ${/* A lista do que foi adicionado (nomes, ordem) aparece na 03 · Apresentação. */ ""}
     </div>`;
   }
   function cnConteudo(n: NonNullable<typeof ui.cn>) {
