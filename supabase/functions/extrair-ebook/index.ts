@@ -22,15 +22,18 @@ const ESQUEMA = {
   type: "object", additionalProperties: false, required: ["resumo", "oracoes", "outros"],
   properties: {
     resumo: { type: "string" },
-    oracoes: { type: "array", items: ITEM },
+    oracoes: { type: "array", items: { type: "object", additionalProperties: false, required: ["titulo", "como_usar", "texto"], properties: { titulo: { type: "string" }, como_usar: { type: "string" }, texto: { type: "string" } } } },
     outros: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "titulo", "texto"], properties: { tipo: { type: "string", enum: ["receita", "ritual", "pratica", "meditacao", "afirmacao", "outro"] }, titulo: { type: "string" }, texto: { type: "string" } } } },
   },
 };
 const SISTEMA = `Você organiza o conteúdo de um e-book de uma mentoria cristã (área de membros AIÓN), em português do Brasil.
 Leia o e-book e devolva:
-- "resumo": um resumo fiel do e-book em 2 a 4 parágrafos curtos, separados por linha em branco.
-- "oracoes": TODAS as orações, frases de oração e afirmações de fé que estão no e-book, cada uma com um título curto (o do e-book, se houver) e o texto copiado exatamente como está no e-book, sem resumir nem mudar palavras.
-- "outros": receitas, rituais, práticas e meditações guiadas que a aluna pode seguir, cada uma com tipo, título e o texto/passos copiados do e-book.
+- "resumo": tudo o que é importante no e-book, em parágrafos curtos separados por linha em branco: a ideia central e, quando houver, avisos, sinais, objetos sagrados, horários, cuidados e regras para fazer as práticas. Escreva com fidelidade ao e-book.
+- "oracoes": TODAS as orações, frases de oração e afirmações de fé do e-book. Cada uma com:
+  - "titulo": o título do e-book (ex.: "Oração Secreta da Cura Instantânea");
+  - "como_usar": a prática que vem junto com essa oração (o modo de fazer, o ritual, os passos, quando e quantas vezes rezar), copiada do e-book. A prática que pertence a uma oração fica AQUI, junto dela, e não em "outros". Se a oração não tiver modo de usar, deixe vazio;
+  - "texto": a oração copiada exatamente como está no e-book, sem resumir nem mudar palavras.
+- "outros": só as práticas, receitas, rituais e meditações que NÃO pertencem a nenhuma oração, cada uma com tipo, título e o texto/passos copiados do e-book.
 Não invente nada que não esteja no e-book. Se não houver itens de um tipo, devolva a lista vazia. Sem emojis.`;
 
 Deno.serve(async (req) => {
