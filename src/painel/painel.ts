@@ -3642,13 +3642,13 @@ export function montar(app: HTMLElement) {
       <form id="cnForm" class="cn-card" onsubmit="return false">
         <h2>Informações do curso</h2>
         <p class="cn-sub">Preencha os campos para começar a criar o curso.</p>
-        <label class="cn-grupo${err("tipo")}"><span class="cn-rot">Tipo de curso *</span>
+        <div class="cn-duas"><label class="cn-grupo${err("tipo")}"><span class="cn-rot">Tipo de curso *</span>
           <select class="campo" data-cn="tipo" data-cn-tipo><option value="">Selecione o tipo</option>${TIPOS_CURSO.map(([v, t]) => `<option value="${v}" ${n.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
         <div class="cn-grupo${err("cat")}"><span class="cn-rot">Categoria *</span>
           <div class="cn-linha"><select class="campo" name="cat" data-cn="cat"><option value="">${temCat ? "Selecione a categoria" : "Nenhuma categoria criada"}</option>${opcoesCatAba(n.cat)}</select>
             <button type="button" class="al-botao" data-a="cn-cat-nova">${IC_CURSO.mais}Criar nova</button></div>
-          ${n.novaCat ? `<div class="cn-linha cn-novacat"><input id="cnNovaCat" class="campo" maxlength="80" placeholder="Nome da nova categoria" value="${h(n.novaCatNome)}" data-cn="novaCatNome" /><button type="button" class="al-botao-ouro" data-a="cn-cat-criar">Criar categoria</button><button type="button" class="al-botao" data-a="cn-cat-nova">Cancelar</button></div><em class="cn-nota">A categoria nova fica como rascunho, sem aparecer para as alunas.</em>` : ""}</div>
-        <div class="cn-col">
+          ${n.novaCat ? `<div class="cn-linha cn-novacat"><input id="cnNovaCat" class="campo" maxlength="80" placeholder="Nome da nova categoria" value="${h(n.novaCatNome)}" data-cn="novaCatNome" /><button type="button" class="al-botao-ouro" data-a="cn-cat-criar">Criar categoria</button><button type="button" class="al-botao" data-a="cn-cat-nova">Cancelar</button></div><em class="cn-nota">A categoria nova fica como rascunho, sem aparecer para as alunas.</em>` : ""}</div></div>
+        <div class="cn-duas">
           <label class="cn-grupo${err("rotulo")}"><span class="cn-rot">Texto em cima do nome *</span><input class="campo" maxlength="40" placeholder="Ex.: E-book, Curso, Mentoria" value="${h(n.rotulo)}" data-cn="rotulo" /></label>
           <label class="cn-grupo${err("nome")}"><span class="cn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
         </div>

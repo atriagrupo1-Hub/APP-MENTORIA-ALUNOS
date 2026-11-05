@@ -4713,3 +4713,5 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-grande em { font-size: 12px; font-style: normal; color: var(--texto-2); }
 .cn-grande em:empty { display: none; }
 .cn-doc[hidden] { display: none; }
+.cn-card .cn-duas { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 700px) { .cn-card .cn-duas { grid-template-columns: 1fr; } }
