@@ -3638,7 +3638,7 @@ export function montar(app: HTMLElement) {
         <div class="cn-grupo"><span class="cn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
           <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt), até 500 MB. A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
         <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Descrição (opcional)</span><span class="cn-ia">
-            <button type="button" class="al-botao" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
+            <button type="button" class="al-botao-ouro" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota">Dá para voltar até 3 versões anteriores.</em></div>
