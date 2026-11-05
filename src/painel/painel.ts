@@ -3624,29 +3624,29 @@ export function montar(app: HTMLElement) {
       <ol class="cn-passos">${passos.map((t, i) => `<li class="${i === 0 ? "on" : ""}" ${i ? 'aria-disabled="true"' : 'aria-current="step"'}>${String(i + 1).padStart(2, "0")} · ${t}</li>`).join("")}</ol>
       <form id="cnForm" class="cn-card" onsubmit="return false">
         <h2>Informações do curso</h2>
-        <p class="cn-sub">Preencha os dados para começar a criar o curso. Os campos com * são obrigatórios.</p>
-        <div class="cn-grupo${err("tipo")}"><span class="kn-rot">Tipo de curso *</span>
-          <div class="cn-tipos" role="radiogroup">${TIPOS_CURSO.map(([v, t]) => `<button type="button" role="radio" aria-checked="${n.tipo === v}" class="cn-tipo" data-a="cn-tipo" data-v="${v}">${t}</button>`).join("")}</div></div>
-        <div class="cn-grupo${err("cat")}"><span class="kn-rot">Categoria *</span>
+        <p class="cn-sub">Preencha os campos para começar a criar o curso.</p>
+        <label class="cn-grupo${err("tipo")}"><span class="cn-rot">Tipo de curso *</span>
+          <select class="campo" data-cn="tipo" data-cn-tipo><option value="">Selecione o tipo</option>${TIPOS_CURSO.map(([v, t]) => `<option value="${v}" ${n.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
+        <div class="cn-grupo${err("cat")}"><span class="cn-rot">Categoria *</span>
           <div class="cn-linha"><select class="campo" name="cat" data-cn="cat"><option value="">${temCat ? "Selecione a categoria" : "Nenhuma categoria criada"}</option>${opcoesCatAba(n.cat)}</select>
             <button type="button" class="al-botao" data-a="cn-cat-nova">${IC_CURSO.mais}Criar nova</button></div>
           ${n.novaCat ? `<div class="cn-linha cn-novacat"><input id="cnNovaCat" class="campo" maxlength="80" placeholder="Nome da nova categoria" value="${h(n.novaCatNome)}" data-cn="novaCatNome" /><button type="button" class="al-botao-ouro" data-a="cn-cat-criar">Criar categoria</button><button type="button" class="al-botao" data-a="cn-cat-nova">Cancelar</button></div><em class="cn-nota">A categoria nova fica como rascunho, sem aparecer para as alunas.</em>` : ""}</div>
-        <div class="cn-duas">
-          <label class="cn-grupo${err("rotulo")}"><span class="kn-rot">Texto em cima do nome *</span><input class="campo" maxlength="40" placeholder="Ex.: E-book, Curso, Mentoria" value="${h(n.rotulo)}" data-cn="rotulo" /></label>
-          <label class="cn-grupo${err("nome")}"><span class="kn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
+        <div class="cn-col">
+          <label class="cn-grupo${err("rotulo")}"><span class="cn-rot">Texto em cima do nome *</span><input class="campo" maxlength="40" placeholder="Ex.: E-book, Curso, Mentoria" value="${h(n.rotulo)}" data-cn="rotulo" /></label>
+          <label class="cn-grupo${err("nome")}"><span class="cn-rot">Nome do curso *</span><input id="cnNome" class="campo" maxlength="120" placeholder="Ex.: Jornada de Transformação" value="${h(n.nome)}" data-cn="nome" /></label>
         </div>
-        <div class="cn-grupo"><span class="kn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
+        <div class="cn-grupo"><span class="cn-rot">Conteúdo do curso (PDF, Word ou texto)</span>
           <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button><button type="button" class="al-botao" data-a="cn-doc-tirar">Remover</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar documento</b><em>PDF, Word (.docx) ou texto (.txt). A IA lê este documento para escrever a descrição.</em></button>`}</div></div>
-        <div class="cn-grupo"><div class="cn-desc-cab"><span class="kn-rot">Descrição</span><span class="cn-ia">
+        <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Descrição (opcional)</span><span class="cn-ia">
             <button type="button" class="al-botao" data-a="cn-gerar" ${n.doc && !n.gerando ? "" : "disabled"} title="${n.doc ? "" : "Adicione o documento do conteúdo primeiro"}">${n.gerando ? "Gerando…" : n.desc ? "Gerar novamente" : "Gerar com IA"}</button>
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota">Dá para voltar até 3 versões anteriores.</em></div>
         <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
-        ${n.erro ? `<p class="cn-falta">Preencha os campos obrigatórios marcados.</p>` : ""}
         <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
           <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
           <button type="button" class="al-botao-ouro" data-a="cn-criar" data-v="continuar">Criar curso e continuar →</button></div>
+        ${n.erro ? `<p class="cn-falta">Preencha os campos obrigatórios para continuar.</p>` : ""}
       </form>`;
   }
   const IC_ARQ_CN = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5M9.5 12.5h6M9.5 16h6"/></svg>`;
@@ -7951,7 +7951,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
-    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
+    { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
     { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="catx-salvar"]') && (ti.name === "nome" || ti.name === "descricao" || ti.name === "botaoTexto" || ti.name === "cardRotulo")) { const el = document.querySelector<HTMLElement>(`[data-kx="${ti.name}"]`); if (el) { el.textContent = ti.value || (ti.name === "botaoTexto" ? "Ver categoria" : ""); el.hidden = ti.name !== "botaoTexto" && !ti.value.trim(); } } }
     { const ti = e.target as HTMLInputElement; if (ti.closest?.("#formCurso") && (ti.name === "cardRotulo" || ti.name === "cardBotao")) { const el = document.querySelector<HTMLElement>(`[data-cc="${ti.name}"]`); if (el) el.textContent = ti.value || ti.placeholder; } }
