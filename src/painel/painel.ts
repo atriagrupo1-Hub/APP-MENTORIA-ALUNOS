@@ -537,7 +537,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | { orig: File; arq: File; url: string }; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3617,7 +3617,7 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"], ["mentoria", "Mentoria"], ["curso", "Curso"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
@@ -3660,6 +3660,9 @@ export function montar(app: HTMLElement) {
             <button type="button" class="al-botao" data-a="cn-desfazer" ${n.hist.length && !n.gerando ? "" : "disabled"}>Desfazer${n.hist.length ? " (" + n.hist.length + ")" : ""}</button></span></div>
           <textarea class="campo" rows="5" maxlength="1200" placeholder="Escreva ou gere com IA a partir do documento..." data-cn="desc" ${n.gerando ? "disabled" : ""}>${h(n.desc)}</textarea>
           <em class="cn-nota" data-cn-prog>${h(n.etapa || "Dá para voltar até 3 versões anteriores.")}</em></div>
+        <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Capa do curso ${dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "curso.formato")}</span><span class="cc2-selo ${n.capa ? "vd" : "am"}">${n.capa ? "Configurado" : "Falta"}</span></div>
+          <div class="ce-capa"><span class="ce-capa-img">${n.capa ? `<img src="${n.capa.url}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
+            <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="cn-capa">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="cn-capa-recortar" ${n.capa ? "" : "disabled"}>${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="cn-capa-tirar" ${n.capa ? "" : "disabled"}>${IC_MOD.lixo}Remover</button></div></div></div>
         <p class="cn-aviso">O curso será criado como <b>Não publicado</b> + <b>Rascunho</b>. Nenhuma aluna terá acesso automaticamente.</p>
         <div class="cn-pe"><button type="button" class="al-botao" data-a="cn-voltar">← Voltar aos cursos</button><span style="flex:1"></span>
           <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
@@ -4060,7 +4063,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   const VOLTA_KEY = "aion-painel-volta";
   // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
   (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
-    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, capa: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
   };
   /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
   type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
@@ -6624,6 +6627,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         })();
         return;
       }
+      case "cn-capa": {
+        const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
+        inp.onchange = async () => { const f0 = inp.files?.[0]; if (!f0 || !ui.cn) return; const f = await editarCapa(f0, 16 / 9, f0.name); if (!f || !ui.cn) return; if (ui.cn.capa) URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = { orig: f0, arq: f, url: URL.createObjectURL(f) }; render(); };
+        inp.click(); return;
+      }
+      case "cn-capa-recortar": { const c = ui.cn?.capa; if (!c) return; void (async () => { const f = await editarCapa(c.orig, 16 / 9, c.orig.name); if (!f || !ui.cn?.capa) return; URL.revokeObjectURL(c.url); ui.cn.capa = { orig: c.orig, arq: f, url: URL.createObjectURL(f) }; render(); })(); return; }
+      case "cn-capa-tirar": if (ui.cn?.capa) { URL.revokeObjectURL(ui.cn.capa.url); ui.cn.capa = null; } break;
       case "cn-doc-tirar": tirarTempIA(ui.cn!.doc); ui.cn!.doc = null; break;
       case "cn-gerar": {
         const n = ui.cn!; if (!n.doc || n.gerando) return;
@@ -6648,7 +6658,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         if (n.doc && pdfGrande(n.doc)) { toast("O PDF passa de 30 MB. Reduza o PDF ou remova."); break; }
         const xa = catAba(n.cat)!; const seguir = d.v === "continuar"; const nome = n.nome.trim();
         void executar(async () => {
-          const r = falhou(await supabase.from("produtos").insert({ titulo: nome, card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
+          const capaPath = n.capa ? await enviarArquivo("capas", "cursos", n.capa.arq) : null;
+          const r = falhou(await supabase.from("produtos").insert({ titulo: nome, capa_path: capaPath, card_rotulo: n.rotulo.trim(), descricao: n.desc.trim() || null, tipo_conteudo: n.tipo, categoria_id: xa.aba, categoria_aba_id: xa.id, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
           falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
           await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
           await registrar(null, "Criou o curso " + nome);
