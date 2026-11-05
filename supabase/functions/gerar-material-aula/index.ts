@@ -17,7 +17,7 @@
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import Anthropic from "npm:@anthropic-ai/sdk";
+import Anthropic, { toFile } from "npm:@anthropic-ai/sdk";
 import mammoth from "npm:mammoth@1.8.0";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "npm:pdf-lib@1.17.1";
 
@@ -26,7 +26,7 @@ const CHAVE_ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CHAVE_SERVICO = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // O segredo se chama ANTHROPIC_API_KEY; se foi salvo com outro nome, vale o que tiver cara de chave da Anthropic.
 const CHAVE_IA = Deno.env.get("ANTHROPIC_API_KEY") ?? Object.values(Deno.env.toObject()).find((v) => v.trim().startsWith("sk-ant-"))?.trim() ?? "";
-const LIMITE = 20 * 1024 * 1024;
+const LIMITE = 500 * 1024 * 1024, INLINE = 20 * 1024 * 1024;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -146,6 +146,19 @@ async function montarPdf(m: Material, aula: string, modulo: string): Promise<Uin
   return await doc.save();
 }
 
+/** Apaga documentos temporários da IA (materiais/ia-temp/) com mais de 24 horas: sobra de quem fechou a tela. */
+async function limparTemp(admin: ReturnType<typeof createClient>) {
+  try {
+    const { data: pastas } = await admin.storage.from("materiais").list("ia-temp", { limit: 100 });
+    const velhos: string[] = [];
+    for (const p of pastas ?? []) {
+      const { data: itens } = await admin.storage.from("materiais").list("ia-temp/" + p.name, { limit: 20 });
+      for (const it of itens ?? []) if (it.created_at && Date.now() - Date.parse(it.created_at) > 864e5) velhos.push(`ia-temp/${p.name}/${it.name}`);
+    }
+    if (velhos.length) await admin.storage.from("materiais").remove(velhos);
+  } catch { /* limpeza é de melhor esforço */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return resposta({ erro: "metodo" }, 405);
@@ -154,13 +167,11 @@ Deno.serve(async (req) => {
   const doUsuario = createClient(URL_SUPABASE, CHAVE_ANON, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
   const { data: pode } = await doUsuario.rpc("pode", { p_acao: "cur_editar" });
   if (pode !== true) return resposta({ erro: "sem_permissao", mensagem: "Acesso bloqueado." }, 403);
-  if (!CHAVE_IA && alvo !== "montar") return resposta({ erro: "sem_chave", mensagem: "A chave da IA ainda não foi cadastrada no Supabase." }, 503);
-
   let link = "";
-  let aulaId = "", nome = "", tipo = "", dados = "", alvo = "tudo", extra = "", anterior = "";
+  let aulaId = "", nome = "", tipo = "", dados = "", caminho = "", alvo = "tudo", extra = "", anterior = "";
   let pdfEditado: Material["pdf"] | null = null;
   try {
-    const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? ""); link = String(c.url ?? "");
+    const c = await req.json(); aulaId = String(c.aula_id ?? ""); nome = String(c.nome ?? ""); tipo = String(c.tipo ?? ""); dados = String(c.base64 ?? ""); link = String(c.url ?? ""); caminho = String(c.caminho ?? "");
     alvo = ["tudo", "sobre", "instrucoes", "pdf", "montar"].includes(c.alvo) ? c.alvo : "tudo";
     extra = String(c.extra ?? "").slice(0, 4000); anterior = String(c.anterior ?? "").slice(0, 8000);
     if (alvo === "montar" && c.pdf && Array.isArray(c.pdf.secoes)) {
@@ -169,6 +180,7 @@ Deno.serve(async (req) => {
         secoes: c.pdf.secoes.slice(0, 20).map((x: Record<string, unknown>) => ({ titulo: String(x?.titulo ?? "").slice(0, 200), paragrafos: lista(x?.paragrafos), itens: lista(x?.itens) })) };
     }
   } catch { return resposta({ erro: "corpo_invalido" }, 400); }
+  if (!CHAVE_IA && alvo !== "montar") return resposta({ erro: "sem_chave", mensagem: "A chave da IA ainda não foi cadastrada no Supabase." }, 503);
   // Importação em lote: o documento pode vir por link público do Google Drive/Docs, baixado aqui.
   if (!dados && link && alvo !== "montar") {
     if (!/^https:\/\/(drive\.google\.com|docs\.google\.com|drive\.usercontent\.google\.com)\//.test(link)) return resposta({ erro: "link_invalido" }, 400);
@@ -181,10 +193,13 @@ Deno.serve(async (req) => {
       dados = btoa(bin); if (!tipo) tipo = ct.split(";")[0];
     } catch { return resposta({ erro: "sem_acesso", mensagem: "Não consegui baixar o documento pelo link." }, 400); }
   }
-  if (!/^[0-9a-f-]{36}$/.test(aulaId) || (alvo === "montar" ? !pdfEditado : !dados)) return resposta({ erro: "corpo_invalido" }, 400);
-  if (alvo !== "montar" && dados.length * 0.75 > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 20 MB." }, 413);
+  if (caminho && !/^ia-temp\/[\w.-]+\/[\w.-]+$/.test(caminho)) return resposta({ erro: "caminho_invalido" }, 400);
+  if (!/^[0-9a-f-]{36}$/.test(aulaId) || (alvo === "montar" ? !pdfEditado : !dados && !caminho)) return resposta({ erro: "corpo_invalido" }, 400);
+  if (alvo !== "montar" && dados.length * 0.75 > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 500 MB." }, 413);
 
   const admin = createClient(URL_SUPABASE, CHAVE_SERVICO, { auth: { persistSession: false } });
+  // deno-lint-ignore no-explicit-any
+  (globalThis as any).EdgeRuntime?.waitUntil?.(limparTemp(admin));
   const { data: aula } = await admin.from("aulas").select("titulo, modulos(titulo, produto_id)").eq("id", aulaId).maybeSingle();
   if (!aula) return resposta({ erro: "aula_nao_encontrada" }, 404);
   const mod = (aula as unknown as { modulos: { titulo: string; produto_id: string } | null }).modulos;
@@ -204,20 +219,38 @@ Deno.serve(async (req) => {
   }
 
   // O documento como o Claude lê: PDF direto; Word e texto viram texto.
-  const bytes = Uint8Array.from(atob(dados), (ch) => ch.charCodeAt(0));
+  // Arquivo grande: o painel subiu para materiais/ia-temp/ e mandou só o caminho.
+  let bytes: Uint8Array;
+  if (caminho) {
+    const { data: blob, error } = await admin.storage.from("materiais").download(caminho);
+    if (error || !blob) return resposta({ erro: "sem_documento", mensagem: "Não encontrei o documento enviado. Escolha de novo." }, 404);
+    if (blob.size > LIMITE) return resposta({ erro: "grande", mensagem: "O arquivo passa de 500 MB." }, 413);
+    bytes = new Uint8Array(await blob.arrayBuffer());
+  } else bytes = Uint8Array.from(atob(dados), (ch) => ch.charCodeAt(0));
+  const claude = new Anthropic({ apiKey: CHAVE_IA });
+  // deno-lint-ignore no-explicit-any
+  const arquivos = ((claude as any).files ?? (claude as any).beta.files) as { upload: (x: unknown) => Promise<{ id: string }>; delete: (id: string) => Promise<unknown> };
+  let enviado = "";
   let documento: Anthropic.ContentBlockParam;
   const ehPdf = tipo === "application/pdf" || /\.pdf$/i.test(nome);
   const ehWord = /wordprocessingml|msword/.test(tipo) || /\.docx$/i.test(nome);
   try {
-    if (ehPdf) documento = { type: "document", source: { type: "base64", media_type: "application/pdf", data: dados } };
+    if (ehPdf && bytes.length > INLINE) {
+      // PDF acima de 20 MB vai pela Files API da Anthropic (até 500 MB) e é apagado depois.
+      const f = await arquivos.upload({ file: await toFile(bytes, nome || "documento.pdf", { type: "application/pdf" }) });
+      enviado = f.id;
+      documento = { type: "document", source: { type: "file", file_id: f.id } } as unknown as Anthropic.ContentBlockParam;
+    } else if (ehPdf) {
+      let bin = ""; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      documento = { type: "document", source: { type: "base64", media_type: "application/pdf", data: btoa(bin) } };
+    }
     else {
       const texto = ehWord ? (await mammoth.extractRawText({ buffer: bytes })).value : new TextDecoder().decode(bytes);
       if (!texto.trim()) return resposta({ erro: "vazio", mensagem: "Não encontrei texto nesse arquivo." }, 400);
       documento = { type: "document", source: { type: "text", media_type: "text/plain", data: texto } };
     }
-  } catch { return resposta({ erro: "ilegivel", mensagem: "Não consegui ler esse arquivo. Envie em PDF, Word (.docx) ou texto." }, 400); }
+  } catch (e) { console.error("leitura", e instanceof Error ? e.message : e); if (enviado) await arquivos.delete(enviado).catch(() => {}); return resposta({ erro: "ilegivel", mensagem: "Não consegui ler esse arquivo. Envie em PDF, Word (.docx) ou texto." }, 400); }
 
-  const claude = new Anthropic({ apiKey: CHAVE_IA });
   let material: Material;
   try {
     const r = await claude.beta.messages.create({
@@ -239,7 +272,11 @@ Deno.serve(async (req) => {
     if (e instanceof Anthropic.AuthenticationError) return resposta({ erro: "chave_invalida", mensagem: "A chave da IA cadastrada no Supabase não foi aceita." }, 503);
     if (e instanceof Anthropic.RateLimitError) return resposta({ erro: "limite", mensagem: "A IA está ocupada. Tente de novo em instantes." }, 429);
     console.error("falha na IA", e instanceof Error ? e.message : e);
+    const msg = e instanceof Error ? e.message : "";
+    if (/page/i.test(msg) && /limit|exceed|maximum/i.test(msg)) return resposta({ erro: "paginas", mensagem: "O PDF tem páginas demais para a IA ler de uma vez (máximo 600)." }, 422);
     return resposta({ erro: "ia", mensagem: "A IA não respondeu agora. Tente de novo." }, 502);
+  } finally {
+    if (enviado) await arquivos.delete(enviado).catch(() => {});
   }
 
   // Refazer só um texto: o PDF não muda.
