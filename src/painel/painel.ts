@@ -539,7 +539,7 @@ export function montar(app: HTMLElement) {
   const inicioAberto = new Set<string>();
   const ui = {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
-    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
+    cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; passo: number; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -3619,7 +3619,7 @@ export function montar(app: HTMLElement) {
 
   /* --- Criar novo curso · 01 Dados iniciais (tela própria; só esta etapa existe por enquanto) --- */
   const TIPOS_CURSO: [string, string][] = [["videoaula", "Videoaula"], ["ebook", "E-book"], ["audio", "Áudio"]];
-  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
+  const novoCn = () => ({ tipo: "", cat: "", rotulo: "", nome: "", desc: "", doc: null, capa: null, capaPe: null, ia: null, capaTexto: "", passo: 1, mods: [{ nome: "", aulas: [{ nome: "" }] }], partes: [], hist: [], gerando: false, reduzindo: false, etapa: "", novaCat: false, novaCatNome: "", erro: "" });
   function telaReduzir() {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
@@ -3655,8 +3655,8 @@ export function montar(app: HTMLElement) {
     return `
       <nav class="ka-trilha"><button type="button" data-a="cn-voltar">Cursos e conteúdos</button><span>/</span><b>Criar novo curso</b></nav>
       <div class="cn-cab"><h1>Criar novo curso</h1><span class="cn-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span></div>
-      <ol class="cn-passos">${passos.map((t, i) => `<li class="${i === 0 ? "on" : ""}" ${i ? 'aria-disabled="true"' : 'aria-current="step"'}>${String(i + 1).padStart(2, "0")} · ${t}</li>`).join("")}</ol>
-      <form id="cnForm" class="cn-card" onsubmit="return false">
+      <ol class="cn-passos">${passos.map((t, i) => { const on = n.passo === i + 1, livre = i < 2; return `<li class="${on ? "on" : ""}${livre ? " livre" : ""}" ${on ? 'aria-current="step"' : livre ? "" : 'aria-disabled="true"'}${livre ? ` data-a="cn-passo" data-v="${i + 1}" role="button" tabindex="0"` : ""}>${String(i + 1).padStart(2, "0")} · ${t}</li>`; }).join("")}</ol>
+      ${n.passo === 2 ? cnConteudo(n) : `<form id="cnForm" class="cn-card" onsubmit="return false">
         <h2>Informações do curso</h2>
         <p class="cn-sub">Preencha os campos para começar a criar o curso.</p>
         <div class="cn-duas"><label class="cn-grupo${err("tipo")}"><span class="cn-rot">Tipo de curso *</span>
@@ -3684,7 +3684,30 @@ export function montar(app: HTMLElement) {
           <button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button>
           <button type="button" class="al-botao-ouro" data-a="cn-criar" data-v="continuar">Criar curso e continuar →</button></div>
         ${n.erro ? `<p class="cn-falta">Preencha os campos obrigatórios para continuar.</p>` : ""}
-      </form>`;
+      </form>`}`;
+  }
+  /* --- Criar novo curso · 02 Conteúdo: o que o curso tem dentro, conforme o tipo --- */
+  function cnConteudo(n: NonNullable<typeof ui.cn>) {
+    const tipo = n.tipo, IC_VID = IC_CURSO.play, IC_AUD = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3.5" y="13.5" width="4" height="6.5" rx="1.5"/><rect x="16.5" y="13.5" width="4" height="6.5" rx="1.5"/></svg>`;
+    const pe = `<div class="cn-pe"><button type="button" class="al-botao" data-a="cn-passo" data-v="1">← Dados iniciais</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="cn-criar" data-v="rascunho">Salvar como rascunho</button><button type="button" class="al-botao-ouro" disabled>Continuar →</button></div>`;
+    if (!tipo) return `<section class="cn-card"><h2>Conteúdo do curso</h2><p class="cn-sub">Escolha o tipo de curso nos Dados iniciais para montar o conteúdo.</p>${pe}</section>`;
+    if (tipo === "ebook") return `<section class="cn-card">
+      <h2>Conteúdo do e-book</h2><p class="cn-sub">O arquivo do e-book e as partes que a aluna abre separadas (orações, capítulos, bônus).</p>
+      <div class="cn-grupo"><span class="cn-rot">Arquivo do e-book *</span>
+        <div class="cn-doc">${n.doc ? `<span class="cn-doc-nome">${IC_ARQ_CN}<b>${h(n.doc.nome)}</b><em>${tamArq(n.doc.arq.size)}</em></span><button type="button" class="al-botao" data-a="cn-doc">Trocar</button>` : `<button type="button" class="cn-doc-vazio" data-a="cn-doc">${IC_ARQ_CN}<b>Adicionar o PDF do e-book</b><em>Até 30 MB. O mesmo documento dos Dados iniciais serve aqui.</em></button>`}</div></div>
+      <div class="cn-grupo"><div class="cn-desc-cab"><span class="cn-rot">Partes do e-book</span><button type="button" class="al-botao" data-a="cn-parte-add">${IC_CURSO.mais}Adicionar parte</button></div>
+        ${n.partes.length ? `<ol class="cn-lista">${n.partes.map((x, i) => `<li><span class="cn-num">${i + 1}</span><input class="campo" placeholder="Ex.: Oração da Cura Celestial" value="${h(x.nome)}" data-cn-caminho="partes.${i}.nome" /><button type="button" class="al-botao pequeno" disabled>${IC_ARQ_CN}Arquivo</button><button type="button" class="cn-x" data-a="cn-parte-tirar" data-v="${i}" aria-label="Tirar">×</button></li>`).join("")}</ol>` : `<p class="cn-nota">Nenhuma parte ainda. Use "Adicionar parte" para cada oração ou capítulo que a aluna abre separado.</p>`}</div>
+      ${pe}</section>`;
+    const ehAudio = tipo === "audio", rotA = ehAudio ? "Áudio" : "Aula", ic = ehAudio ? IC_AUD : IC_VID;
+    return `<section class="cn-card">
+      <h2>Conteúdo do curso</h2><p class="cn-sub">${ehAudio ? "Organize os áudios em módulos." : "Organize as videoaulas em módulos."} A ordem aqui é a ordem que a aluna vê.</p>
+      <div class="cn-mods">${n.mods.map((m, mi) => `<div class="cn-mod">
+        <div class="cn-mod-cab"><span class="cn-mod-n">Módulo ${mi + 1}</span><input class="campo" placeholder="Nome do módulo" value="${h(m.nome)}" data-cn-caminho="mods.${mi}.nome" />${n.mods.length > 1 ? `<button type="button" class="cn-x" data-a="cn-mod-tirar" data-v="${mi}" aria-label="Tirar módulo">×</button>` : ""}</div>
+        <ol class="cn-lista">${m.aulas.map((a, ai) => `<li><span class="cn-num cn-ic">${ic}</span><span class="cn-a-rot">${rotA} ${ai + 1}</span><input class="campo" placeholder="Nome ${ehAudio ? "do áudio" : "da aula"}" value="${h(a.nome)}" data-cn-caminho="mods.${mi}.aulas.${ai}.nome" /><button type="button" class="al-botao pequeno" disabled>${ehAudio ? "Enviar áudio" : "Vídeo"}</button>${m.aulas.length > 1 ? `<button type="button" class="cn-x" data-a="cn-aula-tirar" data-v="${mi}.${ai}" aria-label="Tirar">×</button>` : ""}</li>`).join("")}</ol>
+        <button type="button" class="cn-add" data-a="cn-aula-add" data-v="${mi}">${IC_CURSO.mais}Adicionar ${ehAudio ? "áudio" : "aula"}</button>
+      </div>`).join("")}</div>
+      <button type="button" class="al-botao" data-a="cn-mod-add">${IC_CURSO.mais}Adicionar módulo</button>
+      ${pe}</section>`;
   }
   // Documento para a IA: sobe para materiais/ia-temp/ (até 500 MB) e a Edge Function lê de lá.
   async function subirTempIA(dc: { nome: string; tipo: string; arq: File; caminho: string }) {
@@ -6665,6 +6688,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         })();
         return;
       }
+      case "cn-passo": ui.cn!.passo = Number(d.v) || 1; window.scrollTo(0, 0); break;
+      case "cn-mod-add": ui.cn!.mods.push({ nome: "", aulas: [{ nome: "" }] }); break;
+      case "cn-mod-tirar": ui.cn!.mods.splice(Number(d.v), 1); break;
+      case "cn-aula-add": ui.cn!.mods[Number(d.v)].aulas.push({ nome: "" }); break;
+      case "cn-aula-tirar": { const [mi, ai] = d.v.split(".").map(Number); ui.cn!.mods[mi].aulas.splice(ai, 1); break; }
+      case "cn-parte-add": ui.cn!.partes.push({ nome: "" }); break;
+      case "cn-parte-tirar": ui.cn!.partes.splice(Number(d.v), 1); break;
       case "cn-capa": {
         const sl = (d.v || "capa") as SlotCn;
         const inp = Object.assign(document.createElement("input"), { type: "file", accept: "image/*" });
@@ -8128,6 +8158,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
+    { const ti = e.target as HTMLInputElement; const cam = ti.dataset?.cnCaminho; if (cam && ui.cn) { const ps = cam.split("."); let o: Record<string, unknown> = ui.cn as unknown as Record<string, unknown>; for (const k of ps.slice(0, -1)) o = o[k] as Record<string, unknown>; o[ps[ps.length - 1]] = ti.value; } }
     { const ti = e.target as HTMLInputElement; if (ti.dataset?.cnIa && ui.cn?.ia) (ui.cn.ia as unknown as Record<string, string>)[ti.dataset.cnIa] = ti.value; }
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; queueMicrotask(() => { if (ui.tab === "cursoNovo") render(); }); const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
     // Editar categoria: o card de prévia acompanha o nome e a descrição.
