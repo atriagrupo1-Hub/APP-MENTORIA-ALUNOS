@@ -4797,3 +4797,4 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-item-cab .campo { flex: 1; min-width: 0; min-height: 38px; }
 .cn-item-cab .cn-x:disabled { opacity: .35; cursor: default; }
 .cn-item-cab .al-botao.pequeno { min-height: 36px; padding: 0 12px; font-size: 12px; }
+.cn-tipo-rapido { max-width: 360px; }
