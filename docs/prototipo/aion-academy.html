@@ -1,7 +1,7 @@
 <title>AION Academy</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Lato:wght@400;700;900&family=Playfair+Display:wght@600&family=Montserrat:wght@600;800&family=Cinzel:wght@600&display=swap">
 <style>
 /* Layout: barra de topo com o seletor Administração | Área do Aluno; painel SaaS com menu lateral; app da aluna em moldura de celular. */
 :root {
@@ -214,7 +214,7 @@ table.t { width: 100%; border-collapse: collapse; min-width: 820px; }
 .lado-demo .painel { padding: 16px; }
 .lado-demo h3 { font-size: 20px; }
 .lado-demo p { color: var(--texto2); font-size: 13px; }
-.cel { position: relative; width: 390px; max-width: 100%; height: 800px; max-height: calc(100vh - 110px); min-height: 600px; border: 10px solid #000; border-radius: 44px; background: var(--fundo); overflow: hidden; box-shadow: 0 0 0 1px var(--borda), 0 40px 100px rgba(0,0,0,.6); display: flex; flex-direction: column; }
+.cel { position: relative; isolation: isolate; width: 390px; max-width: 100%; height: 800px; max-height: calc(100vh - 110px); min-height: 600px; border: 10px solid #000; border-radius: 44px; background: var(--fundo); overflow: hidden; box-shadow: 0 0 0 1px var(--borda), 0 40px 100px rgba(0,0,0,.6); display: flex; flex-direction: column; }
 @media (max-width: 720px) { .cel { border: 0; border-radius: 0; width: 100%; height: calc(100vh - 120px); max-height: none; box-shadow: none; } .palco { padding-left: 0; padding-right: 0; padding-block: 0; } .lado-demo { order: 2; width: 100%; padding: 0 16px 20px; } }
 .app-topo { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
 .app-topo .marca b { font-size: 18px; }
@@ -317,6 +317,133 @@ a.item-a { text-decoration: none; }
 a.bt { text-decoration: none; }
 .app-corpo > *, .sec > *, .cel > * { flex-shrink: 0; }
 .cel > .app-corpo { flex-shrink: 1; }
+/* ===== Painel: área de trabalho clara, menu escuro ===== */
+.claro { --fundo: #F5F3EF; --fundo2: #FFFFFF; --cartao: #FFFFFF; --cartao2: #F8F5EF; --borda: #E5DFD4; --texto: #1B1915; --texto2: #5E5950; --texto3: #918A7E; --ouro: #B48C45; --ouro2: #8F6B2C; --ouro-esc: #7A5B24; --verde: #2F8A55; --amarelo: #A87910; --vermelho: #C0432F; --azul: #2F6FB0; color: var(--texto); color-scheme: light; }
+.adm.claro { background: var(--fundo); }
+.claro .main { background: var(--fundo); }
+.claro .lado { background: #121110; border-right: 0; }
+.claro .lado button { color: #B9B3A8; }
+.claro .lado button:hover { color: #fff; background: rgba(255,255,255,.04); }
+.claro .lado button[aria-current="page"] { color: #F1D9A5; background: linear-gradient(90deg, rgba(201,164,92,.28), rgba(201,164,92,.06)); box-shadow: inset 3px 0 0 #C9A45C; }
+.claro .lado .sep { background: #2A2825; }
+.claro .lado .quem { border-top-color: #2A2825; color: #9C968B; }
+.claro .lado .quem b { color: #fff !important; }
+.claro .lado .lado-marca { padding: 4px 12px 18px; }
+.claro .lado .lado-marca b { display: block; font: 600 26px/1 var(--f-tit); letter-spacing: .14em; color: #E0C589; }
+.claro .lado .lado-marca span { display: block; margin-top: 6px; font-size: 10px; letter-spacing: .26em; text-transform: uppercase; color: #8B857A; }
+.claro .bt { background: #fff; border-color: var(--borda); color: var(--texto); }
+.claro .bt:hover { border-color: #C9BFAE; }
+.claro .bt.ouro { background: linear-gradient(180deg, #D9B670, #B48C45); border-color: #A9823E; color: #1E160A; box-shadow: 0 1px 0 rgba(255,255,255,.4) inset, 0 4px 12px rgba(180,140,69,.25); }
+.claro .bt.perigo { color: var(--vermelho); border-color: rgba(192,67,47,.35); background: #fff; }
+.claro .bt.fant { background: transparent; border-color: transparent; color: var(--texto2); }
+.claro .campo { background: #fff; border-color: #DCD5C8; color: var(--texto); }
+.claro .campo:focus { border-color: var(--ouro); box-shadow: 0 0 0 3px rgba(180,140,69,.15); }
+.claro .painel, .claro .kpi, .claro .cc, .claro .tab-rola { background: #fff; border-color: var(--borda); box-shadow: 0 1px 2px rgba(27,25,21,.04); }
+.claro .kpi:hover { border-color: #CDB48A; }
+.claro .chip { background: #fff; color: var(--texto2); }
+.claro .chip[aria-pressed="true"] { background: #1B1915; color: #F1D9A5; border-color: #1B1915; }
+.claro .st.verde { color: #2F8A55; background: #E9F5EE; border-color: #CDE7D7; }
+.claro .st.amarelo { color: #9A6E0C; background: #FBF2DC; border-color: #F0DFB2; }
+.claro .st.vermelho { color: #B23A27; background: #FBECE8; border-color: #F2CFC6; }
+.claro .st.azul { color: #2F6FB0; background: #EAF2FB; border-color: #CFE0F3; }
+.claro .st.cinza { color: #6B665D; background: #F1EEE8; border-color: #E2DCD1; }
+.claro .st.ouro { color: #8F6B2C; background: #F7EEDC; border-color: #EBD9B4; }
+.claro .t th { color: var(--texto3); background: #FBF9F5; }
+.claro .aviso { background: #FBF6EC; border-color: #EBDDBF; color: var(--texto); }
+.claro .aviso.ruim { background: #FDF0EC; border-color: #F2CFC6; }
+.claro .aviso.bom { background: #EEF7F1; border-color: #CDE7D7; }
+.claro .janela { background: #fff; }
+.claro .jan-cab, .claro .jan-pe { background: #fff; }
+.claro .menu-pt .lista { background: #fff; box-shadow: 0 16px 40px rgba(27,25,21,.15); }
+.claro .menu-pt .lista button:hover { background: #F5F1EA; }
+.claro .passos button { background: #fff; }
+.claro .passos button[aria-current="step"] { background: #1B1915; color: #F1D9A5; border-color: #1B1915; }
+.claro .passos button[aria-current="step"] i { background: #C9A45C; color: #1B1915; }
+.claro .mod, .claro .op-lib label { background: #FBF9F5; }
+.claro .vazio .vz-ic { background: #F7EEDC; color: var(--ouro2); }
+.claro .ativ .pt, .claro .tipo-ic { background: #F7EEDC; color: var(--ouro2); }
+.claro .abas button[aria-selected="true"] { border-bottom-color: var(--ouro); }
+.fundo-m.claro { background: rgba(27,25,21,.45); }
+
+/* ===== Estúdio de conteúdo ===== */
+.estudio { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start; }
+@media (max-width: 1180px) { .estudio { grid-template-columns: 1fr; } .previa-col { position: static !important; } }
+.previa-col { position: sticky; top: calc(76px + env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; gap: 10px; }
+.previa-col .rot-p { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--texto2); }
+.previa-col .rot-p .esp { flex: 1; }
+.cel-p { width: 340px; max-width: 100%; margin: 0 auto; border: 9px solid #0d0d0f; border-radius: 40px; background: #0B0B0D; color: #F4F2ED; overflow: hidden; box-shadow: 0 30px 60px rgba(27,25,21,.25); }
+.cel-p .cel-in { height: 600px; overflow-y: auto; padding: 14px 14px 20px; display: flex; flex-direction: column; gap: 14px; }
+.cel-p .cel-in > * { flex-shrink: 0; }
+.cel-p .pt-cab { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #A8A8AD; }
+.cel-p h5 { margin: 0; font: 600 19px/1.1 var(--f-tit); color: #F4F2ED; }
+.cel-p .sub { font-size: 11px; color: #75757B; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 3px; border-radius: 11px; background: #F1EDE5; border: 1px solid var(--borda); }
+.seg button { padding: 6px 11px; border: 0; border-radius: 8px; background: transparent; color: var(--texto2); font-size: 12px; font-weight: 700; }
+.seg button[aria-pressed="true"] { background: #fff; color: var(--texto); box-shadow: 0 1px 3px rgba(27,25,21,.12); }
+.des { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--borda); border-radius: 14px; overflow: hidden; background: #fff; }
+.des details { border-bottom: 1px solid var(--borda); }
+.des details:last-child { border-bottom: 0; }
+.des summary { display: flex; align-items: center; gap: 10px; padding: 13px 16px; cursor: pointer; font-weight: 700; list-style: none; }
+.des summary::-webkit-details-marker { display: none; }
+.des summary::after { content: "+"; margin-left: auto; color: var(--texto3); font-size: 18px; }
+.des details[open] summary::after { content: "−"; }
+.des .des-c { display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 16px; }
+.lin-c { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.lin-c > .rot { min-width: 120px; }
+.cor { display: inline-flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border: 1px solid var(--borda); border-radius: 10px; background: #fff; font-size: 12px; font-variant-numeric: tabular-nums; }
+.cor input[type=color] { width: 30px; height: 30px; padding: 0; border: 0; border-radius: 7px; background: none; cursor: pointer; }
+.faixa { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 180px; }
+.faixa input[type=range] { flex: 1; accent-color: var(--ouro); }
+.faixa output { width: 44px; text-align: right; font-size: 12px; color: var(--texto2); font-variant-numeric: tabular-nums; }
+.artes { display: flex; flex-wrap: wrap; gap: 8px; }
+.artes button { width: 54px; height: 36px; border-radius: 8px; border: 2px solid transparent; padding: 0; }
+.artes button[aria-pressed="true"] { border-color: #1B1915; box-shadow: 0 0 0 2px #fff inset; }
+.presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.presets button { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--borda); border-radius: 12px; background: #fff; font-size: 12px; font-weight: 700; text-align: left; }
+.presets button span { height: 40px; border-radius: 8px; }
+.arvore { display: flex; flex-direction: column; gap: 8px; }
+.arv-mod { border: 1px solid var(--borda); border-radius: 12px; background: #fff; }
+.arv-mod.sel { border-color: var(--ouro); box-shadow: 0 0 0 3px rgba(180,140,69,.12); }
+.arv-cab { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+.arv-cab .n { font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--ouro2); }
+.arv-cab button.nome { flex: 1; min-width: 0; border: 0; background: none; text-align: left; font-weight: 700; padding: 0; color: var(--texto); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arv-aula { display: flex; align-items: center; gap: 8px; padding: 8px 12px 8px 14px; border-top: 1px solid var(--borda); }
+.arv-aula.sel { background: #FBF6EC; box-shadow: inset 3px 0 0 var(--ouro); }
+.arv-aula button.nome { flex: 1; min-width: 0; border: 0; background: none; text-align: left; padding: 0; color: var(--texto); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arv-aula .tipo-ic { width: 26px; height: 26px; border-radius: 7px; }
+.ed-cont { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 900px) { .ed-cont { grid-template-columns: 1fr; } }
+.ed-item { display: flex; flex-direction: column; gap: 14px; }
+.ed-item h3 { font-size: 22px; }
+.chk-lista { display: flex; flex-direction: column; gap: 6px; }
+.chk-lista button { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 10px; background: #fff; text-align: left; color: var(--texto); }
+.chk-lista .ok-i { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 900; flex: none; }
+.chk-lista .ok-i.sim { background: #E9F5EE; color: #2F8A55; }
+.chk-lista .ok-i.nao { background: #FBECE8; color: #B23A27; }
+.chk-lista button span:nth-child(2) { flex: 1; }
+.tipos-novo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+@media (max-width: 760px) { .tipos-novo { grid-template-columns: 1fr; } }
+.tipos-novo button { display: flex; flex-direction: column; gap: 8px; padding: 18px; border: 1px solid var(--borda); border-radius: 16px; background: #fff; text-align: left; color: var(--texto); }
+.tipos-novo button:hover { border-color: var(--ouro); }
+.tipos-novo button b { font: 600 22px/1.1 var(--f-tit); }
+.tipos-novo button em { font-style: normal; font-size: 13px; color: var(--texto2); }
+.tipos-novo .tipo-ic { width: 42px; height: 42px; border-radius: 12px; }
+/* card desenhado (igual no painel e no app) */
+.kd { position: relative; display: flex; flex-direction: column; width: 100%; overflow: hidden; text-align: left; border: 0; padding: 0; color: #fff; isolation: isolate; }
+.kd .kd-arte { position: relative; display: flex; flex-direction: column; padding: 14px; gap: 6px; }
+.kd .kd-arte::after { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.kd .kd-arte > * { position: relative; z-index: 1; }
+.kd .kd-rot { font-size: 10px; letter-spacing: .22em; text-transform: uppercase; font-weight: 700; }
+.kd .kd-tit { margin: 0; line-height: 1.08; text-wrap: balance; overflow-wrap: anywhere; }
+.kd .kd-pe { display: flex; flex-direction: column; gap: 7px; padding: 10px 12px 12px; }
+.kd .kd-info { font-size: 11px; opacity: .75; }
+.kd .kd-bt { align-self: flex-start; padding: 7px 13px; font-size: 12px; font-weight: 700; border-radius: 8px; border: 1.5px solid transparent; }
+.kd .kd-novo { position: absolute; top: 10px; right: 10px; z-index: 2; padding: 3px 8px; font-size: 10px; font-weight: 900; letter-spacing: .1em; border-radius: 999px; background: #C9A45C; color: #1a1408; }
+.kd .barra { background: rgba(255,255,255,.15); }
+
+.app-corpo .kd { flex-shrink: 0; }
+.trilho .kd { scroll-snap-align: start; }
+.cel .fundo-m { z-index: 40; }
 </style>
 <div id="app"></div>
 <script>
@@ -343,12 +470,26 @@ const CAPAS = [
   "linear-gradient(150deg,#2b2016 0%,#a07a3e 50%,#3a2a12 100%)",
 ];
 
+/* ---------- aparência dos cards (o mesmo desenho no painel e no app) ---------- */
+function estiloPadrao(kind, arte = 0) {
+  return { formato: kind === "ebook" ? "pe" : "deitado", fundo: "arte", arte, img: "", cor1: "#1E1E22", cor2: "#8E6F33", angulo: 135, veu: 45,
+    corTexto: "#FFFFFF", corRotulo: "#E0C589", fonte: "Cormorant Garamond", tamTitulo: "m", alinhar: "esquerda", posTexto: "baixo",
+    botaoFundo: "#C9A45C", botaoCor: "#1A1408", botaoForma: "solido", borda: 0, corBorda: "#C9A45C", raio: 16, sombra: "suave",
+    corPe: "#1E1E22", mostrarRotulo: true, mostrarProgresso: true, mostrarInfo: true, mostrarBotao: true, seloNovo: false };
+}
+const PRESETS = {
+  "Dourado clássico": { fundo: "arte", veu: 45, corTexto: "#FFFFFF", corRotulo: "#E0C589", fonte: "Cormorant Garamond", botaoFundo: "#C9A45C", botaoCor: "#1A1408", botaoForma: "solido", borda: 1, corBorda: "#8E6F33", raio: 16, sombra: "brilho", corPe: "#1E1E22" },
+  "Noite elegante": { fundo: "gradiente", cor1: "#0B0B0D", cor2: "#2B2A33", angulo: 160, veu: 0, corTexto: "#F4F2ED", corRotulo: "#A8A8AD", fonte: "Playfair Display", botaoFundo: "#F4F2ED", botaoCor: "#0B0B0D", botaoForma: "pilula", borda: 1, corBorda: "#303034", raio: 20, sombra: "forte", corPe: "#151518" },
+  "Minimal claro": { fundo: "cor", cor1: "#F4F0E6", veu: 0, corTexto: "#1B1915", corRotulo: "#8F6B2C", fonte: "Montserrat", botaoFundo: "#1B1915", botaoCor: "#F4F0E6", botaoForma: "solido", borda: 0, raio: 12, sombra: "suave", corPe: "#FFFFFF" },
+  "Esmeralda": { fundo: "gradiente", cor1: "#0F2A22", cor2: "#2E6B55", angulo: 135, veu: 10, corTexto: "#FFFFFF", corRotulo: "#BFE3D2", fonte: "Cinzel", botaoFundo: "#BFE3D2", botaoCor: "#0F2A22", botaoForma: "contorno", borda: 0, raio: 18, sombra: "media", corPe: "#13221D" },
+};
+
 /* ---------- dados ---------- */
 function vazio() {
   return {
     demo: false,
     alunos: [], cursos: [], ebooks: [], audios: [], playlists: [], encontros: [], comunicados: [],
-    matriculas: [], progresso: {}, favoritos: {}, lidos: {}, posicoes: {}, historico: [],
+    matriculas: [], progresso: {}, favoritos: {}, lidos: {}, posicoes: {}, historico: [], comentarios: [], lixeira: [],
     categorias: ["Desenvolvimento espiritual", "Prosperidade", "Família", "Saúde"],
     instrutores: ["Equipe AION"],
     equipe: [{ id: "eq1", nome: "Você", email: "", papel: "Proprietário" }],
@@ -368,26 +509,26 @@ function demo() {
   ];
   const aula = (titulo, tipo, dur, lib) => ({ id: uid("a"), titulo, tipo, desc: "Conteúdo de exemplo para demonstração.", texto: "", dur, status: "publicado", lib: lib || { modo: "imediato" }, anexos: tipo === "pdf" ? ["Roteiro da aula.pdf"] : [] });
   S.cursos = [
-    { id: "c1", titulo: "Jornada da Fé", categoria: "Desenvolvimento espiritual", instrutor: "Mentora Helena (fictícia)", status: "publicado", mentoria: true, capa: 0, descCurta: "O caminho da mentoria, módulo a módulo.", desc: "Curso principal da mentoria, com encontros semanais e práticas guiadas.", publico: "Alunas da mentoria", objetivo: "Construir uma rotina de fé e gratidão.",
+    { id: "c1", tipo: "videoaula", rotulo: "Mentoria", botao: "Continuar jornada", capaPe: 0, quem: "matriculadas", publicacao: "publicado", libModo: "imediato", criado: dia(-40), titulo: "Jornada da Fé", categoria: "Desenvolvimento espiritual", instrutor: "Mentora Helena (fictícia)", status: "publicado", mentoria: true, capa: 0, descCurta: "O caminho da mentoria, módulo a módulo.", desc: "Curso principal da mentoria, com encontros semanais e práticas guiadas.", publico: "Alunas da mentoria", objetivo: "Construir uma rotina de fé e gratidão.",
       ap: { titulo: "Bem-vinda à Jornada", boas: "Que bom ter você aqui. Comece pelo Módulo 1 e siga no seu ritmo.", video: "", destaques: ["Encontros ao vivo", "Práticas diárias"], aprender: ["Oração diária", "Gratidão como hábito", "Leitura bíblica guiada"] },
       acesso: { modo: "imediato", dias: 7, data: "", fim: "" }, atualizado: dia(-2),
       modulos: [
         { id: "m1", titulo: "Fundamentos", desc: "Por onde começar.", aulas: [aula("Boas-vindas e como estudar", "video", 540), aula("A oração da manhã", "video", 780), aula("Roteiro de práticas", "pdf", 0)] },
         { id: "m2", titulo: "Gratidão na prática", desc: "Liberado 7 dias após a matrícula.", aulas: [aula("O diário de gratidão", "video", 900, { modo: "dias", dias: 7 }), aula("Meditação guiada", "audio", 600, { modo: "dias", dias: 7 })] },
       ] },
-    { id: "c2", titulo: "Finanças com Propósito", categoria: "Prosperidade", instrutor: "Equipe AION", status: "publicado", mentoria: false, capa: 1, descCurta: "Organize a vida financeira com princípios.", desc: "Curso aberto, para todas as alunas que o receberem.", publico: "Todas as alunas", objetivo: "Sair das dívidas e planejar.",
+    { id: "c2", tipo: "videoaula", rotulo: "Curso", botao: "Ver curso", capaPe: 1, quem: "matriculadas", publicacao: "publicado", libModo: "imediato", criado: dia(-30), titulo: "Finanças com Propósito", categoria: "Prosperidade", instrutor: "Equipe AION", status: "publicado", mentoria: false, capa: 1, descCurta: "Organize a vida financeira com princípios.", desc: "Curso aberto, para todas as alunas que o receberem.", publico: "Todas as alunas", objetivo: "Sair das dívidas e planejar.",
       ap: { titulo: "Finanças com Propósito", boas: "Vamos organizar juntas.", video: "", destaques: ["Planilhas prontas"], aprender: ["Orçamento", "Reserva"] },
       acesso: { modo: "imediato", dias: 0, data: "", fim: "" }, atualizado: dia(-6),
       modulos: [{ id: "m3", titulo: "Organização", desc: "", aulas: [aula("Raio-x das contas", "video", 660), aula("Orçamento do mês", "texto", 0), aula("Planilha de controle", "pdf", 0, { modo: "conclusao" })] }] },
-    { id: "c3", titulo: "Família em Oração", categoria: "Família", instrutor: "Mentora Helena (fictícia)", status: "rascunho", mentoria: false, capa: 2, descCurta: "Em construção.", desc: "", publico: "", objetivo: "",
+    { id: "c3", tipo: "videoaula", rotulo: "Curso", botao: "Ver curso", capaPe: 2, quem: "matriculadas", publicacao: "rascunho", libModo: "imediato", criado: dia(-1), titulo: "Família em Oração", categoria: "Família", instrutor: "Mentora Helena (fictícia)", status: "rascunho", mentoria: false, capa: 2, descCurta: "Em construção.", desc: "", publico: "", objetivo: "",
       ap: { titulo: "", boas: "", video: "", destaques: [], aprender: [] }, acesso: { modo: "imediato", dias: 0, data: "", fim: "" }, atualizado: dia(-1),
       modulos: [{ id: "m4", titulo: "Módulo 1", desc: "", aulas: [aula("Introdução", "video", 0)] }] },
   ];
   S.ebooks = [
-    { id: "e1", titulo: "Manuscrito da Gratidão", autor: "Equipe AION", categoria: "Oração", desc: "Orações e práticas de gratidão.", capa: 5, arquivo: "manuscrito-gratidao.pdf", paginas: 6, download: false, publico: "mentoria", status: "publicado", palavras: "gratidão, oração" },
-    { id: "e2", titulo: "Guia do Orçamento", autor: "Equipe AION", categoria: "Prosperidade", desc: "Passo a passo do orçamento familiar.", capa: 1, arquivo: "guia-orcamento.pdf", paginas: 5, download: true, publico: "matriculados", status: "publicado", palavras: "" },
+    { id: "e1", rotulo: "E-book", botao: "Ler e-book", criado: dia(-20), partes: [{ titulo: "Oração da Gratidão pela Manhã", comoUsar: "Ao acordar, antes do celular, em voz baixa.", texto: "Senhor, obrigada por mais este dia..." }, { titulo: "Oração para a Ansiedade", comoUsar: "Respire fundo três vezes e reze devagar.", texto: "Ó Deus, concede-me a serenidade..." }], titulo: "Manuscrito da Gratidão", autor: "Equipe AION", categoria: "Oração", desc: "Orações e práticas de gratidão.", capa: 5, arquivo: "manuscrito-gratidao.pdf", paginas: 6, download: false, publico: "mentoria", status: "publicado", palavras: "gratidão, oração" },
+    { id: "e2", rotulo: "E-book", botao: "Ler e-book", criado: dia(-6), partes: [], titulo: "Guia do Orçamento", autor: "Equipe AION", categoria: "Prosperidade", desc: "Passo a passo do orçamento familiar.", capa: 1, arquivo: "guia-orcamento.pdf", paginas: 5, download: true, publico: "matriculados", status: "publicado", palavras: "" },
   ];
-  S.playlists = [{ id: "p1", titulo: "Meditações da Manhã", desc: "Para começar o dia." }];
+  S.playlists = [{ id: "p1", titulo: "Meditações da Manhã", desc: "Para começar o dia.", rotulo: "Áudio", botao: "Ouvir", categoria: "Oração", capa: 3, status: "publicado", publico: "todos", criado: dia(-15) }];
   S.audios = [
     { id: "s1", titulo: "Respire e agradeça", apresentador: "Mentora Helena (fictícia)", categoria: "Oração", desc: "Meditação curta.", capa: 3, arquivo: "respire.mp3", dur: 420, playlist: "p1", ordem: 1, download: false, publico: "todos", status: "publicado" },
     { id: "s2", titulo: "Oração da manhã", apresentador: "Mentora Helena (fictícia)", categoria: "Oração", desc: "Oração guiada.", capa: 0, arquivo: "oracao-manha.mp3", dur: 360, playlist: "p1", ordem: 2, download: false, publico: "mentoria", status: "publicado" },
@@ -414,6 +555,11 @@ function demo() {
   const c1 = S.cursos[0], c2 = S.cursos[1];
   S.progresso = { u1: { [c1.modulos[0].aulas[0].id]: "concluida", [c1.modulos[0].aulas[1].id]: "andamento", [c2.modulos[0].aulas[0].id]: "concluida" }, u2: { [c2.modulos[0].aulas[0].id]: "concluida", [c2.modulos[0].aulas[1].id]: "concluida", [c2.modulos[0].aulas[2].id]: "concluida" }, u3: { [c1.modulos[0].aulas[0].id]: "concluida" } };
   S.posicoes = { u1: { ultima: c1.modulos[0].aulas[1].id } };
+  S.comentarios = [
+    { id: "k-1", alunoId: "u1", aulaId: c1.modulos[0].aulas[0].id, texto: "Amei a aula de boas-vindas, já comecei o diário!", data: dia(-1), estado: "moderar", resposta: "" },
+    { id: "k-2", alunoId: "u2", aulaId: c2.modulos[0].aulas[0].id, texto: "Consegui organizar as contas do mês.", data: dia(-2), estado: "publicado", resposta: "Que alegria, Bruna!" },
+    { id: "k-3", alunoId: "u3", aulaId: c1.modulos[0].aulas[0].id, texto: "Não consegui abrir o vídeo.", data: dia(-4), estado: "moderar", resposta: "" },
+  ];
   S.historico = [
     { quando: dia(-1) + "T10:12", texto: "Comunicado publicado: Novo módulo liberado", tipo: "comunicado" },
     { quando: dia(-2) + "T09:40", texto: "Aluna cadastrada: Dora Alves (fictícia)", tipo: "aluno" },
@@ -421,11 +567,14 @@ function demo() {
     { quando: dia(-5) + "T16:20", texto: "Acesso suspenso: Carla Mendes (fictícia)", tipo: "acesso" },
     { quando: dia(-6) + "T11:00", texto: "E-book publicado: Guia do Orçamento", tipo: "ebook" },
   ];
+  S.cursos.forEach((c, i) => { c.estilo = { ...estiloPadrao("curso", c.capa), ...(i === 0 ? PRESETS["Dourado clássico"] : {}) }; c.estilo.arte = c.capa; });
+  S.ebooks.forEach((e) => { e.estilo = { ...estiloPadrao("ebook", e.capa), arte: e.capa }; });
+  S.playlists.forEach((p) => { p.estilo = { ...estiloPadrao("playlist", p.capa), formato: "quadrado", arte: p.capa }; });
   return S;
 }
 
 /* ---------- guardar (cópia local deste navegador; o protótipo funciona sem) ---------- */
-const CHAVE = "aion-academy-prototipo-v1";
+const CHAVE = "aion-academy-prototipo-v2";
 let S;
 try { const t = localStorage.getItem(CHAVE); S = t ? JSON.parse(t) : demo(); } catch { S = demo(); }
 function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(S)); } catch { /* sem armazenamento: segue na memória */ } }
@@ -457,7 +606,12 @@ function liberacaoAula(a, c, m, aulaObj) {
   const lib = aulaObj.lib || { modo: "imediato" };
   if (lib.modo === "data" && lib.data > hojeISO()) return { ok: false, motivo: "Disponível em " + fmt(lib.data) + ".", quando: lib.data };
   if (lib.modo === "dias") { const d = new Date((m.inicio || hojeISO()) + "T12:00:00"); d.setDate(d.getDate() + Number(lib.dias || 0)); const iso = d.toISOString().slice(0, 10); if (iso > hojeISO()) return { ok: false, motivo: "Libera em " + fmt(iso) + " (" + lib.dias + " dias após a matrícula).", quando: iso }; }
-  if (lib.modo === "conclusao") { const lista = todasAulas(c); const i = lista.findIndex((x) => x.id === aulaObj.id); const ant = lista[i - 1]; if (ant && (S.progresso[a.id] || {})[ant.id] !== "concluida") return { ok: false, motivo: "Conclua “" + ant.titulo + "” para liberar." }; }
+  const mod = c.modulos.find((md) => md.aulas.some((y) => y.id === aulaObj.id));
+  const diasDe = (n) => { const d = new Date((m.inicio || hojeISO()) + "T12:00:00"); d.setDate(d.getDate() + Number(n || 0)); return d.toISOString().slice(0, 10); };
+  if (mod && mod.libModo === "data" && mod.libData > hojeISO()) return { ok: false, motivo: "O módulo abre em " + fmt(mod.libData) + ".", quando: mod.libData };
+  if (mod && mod.libModo === "dias" && diasDe(mod.libDias) > hojeISO()) return { ok: false, motivo: "O módulo libera em " + fmt(diasDe(mod.libDias)) + ".", quando: diasDe(mod.libDias) };
+  if (c.acesso?.modo === "dias" && diasDe(c.acesso.dias) > hojeISO()) return { ok: false, motivo: "O curso libera em " + fmt(diasDe(c.acesso.dias)) + "." };
+  if (lib.modo === "conclusao" || c.acesso?.modo === "sequencial") { const lista = todasAulas(c); const i = lista.findIndex((x) => x.id === aulaObj.id); const ant = lista[i - 1]; if (ant && (S.progresso[a.id] || {})[ant.id] !== "concluida") return { ok: false, motivo: "Conclua “" + ant.titulo + "” para liberar." }; }
   return { ok: true, motivo: "" };
 }
 function progressoCurso(alunoId, c) {
@@ -474,10 +628,40 @@ function publicoVe(a, publico, itemTipo, itemId, cursoId) {
   if (publico === "matriculados") return matriculasDe(a.id).some((m) => matAtiva(m) && (m.itemId === itemId || m.tipo === "curso"));
   return false;
 }
-const ebooksDe = (a) => S.ebooks.filter((e) => e.status === "publicado" && (publicoVe(a, e.publico, "ebook", e.id) || matriculasDe(a.id).some((m) => m.tipo === "ebook" && m.itemId === e.id && matAtiva(m))));
-const audiosDe = (a) => S.audios.filter((x) => x.status === "publicado" && (publicoVe(a, x.publico, "audio", x.id) || matriculasDe(a.id).some((m) => m.tipo === "audio" && m.itemId === x.id && matAtiva(m))));
+const liberado = (x) => !x.acesso || ((x.acesso.modo !== "data" || !x.acesso.data || x.acesso.data <= hojeISO()) && (!x.acesso.fim || x.acesso.fim >= hojeISO()));
+const ebooksDe = (a) => S.ebooks.filter((e) => e.status === "publicado" && liberado(e) && (publicoVe(a, e.publico, "ebook", e.id) || matriculasDe(a.id).some((m) => m.tipo === "ebook" && m.itemId === e.id && matAtiva(m))));
+const audiosDe = (a) => S.audios.filter((x) => x.status === "publicado" && (!x.playlist || liberado(S.playlists.find((p) => p.id === x.playlist) || {})) && (publicoVe(a, x.publico, "audio", x.id) || matriculasDe(a.id).some((m) => m.tipo === "audio" && m.itemId === x.id && matAtiva(m))));
 const encontrosDe = (a) => S.encontros.filter((e) => e.status !== "cancelado" && publicoVe(a, e.publico, "encontro", e.id, e.curso));
 const comunicadosDe = (a) => S.comunicados.filter((k) => k.status === "publicado" && k.data <= hojeISO() && publicoVe(a, k.publico, "comunicado", k.id, k.curso));
+/* ---------- card desenhado: o mesmo HTML no painel (prévia) e no app da aluna ---------- */
+const SOMBRAS = { nenhuma: "none", suave: "0 6px 16px rgba(0,0,0,.25)", media: "0 12px 28px rgba(0,0,0,.4)", forte: "0 20px 44px rgba(0,0,0,.6)", brilho: "0 0 0 1px rgba(201,164,92,.45), 0 10px 30px rgba(201,164,92,.28)" };
+const FORMATOS = { deitado: "16 / 9", pe: "2 / 3", quadrado: "1 / 1", banner: "21 / 9" };
+const TAM_TIT = { p: 17, m: 22, g: 29 };
+function fundoCard(e) {
+  if (e.fundo === "imagem" && e.img) return `center / cover no-repeat url("${e.img}")`;
+  if (e.fundo === "cor") return e.cor1;
+  if (e.fundo === "gradiente") return `linear-gradient(${e.angulo}deg, ${e.cor1}, ${e.cor2})`;
+  return CAPAS[(e.arte || 0) % CAPAS.length];
+}
+/**
+ * item: { rotulo, titulo, info, progresso (0–100 ou null), botao, novo }
+ * opts: { tag: "button" | "div", attrs: "data-a=…", largura }
+ */
+function cardDesenhado(item, e, opts = {}) {
+  const tag = opts.tag || "div";
+  const bt = e.botaoForma === "contorno" ? `background:transparent;color:${e.botaoFundo};border-color:${e.botaoFundo}` : `background:${e.botaoFundo};color:${e.botaoCor};${e.botaoForma === "pilula" ? "border-radius:999px" : ""}`;
+  const centro = e.alinhar === "centro";
+  const jus = e.posTexto === "meio" ? "center" : e.posTexto === "topo" ? "flex-start" : "flex-end";
+  const tit = `<h4 class="kd-tit" style="font-family:'${e.fonte}',Georgia,serif;font-size:${TAM_TIT[e.tamTitulo] || 22}px;color:${e.corTexto};font-weight:600${e.fonte === "Montserrat" ? ";font-weight:800;letter-spacing:-.01em" : ""}">${h(item.titulo || "Nome do conteúdo")}</h4>`;
+  const temPe = (e.mostrarInfo && item.info) || (e.mostrarProgresso && item.progresso != null) || (e.mostrarBotao && item.botao);
+  return `<${tag} class="kd" ${opts.attrs || ""} style="border-radius:${e.raio}px;box-shadow:${SOMBRAS[e.sombra] || "none"};${e.borda ? `outline:${e.borda}px solid ${e.corBorda};outline-offset:-${e.borda}px;` : ""}background:${e.corPe};${opts.largura ? "width:" + opts.largura + ";flex:none;" : ""}">
+    <div class="kd-arte" style="aspect-ratio:${FORMATOS[e.formato] || "16 / 9"};background:${fundoCard(e)};justify-content:${jus};${centro ? "align-items:center;text-align:center;" : ""}">
+      <span style="position:absolute;inset:0;z-index:0;background:linear-gradient(180deg, rgba(0,0,0,${(e.veu / 100) * 0.35}) 0%, rgba(0,0,0,${e.veu / 100}) 100%)"></span>
+      ${e.mostrarRotulo && item.rotulo ? `<span class="kd-rot" style="color:${e.corRotulo}">${h(item.rotulo)}</span>` : ""}${tit}</div>
+    ${item.novo && e.seloNovo ? `<span class="kd-novo">NOVO</span>` : ""}
+    ${temPe ? `<div class="kd-pe" style="color:${e.corTexto};${centro ? "align-items:center;text-align:center;" : ""}">${e.mostrarInfo && item.info ? `<span class="kd-info">${h(item.info)}</span>` : ""}${e.mostrarProgresso && item.progresso != null ? `<div class="barra" style="width:100%"><i style="width:${item.progresso}%;background:${e.botaoFundo}"></i></div>` : ""}${e.mostrarBotao && item.botao ? `<span class="kd-bt" style="${bt};${centro ? "align-self:center" : ""}">${h(item.botao)}</span>` : ""}</div>` : ""}
+  </${tag}>`;
+}
 /* ---------- ícones ---------- */
 const P = {
   home: "M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z", gente: "M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15.5 3.1a3.5 3.5 0 0 1 0 6.8",
@@ -506,8 +690,8 @@ const vazioH = (icn, tit, txt, bt) => `<div class="vazio"><span class="vz-ic">${
 const MENU = [["visao", "Visão Geral", "home"], ["alunos", "Alunos", "gente"], ["cursos", "Cursos", "play"], ["ebooks", "E-books", "livro"], ["audios", "Áudios", "fone"], ["encontros", "Encontros", "cal"], ["comunicados", "Comunicados", "sino"], ["config", "Configurações", "eng"]];
 function telaAdm() {
   const cont = { alunos: S.alunos.length, cursos: S.cursos.length, ebooks: S.ebooks.length, audios: S.audios.length, encontros: S.encontros.filter((e) => e.status === "agendado").length, comunicados: S.comunicados.length };
-  const corpo = ui.wiz ? telaWizard() : ({ visao: admVisao, alunos: admAlunos, cursos: admCursos, ebooks: admEbooks, audios: admAudios, encontros: admEncontros, comunicados: admComunicados, config: admConfig }[ui.aba] || admVisao)();
-  return `<div class="adm"><nav class="lado" aria-label="Menu do painel">${MENU.map(([id, t, i]) => `<button data-a="aba" data-v="${id}" ${ui.aba === id && !ui.wiz ? 'aria-current="page"' : ""}>${ic(i)}${t}${cont[id] != null ? `<span class="cont num">${cont[id]}</span>` : ""}</button>`).join("")}
+  const corpo = ui.st ? telaEstudio() : ui.novoTipo ? telaNovoConteudo() : ({ visao: admVisao, alunos: admAlunos, cursos: admCursos, ebooks: admEbooks, audios: admAudios, encontros: admEncontros, comunicados: admComunicados, config: admConfig }[ui.aba] || admVisao)();
+  return `<div class="adm claro"><nav class="lado" aria-label="Menu do painel"><div class="lado-marca"><b>AION</b><span>Academy · Painel</span></div>${MENU.map(([id, t, i]) => `<button data-a="aba" data-v="${id}" ${ui.aba === id ? 'aria-current="page"' : ""}>${ic(i)}${t}${cont[id] != null ? `<span class="cont num">${cont[id]}</span>` : ""}</button>`).join("")}
     <div class="sep"></div><div class="quem">${avatar({ nome: "Você" })}<div><b style="color:var(--texto)">Você</b><br>Proprietário</div></div></nav>
     <main class="main" id="principal">${corpo}</main></div>`;
 }
@@ -588,117 +772,250 @@ function ficha(a) {
     <div class="abas" role="tablist">${abas.map(([v, t]) => `<button role="tab" aria-selected="${ui.fichaAba === v}" data-a="ficha-aba" data-v="${v}">${t}</button>`).join("")}</div>${corpo}</div>`;
 }
 
-/* ---------- Cursos ---------- */
+/* ---------- Cursos (cards desenhados: é o que a aluna vê) ---------- */
+function cardAdm(kind, x, extra, menuHTML) {
+  return `<article class="cc" style="background:transparent;border:0;box-shadow:none;gap:10px">${cardDesenhado(itemDoCard(kind, kind === "playlist" ? { ...x, eps: S.audios.filter((a) => a.playlist === x.id) } : x), { ...estiloPadrao(kind, x.capa), ...(x.estilo || {}) }, { tag: "button", attrs: `data-a="s-abrir" data-k="${kind}" data-v="${x.id}" aria-label="Editar ${h(x.titulo)}"` })}
+    <div style="display:flex;flex-direction:column;gap:6px;padding:0 2px"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${stCurso(x.status)}${x.mentoria ? `<span class="st ouro sem">Mentoria</span>` : ""}<span style="flex:1"></span>${menuHTML || ""}</div>
+    <div class="meta" style="font-size:12px;color:var(--texto2);display:flex;gap:10px;flex-wrap:wrap">${extra}</div>
+    <div style="display:flex;gap:8px"><button class="bt pq ouro" data-a="s-abrir" data-k="${kind}" data-v="${x.id}">Editar</button><button class="bt pq" data-a="s-abrir-passo" data-k="${kind}" data-v="${x.id}" data-p="2">${ic("misto")}Aparência</button><button class="bt pq" data-a="ver-item" data-k="${kind}" data-v="${x.id}">${ic("olho")}Ver como aluna</button></div></div></article>`;
+}
 function admCursos() {
   const q = ui.busca.trim().toLowerCase();
   const lista = S.cursos.filter((c) => (ui.filtro === "todos" || c.status === ui.filtro) && (!q || c.titulo.toLowerCase().includes(q)));
   const nAl = (c) => S.matriculas.filter((m) => m.tipo === "curso" && m.itemId === c.id).length;
   const menu = (c) => `<span class="menu-pt"><button class="bt pq" data-a="menu" data-v="c-${c.id}" aria-haspopup="menu" aria-expanded="${ui.menu === "c-" + c.id}" aria-label="Mais ações">${ic("pts")}</button>${ui.menu === "c-" + c.id ? `<span class="lista" role="menu">
-      <button data-a="curso-editar" data-v="${c.id}">${ic("eng")}Editar</button><button data-a="curso-dup" data-v="${c.id}">${ic("copia")}Duplicar</button><button data-a="curso-ver" data-v="${c.id}">${ic("olho")}Visualizar como aluno</button>
-      ${c.status === "publicado" ? `<button data-a="curso-status" data-v="${c.id}" data-s="rascunho">${ic("x")}Despublicar</button>` : `<button data-a="curso-status" data-v="${c.id}" data-s="publicado">${ic("ok")}Publicar</button>`}
+      <button data-a="curso-dup" data-v="${c.id}">${ic("copia")}Duplicar</button>${c.status === "publicado" ? `<button data-a="curso-status" data-v="${c.id}" data-s="rascunho">${ic("x")}Despublicar</button>` : `<button data-a="curso-status" data-v="${c.id}" data-s="publicado">${ic("ok")}Publicar</button>`}
       <button data-a="curso-acesso" data-v="${c.id}">${ic("gente")}Gerenciar acesso</button><hr>${c.status === "arquivado" ? `<button data-a="curso-status" data-v="${c.id}" data-s="rascunho">Desarquivar</button>` : `<button class="perigo" data-a="curso-status" data-v="${c.id}" data-s="arquivado">${ic("arq")}Arquivar</button>`}</span>` : ""}</span>`;
   const fs = [["todos", "Todos"], ["publicado", "Publicados"], ["rascunho", "Rascunhos"], ["agendado", "Agendados"], ["arquivado", "Arquivados"]];
-  return `<div class="cab"><div><h1>Cursos</h1><p>${S.cursos.length} cursos · ${S.cursos.filter((c) => c.status === "publicado").length} publicados</p></div><span class="esp"></span><button class="bt ouro" data-a="curso-novo">${ic("mais")}Criar curso</button></div>
-    <div class="barra-f"><label class="busca">${ic("busca")}<input id="buscaCursos" class="campo" data-busca placeholder="Buscar curso" value="${h(ui.busca)}" aria-label="Buscar curso" /></label><div class="chips">${fs.map(([v, t]) => `<button class="chip" data-a="filtro" data-v="${v}" aria-pressed="${ui.filtro === v}">${t}<i>${v === "todos" ? S.cursos.length : S.cursos.filter((c) => c.status === v).length}</i></button>`).join("")}</div>
-      <div class="chips"><button class="chip" data-a="vista" data-v="cards" aria-pressed="${ui.vista === "cards"}">Cards</button><button class="chip" data-a="vista" data-v="lista" aria-pressed="${ui.vista === "lista"}">Lista</button></div></div>
-    ${!S.cursos.length ? `<div class="painel">${vazioH("play", "Nenhum curso cadastrado", "Comece criando seu primeiro curso.", `<button class="bt ouro" data-a="curso-novo">${ic("mais")}Criar curso</button>`)}</div>`
+  return `<div class="cab"><div><h1>Cursos</h1><p>${S.cursos.length} cursos · ${S.cursos.filter((c) => c.status === "publicado").length} publicados. O card abaixo é exatamente o que a aluna vê.</p></div><span class="esp"></span><button class="bt ouro" data-a="s-novo" data-v="curso">${ic("mais")}Criar curso</button></div>
+    <div class="barra-f"><label class="busca">${ic("busca")}<input id="buscaCursos" class="campo" data-busca placeholder="Buscar curso" value="${h(ui.busca)}" aria-label="Buscar curso" /></label><div class="chips">${fs.map(([v, t]) => `<button class="chip" data-a="filtro" data-v="${v}" aria-pressed="${ui.filtro === v}">${t}<i>${v === "todos" ? S.cursos.length : S.cursos.filter((c) => c.status === v).length}</i></button>`).join("")}</div></div>
+    ${!S.cursos.length ? `<div class="painel">${vazioH("play", "Nenhum curso cadastrado", "Comece criando seu primeiro curso.", `<button class="bt ouro" data-a="s-novo" data-v="curso">${ic("mais")}Criar curso</button>`)}</div>`
     : !lista.length ? `<div class="painel">${vazioH("busca", "Nenhum curso encontrado", "Mude o filtro ou a busca.", `<button class="bt" data-a="limpar-f">Limpar filtros</button>`)}</div>`
-    : ui.vista === "cards" ? `<div class="cards">${lista.map((c) => `<article class="cc">${capaHTML(c.capa, c.titulo, c.mentoria ? "Mentoria" : c.categoria)}<div class="cc-c"><div style="display:flex;gap:6px;align-items:center">${stCurso(c.status)}${c.mentoria ? `<span class="st ouro sem">Mentoria</span>` : ""}<span class="esp" style="flex:1"></span>${menu(c)}</div><h4 title="${h(c.titulo)}">${h(c.titulo)}</h4>
-      <div class="meta"><span>${h(c.categoria)}</span><span>${h(c.instrutor)}</span></div><div class="meta num"><span>${c.modulos.length} módulos</span><span>${todasAulas(c).length} aulas</span><span>${nAl(c)} alunos</span></div><div class="meta">Atualizado em ${fmt(c.atualizado)}</div>
-      <div class="pe"><button class="bt pq ouro" data-a="curso-editar" data-v="${c.id}">Editar</button><button class="bt pq" data-a="curso-ver" data-v="${c.id}">${ic("olho")}Ver como aluno</button></div></div></article>`).join("")}</div>`
-    : `<div class="tab-rola"><table class="t"><thead><tr><th>Curso</th><th>Categoria</th><th>Instrutor</th><th>Módulos</th><th>Aulas</th><th>Alunos</th><th>Status</th><th>Atualizado</th><th></th></tr></thead><tbody>${lista.map((c) => `<tr><td><b>${h(c.titulo)}</b>${c.mentoria ? ` <span class="st ouro sem">Mentoria</span>` : ""}</td><td>${h(c.categoria)}</td><td>${h(c.instrutor)}</td><td class="num">${c.modulos.length}</td><td class="num">${todasAulas(c).length}</td><td class="num">${nAl(c)}</td><td>${stCurso(c.status)}</td><td class="num">${fmt(c.atualizado)}</td><td class="acoes">${menu(c)}</td></tr>`).join("")}</tbody></table></div>`}`;
+    : `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px">${lista.map((c) => cardAdm("curso", c, `<span>${h(c.categoria)}</span><span class="num">${c.modulos.length} módulos · ${todasAulas(c).length} aulas</span><span class="num">${nAl(c)} alunas</span><span>Atualizado ${fmt(c.atualizado)}</span>`, menu(c))).join("")}</div>`}`;
 }
-/* ---------- Assistente de criação/edição de curso (5 etapas) ---------- */
-const PASSOS = ["Dados iniciais", "Apresentação", "Estrutura e conteúdo", "Acessos e liberação", "Revisão e publicação"];
-function novoRascunho() {
-  return { id: "", titulo: "", categoria: "", instrutor: S.instrutores[0] || "", status: "rascunho", mentoria: false, capa: Math.floor(Math.random() * CAPAS.length), destaqueImg: "", descCurta: "", desc: "", publico: "", objetivo: "",
-    ap: { titulo: "", boas: "", video: "", destaques: [], aprender: [] }, acesso: { modo: "imediato", dias: 7, data: "", fim: "", agenda: "" }, atualizado: hojeISO(), modulos: [] };
+/* ================= Estúdio: criar e editar curso, e-book ou playlist de áudios ================= */
+const KIND = { curso: { nome: "Curso em vídeo", rot: "Curso", bt: "Ver curso", ic: "play", lista: "cursos" }, ebook: { nome: "E-book", rot: "E-book", bt: "Ler e-book", ic: "livro", lista: "ebooks" }, playlist: { nome: "Áudios (playlist)", rot: "Áudio", bt: "Ouvir agora", ic: "fone", lista: "playlists" } };
+const PASSOS_ST = ["Dados iniciais", "Apresentação e card", "Conteúdo", "Acesso e liberação", "Revisão e publicação"];
+const acessoPadrao = () => ({ modo: "imediato", dias: 7, data: "", fim: "", agenda: "", mostrarBloq: false });
+function novoItem(kind) {
+  const arte = Math.floor(Math.random() * CAPAS.length);
+  const base = { id: "", titulo: "", rotulo: KIND[kind].rot, categoria: "", status: "rascunho", capa: arte, botao: KIND[kind].bt, criado: hojeISO(), atualizado: hojeISO(),
+    ap: { titulo: "", boas: "", video: "", destaques: [], aprender: [] }, acesso: acessoPadrao(), estilo: { ...estiloPadrao(kind, arte), formato: kind === "ebook" ? "pe" : kind === "playlist" ? "quadrado" : "deitado" } };
+  if (kind === "curso") return { ...base, instrutor: S.instrutores[0] || "", descCurta: "", desc: "", publico: "", objetivo: "", mentoria: false, modulos: [] };
+  if (kind === "ebook") return { ...base, autor: S.instrutores[0] || "", desc: "", arquivo: "", tamanho: 0, paginas: 0, download: false, publico: "matriculados", partes: [] };
+  return { ...base, apresentador: S.instrutores[0] || "", desc: "", publico: "todos", eps: [] };
 }
-const wv = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), ui.wiz.c);
-const inp = (path, rot, extra = "", tipo = "text") => `<label class="g"><span>${rot}</span><input id="w-${path.replace(/\W/g, "-")}" class="campo" type="${tipo}" data-w="${path}" value="${h(wv(path))}" ${extra} /></label>`;
-const area = (path, rot, extra = "") => `<label class="g"><span>${rot}</span><textarea id="w-${path.replace(/\W/g, "-")}" class="campo" data-w="${path}" ${extra}>${h(wv(path))}</textarea></label>`;
-function validarCurso(c) {
-  const e = [];
-  if (!c.titulo.trim()) e.push("Nome do curso");
-  if (!c.descCurta.trim()) e.push("Descrição curta");
-  if (!c.categoria) e.push("Categoria");
-  if (!c.modulos.length) e.push("Pelo menos um módulo");
-  if (!todasAulas(c).length) e.push("Pelo menos uma aula");
-  if (todasAulas(c).some((a) => !a.titulo.trim())) e.push("Título em todas as aulas");
-  if (todasAulas(c).some((a) => a.tipo !== "texto" && !a.arquivo && !a.video && a.tipo !== "pdf" && a.tipo !== "audio" && a.tipo !== "video")) e.push("Mídia das aulas");
-  if (c.acesso.modo === "data" && !c.acesso.data) e.push("Data de liberação");
-  const lista = todasAulas(c); if (lista.length && lista[0].lib?.modo === "conclusao") e.push("A primeira aula não pode depender de uma aula anterior");
-  return e;
+function abrirEstudio(kind, id) {
+  let d;
+  if (!id) d = novoItem(kind);
+  else {
+    const L = S[KIND[kind].lista], x = L.find((y) => y.id === id); d = JSON.parse(JSON.stringify(x));
+    d.ap = d.ap || { titulo: "", boas: "", video: "", destaques: [], aprender: [] }; d.acesso = { ...acessoPadrao(), ...(d.acesso || {}) }; d.estilo = { ...estiloPadrao(kind, d.capa), ...(d.estilo || {}) }; d.rotulo = d.rotulo || KIND[kind].rot; d.botao = d.botao || KIND[kind].bt;
+    if (kind === "ebook") d.partes = d.partes || [];
+    if (kind === "playlist") d.eps = JSON.parse(JSON.stringify(S.audios.filter((a) => a.playlist === id).sort((a, b) => a.ordem - b.ordem)));
+  }
+  if (kind === "curso") d.modulos.forEach((m) => { m.libModo = m.libModo || "imediato"; m.aulas.forEach((a) => { a.durMin = Math.round((a.dur || 0) / 60); a.lib = a.lib || { modo: "imediato" }; a.conclusao = a.conclusao || "manual"; if (a.comentarios === undefined) a.comentarios = true; }); });
+  if (kind === "playlist") d.eps.forEach((x) => { x.durMin = Math.round((x.dur || 0) / 60); x.ocultar = x.status !== "publicado" && x.status !== undefined && d.status === "publicado"; });
+  ui.st = { kind, d, passo: 1, sel: null, novo: !id, prev: "inicio" }; ui.aba = KIND[kind].lista === "playlists" ? "audios" : KIND[kind].lista; window.scrollTo(0, 0);
 }
-function telaWizard() {
-  const w = ui.wiz, c = w.c, p = w.passo;
-  const ok = [c.titulo && c.descCurta && c.categoria, c.ap.boas, c.modulos.length && todasAulas(c).length, true, false];
+const sv = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), ui.st.d);
+const sid = (path) => "s-" + path.replace(/\W/g, "-");
+const sIn = (path, rot, extra = "", tipo = "text", dica = "") => `<label class="g"><span>${rot}</span><input id="${sid(path)}" class="campo" type="${tipo}" data-s="${path}" value="${h(sv(path) ?? "")}" ${extra} />${dica ? `<em>${dica}</em>` : ""}</label>`;
+const sTa = (path, rot, extra = "", dica = "") => `<label class="g"><span>${rot}</span><textarea id="${sid(path)}" class="campo" data-s="${path}" ${extra}>${h(sv(path) ?? "")}</textarea>${dica ? `<em>${dica}</em>` : ""}</label>`;
+const sSeg = (path, ops, rot) => `<div class="g">${rot ? `<span>${rot}</span>` : ""}<div class="seg" role="group">${ops.map(([v, t]) => `<button type="button" data-a="s-set" data-p="${path}" data-v="${h(v)}" aria-pressed="${String(sv(path)) === String(v)}">${t}</button>`).join("")}</div></div>`;
+const sCor = (path, rot) => `<label class="cor"><input id="${sid(path)}" type="color" data-s="${path}" value="${h(sv(path))}" aria-label="${h(rot)}" />${h(rot)}</label>`;
+const sFaixa = (path, rot, min, max, un = "") => `<div class="lin-c"><span class="rot">${rot}</span><span class="faixa"><input id="${sid(path)}" type="range" min="${min}" max="${max}" data-s="${path}" data-num value="${sv(path)}" aria-label="${h(rot)}" /><output>${sv(path)}${un}</output></span></div>`;
+const sChk = (path, rot) => `<label class="chk"><input id="${sid(path)}" type="checkbox" data-s="${path}" data-chk ${sv(path) ? "checked" : ""} />${rot}</label>`;
+const LIB_TXT = (a, kind) => ({ imediato: "Imediata", data: "Em " + fmt(a.data), dias: a.dias + " dias após a matrícula", sequencial: "Por conclusão (aula a aula)" }[a.modo] || "Imediata");
+
+function itemDoCard(kind, d, aluna) {
+  const info = kind === "curso" ? `${d.instrutor || ""} · ${d.modulos.length} módulos · ${todasAulas(d).length} aulas` : kind === "ebook" ? `${d.autor || ""}${d.paginas ? " · " + d.paginas + " páginas" : ""}${d.partes.length ? " · " + d.partes.length + " partes" : ""}` : `${d.apresentador || ""} · ${(d.eps || S.audios.filter((a) => a.playlist === d.id)).length} áudios`;
+  const prog = kind === "curso" && aluna && d.id ? progressoCurso(aluna.id, d) : kind === "curso" ? 35 : null;
+  return { rotulo: d.rotulo, titulo: d.ap?.titulo || d.titulo, info, progresso: prog, botao: d.botao, novo: d.criado >= dia(-7) };
+}
+function validarItem(kind, d) {
+  const f = [];
+  if (!d.titulo.trim()) f.push(["Nome", 1]);
+  if (!d.rotulo.trim()) f.push(["Texto em cima do nome", 1]);
+  if (!d.categoria) f.push(["Categoria", 1]);
+  if (kind === "curso" && !d.descCurta.trim()) f.push(["Descrição curta", 1]);
+  if (kind !== "curso" && !String(d.desc || "").trim()) f.push(["Descrição", 1]);
+  if (!d.botao.trim()) f.push(["Texto do botão do card", 2]);
+  if (kind === "curso") { if (!d.modulos.length) f.push(["Pelo menos um módulo", 3]); else if (!todasAulas(d).some((a) => a.status === "publicado")) f.push(["Pelo menos uma aula publicada", 3]); if (todasAulas(d).some((a) => !a.titulo.trim())) f.push(["Título em todas as aulas", 3]); if (todasAulas(d).some((a) => (a.tipo === "video" || a.tipo === "audio") && a.status === "publicado" && !a.video)) f.push(["Vídeo ou áudio nas aulas publicadas", 3]); const l = todasAulas(d); if (l[0]?.lib?.modo === "conclusao") f.push(["A primeira aula não pode depender de uma anterior", 3]); }
+  if (kind === "ebook") { if (!d.arquivo) f.push(["Arquivo PDF do e-book", 3]); else if (d.tamanho > 30 * 1048576) f.push(["PDF acima de 30 MB", 3]); if (d.partes.some((p) => !p.titulo.trim())) f.push(["Título em todas as partes", 3]); }
+  if (kind === "playlist") { if (!d.eps.length) f.push(["Pelo menos um áudio", 3]); if (d.eps.some((x) => !x.titulo.trim() || !x.arquivo)) f.push(["Título e arquivo em todos os áudios", 3]); }
+  if (d.acesso.modo === "data" && !d.acesso.data) f.push(["Data de liberação", 4]);
+  if (d.acesso.fim && d.acesso.fim < hojeISO()) f.push(["“Disponível até” já passou", 4]);
+  return f;
+}
+function salvarEstudio() {
+  const { kind, d } = ui.st; d.atualizado = hojeISO(); d.capa = d.estilo.arte;
+  const L = S[KIND[kind].lista];
+  if (!d.id) { d.id = uid(kind[0]); registrar((kind === "curso" ? "Curso criado: " : kind === "ebook" ? "E-book criado: " : "Playlist criada: ") + d.titulo, kind === "curso" ? "curso" : kind === "ebook" ? "ebook" : "audio"); }
+  const copia = JSON.parse(JSON.stringify(d));
+  if (kind === "playlist") {
+    S.audios = S.audios.filter((a) => a.playlist !== d.id).concat(copia.eps.map((x, i) => ({ ...x, playlist: d.id, ordem: i + 1, publico: d.publico, status: d.status === "publicado" && !x.ocultar ? "publicado" : "rascunho", capa: d.estilo.arte, categoria: d.categoria, apresentador: d.apresentador })));
+    delete copia.eps;
+  }
+  const i = L.findIndex((x) => x.id === d.id); if (i >= 0) L[i] = copia; else L.unshift(copia);
+  ui.st.novo = false;
+}
+
+/* ---------- prévia ao vivo no celular ---------- */
+function previaEstudio() {
+  const { kind, d, passo } = ui.st, e = d.estilo, it = itemDoCard(kind, d);
+  const vista = ui.st.prev, larg = e.formato === "pe" ? "130px" : e.formato === "quadrado" ? "150px" : "230px";
+  const outro = `<div style="flex:none;width:${larg};border-radius:${e.raio}px;background:#1E1E22;aspect-ratio:${FORMATOS[e.formato]};opacity:.35"></div>`;
   let corpo = "";
-  if (p === 1) corpo = `<div class="grade2">${inp("titulo", "Nome do curso *", 'maxlength="90" required')}<label class="g"><span>Categoria *</span><select id="w-cat" class="campo" data-w="categoria"><option value="" ${c.categoria ? "" : "selected"} disabled hidden>Selecione</option>${S.categorias.map((x) => `<option ${c.categoria === x ? "selected" : ""}>${h(x)}</option>`).join("")}</select></label></div>
-    ${inp("descCurta", "Descrição curta *", 'maxlength="140"')}${area("desc", "Descrição completa")}
-    <div class="grade2"><label class="g"><span>Instrutor</span><select id="w-inst" class="campo" data-w="instrutor">${S.instrutores.map((x) => `<option ${c.instrutor === x ? "selected" : ""}>${h(x)}</option>`).join("")}</select></label>
-      <label class="g"><span>Curso da mentoria?</span><select id="w-ment" class="campo" data-w="mentoria" data-bool><option value="false" ${!c.mentoria ? "selected" : ""}>Não, curso aberto a quem for matriculado</option><option value="true" ${c.mentoria ? "selected" : ""}>Sim, faz parte da mentoria</option></select><em>Cursos da mentoria aparecem marcados e com o grupo da mentoria.</em></label>
-      ${inp("publico", "Público-alvo")}${inp("objetivo", "Objetivo do curso")}</div>
-    <div class="grade2"><div class="g"><span>Imagem de capa</span><div style="display:flex;gap:12px;align-items:center">${capaHTML(c.capa, c.titulo || "Capa", c.categoria, "", "width:200px;aspect-ratio:16/9;border-radius:10px")}<div style="display:flex;flex-direction:column;gap:6px">${CAPAS.map((_, i) => `<button type="button" class="bt pq" data-a="w-capa" data-v="${i}" aria-pressed="${c.capa === i}" style="${c.capa === i ? "border-color:var(--ouro)" : ""};background:${CAPAS[i]};width:44px" aria-label="Capa ${i + 1}"></button>`).join("").replace(/(<\/button>)(?=<button[^>]*Capa 4)/, "$1")}</div></div><em>No protótipo, escolha uma arte de exemplo. Envio de imagem precisa de armazenamento real.</em></div>
-      ${inp("destaqueImg", "Imagem de destaque (opcional)", 'placeholder="Nome do arquivo ou link"')}</div>
-    <div class="aviso">Status inicial: <b>Rascunho</b>. Nenhuma aluna vê o curso até ele ser publicado.</div>`;
-  if (p === 2) corpo = `<div class="duas"><div class="form">${inp("ap.titulo", "Título de apresentação")}${area("ap.boas", "Texto de boas-vindas *")}${inp("ap.video", "Vídeo de apresentação (link, opcional)", 'placeholder="https://"')}
-      <label class="g"><span>Destaques do curso</span><textarea id="w-dest" class="campo" data-w-lista="ap.destaques" placeholder="Um por linha">${h(c.ap.destaques.join("\n"))}</textarea></label>
-      <label class="g"><span>O que a aluna vai aprender</span><textarea id="w-apr" class="campo" data-w-lista="ap.aprender" placeholder="Um por linha">${h(c.ap.aprender.join("\n"))}</textarea></label></div>
-    <div><div class="rot" style="margin-bottom:8px">Prévia do cartão do curso</div><article class="cc prev-card">${capaHTML(c.capa, c.titulo || "Nome do curso", c.mentoria ? "Mentoria" : c.categoria)}<div class="cc-c"><h4>${h(c.ap.titulo || c.titulo || "Nome do curso")}</h4><p style="color:var(--texto2);font-size:13px">${h(c.descCurta || "Descrição curta")}</p><div class="meta"><span>${h(c.instrutor)}</span><span class="num">${c.modulos.length} módulos</span></div><div class="pe"><span class="bt pq ouro">Começar</span></div></div></article>
-      ${c.ap.aprender.length ? `<div class="painel" style="margin-top:12px;max-width:290px"><b>Você vai aprender</b><ul style="margin:6px 0 0;padding-left:18px;color:var(--texto2)">${c.ap.aprender.map((x) => `<li>${h(x)}</li>`).join("")}</ul></div>` : ""}</div></div>`;
-  if (p === 3) corpo = `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="bt ouro" type="button" data-a="w-mod-add">${ic("mais")}Adicionar módulo</button><span style="color:var(--texto3);font-size:12px">Use ↑ ↓ para reordenar módulos e aulas. “Mover” leva a aula para outro módulo.</span></div>
-    ${c.modulos.length ? c.modulos.map((m, mi) => `<div class="mod"><div class="mod-cab"><span class="n">Módulo ${mi + 1}</span><input id="w-m-${m.id}" class="campo" data-w="modulos.${mi}.titulo" value="${h(m.titulo)}" placeholder="Nome do módulo" aria-label="Nome do módulo ${mi + 1}" />
-        <div class="mini-bts"><button type="button" data-a="w-mod-mov" data-v="${mi}" data-d="-1" ${mi ? "" : "disabled"} aria-label="Subir módulo">${ic("cima")}</button><button type="button" data-a="w-mod-mov" data-v="${mi}" data-d="1" ${mi < c.modulos.length - 1 ? "" : "disabled"} aria-label="Descer módulo">${ic("baixo")}</button><button type="button" data-a="w-mod-del" data-v="${mi}" aria-label="Remover módulo">${ic("lixo")}</button></div></div>
-        <div style="padding:0 12px 10px"><input id="w-md-${m.id}" class="campo" data-w="modulos.${mi}.desc" value="${h(m.desc)}" placeholder="Descrição do módulo (opcional)" aria-label="Descrição do módulo ${mi + 1}" /></div>
-        <div class="aulas">${m.aulas.map((a, ai) => `<div class="aula-l"><span class="tipo-ic" title="${TIPO_AULA[a.tipo][1]}">${ic(TIPO_AULA[a.tipo][0])}</span><div class="tit"><b>${h(a.titulo || "Aula sem título")}</b><em>${TIPO_AULA[a.tipo][1]}${a.dur ? " · " + mmss(a.dur) : ""} · ${a.status === "publicado" ? "Publicada" : "Rascunho"}${a.lib?.modo && a.lib.modo !== "imediato" ? " · liberação própria" : ""}</em></div>
-          <div class="mini-bts"><button type="button" data-a="w-aula-mov" data-v="${mi}.${ai}" data-d="-1" ${ai ? "" : "disabled"} aria-label="Subir aula">${ic("cima")}</button><button type="button" data-a="w-aula-mov" data-v="${mi}.${ai}" data-d="1" ${ai < m.aulas.length - 1 ? "" : "disabled"} aria-label="Descer aula">${ic("baixo")}</button><button type="button" data-a="w-aula-dup" data-v="${mi}.${ai}" aria-label="Duplicar aula">${ic("copia")}</button><button type="button" data-a="w-aula-del" data-v="${mi}.${ai}" aria-label="Remover aula">${ic("lixo")}</button></div>
-          <button type="button" class="bt pq" data-a="w-aula-ed" data-v="${mi}.${ai}">Editar aula</button></div>`).join("")}
-          <div class="aula-l"><button type="button" class="bt pq fant" data-a="w-aula-nova" data-v="${mi}">${ic("mais")}Nova aula</button></div></div></div>`).join("") : vazioH("play", "Nenhum módulo ainda", "Crie o primeiro módulo e adicione as aulas.")}`;
-  if (p === 4) { const a = c.acesso; corpo = `<div class="op-lib">${[["imediato", "Acesso imediato", "Abre assim que a aluna é matriculada."], ["data", "Liberação em data específica", "Ninguém abre antes desta data."], ["dias", "Após X dias da matrícula", "Conta a partir da matrícula de cada aluna."], ["sequencial", "Por conclusão do conteúdo anterior", "Cada aula abre quando a anterior é concluída."]].map(([v, t, d]) => `<label><input type="radio" name="acmodo" data-w="acesso.modo" value="${v}" ${a.modo === v ? "checked" : ""} /><span><b>${t}</b><em>${d}</em></span></label>`).join("")}</div>
-      <div class="grade3">${a.modo === "data" ? inp("acesso.data", "Data de liberação *", "", "date") : ""}${a.modo === "dias" ? inp("acesso.dias", "Dias após a matrícula", 'min="0"', "number") : ""}${inp("acesso.fim", "Disponível até (opcional)", "", "date")}</div>
-      <div class="aviso">Quem pode ver: só alunas <b>matriculadas</b> neste curso${c.mentoria ? " (curso da mentoria)" : ""}. A matrícula é feita na ficha da aluna ou em “Gerenciar acesso”.</div>
-      ${a.modo === "sequencial" ? `<div class="aviso bom">Sem dependência circular: cada aula depende só da anterior na ordem do curso.</div>` : ""}
-      <p style="color:var(--texto2);font-size:13px">Cada aula também pode ter liberação própria (no “Editar aula”). A aluna vê o motivo quando algo está bloqueado.</p>`; }
-  if (p === 5) { const e = validarCurso(c); corpo = `<div class="duas"><div class="painel"><h3>Resumo</h3><dl class="resumo-l"><dt>Curso</dt><dd>${h(c.titulo || "—")}</dd><dt>Categoria</dt><dd>${h(c.categoria || "—")}</dd><dt>Instrutor</dt><dd>${h(c.instrutor)}</dd><dt>Mentoria</dt><dd>${c.mentoria ? "Sim" : "Não"}</dd><dt>Apresentação</dt><dd>${c.ap.boas ? "Pronta" : "Sem boas-vindas"}</dd>
-      <dt>Estrutura</dt><dd class="num">${c.modulos.length} módulos · ${todasAulas(c).length} aulas</dd><dt>Materiais</dt><dd class="num">${todasAulas(c).reduce((s, a) => s + (a.anexos || []).length, 0)} anexos</dd><dt>Liberação</dt><dd>${{ imediato: "Imediata", data: "Em " + fmt(c.acesso.data), dias: c.acesso.dias + " dias após a matrícula", sequencial: "Por conclusão" }[c.acesso.modo]}${c.acesso.fim ? " · até " + fmt(c.acesso.fim) : ""}</dd><dt>Status</dt><dd>${stCurso(c.status)}</dd></dl></div>
-      <div class="form">${e.length ? `<div class="aviso ruim"><b>Falta para publicar:</b><ul style="margin:6px 0 0;padding-left:18px">${e.map((x) => `<li>${h(x)}</li>`).join("")}</ul></div>` : `<div class="aviso bom">Tudo certo para publicar.</div>`}
-        ${inp("acesso.agenda", "Agendar publicação para (opcional)", "", "date")}
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="bt" data-a="w-ver">${ic("olho")}Visualizar como aluno</button><button type="button" class="bt" data-a="w-salvar">Salvar rascunho</button><button type="button" class="bt" data-a="w-agendar" ${e.length || !c.acesso.agenda ? "disabled" : ""}>${ic("cal")}Agendar</button><button type="button" class="bt ouro" data-a="w-publicar" ${e.length ? "disabled" : ""}>${ic("ok")}Publicar</button></div>
-        <p style="color:var(--texto3);font-size:12px">No protótipo, “salvo” quer dizer guardado nesta página e neste navegador. Não há servidor.</p></div></div>`; }
-  return `<div class="trilha"><button data-a="w-sair">Cursos</button><span>/</span><span>${w.novo && !c.id ? "Criar curso" : h(c.titulo || "Curso")}</span></div>
-    <div class="cab"><div><h1>${c.id ? "Editar curso" : "Criar curso"}</h1><p>${stCurso(c.status)} ${c.id ? "· salvo" : "· ainda não salvo"}</p></div></div>
-    <nav class="passos" aria-label="Etapas">${PASSOS.map((t, i) => `<button type="button" data-a="w-passo" data-v="${i + 1}" ${p === i + 1 ? 'aria-current="step"' : ""} class="${ok[i] && p !== i + 1 ? "ok" : ""}"><i>${ok[i] && p !== i + 1 ? "✓" : i + 1}</i>${t}</button>`).join("")}</nav>
-    <section class="painel"><div class="form">${corpo}
-      <div class="rodape-f">${p > 1 ? `<button type="button" class="bt" data-a="w-passo" data-v="${p - 1}">${ic("voltar")}Voltar</button>` : `<button type="button" class="bt" data-a="w-sair">Cancelar</button>`}<span class="esp"></span>
-      ${p === 1 && !c.id ? `<button type="button" class="bt" data-a="w-salvar">Salvar rascunho</button><button type="button" class="bt ouro" data-a="w-criar">Criar e continuar ${ic("seta")}</button>` : p < 5 ? `<button type="button" class="bt" data-a="w-salvar">Salvar rascunho</button><button type="button" class="bt ouro" data-a="w-passo" data-v="${p + 1}">Continuar ${ic("seta")}</button>` : ""}</div>
-      <p class="erro-campo" data-erro hidden></p></div></section>`;
+  if (vista === "inicio") corpo = `<div class="pt-cab">AION <span style="letter-spacing:.2em">ACADEMY</span><span style="flex:1"></span>●</div><h5>Boa tarde, Ana</h5>
+    <div class="sub">${kind === "curso" ? "Cursos em andamento" : kind === "ebook" ? "E-books" : "Áudios em destaque"}</div><div style="display:flex;gap:10px;overflow:hidden">${cardDesenhado(it, e, { largura: larg })}${outro}</div>
+    <div class="sub">Na biblioteca e em “Meus cursos”</div>${cardDesenhado(it, e)}`;
+  if (vista === "pagina") {
+    const cab = `${cardDesenhado({ ...it, info: "", progresso: null, botao: "" }, { ...e, formato: "deitado", mostrarBotao: false, mostrarInfo: false, mostrarProgresso: false, raio: 0, sombra: "nenhuma", borda: 0 })}`;
+    let lista = "";
+    if (kind === "curso") lista = d.modulos.length ? d.modulos.map((m, mi) => `<div style="border:1px solid #303034;border-radius:12px;padding:10px 12px;background:#1E1E22"><div style="font-size:10px;letter-spacing:.14em;color:#E0C589;font-weight:900">MÓDULO ${mi + 1}</div><div style="font-weight:700">${h(m.titulo || "Sem nome")}</div>${m.aulas.map((a, ai) => `<div style="display:flex;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #303034;margin-top:6px;font-size:12px;${a.status !== "publicado" ? "opacity:.45" : ""}">${ic(a.lib?.modo && a.lib.modo !== "imediato" ? "cad" : TIPO_AULA[a.tipo][0])}<span style="flex:1">${h(a.titulo || "Aula sem título")}</span>${a.status !== "publicado" ? "rascunho" : a.dur ? mmss(a.dur) : ""}</div>`).join("")}</div>`).join("") : `<div class="sub">Adicione módulos e aulas na etapa Conteúdo.</div>`;
+    if (kind === "ebook") lista = `<span class="kd-bt" style="align-self:stretch;text-align:center;padding:11px;border-radius:10px;background:${e.botaoFundo};color:${e.botaoCor};font-weight:700">${h(d.botao)}</span>${d.partes.map((p) => `<div style="display:flex;gap:10px;align-items:center;border:1px solid #303034;border-radius:12px;padding:10px 12px;background:#1E1E22;font-size:13px">${ic(p.tipo === "resumo" ? "texto" : "estrela")}<span style="flex:1">${h(p.titulo || "Parte sem título")}</span>›</div>`).join("")}`;
+    if (kind === "playlist") lista = d.eps.length ? d.eps.map((x, i) => `<div style="display:flex;gap:10px;align-items:center;border:1px solid #303034;border-radius:12px;padding:10px 12px;background:#1E1E22;font-size:13px"><span style="color:#75757B">${i + 1}</span><span style="flex:1">${h(x.titulo || "Áudio sem título")}</span>${mmss(x.dur || 0)}</div>`).join("") : `<div class="sub">Adicione áudios na etapa Conteúdo.</div>`;
+    corpo = `<div style="margin:-14px -14px 0">${cab}</div><h5>${h(d.ap.titulo || d.titulo || "Nome")}</h5><div style="font-size:12px;color:#A8A8AD">${h(d.ap.boas || (kind === "curso" ? d.descCurta : d.desc) || "Texto de boas-vindas")}</div>
+      ${d.ap.aprender.length ? `<div style="font-size:12px;color:#A8A8AD"><b style="color:#F4F2ED">Você vai aprender</b><br>${d.ap.aprender.map((x) => "• " + h(x)).join("<br>")}</div>` : ""}${lista}`;
+  }
+  if (vista === "aula") {
+    const s = ui.st.sel, a = s && s.t === "aula" ? d.modulos[s.i]?.aulas[s.j] : null;
+    corpo = a ? `<div style="margin:-14px -14px 0;aspect-ratio:16/9;background:${CAPAS[(a.capa ?? d.estilo.arte) % CAPAS.length]};display:grid;place-items:center"><span class="play" style="width:46px;height:46px">${ic(a.tipo === "audio" ? "fone" : a.tipo === "pdf" ? "doc" : "play")}</span></div>
+      <div style="font-size:10px;letter-spacing:.14em;color:#E0C589;font-weight:900">${h(d.modulos[s.i].titulo)} · AULA ${s.j + 1}</div><h5>${h(a.titulo || "Aula sem título")}</h5><div style="font-size:12px;color:#A8A8AD">${h(a.desc || "Descrição da aula")}</div>${a.texto ? `<div style="font-size:12px">${h(a.texto)}</div>` : ""}
+      <span class="kd-bt" style="align-self:stretch;text-align:center;padding:10px;border-radius:10px;background:${e.botaoFundo};color:${e.botaoCor};font-weight:700">Marcar como concluída</span>${(a.anexos || []).map((n) => `<div style="display:flex;gap:8px;align-items:center;font-size:12px;border:1px solid #303034;border-radius:10px;padding:8px 10px">${ic("doc")}${h(n)}</div>`).join("")}`
+      : `<div class="sub">Selecione uma aula na estrutura para ver como ela aparece.</div>`;
+  }
+  if (vista === "bloq") corpo = `<div class="sub">Como aparece antes de liberar</div><div style="position:relative">${cardDesenhado({ ...it, botao: "", progresso: null }, e)}<div style="position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.55);border-radius:${e.raio}px;text-align:center;padding:12px;font-size:12px">${ic("cad")}<br>${d.acesso.modo === "data" && d.acesso.data ? "Disponível em " + fmt(d.acesso.data) : d.acesso.modo === "dias" ? "Libera " + d.acesso.dias + " dias após a matrícula" : d.acesso.mostrarBloq ? "Em breve" : "Liberado ao matricular"}</div></div>
+    <div class="sub">${d.acesso.mostrarBloq ? "Alunas sem acesso veem o card como “em breve”." : "Alunas sem acesso não veem este conteúdo."}</div>`;
+  const vistas = kind === "curso" ? [["inicio", "Card"], ["pagina", "Página"], ["aula", "Aula"], ["bloq", "Bloqueado"]] : [["inicio", "Card"], ["pagina", "Página"], ["bloq", "Bloqueado"]];
+  return `<aside class="previa-col" aria-label="Prévia no app da aluna"><div class="rot-p">${ic("olho")}Prévia ao vivo · app da aluna<span class="esp"></span></div><div class="seg" style="align-self:center">${vistas.map(([v, t]) => `<button type="button" data-a="s-prev" data-v="${v}" aria-pressed="${vista === v}">${t}</button>`).join("")}</div>
+    <div class="cel-p"><div class="cel-in">${corpo}</div></div><p style="font-size:12px;color:var(--texto3);text-align:center">É o mesmo desenho que a aluna vê. Nada vai para o app antes de publicar.</p></aside>`;
 }
-function editorAula(a, c) {
-  const mods = c.modulos;
-  return `<form class="jan-corpo" id="formAulaEd" novalidate><div class="grade2"><label class="g"><span>Título *</span><input id="ae-titulo" class="campo" name="titulo" value="${h(a.titulo)}" required /></label>
-    <label class="g"><span>Módulo</span><select id="ae-mod" class="campo" name="mod">${mods.map((m, i) => `<option value="${i}" ${m.aulas.includes(a) ? "selected" : ""}>Módulo ${i + 1} · ${h(m.titulo || "sem nome")}</option>`).join("")}</select></label>
-    <label class="g"><span>Tipo principal</span><select id="ae-tipo" class="campo" name="tipo">${Object.entries(TIPO_AULA).map(([v, [, t]]) => `<option value="${v}" ${a.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-    <label class="g"><span>Vídeo ou áudio (link ou arquivo)</span><input id="ae-midia" class="campo" name="video" value="${h(a.video || "")}" placeholder="Link do vídeo ou nome do arquivo" /></label>
-    <label class="g"><span>Duração (min)</span><input id="ae-dur" class="campo" name="dur" type="number" min="0" value="${a.dur ? Math.round(a.dur / 60) : ""}" /></label>
-    <label class="g"><span>Status</span><select id="ae-status" class="campo" name="status"><option value="publicado" ${a.status === "publicado" ? "selected" : ""}>Publicada</option><option value="rascunho" ${a.status !== "publicado" ? "selected" : ""}>Rascunho</option></select></label></div>
-    <label class="g"><span>Descrição</span><textarea id="ae-desc" class="campo" name="desc">${h(a.desc)}</textarea></label>
-    <label class="g"><span>Texto complementar</span><textarea id="ae-texto" class="campo" name="texto">${h(a.texto || "")}</textarea></label>
-    <label class="g"><span>Materiais anexos</span><input id="ae-anexos" class="campo" name="anexos" value="${h((a.anexos || []).join(", "))}" placeholder="Nomes separados por vírgula" /></label>
-    <div class="g"><span>Liberação desta aula</span><select id="ae-lib" class="campo" name="lib"><option value="imediato" ${(a.lib?.modo || "imediato") === "imediato" ? "selected" : ""}>Segue o curso</option><option value="data" ${a.lib?.modo === "data" ? "selected" : ""}>Em data específica</option><option value="dias" ${a.lib?.modo === "dias" ? "selected" : ""}>X dias após a matrícula</option><option value="conclusao" ${a.lib?.modo === "conclusao" ? "selected" : ""}>Após concluir a aula anterior</option></select>
-      <div class="grade2"><input id="ae-libdata" class="campo" type="date" name="libdata" value="${h(a.lib?.data || "")}" aria-label="Data de liberação" /><input id="ae-libdias" class="campo" type="number" min="0" name="libdias" value="${h(a.lib?.dias ?? "")}" placeholder="Dias" aria-label="Dias após a matrícula" /></div></div>
-    <p class="erro-campo" data-erro hidden></p></form>`;
+
+/* ---------- etapas ---------- */
+function passoDados(kind, d) {
+  const quem = kind === "curso" ? "instrutor" : kind === "ebook" ? "autor" : "apresentador";
+  return `<div class="grade2">${sIn("titulo", "Nome *", 'maxlength="90" placeholder="Ex.: Jornada da Fé"')}${sIn("rotulo", "Texto em cima do nome *", 'maxlength="30"', "text", "Aparece no card, acima do nome. Ex.: Mentoria, E-book, Curso.")}
+      <div class="g"><span>Categoria *</span><div style="display:flex;gap:8px"><select id="s-cat" class="campo" data-s="categoria"><option value="" disabled hidden ${d.categoria ? "" : "selected"}>Selecione</option>${S.categorias.map((x) => `<option ${d.categoria === x ? "selected" : ""}>${h(x)}</option>`).join("")}</select><button type="button" class="bt" data-a="s-cat-nova">${ic("mais")}Nova</button></div></div>
+      <label class="g"><span>${quem === "instrutor" ? "Instrutor" : quem === "autor" ? "Autor" : "Apresentador"}</span><select id="s-quem" class="campo" data-s="${quem}">${S.instrutores.map((x) => `<option ${d[quem] === x ? "selected" : ""}>${h(x)}</option>`).join("")}</select></label></div>
+    ${kind === "curso" ? `${sIn("descCurta", "Descrição curta *", 'maxlength="140"', "text", "Uma frase. Aparece no card e na lista.")}${sTa("desc", "Descrição completa")}<div class="grade2">${sIn("publico", "Público-alvo")}${sIn("objetivo", "Objetivo do curso")}</div>
+      <div class="op-lib"><label><input id="s-ment" type="checkbox" data-s="mentoria" data-chk ${d.mentoria ? "checked" : ""} /><span><b>Este curso faz parte da mentoria</b><em>Recebe a marca de mentoria e aparece junto do grupo e dos encontros da mentoria. Alunas gerais só veem se forem matriculadas.</em></span></label></div>`
+    : sTa("desc", "Descrição *", 'maxlength="600"')}
+    <div class="aviso">Será criado como <b>Não publicado</b> e <b>Rascunho</b>. Nenhuma aluna vê até você publicar na etapa 5.</div>`;
+}
+function passoAparencia(kind, d) {
+  const e = d.estilo, P = "estilo.";
+  return `<div class="grade2">${sIn("ap.titulo", "Título de apresentação", 'placeholder="Usa o nome se ficar em branco"')}${sIn("botao", "Texto do botão do card *", 'maxlength="24"')}</div>
+    ${sTa("ap.boas", "Texto de boas-vindas", 'rows="3"')}
+    ${kind === "curso" ? sIn("ap.video", "Vídeo de apresentação (link, opcional)", 'placeholder="https://"') : ""}
+    <div class="grade2"><label class="g"><span>Destaques</span><textarea id="s-dest" class="campo" data-s-lista="ap.destaques" placeholder="Um por linha">${h(d.ap.destaques.join("\n"))}</textarea></label><label class="g"><span>${kind === "curso" ? "O que a aluna vai aprender" : "O que ela vai encontrar"}</span><textarea id="s-apr" class="campo" data-s-lista="ap.aprender" placeholder="Um por linha">${h(d.ap.aprender.join("\n"))}</textarea></label></div>
+    <h3 style="font-size:24px;margin-top:6px">Aparência do card</h3><p style="color:var(--texto2);margin-top:-8px">Tudo o que mudar aqui aparece na prévia ao lado, igual ao app da aluna.</p>
+    <div class="g"><span>Começar de um estilo pronto</span><div class="presets">${Object.entries(PRESETS).map(([n, p]) => `<button type="button" data-a="s-preset" data-v="${h(n)}"><span style="background:${p.fundo === "gradiente" ? `linear-gradient(${p.angulo}deg,${p.cor1},${p.cor2})` : p.fundo === "cor" ? p.cor1 : CAPAS[e.arte % CAPAS.length]};box-shadow:${SOMBRAS[p.sombra]};border-radius:${Math.min(p.raio, 10)}px"></span>${h(n)}</button>`).join("")}</div></div>
+    <div class="des">
+      <details open><summary>${ic("misto")}Formato e fundo</summary><div class="des-c">${sSeg(P + "formato", [["deitado", "Deitado 16:9"], ["pe", "Em pé 2:3"], ["quadrado", "Quadrado"], ["banner", "Banner largo"]], "Formato")}
+        ${sSeg(P + "fundo", [["arte", "Arte"], ["imagem", "Imagem própria"], ["cor", "Cor"], ["gradiente", "Gradiente"]], "Fundo")}
+        ${e.fundo === "arte" ? `<div class="artes">${CAPAS.map((c, i) => `<button type="button" data-a="s-set" data-p="${P}arte" data-v="${i}" data-num aria-pressed="${e.arte === i}" style="background:${c}" aria-label="Arte ${i + 1}"></button>`).join("")}</div>` : ""}
+        ${e.fundo === "imagem" ? `<label class="g"><span>Imagem</span><input id="s-img" class="campo" type="file" accept="image/*" data-s-img /><em>${e.img ? "Imagem carregada nesta página." : "Fica só neste navegador no protótipo."}</em></label>` : ""}
+        ${e.fundo === "cor" || e.fundo === "gradiente" ? `<div class="lin-c">${sCor(P + "cor1", e.fundo === "cor" ? "Cor de fundo" : "Cor 1")}${e.fundo === "gradiente" ? sCor(P + "cor2", "Cor 2") : ""}</div>${e.fundo === "gradiente" ? sFaixa(P + "angulo", "Direção", 0, 360, "°") : ""}` : ""}
+        ${sFaixa(P + "veu", "Escurecer a arte", 0, 90, "%")}${sCor(P + "corPe", "Fundo da parte de baixo")}</div></details>
+      <details><summary>${ic("texto")}Texto</summary><div class="des-c"><label class="g"><span>Fonte do título</span><select id="s-fonte" class="campo" data-s="${P}fonte">${["Cormorant Garamond", "Playfair Display", "Cinzel", "Montserrat", "Lato"].map((f) => `<option ${e.fonte === f ? "selected" : ""} style="font-family:'${f}'">${f}</option>`).join("")}</select></label>
+        ${sSeg(P + "tamTitulo", [["p", "Pequeno"], ["m", "Médio"], ["g", "Grande"]], "Tamanho do título")}${sSeg(P + "alinhar", [["esquerda", "Esquerda"], ["centro", "Centro"]], "Alinhamento")}${sSeg(P + "posTexto", [["topo", "Em cima"], ["meio", "No meio"], ["baixo", "Embaixo"]], "Posição do texto")}
+        <div class="lin-c">${sCor(P + "corTexto", "Cor do título")}${sCor(P + "corRotulo", "Cor do texto em cima")}</div></div></details>
+      <details><summary>${ic("seta")}Botão</summary><div class="des-c">${sSeg(P + "botaoForma", [["solido", "Sólido"], ["pilula", "Pílula"], ["contorno", "Contorno"]], "Estilo")}<div class="lin-c">${sCor(P + "botaoFundo", "Cor do botão")}${sCor(P + "botaoCor", "Cor do texto do botão")}</div></div></details>
+      <details><summary>${ic("estrela")}Borda, cantos e sombra</summary><div class="des-c">${sFaixa(P + "raio", "Cantos", 0, 32, "px")}${sFaixa(P + "borda", "Borda", 0, 4, "px")}${e.borda ? sCor(P + "corBorda", "Cor da borda") : ""}${sSeg(P + "sombra", [["nenhuma", "Sem sombra"], ["suave", "Suave"], ["media", "Média"], ["forte", "Forte"], ["brilho", "Brilho dourado"]], "Sombra")}</div></details>
+      <details><summary>${ic("olho")}O que mostrar no card</summary><div class="des-c">${sChk(P + "mostrarRotulo", "Texto em cima do nome")}${sChk(P + "mostrarInfo", kind === "curso" ? "Instrutor, módulos e aulas" : "Informações")}${kind === "curso" ? sChk(P + "mostrarProgresso", "Barra de progresso") : ""}${sChk(P + "mostrarBotao", "Botão")}${sChk(P + "seloNovo", "Selo “Novo” por 7 dias")}</div></details>
+    </div>`;
+}
+function passoConteudo(kind, d) {
+  if (kind === "curso") {
+    const s = ui.st.sel;
+    const arv = d.modulos.map((m, mi) => `<div class="arv-mod ${s && s.t === "mod" && s.i === mi ? "sel" : ""}"><div class="arv-cab"><span class="n">M${mi + 1}</span><button type="button" class="nome" data-a="s-sel" data-t="mod" data-i="${mi}">${h(m.titulo || "Módulo sem nome")}</button>
+        <div class="mini-bts"><button type="button" data-a="s-mod-mov" data-i="${mi}" data-d="-1" ${mi ? "" : "disabled"} aria-label="Subir módulo">${ic("cima")}</button><button type="button" data-a="s-mod-mov" data-i="${mi}" data-d="1" ${mi < d.modulos.length - 1 ? "" : "disabled"} aria-label="Descer módulo">${ic("baixo")}</button></div></div>
+      ${m.aulas.map((a, ai) => `<div class="arv-aula ${s && s.t === "aula" && s.i === mi && s.j === ai ? "sel" : ""}"><span class="tipo-ic">${ic(TIPO_AULA[a.tipo][0])}</span><button type="button" class="nome" data-a="s-sel" data-t="aula" data-i="${mi}" data-j="${ai}">${h(a.titulo || "Aula sem título")}${a.status !== "publicado" ? ` <span style="color:var(--texto3);font-size:11px">· rascunho</span>` : ""}</button>
+        <div class="mini-bts"><button type="button" data-a="s-aula-mov" data-i="${mi}" data-j="${ai}" data-d="-1" ${ai ? "" : "disabled"} aria-label="Subir aula">${ic("cima")}</button><button type="button" data-a="s-aula-mov" data-i="${mi}" data-j="${ai}" data-d="1" ${ai < m.aulas.length - 1 ? "" : "disabled"} aria-label="Descer aula">${ic("baixo")}</button></div></div>`).join("")}
+      <div class="arv-aula"><button type="button" class="bt pq fant" data-a="s-aula-nova" data-i="${mi}">${ic("mais")}Nova aula</button></div></div>`).join("");
+    let ed = `<div class="vazio">${ic("play")}<b>${d.modulos.length ? "Escolha um módulo ou aula" : "Comece pelo primeiro módulo"}</b><p>${d.modulos.length ? "Clique na estrutura ao lado para editar." : "Um curso é organizado em módulos, e cada módulo tem aulas."}</p><button type="button" class="bt ouro" data-a="s-mod-novo">${ic("mais")}Adicionar módulo</button></div>`;
+    if (s && s.t === "mod" && d.modulos[s.i]) { const p = `modulos.${s.i}.`, m = d.modulos[s.i]; ed = `<div class="ed-item"><div class="lin-c"><h3 style="flex:1">Módulo ${s.i + 1}</h3><button type="button" class="bt pq" data-a="s-mod-dup" data-i="${s.i}">${ic("copia")}Duplicar</button><button type="button" class="bt pq perigo" data-a="s-mod-del" data-i="${s.i}">${ic("lixo")}Remover</button></div>
+      ${sIn(p + "titulo", "Nome do módulo *")}${sTa(p + "desc", "Descrição", 'rows="2"')}<div class="g"><span>Capa do módulo</span><div class="artes">${CAPAS.map((c, i) => `<button type="button" data-a="s-set" data-p="${p}capa" data-v="${i}" data-num aria-pressed="${(m.capa ?? d.estilo.arte) === i}" style="background:${c}" aria-label="Arte ${i + 1}"></button>`).join("")}</div></div>
+      ${sSeg(p + "libModo", [["imediato", "Junto com o curso"], ["data", "Em data"], ["dias", "Dias após matrícula"]], "Liberação do módulo")}${m.libModo === "data" ? sIn(p + "libData", "Data", "", "date") : m.libModo === "dias" ? sIn(p + "libDias", "Dias após a matrícula", 'min="0"', "number") : ""}
+      <p style="font-size:12px;color:var(--texto3)">${m.aulas.length} aulas neste módulo.</p></div>`; }
+    if (s && s.t === "aula" && d.modulos[s.i]?.aulas[s.j]) { const a = d.modulos[s.i].aulas[s.j], p = `modulos.${s.i}.aulas.${s.j}.`; a.lib = a.lib || { modo: "imediato" };
+      ed = `<div class="ed-item"><div class="lin-c"><h3 style="flex:1">${h(a.titulo || "Nova aula")}</h3><button type="button" class="bt pq" data-a="s-aula-dup" data-i="${s.i}" data-j="${s.j}">${ic("copia")}Duplicar</button><button type="button" class="bt pq perigo" data-a="s-aula-del" data-i="${s.i}" data-j="${s.j}">${ic("lixo")}Remover</button></div>
+      <div class="grade2">${sIn(p + "titulo", "Título da aula *")}<label class="g"><span>Módulo</span><select id="s-movmod" class="campo" data-s-mover="${s.i}.${s.j}">${d.modulos.map((m, i) => `<option value="${i}" ${i === s.i ? "selected" : ""}>Módulo ${i + 1} · ${h(m.titulo || "sem nome")}</option>`).join("")}</select><em>Mudar aqui move a aula.</em></label></div>
+      ${sSeg(p + "tipo", Object.entries(TIPO_AULA).map(([v, [, t]]) => [v, t]), "Tipo de conteúdo")}
+      ${a.tipo === "video" || a.tipo === "misto" ? sIn(p + "video", "Vídeo principal *", 'placeholder="Link do vídeo (Vimeo, Bunny, Panda) ou nome do arquivo"', "text", "YouTube não hospeda conteúdo pago.") : a.tipo === "audio" ? sIn(p + "video", "Arquivo de áudio *", 'placeholder="Nome do arquivo de áudio"') : a.tipo === "pdf" ? sIn(p + "video", "Arquivo PDF", 'placeholder="Nome do PDF"', "text", "Até 30 MB.") : ""}
+      <div class="grade3">${sIn(p + "durMin", "Duração (min)", 'min="0"', "number")}${sSeg(p + "status", [["publicado", "Publicada"], ["rascunho", "Rascunho"]], "Status")}${sSeg(p + "conclusao", [["manual", "Manual"], ["auto", "Ao assistir 90%"]], "Conclusão")}</div>
+      <div class="g"><span>Capa da aula</span><div class="artes">${CAPAS.map((c, i) => `<button type="button" data-a="s-set" data-p="${p}capa" data-v="${i}" data-num aria-pressed="${(a.capa ?? d.estilo.arte) === i}" style="background:${c}" aria-label="Arte ${i + 1}"></button>`).join("")}</div></div>
+      ${sTa(p + "desc", "Descrição", 'rows="2"')}${sTa(p + "texto", "Texto complementar", 'rows="3"')}
+      <div class="g"><span>Materiais anexos</span>${(a.anexos || []).map((n, k) => `<div class="lin-c">${ic("doc")}<span style="flex:1">${h(n)}</span><button type="button" class="bt pq" data-a="s-anexo-del" data-k="${k}">Tirar</button></div>`).join("")}<div style="display:flex;gap:8px"><input id="s-anexo" class="campo" placeholder="Nome do material (ex.: Roteiro.pdf)" /><button type="button" class="bt" data-a="s-anexo-add">${ic("mais")}Anexar</button></div></div>
+      ${sSeg(p + "lib.modo", [["imediato", "Segue o curso"], ["data", "Em data"], ["dias", "Dias após matrícula"], ["conclusao", "Após a aula anterior"]], "Liberação da aula")}${a.lib.modo === "data" ? sIn(p + "lib.data", "Data", "", "date") : a.lib.modo === "dias" ? sIn(p + "lib.dias", "Dias após a matrícula", 'min="0"', "number") : ""}
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${sChk(p + "comentarios", "Permitir comentários")}${sChk(p + "destaque", "Mostrar em “Novos conteúdos”")}</div></div>`; }
+    return `<div class="ed-cont"><div class="arvore"><div class="lin-c"><b style="flex:1">Estrutura</b><button type="button" class="bt pq ouro" data-a="s-mod-novo">${ic("mais")}Módulo</button></div>${arv || `<p style="color:var(--texto3);font-size:13px">Nenhum módulo ainda.</p>`}</div><section class="painel">${ed}</section></div>`;
+  }
+  if (kind === "ebook") {
+    const grande = d.tamanho > 30 * 1048576;
+    return `<section class="painel"><h3>1 · E-book completo</h3><div class="form">
+        <label class="g"><span>Arquivo PDF *</span><input id="s-pdf" class="campo" type="file" accept="application/pdf,.pdf" data-s-pdf /><em>${d.arquivo ? `Atual: ${h(d.arquivo)}${d.tamanho ? " · " + (d.tamanho / 1048576).toFixed(1).replace(".", ",") + " MB" : ""}` : "Até 30 MB. Escolher outro substitui e mantém as alunas e as partes."}</em></label>
+        ${grande ? `<div class="aviso ruim"><b>PDF muito grande.</b> O máximo é 30 MB para abrir rápido no celular. No app real, use “Reduzir PDF”.</div>` : ""}
+        <div class="grade2">${sIn("paginas", "Número de páginas", 'min="0"', "number")}<div class="g"><span>Download</span>${sChk("download", "Permitir que a aluna baixe o PDF")}</div></div></div></section>
+      <section class="painel"><h3>2 · Partes que a aluna abre separadas <span class="esp"></span><span style="font:400 13px var(--f-txt);color:var(--texto3)">opcional</span></h3><p style="color:var(--texto2);margin-bottom:12px">Orações, resumo e práticas viram botões separados embaixo do e-book. Cada oração leva o seu “como usar”.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">${[["oracao", "Oração"], ["resumo", "Resumo"], ["pratica", "Prática"], ["capitulo", "Capítulo"]].map(([v, t]) => `<button type="button" class="bt" data-a="s-parte-nova" data-v="${v}">${ic("mais")}${t}</button>`).join("")}</div>
+        ${d.partes.map((p, i) => `<div class="mod" style="margin-bottom:10px"><div class="mod-cab"><span class="n">${{ oracao: "Oração", resumo: "Resumo", pratica: "Prática", capitulo: "Capítulo" }[p.tipo] || "Parte"}</span><input id="s-pt-${i}" class="campo" data-s="partes.${i}.titulo" value="${h(p.titulo)}" placeholder="Título" aria-label="Título da parte ${i + 1}" />
+          <div class="mini-bts"><button type="button" data-a="s-parte-mov" data-i="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Subir">${ic("cima")}</button><button type="button" data-a="s-parte-mov" data-i="${i}" data-d="1" ${i < d.partes.length - 1 ? "" : "disabled"} aria-label="Descer">${ic("baixo")}</button><button type="button" data-a="s-parte-del" data-i="${i}" aria-label="Remover">${ic("lixo")}</button></div></div>
+          <div style="display:flex;flex-direction:column;gap:10px;padding:0 12px 12px">${p.tipo === "oracao" ? `<textarea id="s-pc-${i}" class="campo" rows="2" data-s="partes.${i}.comoUsar" placeholder="Como usar (quando, quantas vezes, o ritual)" aria-label="Como usar">${h(p.comoUsar || "")}</textarea>` : ""}<textarea id="s-px-${i}" class="campo" rows="3" data-s="partes.${i}.texto" placeholder="${p.tipo === "oracao" ? "A oração, como está no e-book" : "Texto"}" aria-label="Texto">${h(p.texto || "")}</textarea></div></div>`).join("") || `<p style="color:var(--texto3)">Nenhuma parte. Pode seguir sem.</p>`}
+        <p style="font-size:12px;color:var(--texto3)">No app real, “Puxar do e-book” separa as orações com IA. No protótipo, adicione à mão.</p></section>`;
+  }
+  return `<section class="painel"><h3>Áudios desta playlist<span class="esp"></span><button type="button" class="bt ouro pq" data-a="s-ep-novo">${ic("mais")}Adicionar áudio</button></h3>
+    ${d.eps.map((x, i) => `<div class="mod" style="margin-bottom:10px"><div class="mod-cab"><span class="n">${i + 1}</span><input id="s-et-${i}" class="campo" data-s="eps.${i}.titulo" value="${h(x.titulo)}" placeholder="Título do áudio" aria-label="Título do áudio ${i + 1}" />
+        <div class="mini-bts"><button type="button" data-a="s-ep-mov" data-i="${i}" data-d="-1" ${i ? "" : "disabled"} aria-label="Subir">${ic("cima")}</button><button type="button" data-a="s-ep-mov" data-i="${i}" data-d="1" ${i < d.eps.length - 1 ? "" : "disabled"} aria-label="Descer">${ic("baixo")}</button><button type="button" data-a="s-ep-del" data-i="${i}" aria-label="Remover">${ic("lixo")}</button></div></div>
+      <div class="grade3" style="padding:0 12px 12px"><label class="g"><span>Arquivo *</span><input id="s-ef-${i}" class="campo" type="file" accept="audio/*" data-s-audio="${i}" /><em>${x.arquivo ? h(x.arquivo) : "A duração é lida do arquivo."}</em></label>${sIn(`eps.${i}.durMin`, "Duração (min)", 'min="0"', "number")}<div class="g"><span>Opções</span>${sChk(`eps.${i}.download`, "Permitir download")}${sChk(`eps.${i}.ocultar`, "Ocultar este áudio")}</div></div>
+      <div style="padding:0 12px 12px"><input id="s-ed-${i}" class="campo" data-s="eps.${i}.desc" value="${h(x.desc || "")}" placeholder="Descrição (opcional)" aria-label="Descrição" /></div></div>`).join("") || vazioH("fone", "Nenhum áudio", "Adicione o primeiro áudio da playlist.")}</section>`;
+}
+function passoAcesso(kind, d) {
+  const a = d.acesso;
+  return `${kind === "curso" ? `<div class="aviso">Quem vê: só alunas <b>matriculadas</b> neste curso${d.mentoria ? " (curso da mentoria)" : ""}. A matrícula é feita na ficha da aluna ou em “Gerenciar acesso”.</div>`
+      : `<div class="g"><span>Quem pode ${kind === "ebook" ? "ler" : "ouvir"}</span><div class="op-lib">${[["todos", "Todas as alunas", ""], ["mentoria", "Só alunas da mentoria", "Alunas gerais não veem."], ["geral", "Só alunas gerais", ""], ["matriculados", "Alunas com matrícula", "Quem tem algum curso ou recebeu este item na ficha."]].map(([v, t, x]) => `<label><input type="radio" name="s-pub" data-s="publico" value="${v}" ${d.publico === v ? "checked" : ""} /><span><b>${t}</b>${x ? `<em>${x}</em>` : ""}</span></label>`).join("")}</div></div>`}
+    <div class="g"><span>Quando libera</span><div class="op-lib">${[["imediato", "Imediata", "Abre ao publicar ou ao matricular."], ["data", "Em uma data", "Ninguém abre antes."], ["dias", "Dias após a matrícula", "Conta a partir da matrícula de cada aluna."], ...(kind === "curso" ? [["sequencial", "Aula a aula", "Cada aula abre quando a anterior é concluída."]] : [])].map(([v, t, x]) => `<label><input type="radio" name="s-lib" data-s="acesso.modo" value="${v}" ${a.modo === v ? "checked" : ""} /><span><b>${t}</b><em>${x}</em></span></label>`).join("")}</div></div>
+    <div class="grade3">${a.modo === "data" ? sIn("acesso.data", "Data de liberação *", "", "date") : ""}${a.modo === "dias" ? sIn("acesso.dias", "Dias após a matrícula", 'min="0"', "number") : ""}${sIn("acesso.fim", "Disponível até (opcional)", "", "date")}</div>
+    ${sChk("acesso.mostrarBloq", "Mostrar como “em breve” para quem ainda não tem acesso")}
+    ${a.modo === "sequencial" ? `<div class="aviso bom">Sem dependência circular: cada aula depende só da anterior, na ordem do curso.</div>` : ""}`;
+}
+function passoRevisao(kind, d) {
+  const f = validarItem(kind, d), falta = new Set(f.map((x) => x[0]));
+  const itens = [["Dados iniciais", 1, !f.some((x) => x[1] === 1)], ["Apresentação e card", 2, !f.some((x) => x[1] === 2)], ["Conteúdo", 3, !f.some((x) => x[1] === 3)], ["Acesso e liberação", 4, !f.some((x) => x[1] === 4)]];
+  const resumo = kind === "curso" ? `${d.modulos.length} módulos · ${todasAulas(d).length} aulas · ${todasAulas(d).reduce((s, a) => s + (a.anexos || []).length, 0)} materiais` : kind === "ebook" ? `${d.arquivo || "sem PDF"} · ${d.partes.length} partes` : `${d.eps.length} áudios · ${mmss(d.eps.reduce((s, x) => s + (x.dur || 0), 0))}`;
+  return `<div class="duas"><div class="form"><div class="chk-lista">${itens.map(([t, p, ok]) => `<button type="button" data-a="s-passo" data-v="${p}"><span class="ok-i ${ok ? "sim" : "nao"}">${ok ? "✓" : "!"}</span><span><b>${t}</b>${ok ? "" : `<br><em style="font-style:normal;font-size:12px;color:var(--vermelho)">${f.filter((x) => x[1] === p).map((x) => x[0]).join(" · ")}</em>`}</span>${ic("seta")}</button>`).join("")}</div>
+      <dl class="resumo-l"><dt>Tipo</dt><dd>${KIND[kind].nome}</dd><dt>Conteúdo</dt><dd>${h(resumo)}</dd><dt>Quem vê</dt><dd>${kind === "curso" ? "Matriculadas" + (d.mentoria ? " (mentoria)" : "") : PUBLICOS[d.publico]}</dd><dt>Liberação</dt><dd>${LIB_TXT(d.acesso)}${d.acesso.fim ? " · até " + fmt(d.acesso.fim) : ""}</dd><dt>Status</dt><dd>${stCurso(d.status)}</dd></dl></div>
+    <div class="form">${f.length ? `<div class="aviso ruim">Faltam ${f.length} ${f.length === 1 ? "item" : "itens"} para publicar. Clique ao lado para resolver.</div>` : `<div class="aviso bom">Tudo certo para publicar.</div>`}
+      ${sIn("acesso.agenda", "Agendar publicação (opcional)", "", "date")}
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="bt" data-a="s-ver">${ic("olho")}Ver como aluna</button><button type="button" class="bt" data-a="s-salvar">Salvar rascunho</button><button type="button" class="bt" data-a="s-agendar" ${f.length || !d.acesso.agenda ? "disabled" : ""}>${ic("cal")}Agendar</button><button type="button" class="bt ouro" data-a="s-publicar" ${f.length ? "disabled" : ""}>${ic("ok")}Publicar</button></div>
+      <p style="font-size:12px;color:var(--texto3)">${falta.size ? "" : "Ao publicar, aparece para quem tem acesso. "}No protótipo, os dados ficam só neste navegador.</p></div></div>`;
+}
+function telaEstudio() {
+  const { kind, d, passo } = ui.st;
+  const ok = [1, 2, 3, 4].map((p) => !validarItem(kind, d).some((x) => x[1] === p));
+  const corpo = [passoDados, passoAparencia, passoConteudo, passoAcesso, passoRevisao][passo - 1](kind, d);
+  return `<div class="trilha"><button data-a="s-sair">${KIND[kind].lista === "playlists" ? "Áudios" : KIND[kind].lista === "ebooks" ? "E-books" : "Cursos"}</button><span>/</span><span>${ui.st.novo ? "Novo" : h(d.titulo || "Sem nome")}</span></div>
+    <div class="cab"><div><h1>${ui.st.novo ? "Novo " + KIND[kind].nome.toLowerCase() : h(d.titulo || "Sem nome")}</h1><p style="display:flex;gap:6px;align-items:center;margin-top:6px">${d.status === "publicado" ? `<span class="st azul">Publicado</span>` : `<span class="st vermelho">Não publicado</span><span class="st cinza">Rascunho</span>`}${d.id ? `<span style="color:var(--texto3);font-size:12px">· salvo</span>` : `<span style="color:var(--texto3);font-size:12px">· ainda não salvo</span>`}</p></div><span class="esp"></span>${d.id ? `<button class="bt" data-a="s-salvar">Salvar</button>` : ""}</div>
+    <nav class="passos" aria-label="Etapas">${PASSOS_ST.map((t, i) => `<button type="button" data-a="s-passo" data-v="${i + 1}" ${passo === i + 1 ? 'aria-current="step"' : ""} class="${i < 4 && ok[i] && passo !== i + 1 ? "ok" : ""}"><i>${i < 4 && ok[i] && passo !== i + 1 ? "✓" : i + 1}</i>${t}</button>`).join("")}</nav>
+    <div class="estudio"><div class="form" style="max-width:none">${passo === 3 && kind === "curso" ? corpo : `<section class="painel"><div class="form" style="max-width:none">${corpo}</div></section>`}
+      <div class="rodape-f">${passo > 1 ? `<button type="button" class="bt" data-a="s-passo" data-v="${passo - 1}">${ic("voltar")}Voltar</button>` : `<button type="button" class="bt" data-a="s-sair">Cancelar</button>`}<span class="esp"></span>
+        ${passo < 5 ? `${passo === 1 && !d.id ? `<button type="button" class="bt" data-a="s-salvar">Salvar rascunho</button><button type="button" class="bt ouro" data-a="s-criar">Criar e continuar ${ic("seta")}</button>` : `<button type="button" class="bt ouro" data-a="s-passo" data-v="${passo + 1}">Continuar ${ic("seta")}</button>`}` : ""}</div><p class="erro-campo" data-erro hidden></p></div>
+      ${previaEstudio()}</div>`;
+}
+function telaNovoConteudo() {
+  return `<div class="cab"><div><h1>O que você quer criar?</h1><p>Cada tipo tem o seu editor, com prévia ao vivo no celular.</p></div></div><div class="tipos-novo">${[["curso", "Módulos e aulas em vídeo, áudio, texto ou PDF."], ["ebook", "Um PDF com capa em pé e, se quiser, orações e práticas separadas."], ["playlist", "Uma sequência de áudios, como meditações e orações guiadas."]].map(([k, t]) => `<button data-a="s-novo" data-v="${k}"><span class="tipo-ic">${ic(KIND[k].ic)}</span><b>${KIND[k].nome}</b><em>${t}</em></button>`).join("")}</div>`;
 }
 /* ---------- E-books ---------- */
 const selPublico = (id, v, extra = []) => `<select id="${id}" class="campo" name="publico">${["todos", "mentoria", "geral", "matriculados", ...extra].map((k) => `<option value="${k}" ${v === k ? "selected" : ""}>${PUBLICOS[k]}</option>`).join("")}</select>`;
 const stPub = (s) => s === "publicado" ? `<span class="st verde">Publicado</span>` : s === "arquivado" ? `<span class="st vermelho">Arquivado</span>` : s === "oculto" ? `<span class="st cinza">Oculto</span>` : `<span class="st cinza">Rascunho</span>`;
 function admEbooks() {
-  const q = ui.busca.trim().toLowerCase(), lista = S.ebooks.filter((e) => (ui.filtro === "todos" || e.status === ui.filtro) && (!q || (e.titulo + e.palavras + e.categoria).toLowerCase().includes(q)));
-  return `<div class="cab"><div><h1>E-books</h1><p>Biblioteca independente: publique um PDF sem criar curso.</p></div><span class="esp"></span><button class="bt ouro" data-a="ebook-novo">${ic("mais")}Novo e-book</button></div>
-    <div class="barra-f"><label class="busca">${ic("busca")}<input id="buscaEbooks" class="campo" data-busca placeholder="Buscar por título, categoria ou palavra-chave" value="${h(ui.busca)}" aria-label="Buscar e-book" /></label><div class="chips">${[["todos", "Todos"], ["publicado", "Publicados"], ["rascunho", "Rascunhos"], ["arquivado", "Arquivados"]].map(([v, t]) => `<button class="chip" data-a="filtro" data-v="${v}" aria-pressed="${ui.filtro === v}">${t}</button>`).join("")}</div></div>
-    ${!S.ebooks.length ? `<div class="painel">${vazioH("livro", "Nenhum e-book", "Publique o primeiro PDF da biblioteca.", `<button class="bt ouro" data-a="ebook-novo">${ic("mais")}Novo e-book</button>`)}</div>` : !lista.length ? `<div class="painel">${vazioH("busca", "Nenhum e-book encontrado", "Mude a busca ou o filtro.")}</div>`
-    : `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">${lista.map((e) => `<article class="cc">${capaHTML(e.capa, e.titulo, e.categoria, "pe")}<div class="cc-c">${stPub(e.status)}<h4 title="${h(e.titulo)}">${h(e.titulo)}</h4><div class="meta"><span>${h(e.autor)}</span></div><div class="meta">${h(PUBLICOS[e.publico] || "")}${e.download ? " · download" : ""}</div>
-      <div class="pe"><button class="bt pq ouro" data-a="ebook-editar" data-v="${e.id}">Editar</button><button class="bt pq" data-a="item-status" data-t="ebooks" data-v="${e.id}">${e.status === "publicado" ? "Despublicar" : "Publicar"}</button></div></div></article>`).join("")}</div>`}`;
+  const q = ui.busca.trim().toLowerCase(), lista = S.ebooks.filter((e) => (ui.filtro === "todos" || e.status === ui.filtro) && (!q || (e.titulo + (e.palavras || "") + e.categoria).toLowerCase().includes(q)));
+  return `<div class="cab"><div><h1>E-books</h1><p>Biblioteca própria: publique um PDF sem criar curso. Orações e práticas podem virar partes separadas.</p></div><span class="esp"></span><button class="bt ouro" data-a="s-novo" data-v="ebook">${ic("mais")}Novo e-book</button></div>
+    <div class="barra-f"><label class="busca">${ic("busca")}<input id="buscaEbooks" class="campo" data-busca placeholder="Buscar por título ou categoria" value="${h(ui.busca)}" aria-label="Buscar e-book" /></label><div class="chips">${[["todos", "Todos"], ["publicado", "Publicados"], ["rascunho", "Rascunhos"], ["arquivado", "Arquivados"]].map(([v, t]) => `<button class="chip" data-a="filtro" data-v="${v}" aria-pressed="${ui.filtro === v}">${t}</button>`).join("")}</div></div>
+    ${!S.ebooks.length ? `<div class="painel">${vazioH("livro", "Nenhum e-book", "Publique o primeiro PDF da biblioteca.", `<button class="bt ouro" data-a="s-novo" data-v="ebook">${ic("mais")}Novo e-book</button>`)}</div>` : !lista.length ? `<div class="painel">${vazioH("busca", "Nenhum e-book encontrado", "Mude a busca ou o filtro.")}</div>`
+    : `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px">${lista.map((e) => cardAdm("ebook", e, `<span>${h(PUBLICOS[e.publico] || "")}</span><span class="num">${(e.partes || []).length} partes</span>${e.download ? "<span>download</span>" : ""}`, `<button class="bt pq" data-a="item-status" data-t="ebooks" data-v="${e.id}">${e.status === "publicado" ? "Despublicar" : "Publicar"}</button>`)).join("")}</div>`}`;
 }
 function formEbook(e) {
   e = e || { id: "", titulo: "", autor: "", categoria: "", desc: "", capa: 5, arquivo: "", paginas: 0, download: false, publico: "matriculados", status: "rascunho", palavras: "", curso: "" };
@@ -715,14 +1032,11 @@ function formEbook(e) {
 
 /* ---------- Áudios ---------- */
 function admAudios() {
-  const q = ui.busca.trim().toLowerCase(), lista = S.audios.filter((x) => (ui.filtro === "todos" || x.status === ui.filtro) && (!q || (x.titulo + x.categoria).toLowerCase().includes(q)));
-  return `<div class="cab"><div><h1>Áudios</h1><p>${S.audios.length} áudios · ${S.playlists.length} playlists</p></div><span class="esp"></span><button class="bt" data-a="playlist-nova">${ic("mais")}Nova playlist</button><button class="bt ouro" data-a="audio-novo">${ic("mais")}Novo áudio</button></div>
-    <div class="barra-f"><label class="busca">${ic("busca")}<input id="buscaAudios" class="campo" data-busca placeholder="Buscar áudio" value="${h(ui.busca)}" aria-label="Buscar áudio" /></label><div class="chips">${[["todos", "Todos"], ["publicado", "Publicados"], ["rascunho", "Rascunhos"], ["oculto", "Ocultos"]].map(([v, t]) => `<button class="chip" data-a="filtro" data-v="${v}" aria-pressed="${ui.filtro === v}">${t}</button>`).join("")}</div></div>
-    <div class="duas"><section class="painel"><h3>Áudios</h3>${!lista.length ? vazioH("fone", S.audios.length ? "Nenhum áudio encontrado" : "Nenhum áudio", S.audios.length ? "Mude a busca ou o filtro." : "Publique o primeiro áudio.", S.audios.length ? "" : `<button class="bt ouro" data-a="audio-novo">${ic("mais")}Novo áudio</button>`)
-      : lista.map((x) => `<div class="lin">${capaHTML(x.capa, "", "", "", "width:46px;height:46px;border-radius:10px;padding:0")}<div class="tx"><b>${h(x.titulo)}</b><em>${h(x.categoria)} · ${mmss(x.dur)} · ${h(PUBLICOS[x.publico])}${x.playlist ? " · " + h(S.playlists.find((p) => p.id === x.playlist)?.titulo || "") : ""}</em></div>${stPub(x.status)}
-        <button class="bt pq" data-a="audio-editar" data-v="${x.id}">Editar</button><button class="bt pq" data-a="item-status" data-t="audios" data-v="${x.id}">${x.status === "publicado" ? "Ocultar" : "Publicar"}</button></div>`).join("")}</section>
-    <section class="painel"><h3>Playlists</h3>${S.playlists.length ? S.playlists.map((p) => { const it = S.audios.filter((x) => x.playlist === p.id).sort((a, b) => a.ordem - b.ordem); return `<div style="margin-bottom:14px"><b>${h(p.titulo)}</b><p style="color:var(--texto3);font-size:12px">${h(p.desc || "")} · ${it.length} áudios</p>
-      ${it.map((x, i) => `<div class="lin"><span class="num" style="width:18px;color:var(--texto3)">${i + 1}</span><div class="tx">${h(x.titulo)}</div><div class="mini-bts"><button data-a="pl-mov" data-v="${x.id}" data-d="-1" ${i ? "" : "disabled"} aria-label="Subir">${ic("cima")}</button><button data-a="pl-mov" data-v="${x.id}" data-d="1" ${i < it.length - 1 ? "" : "disabled"} aria-label="Descer">${ic("baixo")}</button><button data-a="pl-tirar" data-v="${x.id}" aria-label="Remover da playlist">${ic("x")}</button></div></div>`).join("") || `<p style="color:var(--texto3)">Vazia. Escolha a playlist no cadastro do áudio.</p>`}</div>`; }).join("") : vazioH("fone", "Nenhuma playlist", "Agrupe áudios em sequência.")}</section></div>`;
+  const avulsos = S.audios.filter((x) => !x.playlist);
+  return `<div class="cab"><div><h1>Áudios</h1><p>${S.playlists.length} playlists · ${S.audios.length} áudios. Cada playlist tem o seu card e a sua sequência.</p></div><span class="esp"></span><button class="bt" data-a="audio-novo">${ic("mais")}Áudio avulso</button><button class="bt ouro" data-a="s-novo" data-v="playlist">${ic("mais")}Nova playlist</button></div>
+    <h3 style="font-size:22px;margin-bottom:12px">Playlists</h3>
+    ${S.playlists.length ? `<div class="cards" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:22px;margin-bottom:26px">${S.playlists.map((p) => { const it = S.audios.filter((a) => a.playlist === p.id); return cardAdm("playlist", p, `<span class="num">${it.length} áudios · ${mmss(it.reduce((s, a) => s + a.dur, 0))}</span><span>${h(PUBLICOS[p.publico] || "")}</span>`); }).join("")}</div>` : `<div class="painel" style="margin-bottom:26px">${vazioH("fone", "Nenhuma playlist", "Agrupe áudios em sequência, como meditações da manhã.", `<button class="bt ouro" data-a="s-novo" data-v="playlist">${ic("mais")}Nova playlist</button>`)}</div>`}
+    <section class="painel"><h3>Áudios avulsos</h3>${avulsos.length ? avulsos.map((x) => `<div class="lin">${capaHTML(x.capa, "", "", "", "width:46px;height:46px;border-radius:10px;padding:0")}<div class="tx"><b>${h(x.titulo)}</b><em>${h(x.categoria)} · ${mmss(x.dur)} · ${h(PUBLICOS[x.publico])}</em></div>${stPub(x.status)}<button class="bt pq" data-a="audio-editar" data-v="${x.id}">Editar</button><button class="bt pq" data-a="item-status" data-t="audios" data-v="${x.id}">${x.status === "publicado" ? "Ocultar" : "Publicar"}</button></div>`).join("") : `<p style="color:var(--texto3)">Nenhum áudio fora de playlist.</p>`}</section>`;
 }
 function formAudio(x) {
   x = x || { id: "", titulo: "", apresentador: "", categoria: "", desc: "", capa: 3, arquivo: "", dur: 0, playlist: "", ordem: 0, download: false, publico: "todos", status: "rascunho" };
@@ -791,6 +1105,9 @@ function admConfig() {
 }
 /* ================= APP DA ALUNA (mobile) ================= */
 const ALUNA = () => aluno(ui.aluna) || S.alunos[0];
+const estDe = (kind, x) => ({ ...estiloPadrao(kind, x.capa), ...(x.estilo || {}) });
+const cardCurso = (a, c, largura) => cardDesenhado({ rotulo: c.rotulo || (c.mentoria ? "Mentoria" : "Curso"), titulo: c.ap?.titulo || c.titulo, info: `${c.instrutor} · ${c.modulos.length} módulos`, progresso: progressoCurso(a.id, c), botao: progressoCurso(a.id, c) ? "Continuar" : (c.botao || "Começar"), novo: c.atualizado >= dia(-7) }, estDe("curso", c), { tag: "button", attrs: `data-a="app-curso" data-v="${c.id}"`, largura });
+const cardEbook = (e, largura) => cardDesenhado({ rotulo: e.rotulo || "E-book", titulo: e.ap?.titulo || e.titulo, info: e.autor, progresso: null, botao: e.botao || "Ler", novo: (e.criado || "") >= dia(-7) }, estDe("ebook", e), { tag: "button", attrs: `data-a="app-ebook" data-v="${e.id}"`, largura });
 const APP_NAV = [["inicio", "Início", "home"], ["cursos", "Meus Cursos", "play"], ["biblio", "Biblioteca", "livro"], ["agenda", "Agenda", "cal"], ["perfil", "Perfil", "user"]];
 const ir = (tela, extra = {}) => { ui.app.hist.push({ ...ui.app }); ui.app = { ...extra, tela, hist: ui.app.hist }; };
 const PAG_EB = (e) => Array.from({ length: e.paginas || 4 }, (_, i) => i === 0 ? `<h3>${h(e.titulo)}</h3><p>${h(e.desc)}</p><p style="margin-top:12px;font-style:italic">${h(e.autor)}</p>` : `<h3>Capítulo ${i}</h3><p>Texto de exemplo da página ${i + 1}. No app real, aqui aparece a página do PDF, com zoom e retomada da última página lida.</p><p style="margin-top:10px">“Em tudo dai graças.” Pratique a gratidão pela manhã e anote três motivos para agradecer.</p>`);
@@ -826,10 +1143,10 @@ function appInicio(a) {
     ${a.tipo === "mentoria" ? `<div class="mentoria-card"><small>Mentoria AION</small><b>${enc.length ? "Próximo encontro: " + fmt(enc[0].data) + " às " + enc[0].hora : "Sua mentoria"}</b><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="bt pq ouro" data-a="app-nav" data-v="agenda">${ic("cal")}Ver agenda</button>${(a.grupo || S.config.grupoMentoria) ? `<a class="bt pq" href="${h(a.grupo || S.config.grupoMentoria)}" target="_blank" rel="noopener">${ic("zap")}Grupo da mentoria</a>` : ""}</div></div>` : ""}
     ${!cs.length && !eb.length && !au.length ? `<div class="vazio" style="padding:20px 0">${ic("play")}<b>Você ainda não tem conteúdos</b><p>Quando a equipe liberar um curso para você, ele aparece aqui. Dúvidas? Fale com o suporte.</p><button class="bt ouro" data-a="app-ir" data-v="suporte">Falar com o suporte</button></div>` : ""}
     ${ult ? `<button class="continuar" data-a="app-aula" data-c="${ult.c.id}" data-v="${ult.x.id}">${capaHTML(ult.c.capa, ult.c.titulo, ult.x.mod.titulo)}<span class="c-pe"><div><em>Continuar estudando</em><b>${h(ult.x.titulo)}</b><div class="barra" style="margin-top:6px"><i style="width:${progressoCurso(a.id, ult.c)}%"></i></div></div><span class="play">${ic("play")}</span></span></button>` : cs.length ? `<button class="continuar" data-a="app-curso" data-v="${cs[0].c.id}">${capaHTML(cs[0].c.capa, cs[0].c.titulo, "Comece por aqui")}<span class="c-pe"><div><em>Começar a estudar</em><b>${h(cs[0].c.titulo)}</b></div><span class="play">${ic("play")}</span></span></button>` : ""}
-    ${andamento.length ? `<section class="sec"><div class="sec-cab"><h2>Em andamento</h2><button data-a="app-nav" data-v="cursos">Ver todos</button></div><div class="trilho">${andamento.map(({ c }) => `<button class="mini" data-a="app-curso" data-v="${c.id}">${capaHTML(c.capa, c.titulo, "")}<b>${h(c.titulo)}</b><div class="barra"><i style="width:${progressoCurso(a.id, c)}%"></i></div><em class="num">${progressoCurso(a.id, c)}% concluído</em></button>`).join("")}</div></section>` : ""}
-    ${novos.length ? `<section class="sec"><div class="sec-cab"><h2>Novos conteúdos</h2></div><div class="trilho">${novos.map(({ c }) => `<button class="mini" data-a="app-curso" data-v="${c.id}">${capaHTML(c.capa, c.titulo, "Novo")}<b>${h(c.titulo)}</b><em>${h(c.instrutor)}</em></button>`).join("")}</div></section>` : ""}
+    ${andamento.length ? `<section class="sec"><div class="sec-cab"><h2>Em andamento</h2><button data-a="app-nav" data-v="cursos">Ver todos</button></div><div class="trilho">${andamento.map(({ c }) => cardCurso(a, c, estDe("curso", c).formato === "pe" ? "140px" : "230px")).join("")}</div></section>` : ""}
+    ${novos.length ? `<section class="sec"><div class="sec-cab"><h2>Novos conteúdos</h2></div><div class="trilho">${novos.map(({ c }) => cardCurso(a, c, estDe("curso", c).formato === "pe" ? "140px" : "230px")).join("")}</div></section>` : ""}
     ${enc.length ? `<section class="sec"><div class="sec-cab"><h2>Próximos encontros</h2><button data-a="app-nav" data-v="agenda">Agenda</button></div>${enc.slice(0, 2).map(itemEncontro).join("")}</section>` : ""}
-    ${eb.length ? `<section class="sec"><div class="sec-cab"><h2>E-books</h2><button data-a="app-biblio" data-v="ebooks">Biblioteca</button></div><div class="trilho">${eb.map((e) => `<button class="mini pe" data-a="app-ebook" data-v="${e.id}">${capaHTML(e.capa, e.titulo, "", "pe")}<b>${h(e.titulo)}</b></button>`).join("")}</div></section>` : ""}
+    ${eb.length ? `<section class="sec"><div class="sec-cab"><h2>E-books</h2><button data-a="app-biblio" data-v="ebooks">Biblioteca</button></div><div class="trilho">${eb.map((e) => cardEbook(e, estDe("ebook", e).formato === "pe" ? "140px" : "230px")).join("")}</div></section>` : ""}
     ${au.length ? `<section class="sec"><div class="sec-cab"><h2>Áudios em destaque</h2><button data-a="app-biblio" data-v="audios">Ver todos</button></div>${au.slice(0, 3).map(itemAudio).join("")}</section>` : ""}
     ${com.length ? `<section class="sec"><div class="sec-cab"><h2>Comunicados</h2><button data-a="app-ir" data-v="comunicados">Ver todos</button></div>${com.slice(0, 2).map((k) => itemCom(a, k)).join("")}</section>` : ""}`;
 }
@@ -841,7 +1158,7 @@ function appCursos(a) {
   const lista = cursosDoAluno(a).filter(({ c }) => { const p = progressoCurso(a.id, c); return (f === "todos" || (f === "andamento" && p > 0 && p < 100) || (f === "nao" && p === 0) || (f === "concluidos" && p === 100)) && (!q || c.titulo.toLowerCase().includes(q)); });
   return `<h1 style="font-size:28px">Meus cursos</h1><label class="g" style="position:relative"><span hidden>Buscar</span><input id="appBuscaC" class="campo" data-app-q placeholder="Buscar curso" value="${h(ui.app.q || "")}" /></label>
     <div class="chips">${[["todos", "Todos"], ["andamento", "Em andamento"], ["nao", "Não iniciados"], ["concluidos", "Concluídos"]].map(([v, t]) => `<button class="chip" data-a="app-f" data-v="${v}" aria-pressed="${f === v}">${t}</button>`).join("")}</div>
-    ${lista.length ? lista.map(({ c, m }) => { const p = progressoCurso(a.id, c), mot = motivoCurso(a, c, m); return `<button class="card-c" data-a="app-curso" data-v="${c.id}">${capaHTML(c.capa, c.titulo, "")}<div><b class="t">${h(c.titulo)}</b><em>${h(c.instrutor)}</em><em>${h(c.descCurta)}</em>${mot ? `<span class="st amarelo">${h(mot)}</span>` : `<div class="barra"><i style="width:${p}%"></i></div><em class="num">${p === 100 ? "Concluído" : p ? p + "% · Continuar" : "Começar"}</em>`}</div></button>`; }).join("")
+    ${lista.length ? lista.map(({ c, m }) => { const mot = motivoCurso(a, c, m); return `${cardCurso(a, c)}${mot ? `<span class="st amarelo" style="margin-top:-12px">${h(mot)}</span>` : ""}`; }).join("")
     : `<div class="vazio">${ic("play")}<b>${cursosDoAluno(a).length ? "Nada neste filtro" : "Nenhum curso liberado"}</b><p>${cursosDoAluno(a).length ? "Mude o filtro ou a busca." : "Quando a equipe matricular você em um curso, ele aparece aqui."}</p></div>`}`;
 }
 function appCurso(a) {
@@ -881,26 +1198,28 @@ function appBiblio(a) {
   const eb = ebooksDe(a).filter((e) => !q || (e.titulo + e.categoria).toLowerCase().includes(q)), au = audiosDe(a).filter((e) => !q || (e.titulo + e.categoria).toLowerCase().includes(q));
   const mats = cursosDoAluno(a).flatMap(({ c }) => todasAulas(c).flatMap((x) => (x.anexos || []).map((n) => ({ n, c, x })))).filter((y) => !q || y.n.toLowerCase().includes(q));
   let c = "";
-  if (ab === "ebooks") c = eb.length ? `<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">${eb.map((e) => `<button class="mini pe" style="width:auto" data-a="app-ebook" data-v="${e.id}">${capaHTML(e.capa, e.titulo, "", "pe")}<b>${h(e.titulo)}</b><em>${h(e.autor)}</em></button>`).join("")}</div>` : `<div class="vazio"><b>Nenhum e-book</b><p>${q ? "Nada com essa busca." : "Quando um e-book for liberado para você, ele aparece aqui."}</p></div>`;
-  if (ab === "audios") { const pls = S.playlists.filter((p) => au.some((x) => x.playlist === p.id)); c = au.length ? `${pls.map((p) => `<div class="rot">${h(p.titulo)}</div>${au.filter((x) => x.playlist === p.id).sort((x, y) => x.ordem - y.ordem).map(itemAudio).join("")}`).join("")}${au.some((x) => !x.playlist) ? `<div class="rot">Avulsos</div>${au.filter((x) => !x.playlist).map(itemAudio).join("")}` : ""}` : `<div class="vazio"><b>Nenhum áudio</b><p>${q ? "Nada com essa busca." : "Os áudios liberados para você aparecem aqui."}</p></div>`; }
+  if (ab === "ebooks") c = eb.length ? `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${eb.map((e) => cardEbook(e)).join("")}</div>` : `<div class="vazio"><b>Nenhum e-book</b><p>${q ? "Nada com essa busca." : "Quando um e-book for liberado para você, ele aparece aqui."}</p></div>`;
+  if (ab === "audios") { const pls = S.playlists.filter((p) => au.some((x) => x.playlist === p.id)); c = au.length ? `${pls.map((p) => { const it = au.filter((x) => x.playlist === p.id).sort((x, y) => x.ordem - y.ordem); return `${cardDesenhado({ rotulo: p.rotulo || "Áudio", titulo: p.ap?.titulo || p.titulo, info: it.length + " áudios", progresso: null, botao: p.botao || "Ouvir", novo: (p.criado || "") >= dia(-7) }, estDe("playlist", p), { tag: "button", attrs: `data-a="app-audio" data-v="${it[0].id}"`, largura: estDe("playlist", p).formato === "deitado" || estDe("playlist", p).formato === "banner" ? "100%" : "200px" })}${it.map(itemAudio).join("")}`; }).join("")}${au.some((x) => !x.playlist) ? `<div class="rot">Avulsos</div>${au.filter((x) => !x.playlist).map(itemAudio).join("")}` : ""}` : `<div class="vazio"><b>Nenhum áudio</b><p>${q ? "Nada com essa busca." : "Os áudios liberados para você aparecem aqui."}</p></div>`; }
   if (ab === "materiais") c = mats.length ? mats.map((y) => `<button class="item-a" data-a="app-aula" data-c="${y.c.id}" data-v="${y.x.id}"><span class="tipo-ic">${ic("doc")}</span><div><b>${h(y.n)}</b><em>${h(y.c.titulo)} · ${h(y.x.titulo)}</em></div></button>`).join("") : `<div class="vazio"><b>Nenhum material</b><p>Os anexos das aulas dos seus cursos aparecem aqui.</p></div>`;
   if (ab === "favoritos") { const fe = ebooksDe(a).filter((e) => favs.includes(e.id)), fa = audiosDe(a).filter((x) => favs.includes(x.id)); c = fe.length || fa.length ? `${fe.map((e) => `<button class="item-a" data-a="app-ebook" data-v="${e.id}"><span class="tipo-ic">${ic("livro")}</span><div><b>${h(e.titulo)}</b><em>E-book</em></div></button>`).join("")}${fa.map(itemAudio).join("")}` : `<div class="vazio"><b>Sem favoritos</b><p>Toque na estrela de um e-book ou áudio para guardar aqui.</p></div>`; }
   return `<h1 style="font-size:28px">Biblioteca</h1><input id="appBuscaB" class="campo" data-app-q placeholder="Buscar por título ou categoria" value="${h(ui.app.q || "")}" aria-label="Buscar na biblioteca" />
     <div class="abas" role="tablist">${[["ebooks", "E-books"], ["audios", "Áudios"], ["materiais", "Materiais"], ["favoritos", "Favoritos"]].map(([v, t]) => `<button role="tab" aria-selected="${ab === v}" data-a="app-biblio" data-v="${v}">${t}</button>`).join("")}</div>${c}`;
 }
 function appLeitor(a) {
-  const e = S.ebooks.find((x) => x.id === ui.app.id); if (!e || !ebooksDe(a).includes(e)) return `<button class="voltar" data-a="app-voltar">${ic("voltar")}Voltar</button><div class="vazio"><b>E-book indisponível</b><p>Ele não está liberado para você.</p></div>`;
+  const e = S.ebooks.find((x) => x.id === ui.app.id); if (!e || (!ui.app.previa && !ebooksDe(a).includes(e))) return `<button class="voltar" data-a="app-voltar">${ic("voltar")}Voltar</button><div class="vazio"><b>E-book indisponível</b><p>Ele não está liberado para você.</p></div>`;
   const pags = PAG_EB(e), pos = S.posicoes[a.id] || (S.posicoes[a.id] = {}), p = Math.min(pos["eb:" + e.id] || 0, pags.length - 1), z = ui.zoom || 1, fav = (S.favoritos[a.id] || []).includes(e.id);
   return `<div style="display:flex;align-items:center;gap:8px"><button class="voltar" data-a="app-voltar">${ic("voltar")}Biblioteca</button><span style="flex:1"></span><button class="ib" data-a="fav" data-v="${e.id}" aria-pressed="${fav}" aria-label="${fav ? "Tirar dos favoritos" : "Adicionar aos favoritos"}" style="${fav ? "color:var(--ouro2);border-color:var(--ouro)" : ""}">${ic("estrela")}</button>${e.download ? `<button class="ib" data-a="baixar" aria-label="Baixar">${ic("baixo")}</button>` : ""}</div>
     <div class="leitor"><div style="overflow:auto"><div class="pagina" style="transform:scale(${z});margin-bottom:${(z - 1) * 380}px">${pags[p]}</div></div>
       <div class="leitor-ctl"><button class="bt" data-a="eb-pag" data-v="-1" ${p ? "" : "disabled"} aria-label="Página anterior">${ic("voltar")}</button><span class="num" style="color:var(--texto2)">Página ${p + 1} de ${pags.length}</span><button class="bt" data-a="eb-pag" data-v="1" ${p < pags.length - 1 ? "" : "disabled"} aria-label="Próxima página">${ic("seta")}</button></div>
       <div class="leitor-ctl"><button class="bt pq" data-a="eb-zoom" data-v="-0.1" aria-label="Diminuir zoom">A−</button><span class="num" style="font-size:12px;color:var(--texto3)">Zoom ${Math.round(z * 100)}%</span><button class="bt pq" data-a="eb-zoom" data-v="0.1" aria-label="Aumentar zoom">A+</button></div>
-      <p style="font-size:12px;color:var(--texto3)">${e.download ? "Download liberado pela equipe." : "Download não liberado para este e-book."} Nenhum leitor impede totalmente capturas de tela.</p></div>`;
+      <p style="font-size:12px;color:var(--texto3)">${e.download ? "Download liberado pela equipe." : "Download não liberado para este e-book."} Nenhum leitor impede totalmente capturas de tela.</p></div>
+    ${(e.partes || []).length ? `<section class="sec"><div class="sec-cab"><h2>Orações e práticas</h2></div>${e.partes.map((p, i) => `<button class="item-a" data-a="app-parte" data-v="${i}"><span class="tipo-ic">${ic(p.tipo === "resumo" ? "texto" : "estrela")}</span><div><b>${h(p.titulo)}</b><em>${{ oracao: "Oração", resumo: "Resumo", pratica: "Prática", capitulo: "Capítulo" }[p.tipo] || "Parte"}</em></div>${ic("seta")}</button>`).join("")}</section>` : ""}
+    ${ui.app.parte != null && e.partes?.[ui.app.parte] ? `<div class="fundo-m" data-a="app-parte-x" style="position:absolute"><div class="janela" style="max-height:80%"><div class="jan-cab"><h2>${h(e.partes[ui.app.parte].titulo)}</h2><button class="x" data-a="app-parte-x" aria-label="Fechar">×</button></div><div class="jan-corpo">${e.partes[ui.app.parte].comoUsar ? `<div class="aviso"><b>Como usar:</b> ${h(e.partes[ui.app.parte].comoUsar)}</div>` : ""}<p style="white-space:pre-wrap;font-size:15px;line-height:1.7">${h(e.partes[ui.app.parte].texto)}</p></div></div></div>` : ""}`;
 }
 function appAudio(a) {
-  const x = S.audios.find((y) => y.id === ui.app.id); if (!x || !audiosDe(a).includes(x)) return `<button class="voltar" data-a="app-voltar">${ic("voltar")}Voltar</button><div class="vazio"><b>Áudio indisponível</b></div>`;
+  const x = S.audios.find((y) => y.id === ui.app.id); if (!x || (!ui.app.previa && !audiosDe(a).includes(x))) return `<button class="voltar" data-a="app-voltar">${ic("voltar")}Voltar</button><div class="vazio"><b>Áudio indisponível</b></div>`;
   if (!ui.som || ui.som.id !== x.id) ui.som = { id: x.id, t: S.posicoes[a.id]?.["s:" + x.id] || 0, tocando: false, vel: 1 };
-  const fila = audiosDe(a).filter((y) => x.playlist ? y.playlist === x.playlist : true).sort((p, q) => p.ordem - q.ordem), i = fila.indexOf(x), fav = (S.favoritos[a.id] || []).includes(x.id);
+  const fila = (ui.app.previa ? S.audios : audiosDe(a)).filter((y) => x.playlist ? y.playlist === x.playlist : true).sort((p, q) => p.ordem - q.ordem), i = fila.indexOf(x), fav = (S.favoritos[a.id] || []).includes(x.id);
   return `<button class="voltar" data-a="app-voltar">${ic("voltar")}Voltar</button><div class="audio-pl">${capaHTML(x.capa, x.titulo, x.playlist ? S.playlists.find((p) => p.id === x.playlist)?.titulo : x.categoria)}
     <div style="text-align:center"><h2 style="font-size:24px">${h(x.titulo)}</h2><p style="color:var(--texto2);font-size:13px">${h(x.apresentador)}</p></div>
     <input id="somPos" type="range" min="0" max="${x.dur}" value="${Math.round(ui.som.t)}" data-som-pos aria-label="Posição do áudio" /><div class="tempos num"><span data-som-tempo2>${mmss(ui.som.t)}</span><span>${mmss(x.dur)}</span></div>
@@ -953,9 +1272,10 @@ function telaModal() {
   if (m.t === "playlist") { tit = "Nova playlist"; corpo = `<form class="jan-corpo" id="formPl" novalidate><label class="g"><span>Nome *</span><input id="pl-t" class="campo" name="titulo" required /></label><label class="g"><span>Descrição</span><input id="pl-d" class="campo" name="desc" /></label><p class="erro-campo" data-erro hidden></p></form>`; pe = `${fechar}<button class="bt ouro" data-a="salvar-pl">Criar playlist</button>`; larg = "estreita"; }
   if (m.t === "encontro") { tit = m.id ? "Editar encontro" : "Agendar encontro"; corpo = formEncontro(S.encontros.find((e) => e.id === m.id)); pe = `${fechar}<button class="bt ouro" data-a="salvar-encontro">Salvar</button>`; }
   if (m.t === "comunicado") { tit = m.id ? "Editar comunicado" : "Novo comunicado"; corpo = formComunicado(S.comunicados.find((e) => e.id === m.id)); pe = `${fechar}<button class="bt ouro" data-a="salvar-comunicado">Salvar</button>`; }
+  if (m.t === "catnova") { tit = "Nova categoria"; corpo = `<form class="jan-corpo" id="formCat" novalidate><label class="g"><span>Nome *</span><input id="cat-n" class="campo" name="nome" required /></label><p class="erro-campo" data-erro hidden></p></form>`; pe = `${fechar}<button class="bt ouro" data-a="salvar-cat">Criar</button>`; larg = "estreita"; }
   if (m.t === "acesso") { const c = curso(m.id); tit = "Acesso: " + c.titulo; const mats = S.matriculas.filter((k) => k.tipo === "curso" && k.itemId === c.id);
     corpo = `<div class="jan-corpo"><p style="color:var(--texto2)">${mats.length} alunas matriculadas. Para matricular, abra a ficha da aluna.</p>${mats.map((k) => { const a = aluno(k.alunoId); return a ? `<div class="lin">${avatar(a)}<div class="tx"><b>${h(a.nome)}</b><em>${a.tipo === "mentoria" ? "Mentoria" : "Geral"} · desde ${fmt(k.inicio)} · ${progressoCurso(a.id, c)}%</em></div>${k.status === "ativa" ? `<span class="st verde">Liberado</span>` : `<span class="st vermelho">Suspenso</span>`}<button class="bt pq" data-a="mat-alt" data-v="${k.id}">${k.status === "ativa" ? "Suspender" : "Restaurar"}</button></div>` : ""; }).join("") || vazioH("gente", "Ninguém matriculado", "Matricule pela ficha da aluna.")}</div>`; pe = `<button class="bt" data-a="fechar">Fechar</button>`; }
-  return `<div class="fundo-m" data-a="fundo"><div class="janela ${larg}" role="dialog" aria-modal="true" aria-label="${h(tit)}"><div class="jan-cab"><h2>${h(tit)}</h2><button class="x" data-a="fechar" aria-label="Fechar">×</button></div>${corpo}${pe ? `<div class="jan-pe">${pe}</div>` : ""}</div></div>`;
+  return `<div class="fundo-m ${ui.amb === "adm" ? "claro" : ""}" data-a="fundo"><div class="janela ${larg}" role="dialog" aria-modal="true" aria-label="${h(tit)}"><div class="jan-cab"><h2>${h(tit)}</h2><button class="x" data-a="fechar" aria-label="Fechar">×</button></div>${corpo}${pe ? `<div class="jan-pe">${pe}</div>` : ""}</div></div>`;
 }
 function render() {
   const foco = document.activeElement, fid = foco && foco.id, sel = fid && typeof foco.selectionStart === "number" ? [foco.selectionStart, foco.selectionEnd] : null;
@@ -979,7 +1299,7 @@ function acao(a, d, el) {
   const w = ui.wiz;
   switch (a) {
     case "amb": ui.amb = d.v; ui.menu = ""; break;
-    case "aba": ui.aba = d.v; ui.wiz = null; ui.busca = ""; ui.filtro = "todos"; ui.menu = ""; window.scrollTo(0, 0); break;
+    case "aba": ui.aba = d.v; ui.st = null; ui.novoTipo = false; ui.busca = ""; ui.filtro = "todos"; ui.menu = ""; window.scrollTo(0, 0); break;
     case "kpi": ui.aba = d.v; ui.busca = ""; ui.filtro = d.f || "todos"; ui.grupo = "todos"; break;
     case "filtro": ui.filtro = d.v; break;
     case "grupo": ui.grupo = d.v; break;
@@ -1013,46 +1333,54 @@ function acao(a, d, el) {
     case "ver-como": ui.aluna = d.v; ui.amb = "aluno"; ui.modal = null; ui.app = { tela: "inicio", hist: [] }; break;
     case "ir-adm-alunos": ui.amb = "adm"; ui.aba = "alunos"; break;
     /* cursos */
-    case "curso-novo": ui.wiz = { passo: 1, c: novoRascunho(), novo: true }; ui.aba = "cursos"; ui.menu = ""; window.scrollTo(0, 0); break;
-    case "curso-editar": ui.wiz = { passo: 1, c: JSON.parse(JSON.stringify(curso(d.v))), novo: false }; ui.menu = ""; window.scrollTo(0, 0); break;
+    case "curso-novo": ui.menu = ""; abrirEstudio("curso"); break;
+    case "curso-editar": ui.menu = ""; abrirEstudio("curso", d.v); break;
     case "curso-dup": { const c = JSON.parse(JSON.stringify(curso(d.v))); c.id = uid("c"); c.titulo += " (cópia)"; c.status = "rascunho"; c.modulos.forEach((m) => { m.id = uid("m"); m.aulas.forEach((x) => { x.id = uid("a"); }); }); S.cursos.unshift(c); registrar("Curso duplicado: " + c.titulo, "curso"); ui.menu = ""; toast("Cópia criada como rascunho."); break; }
     case "curso-ver": { const c = curso(d.v); ui.menu = ""; ui.amb = "aluno"; ui.app = { tela: "curso", id: c.id, previa: true, hist: [] }; break; }
     case "curso-acesso": ui.menu = ""; ui.modal = { t: "acesso", id: d.v }; break;
     case "curso-status": { const c = curso(d.v), s = el.dataset.s; ui.menu = "";
-      if (s === "publicado") { const e = validarCurso(c); if (e.length) { toast("Falta para publicar: " + e.join(", ") + "."); break; } c.status = "publicado"; c.atualizado = hojeISO(); registrar("Curso publicado: " + c.titulo, "curso"); toast("Curso publicado."); break; }
+      if (s === "publicado") { const e = validarItem("curso", { ...c, rotulo: c.rotulo || "Curso", botao: c.botao || "Ver curso", acesso: { ...acessoPadrao(), ...(c.acesso || {}) } }); if (e.length) { toast("Falta para publicar: " + e.map((x) => x[0]).join(", ") + "."); break; } c.status = "publicado"; c.atualizado = hojeISO(); registrar("Curso publicado: " + c.titulo, "curso"); toast("Curso publicado."); break; }
       const n = S.matriculas.filter((k) => k.itemId === c.id).length;
       confirmar(s === "arquivado" ? "Arquivar curso" : "Despublicar curso", n ? `${n} alunas perdem o acesso enquanto o curso estiver ${s === "arquivado" ? "arquivado" : "despublicado"}. Matrículas e progresso continuam guardados.` : "Nenhuma aluna matriculada.", s === "arquivado" ? "Arquivar" : "Despublicar", () => { c.status = s; c.atualizado = hojeISO(); registrar((s === "arquivado" ? "Curso arquivado: " : "Curso despublicado: ") + c.titulo, "curso"); toast("Feito."); render(); }); break; }
-    /* assistente */
-    case "w-sair": ui.wiz = null; break;
-    case "w-passo": { const p = Number(d.v); if (p > 1 && !w.c.id && w.passo === 1) { if (!w.c.titulo.trim()) { erroForm("Escreva o nome do curso para continuar."); return; } salvarWiz(); toast("Curso criado como rascunho."); } else if (w.c.id) salvarWiz(); w.passo = p; window.scrollTo(0, 0); break; }
-    case "w-criar": { const c = w.c; if (!c.titulo.trim() || !c.descCurta.trim() || !c.categoria) { erroForm("Preencha nome, descrição curta e categoria."); return; } salvarWiz(); w.passo = 2; toast("Curso criado como rascunho."); window.scrollTo(0, 0); break; }
-    case "w-salvar": if (!w.c.titulo.trim()) { erroForm("Escreva o nome do curso para salvar."); return; } salvarWiz(); toast("Rascunho salvo."); break;
-    case "w-capa": w.c.capa = Number(d.v); break;
-    case "w-mod-add": w.c.modulos.push({ id: uid("m"), titulo: "Módulo " + (w.c.modulos.length + 1), desc: "", aulas: [] }); break;
-    case "w-mod-mov": { const i = Number(d.v), j = i + Number(el.dataset.d), L = w.c.modulos; [L[i], L[j]] = [L[j], L[i]]; break; }
-    case "w-mod-del": { const i = Number(d.v), m = w.c.modulos[i]; confirmar("Remover módulo", `Remove “${m.titulo}” e ${m.aulas.length} aulas deste curso. O progresso das alunas nessas aulas deixa de contar.`, "Remover", () => { w.c.modulos.splice(i, 1); render(); }); break; }
-    case "w-aula-nova": { const m = w.c.modulos[Number(d.v)]; m.aulas.push({ id: uid("a"), titulo: "", tipo: "video", desc: "", texto: "", dur: 0, status: "rascunho", lib: { modo: "imediato" }, anexos: [] }); ui.modal = { t: "aula", v: d.v + "." + (m.aulas.length - 1) }; break; }
-    case "w-aula-ed": ui.modal = { t: "aula", v: d.v }; break;
-    case "w-aula-mov": { const [mi, ai] = d.v.split(".").map(Number), L = w.c.modulos[mi].aulas, j = ai + Number(el.dataset.d); [L[ai], L[j]] = [L[j], L[ai]]; break; }
-    case "w-aula-dup": { const [mi, ai] = d.v.split(".").map(Number), L = w.c.modulos[mi].aulas, cp = JSON.parse(JSON.stringify(L[ai])); cp.id = uid("a"); cp.titulo += " (cópia)"; cp.status = "rascunho"; L.splice(ai + 1, 0, cp); toast("Aula duplicada."); break; }
-    case "w-aula-del": { const [mi, ai] = d.v.split(".").map(Number); const x = w.c.modulos[mi].aulas[ai]; confirmar("Remover aula", `Remove “${x.titulo || "aula sem título"}”. O progresso das alunas nela deixa de contar.`, "Remover", () => { w.c.modulos[mi].aulas.splice(ai, 1); render(); }); break; }
-    case "salvar-aula": { const [mi, ai] = ui.modal.v.split(".").map(Number), f = formDe("formAulaEd"), m = w.c.modulos[mi], x = m.aulas[ai];
-      if (!String(f.titulo || "").trim()) { erroForm("A aula precisa de um título."); return; }
-      const lib = f.lib === "imediato" ? { modo: "imediato" } : f.lib === "data" ? { modo: "data", data: f.libdata } : f.lib === "dias" ? { modo: "dias", dias: Number(f.libdias || 0) } : { modo: "conclusao" };
-      if (lib.modo === "data" && !lib.data) { erroForm("Escolha a data de liberação."); return; }
-      const novoMod = Number(f.mod); if (lib.modo === "conclusao" && novoMod === 0 && (novoMod === mi ? ai : w.c.modulos[0].aulas.length) === 0) { erroForm("A primeira aula do curso não pode depender de uma anterior."); return; }
-      Object.assign(x, { titulo: f.titulo.trim(), tipo: f.tipo, video: f.video, dur: Number(f.dur || 0) * 60, status: f.status, desc: f.desc, texto: f.texto, anexos: String(f.anexos || "").split(",").map((s) => s.trim()).filter(Boolean), lib });
-      if (novoMod !== mi) { m.aulas.splice(ai, 1); w.c.modulos[novoMod].aulas.push(x); toast("Aula movida para o Módulo " + (novoMod + 1) + "."); } else toast("Aula salva.");
-      ui.modal = null; break; }
-    case "w-ver": { if (!w.c.id) salvarWiz(); ui.amb = "aluno"; ui.app = { tela: "curso", id: w.c.id, previa: true, hist: [] }; break; }
-    case "w-agendar": { salvarWiz(); const c = curso(w.c.id); c.status = "agendado"; registrar("Curso agendado: " + c.titulo + " para " + fmt(c.acesso.agenda), "curso"); ui.wiz = null; ui.aba = "cursos"; toast("Agendado para " + fmt(c.acesso.agenda) + "."); break; }
-    case "w-publicar": { const e = validarCurso(w.c); if (e.length) { toast("Falta: " + e.join(", ")); return; } w.c.status = "publicado"; salvarWiz(); registrar("Curso publicado: " + w.c.titulo, "curso"); ui.wiz = null; ui.aba = "cursos"; toast("Curso publicado. Alunas matriculadas já veem."); break; }
+    /* estúdio */
+    case "s-novo": abrirEstudio(d.v); break;
+    case "s-abrir": abrirEstudio(el.dataset.k, d.v); break;
+    case "s-abrir-passo": abrirEstudio(el.dataset.k, d.v); ui.st.passo = Number(el.dataset.p); break;
+    case "s-sair": ui.st = null; break;
+    case "s-passo": { const st = ui.st, p = Number(d.v); if (!st.d.id && p > 1) { if (!st.d.titulo.trim()) { erroForm("Escreva o nome para continuar."); return; } salvarEstudio(); toast("Criado como rascunho."); } else if (st.d.id) salvarEstudio(); st.passo = p; st.prev = p === 3 ? (st.kind === "curso" && st.sel?.t === "aula" ? "aula" : "pagina") : p === 4 ? "bloq" : st.prev === "aula" || st.prev === "bloq" ? "inicio" : st.prev; window.scrollTo(0, 0); break; }
+    case "s-criar": { const st = ui.st, f = validarItem(st.kind, st.d).filter((x) => x[1] === 1); if (f.length) { erroForm("Falta: " + f.map((x) => x[0]).join(", ") + "."); return; } salvarEstudio(); st.passo = 2; st.prev = "inicio"; toast("Criado como rascunho. Agora a aparência."); window.scrollTo(0, 0); break; }
+    case "s-salvar": if (!ui.st.d.titulo.trim()) { erroForm("Escreva o nome para salvar."); return; } salvarEstudio(); toast("Salvo como " + (ui.st.d.status === "publicado" ? "publicado." : "rascunho.")); break;
+    case "s-set": { const ps = el.dataset.p.split("."); let o = ui.st.d; for (const k of ps.slice(0, -1)) o = o[k] = o[k] ?? {}; o[ps[ps.length - 1]] = el.dataset.num !== undefined ? Number(d.v) : d.v; break; }
+    case "s-prev": ui.st.prev = d.v; break;
+    case "s-preset": Object.assign(ui.st.d.estilo, PRESETS[d.v]); toast("Estilo “" + d.v + "” aplicado. Ajuste o que quiser."); break;
+    case "s-cat-nova": ui.modal = { t: "catnova" }; break;
+    case "salvar-cat": { const n = formDe("formCat").nome?.trim(); if (!n) { erroForm("Escreva o nome."); return; } if (!S.categorias.includes(n)) S.categorias.push(n); if (ui.st) ui.st.d.categoria = n; ui.modal = null; toast("Categoria criada."); break; }
+    case "s-sel": ui.st.sel = { t: el.dataset.t, i: Number(el.dataset.i), j: el.dataset.j != null ? Number(el.dataset.j) : null }; ui.st.prev = el.dataset.t === "aula" ? "aula" : "pagina"; break;
+    case "s-mod-novo": { const L = ui.st.d.modulos; L.push({ id: uid("m"), titulo: "Módulo " + (L.length + 1), desc: "", aulas: [], libModo: "imediato" }); ui.st.sel = { t: "mod", i: L.length - 1 }; ui.st.prev = "pagina"; break; }
+    case "s-mod-mov": { const L = ui.st.d.modulos, i = Number(el.dataset.i), j = i + Number(el.dataset.d); [L[i], L[j]] = [L[j], L[i]]; ui.st.sel = { t: "mod", i: j }; break; }
+    case "s-mod-dup": { const L = ui.st.d.modulos, i = Number(el.dataset.i), c = JSON.parse(JSON.stringify(L[i])); c.id = uid("m"); c.titulo += " (cópia)"; c.aulas.forEach((a) => { a.id = uid("a"); a.status = "rascunho"; }); L.splice(i + 1, 0, c); ui.st.sel = { t: "mod", i: i + 1 }; toast("Módulo duplicado com as aulas em rascunho."); break; }
+    case "s-mod-del": { const i = Number(el.dataset.i), m = ui.st.d.modulos[i]; confirmar("Remover módulo", `Remove “${m.titulo}” e ${m.aulas.length} aulas. O progresso das alunas nessas aulas deixa de contar.`, "Remover", () => { ui.st.d.modulos.splice(i, 1); ui.st.sel = null; render(); }); break; }
+    case "s-aula-nova": { const i = Number(el.dataset.i), L = ui.st.d.modulos[i].aulas; L.push({ id: uid("a"), titulo: "", tipo: "video", video: "", desc: "", texto: "", dur: 0, durMin: 0, status: "rascunho", conclusao: "manual", comentarios: true, lib: { modo: "imediato" }, anexos: [] }); ui.st.sel = { t: "aula", i, j: L.length - 1 }; ui.st.prev = "aula"; ui.focoAula = true; break; }
+    case "s-aula-mov": { const i = Number(el.dataset.i), j0 = Number(el.dataset.j), L = ui.st.d.modulos[i].aulas, j = j0 + Number(el.dataset.d); [L[j0], L[j]] = [L[j], L[j0]]; ui.st.sel = { t: "aula", i, j }; break; }
+    case "s-aula-dup": { const i = Number(el.dataset.i), j = Number(el.dataset.j), L = ui.st.d.modulos[i].aulas, c = JSON.parse(JSON.stringify(L[j])); c.id = uid("a"); c.titulo += " (cópia)"; c.status = "rascunho"; L.splice(j + 1, 0, c); ui.st.sel = { t: "aula", i, j: j + 1 }; toast("Aula duplicada em rascunho."); break; }
+    case "s-aula-del": { const i = Number(el.dataset.i), j = Number(el.dataset.j), a = ui.st.d.modulos[i].aulas[j]; confirmar("Remover aula", `Remove “${a.titulo || "aula sem título"}”. O progresso das alunas nela deixa de contar.`, "Remover", () => { ui.st.d.modulos[i].aulas.splice(j, 1); ui.st.sel = { t: "mod", i }; render(); }); break; }
+    case "s-anexo-add": { const v = document.getElementById("s-anexo")?.value.trim(); if (!v) { toast("Escreva o nome do material."); return; } const s0 = ui.st.sel, a = ui.st.d.modulos[s0.i].aulas[s0.j]; (a.anexos = a.anexos || []).push(v); break; }
+    case "s-anexo-del": { const s0 = ui.st.sel; ui.st.d.modulos[s0.i].aulas[s0.j].anexos.splice(Number(el.dataset.k), 1); break; }
+    case "s-parte-nova": ui.st.d.partes.push({ tipo: d.v, titulo: d.v === "resumo" ? "Resumo do e-book" : "", comoUsar: "", texto: "" }); ui.st.prev = "pagina"; break;
+    case "s-parte-mov": { const L = ui.st.d.partes, i = Number(el.dataset.i), j = i + Number(el.dataset.d); [L[i], L[j]] = [L[j], L[i]]; break; }
+    case "s-parte-del": ui.st.d.partes.splice(Number(el.dataset.i), 1); break;
+    case "s-ep-novo": ui.st.d.eps.push({ id: uid("s"), titulo: "", arquivo: "", dur: 0, durMin: 0, desc: "", download: false, ocultar: false }); ui.st.prev = "pagina"; break;
+    case "s-ep-mov": { const L = ui.st.d.eps, i = Number(el.dataset.i), j = i + Number(el.dataset.d); [L[i], L[j]] = [L[j], L[i]]; break; }
+    case "s-ep-del": ui.st.d.eps.splice(Number(el.dataset.i), 1); break;
+    case "s-ver": { if (!ui.st.d.titulo.trim()) { erroForm("Escreva o nome primeiro."); return; } salvarEstudio(); verItem(ui.st.kind, ui.st.d.id); break; }
+    case "ver-item": verItem(el.dataset.k, d.v); break;
+    case "s-agendar": case "s-publicar": { const st = ui.st, f = validarItem(st.kind, st.d); if (f.length) { toast("Falta: " + f.map((x) => x[0]).join(", ")); return; } st.d.status = a === "s-publicar" ? "publicado" : "agendado"; salvarEstudio(); registrar((a === "s-publicar" ? "Publicado: " : "Agendado: ") + st.d.titulo, st.kind === "curso" ? "curso" : st.kind === "ebook" ? "ebook" : "audio"); const k = st.kind; ui.st = null; ui.aba = k === "curso" ? "cursos" : k === "ebook" ? "ebooks" : "audios"; toast(a === "s-publicar" ? "Publicado. Quem tem acesso já vê." : "Agendado para " + fmt(st.d.acesso.agenda) + "."); break; }
     /* biblioteca */
-    case "ebook-novo": ui.modal = { t: "ebook" }; break;
-    case "ebook-editar": ui.modal = { t: "ebook", id: d.v }; break;
+    case "ebook-novo": abrirEstudio("ebook"); break;
+    case "ebook-editar": abrirEstudio("ebook", d.v); break;
     case "audio-novo": ui.modal = { t: "audio" }; break;
     case "audio-editar": ui.modal = { t: "audio", id: d.v }; break;
-    case "playlist-nova": ui.modal = { t: "playlist" }; break;
+    case "playlist-nova": abrirEstudio("playlist"); break;
     case "encontro-novo": ui.modal = { t: "encontro" }; break;
     case "encontro-editar": ui.modal = { t: "encontro", id: d.v }; break;
     case "comunicado-novo": ui.modal = { t: "comunicado" }; break;
@@ -1087,8 +1415,8 @@ function acao(a, d, el) {
     case "cfg-aba": ui.cfgAba = d.v; break;
     case "cfg-add": { const v = document.getElementById("cf-novo").value.trim(); if (!v) return; S[d.v].push(v); break; }
     case "cfg-del": S[d.v].splice(Number(el.dataset.i), 1); break;
-    case "demo-carregar": confirmar("Carregar demonstração", "Troca os dados desta página pelos exemplos fictícios.", "Carregar", () => { S = demo(); ui.aluna = "u1"; ui.wiz = null; ui.app = { tela: "inicio", hist: [] }; render(); }, false); break;
-    case "demo-limpar": confirmar("Começar vazio", "Apaga os dados desta página para você cadastrar do zero. Só afeta este navegador.", "Começar vazio", () => { S = vazio(); ui.aluna = ""; ui.wiz = null; ui.app = { tela: "inicio", hist: [] }; render(); }); break;
+    case "demo-carregar": confirmar("Carregar demonstração", "Troca os dados desta página pelos exemplos fictícios.", "Carregar", () => { S = demo(); ui.aluna = "u1"; ui.st = null; ui.app = { tela: "inicio", hist: [] }; render(); }, false); break;
+    case "demo-limpar": confirmar("Começar vazio", "Apaga os dados desta página para você cadastrar do zero. Só afeta este navegador.", "Começar vazio", () => { S = vazio(); ui.aluna = ""; ui.st = null; ui.app = { tela: "inicio", hist: [] }; render(); }); break;
     /* app da aluna */
     case "app-nav": ui.app = { tela: d.v, hist: [] }; break;
     case "app-ir": ir(d.v, el.dataset.id ? { id: el.dataset.id } : {}); break;
@@ -1098,6 +1426,8 @@ function acao(a, d, el) {
     case "app-aula": { if (!d.v) return; const A = ALUNA(); S.posicoes[A.id] = S.posicoes[A.id] || {}; if (!ui.app.previa) { S.posicoes[A.id].ultima = d.v; const p = S.progresso[A.id] || (S.progresso[A.id] = {}); if (!p[d.v]) p[d.v] = "aberta"; } ui.vid = null; if (ui.app.tela === "aula") ui.app = { ...ui.app, id: d.v, c: el.dataset.c }; else ir("aula", { c: el.dataset.c, id: d.v, previa: ui.app.previa }); break; }
     case "app-bloq": toast(el.dataset.motivo || "Conteúdo bloqueado."); return;
     case "app-f": ui.app.f = d.v; break;
+    case "app-parte": ui.app.parte = Number(d.v); ui.manterRol = true; break;
+    case "app-parte-x": if (el.classList.contains("fundo-m") && d.__alvo !== el) return; ui.app.parte = null; ui.manterRol = true; break;
     case "app-biblio": if (ui.app.tela !== "biblio") ui.app = { tela: "biblio", hist: [] }; ui.app.aba = d.v; break;
     case "app-ebook": ir("leitor", { id: d.v }); ui.zoom = 1; break;
     case "app-audio": ir("audio", { id: d.v }); break;
@@ -1134,8 +1464,15 @@ document.addEventListener("input", (e) => {
   const t = e.target;
   if (t.matches("[data-busca]")) { ui.busca = t.value; render(); return; }
   if (t.matches("[data-app-q]")) { ui.app.q = t.value; ui.manterRol = true; render(); return; }
-  if (t.dataset.w && ui.wiz) { const ps = t.dataset.w.split("."); let o = ui.wiz.c; for (const k of ps.slice(0, -1)) o = o[k]; let v = t.value; if (t.type === "number") v = Number(v || 0); if (t.dataset.bool !== undefined) v = v === "true"; o[ps[ps.length - 1]] = v; if (t.type === "radio" || t.tagName === "SELECT" || ui.wiz.passo === 2 || ui.wiz.passo === 1 && t.dataset.w === "titulo") render(); return; }
-  if (t.dataset.wLista && ui.wiz) { const ps = t.dataset.wLista.split("."); ui.wiz.c[ps[0]][ps[1]] = t.value.split("\n").map((s) => s.trim()).filter(Boolean); render(); return; }
+  if (t.dataset.s && ui.st) {
+    const ps = t.dataset.s.split("."); let o = ui.st.d; for (const k of ps.slice(0, -1)) o = o[k] = o[k] ?? {};
+    const ult = ps[ps.length - 1]; let v = t.dataset.chk !== undefined ? t.checked : t.value;
+    if (t.type === "number" || t.dataset.num !== undefined) v = Number(v || 0);
+    o[ult] = v; if (ult === "durMin") o.dur = v * 60;
+    const out = t.parentElement?.querySelector("output"); if (out) out.textContent = v + (out.textContent.match(/[%°a-z]+$/)?.[0] || "");
+    clearTimeout(ui.rT); const imediato = t.type === "radio" || t.type === "checkbox" || t.tagName === "SELECT"; ui.rT = setTimeout(render, imediato ? 0 : 120); return;
+  }
+  if (t.dataset.sLista && ui.st) { const ps = t.dataset.sLista.split("."); ui.st.d[ps[0]][ps[1]] = t.value.split("\n").map((x) => x.trim()).filter(Boolean); clearTimeout(ui.rT); ui.rT = setTimeout(render, 150); return; }
   if (t.dataset.cfg) { S.config[t.dataset.cfg] = t.value; salvar(); return; }
   if (t.dataset.obs) { const a = aluno(t.dataset.obs); if (a) { a.obs = t.value; salvar(); } return; }
   if (t.matches("[data-pf-nome]")) { const a = ALUNA(); if (t.value.trim()) { a.nome = t.value; salvar(); } return; }
@@ -1145,9 +1482,19 @@ document.addEventListener("input", (e) => {
 document.addEventListener("change", (e) => {
   const t = e.target;
   if (t.matches("[data-ordem]")) { ui.ordem = t.value; render(); }
+  if (t.matches("[data-s-mover]") && ui.st) { const [i, j] = t.dataset.sMover.split(".").map(Number), novo = Number(t.value), M = ui.st.d.modulos, a = M[i].aulas.splice(j, 1)[0]; M[novo].aulas.push(a); ui.st.sel = { t: "aula", i: novo, j: M[novo].aulas.length - 1 }; toast("Aula movida para o Módulo " + (novo + 1) + "."); render(); }
+  if (t.matches("[data-s-img]") && ui.st) { const f = t.files[0]; if (!f || !/^image\//.test(f.type)) { toast("Escolha uma imagem."); return; } const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => { const k = Math.min(1, 900 / Math.max(img.width, img.height)), cv = document.createElement("canvas"); cv.width = img.width * k; cv.height = img.height * k; cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); ui.st.d.estilo.img = cv.toDataURL("image/jpeg", .82); render(); }; img.src = r.result; }; r.readAsDataURL(f); }
+  if (t.matches("[data-s-pdf]") && ui.st) { const f = t.files[0]; if (!f) return; if (!/\.pdf$/i.test(f.name)) { toast("Escolha um arquivo PDF."); return; } ui.st.d.arquivo = f.name; ui.st.d.tamanho = f.size; if (f.size > 30 * 1048576) toast("PDF acima de 30 MB: reduza antes de publicar."); render(); }
+  if (t.matches("[data-s-audio]") && ui.st) { const f = t.files[0], i = Number(t.dataset.sAudio); if (!f) return; const ep = ui.st.d.eps[i]; ep.arquivo = f.name; if (!ep.titulo) ep.titulo = f.name.replace(/\.[a-z0-9]+$/i, ""); const u = URL.createObjectURL(f), au = new Audio(); au.preload = "metadata"; au.onloadedmetadata = () => { if (isFinite(au.duration)) { ep.dur = Math.round(au.duration); ep.durMin = Math.round(au.duration / 60); } URL.revokeObjectURL(u); render(); }; au.onerror = () => { URL.revokeObjectURL(u); toast("Não deu para ler a duração. Preencha à mão."); render(); }; au.src = u; }
   if (t.matches("[data-papel]")) { const p = S.equipe.find((x) => x.id === t.dataset.papel); if (p) { p.papel = t.value; registrar("Papel alterado: " + p.nome + " → " + t.value, "aluno"); render(); } }
   if (t.matches("[data-foto]")) { const f = t.files[0]; if (!f) return; if (!/^image\//.test(f.type) || f.size > 5e6) { toast("Envie uma imagem de até 5 MB."); t.value = ""; return; } const r = new FileReader(); r.onload = () => { const img = new Image(); img.onload = () => { const cv = document.createElement("canvas"), k = 160 / Math.max(img.width, img.height); cv.width = img.width * k; cv.height = img.height * k; cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height); ui.fotoTemp = cv.toDataURL("image/jpeg", .8); const av = document.querySelector("#formAluno .av"); if (av) av.innerHTML = `<img src="${ui.fotoTemp}" alt="">`; }; img.src = r.result; }; r.readAsDataURL(f); }
 });
+function verItem(kind, id) {
+  ui.amb = "aluno";
+  if (kind === "curso") ui.app = { tela: "curso", id, previa: true, hist: [] };
+  else if (kind === "ebook") ui.app = { tela: "leitor", id, previa: true, hist: [] };
+  else { const ep = S.audios.filter((a) => a.playlist === id).sort((a, b) => a.ordem - b.ordem)[0]; ui.app = ep ? { tela: "audio", id: ep.id, previa: true, hist: [] } : { tela: "biblio", aba: "audios", hist: [] }; }
+}
 /* relógio dos players simulados: só atualiza o texto, sem redesenhar a tela */
 setInterval(() => {
   const A = ALUNA(); if (!A) return;
