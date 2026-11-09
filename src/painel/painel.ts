@@ -6201,9 +6201,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "equipe-editar": fotoNova = null; ui.modal = { tipo: "equipe-editar", id: d.id }; break;
       case "copiar-acesso-equipe": {
         const e = pessoa(d.id);
-        const txt = "Nome: " + e.nome + "\nLogin: " + e.login + "\nCódigo: " + (e.codigo ?? "");
+        const txt = "Área de administração: " + location.origin + "/admin\nLogin: " + e.login + "\nCódigo: " + (e.codigo ?? "");
         const falha = () => toast("Login " + e.login + " · código " + (e.codigo ?? ""));
-        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Nome, login e código de " + primeiroNome(e.nome) + " copiados."), falha); else falha();
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(() => toast("Link do painel, login e código de " + primeiroNome(e.nome) + " copiados."), falha); else falha();
         return;
       }
       case "copiar-acesso": {
