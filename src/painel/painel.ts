@@ -13,6 +13,7 @@
  */
 import "./painel.css";
 import { supabase } from "@/data/supabase";
+import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
 import { idDoVideo, provedorDoLink } from "@/admin/video";
 import { editarFoto, lerImagem, type Ajuste } from "./editorFoto";
@@ -1492,7 +1493,7 @@ export function montar(app: HTMLElement) {
         </div>
         <h3 class="aa-secao">Ações</h3>
         <div class="acoes aa-acoes">
-          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
+          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar acesso</button>
           <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
           <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
           <button class="botao-neutro grande" data-a="cronograma" data-id="${a.id}">Cronograma</button>
@@ -1584,7 +1585,7 @@ export function montar(app: HTMLElement) {
           </span>
         </div>
         <div class="acoes" style="margin-top:20px">
-          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar login e código</button>
+          <button class="botao" data-a="copiar-acesso" data-id="${a.id}">Copiar acesso</button>
           <button class="botao-neutro grande" data-a="whatsapp" data-id="${a.id}" ${a.celular ? "" : 'disabled title="Cadastre o WhatsApp em Editar dados"'}>Enviar pelo WhatsApp</button>
           <button class="botao-neutro grande" data-a="editar-aluna" data-id="${a.id}">Editar dados</button>
           <button class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>
@@ -2133,7 +2134,7 @@ export function montar(app: HTMLElement) {
       <button data-a="liberar" data-id="${a.id}" role="menuitem">Liberar conteúdo</button>
       <button data-a="cronograma" data-id="${a.id}" role="menuitem">Cronograma</button>
       <button data-a="renovar" data-id="${a.id}" role="menuitem">Renovar por 1 ano</button>
-      <button data-a="copiar-acesso" data-id="${a.id}" role="menuitem">Copiar login e código</button>
+      <button data-a="copiar-acesso" data-id="${a.id}" role="menuitem">Copiar acesso</button>
       <button data-a="whatsapp" data-id="${a.id}" role="menuitem">Enviar acesso pelo WhatsApp</button>
       <button data-a="editar-aluna" data-id="${a.id}" role="menuitem">Editar dados</button>
       ${a.bloqueada
@@ -6207,8 +6208,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "copiar-acesso": {
-        const txt = "Login: " + al!.login + "\nCódigo: " + al!.codigo;
-        const ok = () => toast("Login e código de " + primeiroNome(al!.nome) + " copiados.");
+        const txt = "Área de membros: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
+        const ok = () => toast("Link, login e código de " + primeiroNome(al!.nome) + " copiados.");
         const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
         return;
@@ -6218,7 +6219,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const nome = primeiroNome(al!.nome);
         const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
         const msg = a === "whatsapp"
-          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLink: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
         window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
