@@ -6208,7 +6208,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "copiar-acesso": {
-        const txt = "Área de membros: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
+        const txt = "Link do aplicativo: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
         const ok = () => toast("Link, login e código de " + primeiroNome(al!.nome) + " copiados.");
         const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
@@ -6219,7 +6219,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const nome = primeiroNome(al!.nome);
         const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
         const msg = a === "whatsapp"
-          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLink: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLink do aplicativo: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
         window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
