@@ -262,13 +262,17 @@ const libPorAula = new Map<string, { prox: string; ult: string }>();
 let versaoCfg: "mentoria" | "geral" = "mentoria";
 /** Link do aplicativo enviado no acesso (0127): o geral (Configurações) e o de cada aluna. Vem do banco. */
 const LINKS = { geral: "", aluna: new Map<string, string>() };
+/** Vídeos "como acessar o app" (0128), no depósito público capas/acesso. */
+const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
 const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
 async function carregarLinks(euP: Promise<Eu | null>) {
   const [g, al] = await Promise.all([
-    supabase.from("configuracoes").select("link_app").maybeSingle(),
+    supabase.from("configuracoes").select("link_app, acesso_videos").maybeSingle(),
     euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link") : null)),
   ]);
   LINKS.geral = String((g.data as { link_app?: string | null } | null)?.link_app ?? "").trim();
+  const va = ((g.data as { acesso_videos?: Record<string, string> | null } | null)?.acesso_videos ?? {}) as Record<string, string>;
+  VIDEOS_ACESSO.android = va.android || undefined; VIDEOS_ACESSO.iphone = va.iphone || undefined;
   LINKS.aluna = new Map(((al?.data ?? []) as { aluna_id: string; link: string }[]).map((x) => [String(x.aluna_id), String(x.link)]));
 }
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
@@ -559,6 +563,9 @@ export function montar(app: HTMLElement) {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     linkEdit: null as string | null,
+    cfgAntes: "",
+    acSel: "android" as "android" | "iphone",
+    acNovo: {} as Partial<Record<"android" | "iphone", { orig: File; arq: File; url: string; prog: number; reduzindo: boolean; erro: string }>>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -2370,6 +2377,7 @@ export function montar(app: HTMLElement) {
   const versHoje = () => { const i = versiculoDeHoje(); return i >= 0 ? versVisiveis()[i] : null; };
   const FRASE_MODELO = "Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.";
   const IC_CFG: Record<string, string> = {
+    acesso: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2"/><path d="M10.5 9.2v4.6l4-2.3z"/></svg>`,
     link: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>`,
     cursos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M10 7.8v4.4l3.8-2.2z"/><path d="M7 20h10"/></svg>`,
     inicio: ICONE_MENU.inicio,
@@ -2890,6 +2898,32 @@ export function montar(app: HTMLElement) {
     return pvTela("presentes", `<h4 class="pv-tit pv-t-${h(t.presTitEstilo)}">${h(t.presTitulo)}</h4>
       <div class="pv-pbs pv-pl-${h(t.presLayout)} pv-pe-${h(t.presEstilo)}">${cats.map(item).join("")}</div>`);
   }
+  const LIMITE_VIDEO = 15 * 1048576;
+  const mb = (n: number) => (n / 1048576).toFixed(n < 10 * 1048576 ? 1 : 0).replace(".", ",") + " MB";
+  function cfgAcesso() {
+    const k = ui.acSel, nome = k === "android" ? "Android" : "iPhone", atual = VIDEOS_ACESSO[k], n = ui.acNovo[k];
+    const bt = (x: "android" | "iphone", t: string) => `<button type="button" class="ac-tipo" data-a="ac-sel" data-v="${x}" aria-pressed="${k === x}"><b>Acesso ${t}</b><span>${VIDEOS_ACESSO[x] ? "Vídeo colocado" : "Sem vídeo"}</span></button>`;
+    let area = "";
+    if (n) {
+      const grande = n.arq.size > LIMITE_VIDEO;
+      area = `<video class="ac-video" src="${h(n.url)}" controls playsinline preload="metadata"></video>
+        <p class="ac-info">${h(n.arq.name)} · <b>${mb(n.arq.size)}</b>${n.arq !== n.orig ? ` (antes ${mb(n.orig.size)})` : ""} · ainda não salvo</p>
+        ${n.reduzindo ? `<div class="ac-prog"><span>Reduzindo o vídeo… <b data-ac-prog>${Math.round(n.prog * 100)}%</b> · leva mais ou menos o tempo do vídeo. Não feche esta tela.</span><i><em data-ac-barra style="width:${Math.round(n.prog * 100)}%"></em></i></div>` : ""}
+        ${grande && !n.reduzindo ? `<div class="ac-aviso">Vídeo pesado (${mb(n.arq.size)}). Para a aluna abrir e assistir na hora, o ideal é até ${mb(LIMITE_VIDEO)}. Reduza: fica nítido e bem mais leve.</div>` : ""}
+        ${n.erro ? `<div class="ac-aviso erro">${h(n.erro)}</div>` : ""}
+        <div class="ac-bts">${!n.reduzindo ? `<button type="button" class="al-botao-ouro" data-a="ac-salvar">${IC_SALVAR}Salvar vídeo</button>${grande ? `<button type="button" class="al-botao" data-a="ac-reduzir">Reduzir vídeo</button>` : ""}${n.arq !== n.orig ? `<button type="button" class="al-botao" data-a="ac-original">Voltar ao original</button>` : ""}<button type="button" class="al-botao" data-a="ac-cancelar">Cancelar</button>` : ""}</div>`;
+    } else if (atual) {
+      area = `<video class="ac-video" src="${h(urlDaCapa(atual))}" controls playsinline preload="metadata"></video>
+        <div class="ac-bts"><button type="button" class="al-botao" data-a="ac-escolher">Trocar vídeo</button><button type="button" class="al-botao" data-a="ac-copiar">Copiar link do vídeo</button><button type="button" class="al-botao perigo" data-a="ac-remover">Remover</button></div>`;
+    } else {
+      area = `<button type="button" class="ac-vazio" data-a="ac-escolher"><b>Adicionar vídeo do ${nome}</b><span>MP4 ou MOV. Se ficar pesado, aparece o botão Reduzir vídeo.</span></button>`;
+    }
+    return `<div class="cfg-painel cfg-acesso">
+      <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.acesso}</span><div><h2>Acesso do aluno</h2><p>Um vídeo para cada celular, ensinando a entrar no aplicativo.</p></div></div>
+      <div class="ac-tipos">${bt("android", "Android")}${bt("iphone", "iPhone")}</div>
+      <div class="cfg-bloco ac-area"><h3>Vídeo · Acesso ${nome}</h3>${area}</div>
+    </div>`;
+  }
   function telaConfig() {
     // As fontes da lista já vêm carregadas antes de abrir "Fonte e cor" (abre na hora, sem travar).
     const ric = (window as unknown as { requestIdleCallback?: (f: () => void) => void }).requestIdleCallback || ((f: () => void) => setTimeout(f, 300));
@@ -2964,6 +2998,8 @@ export function montar(app: HTMLElement) {
       corpo = cfgAparencia();
     } else if (aba === "versiculos") {
       corpo = cfgVersiculos();
+    } else if (aba === "acesso") {
+      corpo = cfgAcesso();
     } else if (aba === "link") {
       const nAl = LINKS.aluna.size;
       corpo = `<div class="cfg-painel cfg-link">
@@ -2982,6 +3018,7 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa cfg2">
       <div class="cfg-versao" role="group" aria-label="Versão do app">
         <span class="cfg-versao-seg">${([["mentoria", "Versão mentoria", "Para quem tem a mentoria"], ["geral", "Versão geral", "Para quem só tem outros produtos"]] as const).map(([k, t, d]) => `<button type="button" data-a="cfg-versao" data-v="${k}" aria-pressed="${versaoCfg === k}" title="${d}">${k === "mentoria" ? IC_CFG.modulos : IC_CFG.inicio}${t}</button>`).join("")}</span>
+        <span class="cfg-versao-seg cfg-acesso-seg"><button type="button" data-a="cfg-aba" data-v="acesso" aria-pressed="${aba === "acesso"}" title="Vídeos que ensinam a acessar o app"><b>${IC_CFG.acesso}Acesso do aluno</b></button></span>
         <span class="cfg-versao-rot">Qual versão do app você está configurando ${dicaCampo(`O app tem duas versões. A versão mentoria é a de quem tem acesso à mentoria (a de sempre). A versão geral é a de quem só tem outros produtos: sem Módulos e sem “Sua mentoria”, com o Início mostrando os conteúdos dela. Quem decide é o acesso da aluna: dar a mentoria para ela em Alunas muda o app dela para a versão mentoria; tirar, volta para a geral. Cada versão tem as suas cores, textos, menu, Perfil e aparência.`, "cfg.versoes")}</span>
         <span class="cfg-versao-dir">${pilha.length ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ACAO_ABA.config}</span>
       </div>
@@ -6136,6 +6173,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         if (abaBloq(abaDaTela(d.v))) { toast("Acesso bloqueado."); return; }
         ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
+        if (ui.cfgAba === "acesso") ui.cfgAba = ui.cfgAntes || "menu";
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
         if (d.v === "lixeira") carregarLixeira();
         window.scrollTo(0, 0);
@@ -7331,7 +7369,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
-      case "cfg-aba": if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
+      case "cfg-aba": if (d.v === "acesso") { if (ui.cfgAba === "acesso") { ui.cfgAba = ui.cfgAntes || "menu"; break; } if (!ui.sujo) { ui.cfgAntes = ui.cfgAba; ui.cfgAba = "acesso"; break; } }
+        if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
         if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
       case "pv-notif": ui.pvNotif = d.v === "pop"; document.querySelectorAll<HTMLElement>('[data-a="pv-notif"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === d.v))); atualizarPreviaCfg(); return;
       case "cfg-previa": {
@@ -7342,6 +7381,58 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
+      case "ac-sel": ui.acSel = d.v === "iphone" ? "iphone" : "android"; break;
+      case "ac-escolher": {
+        const k = ui.acSel;
+        const inp = Object.assign(document.createElement("input"), { type: "file", accept: "video/*,.mp4,.mov,.m4v,.webm" });
+        inp.addEventListener("change", () => {
+          const f = inp.files?.[0]; if (!f) return;
+          if (!/^video\//.test(f.type) && !/\.(mp4|mov|m4v|webm)$/i.test(f.name)) { toast("Escolha um arquivo de vídeo."); return; }
+          if (f.size > 500 * 1048576) { toast("O vídeo passa de 500 MB."); return; }
+          const velho = ui.acNovo[k]; if (velho) { URL.revokeObjectURL(velho.url); }
+          ui.acNovo[k] = { orig: f, arq: f, url: URL.createObjectURL(f), prog: 0, reduzindo: false, erro: "" }; render();
+        });
+        inp.click(); return;
+      }
+      case "ac-cancelar": { const n = ui.acNovo[ui.acSel]; if (n) { URL.revokeObjectURL(n.url); delete ui.acNovo[ui.acSel]; } break; }
+      case "ac-original": { const n = ui.acNovo[ui.acSel]; if (n && n.arq !== n.orig) { URL.revokeObjectURL(n.url); n.arq = n.orig; n.url = URL.createObjectURL(n.orig); n.erro = ""; } break; }
+      case "ac-reduzir": {
+        const k = ui.acSel, n = ui.acNovo[k]; if (!n || n.reduzindo) return;
+        n.reduzindo = true; n.prog = 0; n.erro = ""; render();
+        void (async () => {
+          try {
+            const m = await import("./video");
+            const x = await m.reduzirVideo(n.orig, (p) => { n.prog = p; const t = document.querySelector("[data-ac-prog]"), b = document.querySelector<HTMLElement>("[data-ac-barra]"); if (t) t.textContent = Math.round(p * 100) + "%"; if (b) b.style.width = Math.round(p * 100) + "%"; });
+            if (x.size >= n.orig.size) n.erro = "Este vídeo já estava leve: a versão reduzida não ficou menor.";
+            else { URL.revokeObjectURL(n.url); n.arq = x; n.url = URL.createObjectURL(x); toast("Vídeo reduzido: " + mb(n.orig.size) + " → " + mb(x.size) + "."); }
+          } catch (e) { n.erro = e instanceof Error && e.message ? e.message : "Não consegui reduzir este vídeo."; }
+          n.reduzindo = false; if (ui.tab === "config") render();
+        })();
+        return;
+      }
+      case "ac-salvar": case "ac-remover": {
+        const k = ui.acSel, n = ui.acNovo[k], nome = k === "android" ? "Android" : "iPhone";
+        if (a === "ac-salvar" && !n) return;
+        const gravar = async (cam: string) => {
+          const r0 = await supabase.from("configuracoes").select("acesso_videos").maybeSingle(); if (r0.error) throw r0.error;
+          const va = { ...((r0.data?.acesso_videos as Record<string, string> | null) ?? {}) }; if (cam) va[k] = cam; else delete va[k];
+          const r = await supabase.from("configuracoes").update({ acesso_videos: va }).not("id", "is", null).select("id");
+          if (r.error) throw r.error; if (!r.data?.length) throw new Error("Sem permissão para mudar os vídeos de acesso.");
+        };
+        const antes = VIDEOS_ACESSO[k] ?? "";
+        const fazer = async (): Promise<Resultado> => {
+          if (a === "ac-salvar") {
+            const cam = await enviarArquivo("capas", "acesso", n!.arq);
+            await gravar(cam); URL.revokeObjectURL(n!.url); delete ui.acNovo[k];
+            return { msg: "Vídeo do " + nome + " salvo.", texto: "vídeo de acesso " + nome, desfazer: () => gravar(antes) };
+          }
+          await gravar("");
+          return { msg: "Vídeo do " + nome + " removido.", texto: "remoção do vídeo de acesso " + nome, desfazer: () => gravar(antes) };
+        };
+        if (a === "ac-remover") confirmar({ titulo: "Remover o vídeo do " + nome + "?", texto: "Ele sai do Acesso do aluno. Dá para desfazer depois.", palavra: "REMOVER", rotulo: "Remover vídeo" }, fazer); else void executar(fazer);
+        return;
+      }
+      case "ac-copiar": { const c = VIDEOS_ACESSO[ui.acSel]; if (!c) return; const u = urlDaCapa(c); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(u).then(() => toast("Link do vídeo copiado."), () => toast(u)); else toast(u); return; }
       case "cfg-link-salvar": case "cfg-link-padrao": {
         const v = a === "cfg-link-padrao" ? "" : (document.querySelector<HTMLInputElement>("#cfgLinkApp")?.value ?? "").trim();
         if (v && !/^https?:\/\/\S+\.\S+/i.test(v)) { toast("Escreva o link completo, começando com https://"); return; }
@@ -7368,6 +7459,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
       case "cfg-versao": {
+        if (ui.cfgAba === "acesso") { ui.cfgAba = ui.cfgAntes || "menu"; if ((d.v === "geral" ? "geral" : "mentoria") === versaoCfg) break; }
         const nova = d.v === "geral" ? "geral" : "mentoria"; if (nova === versaoCfg) return;
         const trocar = () => {
           ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.prevEst = { cat: {}, mod: {}, aula: undefined, inicio: undefined, perfil: undefined, notif: undefined, foco: "" };
@@ -8884,7 +8976,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cfgAba === "acesso") ui.cfgAba = "menu"; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.
       try { if (ui.tab === "cursoNovo" || sessionStorage.getItem("aion-cn-aberto") === "1") await voltarRascCn(); } catch { /* ignora */ }
       cnPronto = true;

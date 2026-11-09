@@ -4821,6 +4821,31 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cn-mk-pe > span:last-child { display: flex; gap: 8px; }
 .cn-mk-pe .al-botao { min-height: 34px; padding: 0 12px; font-size: 12px; }
 @media (max-width: 700px) { .cn-mks { grid-template-columns: 1fr; } }
+
+/* Acesso do aluno: vídeos Android e iPhone (0128) */
+.cfg-acesso-seg { margin-right: auto; }
+.cfg-acesso-seg button b { display: inline-flex; align-items: center; }
+.ac-tipos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 4px 0 16px; }
+.ac-tipo { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px 16px; border: 1px solid var(--linha-suave); border-radius: 12px; background: var(--aa-cartao); color: var(--texto); font: inherit; text-align: left; cursor: pointer; }
+.ac-tipo b { font-size: 15px; }
+.ac-tipo span { font-size: 12.5px; color: var(--texto-3); }
+.ac-tipo[aria-pressed="true"] { border-color: var(--al-ouro); box-shadow: inset 0 0 0 1px var(--al-ouro); background: var(--al-ouro-fundo, var(--aa-cartao)); }
+.ac-area h3 { margin: 0 0 12px; }
+.ac-video { display: block; width: auto; max-width: 100%; height: auto; max-height: 420px; border-radius: 14px; background: #000; margin: 0 0 10px; }
+.ac-info { margin: 0 0 10px; font-size: 13px; color: var(--texto-2); overflow-wrap: anywhere; }
+.ac-aviso { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--aa-ouro-fundo, rgba(201,164,92,.12)); color: var(--texto); font-size: 13px; }
+.ac-aviso.erro { background: var(--aa-verm-fundo, rgba(192,67,47,.12)); color: var(--aa-verm, #c0432f); }
+.ac-prog { margin: 0 0 12px; font-size: 13px; color: var(--texto-2); }
+.ac-prog i { display: block; height: 6px; margin-top: 6px; border-radius: 99px; background: var(--linha-suave); overflow: hidden; }
+.ac-prog em { display: block; height: 100%; background: var(--al-ouro); transition: width .3s; }
+.ac-bts { display: flex; flex-wrap: wrap; gap: 10px; }
+.ac-bts .perigo { color: var(--perigo, #c0432f); }
+.ac-vazio { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; width: 100%; max-width: 420px; min-height: 180px; padding: 20px; border: 1.5px dashed var(--linha); border-radius: 14px; background: transparent; color: var(--texto); font: inherit; cursor: pointer; text-align: center; }
+.ac-vazio:hover { border-color: var(--al-ouro); }
+.ac-vazio span { font-size: 12.5px; color: var(--texto-3); }
+@media (max-width: 600px) { .ac-tipos { grid-template-columns: 1fr 1fr; } }
+.cfg-acesso-seg button b svg { width: 16px; height: 16px; margin-right: 6px; flex-shrink: 0; }
+
 /* Atualizar sem piscar: a marca gira por cima da tela enquanto os dados chegam */
 .atu-capa { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(10, 9, 7, .28); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; transition: opacity .28s ease; pointer-events: all; }
 .atu-capa.on { opacity: 1; }
