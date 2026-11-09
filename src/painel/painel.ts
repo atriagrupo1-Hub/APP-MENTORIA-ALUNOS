@@ -563,6 +563,7 @@ export function montar(app: HTMLElement) {
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     linkEdit: null as string | null,
+    cfgAntes: "",
     acSel: "android" as "android" | "iphone",
     acNovo: {} as Partial<Record<"android" | "iphone", { orig: File; arq: File; url: string; prog: number; reduzindo: boolean; erro: string }>>,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
@@ -6172,6 +6173,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         if (abaBloq(abaDaTela(d.v))) { toast("Acesso bloqueado."); return; }
         ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
+        if (ui.cfgAba === "acesso") ui.cfgAba = ui.cfgAntes || "menu";
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
         if (d.v === "lixeira") carregarLixeira();
         window.scrollTo(0, 0);
@@ -7367,7 +7369,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
-      case "cfg-aba": if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
+      case "cfg-aba": if (d.v === "acesso") { if (ui.cfgAba === "acesso") { ui.cfgAba = ui.cfgAntes || "menu"; break; } if (!ui.sujo) { ui.cfgAntes = ui.cfgAba; ui.cfgAba = "acesso"; break; } }
+        if (ui.sujo && (ui.sujo.f === "cfg-menu" || ui.sujo.f === "cfg-aparencia")) { mostrarAviso(() => { ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.cfgAba = d.v; render(); }); return; }
         if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.cfgAba = d.v; render(); }); return; } ui.cfgAba = d.v; break;
       case "pv-notif": ui.pvNotif = d.v === "pop"; document.querySelectorAll<HTMLElement>('[data-a="pv-notif"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === d.v))); atualizarPreviaCfg(); return;
       case "cfg-previa": {
@@ -7456,6 +7459,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
       case "cfg-versao": {
+        if (ui.cfgAba === "acesso") { ui.cfgAba = ui.cfgAntes || "menu"; if ((d.v === "geral" ? "geral" : "mentoria") === versaoCfg) break; }
         const nova = d.v === "geral" ? "geral" : "mentoria"; if (nova === versaoCfg) return;
         const trocar = () => {
           ui.sujo = null; ui.menuCfg = null; ui.aparCfg = null; ui.prevEst = { cat: {}, mod: {}, aula: undefined, inicio: undefined, perfil: undefined, notif: undefined, foco: "" };
@@ -8972,7 +8976,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       S = await dadosP;
       // Voltou do botão Atualizar: abre a mesma página em que estava.
-      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
+      try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cfgAba === "acesso") ui.cfgAba = "menu"; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.
       try { if (ui.tab === "cursoNovo" || sessionStorage.getItem("aion-cn-aberto") === "1") await voltarRascCn(); } catch { /* ignora */ }
       cnPronto = true;
