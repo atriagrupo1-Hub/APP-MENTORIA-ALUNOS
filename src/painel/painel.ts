@@ -260,10 +260,22 @@ async function carregarFotos(): Promise<boolean> {
 const libPorAula = new Map<string, { prox: string; ult: string }>();
 /** Qual versão do app está sendo configurada em Configurações (0103). */
 let versaoCfg: "mentoria" | "geral" = "mentoria";
+/** Link do aplicativo enviado no acesso (0127): o geral (Configurações) e o de cada aluna. Vem do banco. */
+const LINKS = { geral: "", aluna: new Map<string, string>() };
+const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
+async function carregarLinks(euP: Promise<Eu | null>) {
+  const [g, al] = await Promise.all([
+    supabase.from("configuracoes").select("link_app").maybeSingle(),
+    euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link") : null)),
+  ]);
+  LINKS.geral = String((g.data as { link_app?: string | null } | null)?.link_app ?? "").trim();
+  LINKS.aluna = new Map(((al?.data ?? []) as { aluna_id: string; link: string }[]).map((x) => [String(x.aluna_id), String(x.link)]));
+}
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
   const euP = Promise.resolve(quem);
+  const linksP = carregarLinks(euP).catch(() => undefined);
   const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
@@ -442,6 +454,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     }));
   }
 
+  await linksP;
   // Duas versões do app (0103): a versão geral guarda só o que muda, por cima da mentoria.
   const cfgBase = (cfgIni.data ?? {}) as Record<string, any>;
   const geralRaw = (cfgBase.versao_geral && typeof cfgBase.versao_geral === "object" ? cfgBase.versao_geral : {}) as Record<string, unknown>;
@@ -545,6 +558,7 @@ export function montar(app: HTMLElement) {
     cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; extr: null | { lendo: boolean; etapa: string; achou: null | ExtraidoEb; aba?: string; modo?: string; ver?: string }; itens: ItemEb[]; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
     filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    linkEdit: null as string | null,
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
@@ -646,7 +660,7 @@ export function montar(app: HTMLElement) {
     ["layout", "Categorias", [["cat_estado", "Liberar e ocultar"], ["cat_editar", "Criar, editar e mudar a ordem"]]],
   ];
   const ACAO_PERM: Record<string, string> = {
-    "aluna-nova": "al_cadastrar", "editar-aluna": "al_editar", "foto-aluna-escolher": "al_editar", "foto-aluna-ajustar": "al_editar", "foto-aluna-remover": "al_editar",
+    "aluna-nova": "al_cadastrar", "editar-aluna": "al_editar", "link-aluna-salvar": "al_editar", "link-aluna-geral": "al_editar", "foto-aluna-escolher": "al_editar", "foto-aluna-ajustar": "al_editar", "foto-aluna-remover": "al_editar",
     liberar: "al_liberar", cronograma: "al_liberar", "copiar-liberacao": "al_liberar", renovar: "al_validade",
     "bloquear-aluna": "al_bloquear", "desbloquear-aluna": "al_bloquear", "remover-aluna": "al_excluir", contato: "eng_contato",
     "com-responder": "com_responder", "com-publicar": "com_aprovar", "com-ocultar": "com_ocultar", "com-remover": "com_ocultar", "com-restaurar": "com_restaurar",
@@ -1485,6 +1499,9 @@ export function montar(app: HTMLElement) {
     else if (aba === "acessos") corpo = `
         <div class="aa-cartao">
           <div class="aa-cartao-cab"><h3>Acesso</h3></div>
+          ${ui.linkEdit === a.id
+            ? `<div class="aa-dado aa-link-ed"><span>Link do aplicativo</span><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;min-width:0"><input class="campo" id="linkAluna" type="url" inputmode="url" maxlength="500" value="${h(LINKS.aluna.get(a.id) ?? "")}" placeholder="${h(LINKS.geral || enderecoDaMentoria())}" style="flex:1 1 240px;min-width:0" /><button class="botao" data-a="link-aluna-salvar" data-id="${a.id}">Salvar</button><button class="botao-neutro" data-a="link-aluna-cancelar">Cancelar</button></span></div>`
+            : linha("Link do aplicativo", `<span style="overflow-wrap:anywhere">${h(linkDe(a.id))}</span>${LINKS.aluna.has(a.id) ? ` <em style="font-style:normal;font-weight:400;font-size:12px;opacity:.7">(só desta aluna)</em>` : ""} <button class="link" data-a="link-aluna-editar" data-id="${a.id}">editar</button>${LINKS.aluna.has(a.id) ? ` <button class="link" data-a="link-aluna-geral" data-id="${a.id}">usar o geral</button>` : ""}`)}
           ${linha("Login", h(a.login))}
           ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
           ${linha("Acesso liberado em", br(a.entrada))}
@@ -2352,6 +2369,7 @@ export function montar(app: HTMLElement) {
   const versHoje = () => { const i = versiculoDeHoje(); return i >= 0 ? versVisiveis()[i] : null; };
   const FRASE_MODELO = "Que bom ter você de volta. Continue de onde parou e siga avançando na sua jornada.";
   const IC_CFG: Record<string, string> = {
+    link: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg>`,
     cursos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M10 7.8v4.4l3.8-2.2z"/><path d="M7 20h10"/></svg>`,
     inicio: ICONE_MENU.inicio,
     modulos: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.2"/><rect x="13" y="4" width="7" height="7" rx="1.2"/><rect x="4" y="13" width="7" height="7" rx="1.2"/><rect x="13" y="13" width="7" height="7" rx="1.2"/></svg>`,
@@ -2366,7 +2384,7 @@ export function montar(app: HTMLElement) {
     computador: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="11" rx="1.5"/><path d="M2 19h20"/></svg>`,
     img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/></svg>`,
   };
-  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"]];
+  const ABAS_CFG: [string, string][] = [["menu", "Menu inferior"], ["inicio", "Início"], ["versiculos", "Mensagem de destaque"], ["modulos", "Módulos"], ["aulas", "Aulas"], ["presentes", "Presentes"], ["perfil", "Perfil"], ["aparencia", "Aparência"], ["link", "Link do aplicativo"]];
   /** A saudação do topo em duas partes: o texto antes do nome e o nome ({nome} ou {nome_completo}). */
   const partirSaud = (t: string): [string, string] => { const i = t.search(/\{nome(?:_completo)?\}/); return i < 0 ? [t.trim(), ""] : [t.slice(0, i).trim(), t.slice(i).trim()]; };
   /** Os valores do formulário do Início (ou os salvos, antes de mexer). */
@@ -2945,6 +2963,16 @@ export function montar(app: HTMLElement) {
       corpo = cfgAparencia();
     } else if (aba === "versiculos") {
       corpo = cfgVersiculos();
+    } else if (aba === "link") {
+      const nAl = LINKS.aluna.size;
+      corpo = `<div class="cfg-painel cfg-link">
+        <div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG.link}</span><div><h2>Link do aplicativo</h2><p>O link que vai junto com o login e o código quando você copia ou envia o acesso.</p></div></div>
+        <div class="cfg-bloco">
+          <label class="cfg-c"><span>Link geral enviado</span><input class="campo" id="cfgLinkApp" type="url" inputmode="url" maxlength="500" value="${h(LINKS.geral)}" placeholder="${h(enderecoDaMentoria())}" /></label>
+          <small style="display:block;margin-top:6px;color:var(--texto3,#8a8378)">Vazio: usa ${h(enderecoDaMentoria())}.${nAl ? " " + nAl + (nAl === 1 ? " aluna tem link próprio (editado em Acessos) e continua com ele." : " alunas têm link próprio (editado em Acessos) e continuam com ele.") : ""}</small>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px"><button type="button" class="al-botao-ouro" data-a="cfg-link-salvar">${IC_SALVAR}Salvar link</button>${LINKS.geral ? `<button type="button" class="al-botao" data-a="cfg-link-padrao">Voltar ao padrão</button>` : ""}</div>
+        </div>
+      </div>`;
     } else {
       const nm = (ABAS_CFG.find(([k]) => k === aba) || ABAS_CFG[0])[1];
       corpo = `<div class="cfg-painel"><div class="cfg-ptopo"><span class="cfg-pic">${IC_CFG[aba]}</span><div><h2>${h(nm)}</h2><p>As opções desta aba chegam em breve.</p></div></div></div>`;
@@ -6208,7 +6236,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "copiar-acesso": {
-        const txt = "Link do aplicativo: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
+        const txt = "Link do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
         const ok = () => toast("Link, login e código de " + primeiroNome(al!.nome) + " copiados.");
         const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
@@ -6219,7 +6247,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const nome = primeiroNome(al!.nome);
         const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
         const msg = a === "whatsapp"
-          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLink do aplicativo: " + enderecoDaMentoria() + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          ? "Olá, " + nome + "! Este é o seu acesso à área de membros da mentoria.\n\nLink do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
         window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
@@ -7281,6 +7309,29 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "cfg-modelo": { const t = document.querySelector<HTMLTextAreaElement>('#cfgInicio textarea[name="fraseRetorno"]'); if (t) { t.value = FRASE_MODELO; atualizarPreviaCfg(); } return; }
+      case "cfg-link-salvar": case "cfg-link-padrao": {
+        const v = a === "cfg-link-padrao" ? "" : (document.querySelector<HTMLInputElement>("#cfgLinkApp")?.value ?? "").trim();
+        if (v && !/^https?:\/\/\S+\.\S+/i.test(v)) { toast("Escreva o link completo, começando com https://"); return; }
+        const antes = LINKS.geral;
+        void executar(async () => {
+          const r = await supabase.from("configuracoes").update({ link_app: v || null }).not("id", "is", null).select("id");
+          if (r.error) throw r.error;
+          if (!r.data?.length) throw new Error("Sem permissão para mudar o link geral.");
+          return { msg: v ? "Link geral salvo." : "Link geral voltou ao padrão.", texto: "troca do link geral do aplicativo", desfazer: async () => { await supabase.from("configuracoes").update({ link_app: antes || null }).not("id", "is", null); } };
+        });
+        return;
+      }
+      case "link-aluna-editar": ui.linkEdit = d.id; render(); setTimeout(() => document.querySelector<HTMLInputElement>("#linkAluna")?.focus(), 0); return;
+      case "link-aluna-cancelar": ui.linkEdit = null; break;
+      case "link-aluna-salvar": case "link-aluna-geral": {
+        const v = a === "link-aluna-geral" ? "" : (document.querySelector<HTMLInputElement>("#linkAluna")?.value ?? "").trim();
+        if (v && !/^https?:\/\/\S+\.\S+/i.test(v)) { toast("Escreva o link completo, começando com https://"); return; }
+        const id = d.id, antes = LINKS.aluna.get(id) ?? "", nome = primeiroNome(al!.nome);
+        const gravar = async (x: string) => { const r = x ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: x, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; };
+        ui.linkEdit = null;
+        void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
+        return;
+      }
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
       case "cfg-versao": {
