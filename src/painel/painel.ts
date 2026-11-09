@@ -878,6 +878,7 @@ export function montar(app: HTMLElement) {
     }
   }, true);
 
+  let atualizando = false;
   function render() {
     if (ui.tab === "cursoNovo" && ui.cn) guardarCn();
     if (cnPronto) try { sessionStorage.setItem("aion-cn-aberto", ui.tab === "cursoNovo" ? "1" : "0"); } catch { /* ignora */ }
@@ -6200,9 +6201,41 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "sugestoes": ui.modal = { tipo: "sugestoes" }; break;
       case "novidades": ui.modal = { tipo: "novidades" }; break;
       case "atualizar-dados": {
-        // Recarrega o painel inteiro (pega a versão nova e os dados de agora) e volta para a mesma página.
-        // Só guarda onde estava, neste navegador e só até recarregar (sessionStorage).
-        el?.classList.add("girando");
+        // Atualiza no lugar, sem piscar: a marca AION gira por cima, os dados chegam e a tela é
+        // redesenhada uma vez só, na mesma página e rolagem. Só recarrega se saiu versão nova do painel.
+        if (atualizando) return;
+        atualizando = true;
+        const btn = el; btn?.classList.add("girando");
+        const capa = document.createElement("div");
+        capa.className = "atu-capa"; capa.setAttribute("role", "status"); capa.setAttribute("aria-label", "Atualizando");
+        capa.innerHTML = `<div class="atu-caixa"><span class="atu-anel"></span><span class="atu-selo">AION</span><span class="atu-txt">Atualizando…</span></div>`;
+        document.body.appendChild(capa); requestAnimationFrame(() => capa.classList.add("on"));
+        const t0 = performance.now(), y0 = window.scrollY;
+        void (async () => {
+          let nova = false;
+          try {
+            if (!/[?&]previa=1/.test(location.search)) {
+              const html = await fetch(location.pathname + "?v=" + Date.now(), { cache: "no-store" }).then((r) => r.text());
+              const novoJs = html.match(/assets\/index-[\w-]+\.js/)?.[0], meuJs = [...document.scripts].map((x) => x.src).find((x) => /assets\/index-[\w-]+\.js/.test(x));
+              nova = !!(novoJs && meuJs && !meuJs.includes(novoJs));
+            }
+          } catch { /* sem rede para checar a versão: segue só com os dados */ }
+          if (nova) {
+            try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, y: window.scrollY })); } catch { /* sem armazenamento: recarrega mesmo assim */ }
+            location.reload(); return;
+          }
+          let ok = true;
+          try { if (eu) S = await lerTudo(eu); } catch (e) { ok = false; toast(motivo(e)); }
+          const falta = 650 - (performance.now() - t0); if (falta > 0) await new Promise((r) => setTimeout(r, falta));
+          render(); window.scrollTo(0, y0); requestAnimationFrame(() => window.scrollTo(0, y0));
+          capa.classList.remove("on"); setTimeout(() => capa.remove(), 320);
+          document.querySelector(".topo-atu")?.classList.remove("girando");
+          atualizando = false;
+          if (ok) toast("Dados atualizados.");
+        })();
+        return;
+      }
+      case "atualizar-dados-recarregar": {
         try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, y: window.scrollY })); } catch { /* sem armazenamento: recarrega mesmo assim */ }
         location.reload();
         return;
