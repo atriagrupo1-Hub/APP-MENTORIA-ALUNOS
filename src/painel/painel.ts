@@ -5786,35 +5786,102 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
 
   /* ---------- JANELAS ---------- */
+  /** Cadastrar/editar aluna em abas: as abas só mostram e escondem partes do mesmo formulário (nada se perde ao trocar). */
+  function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
+  function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
+  function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || nome.split(/\s+/)[0] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
+  function atualizarCad() {
+    const f = cadForm(); if (!f) return;
+    const nome = cadValor("nome"), pn = nome.split(/\s+/)[0] || "", link = cadValor("link") || LINKS.geral || enderecoDaMentoria();
+    const lg = f.elements.namedItem("login") as HTMLInputElement | null; if (lg && !lg.value) lg.placeholder = cadLogin() || "gerado pelo nome";
+    const msg = f.querySelector("[data-cad-msg]");
+    if (msg) msg.innerHTML = `Olá, <b>${h(pn || "nome")}</b>! Aqui abaixo está o seu acesso ao aplicativo.<br><br>Link do aplicativo: <b>${h(link)}</b><br>Login: <b>${h(cadLogin() || "login")}</b><br>Código: <b>${h(cadValor("codigo") || "····")}</b>`;
+    const tipo = (f.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value) || "";
+    const jc = f.querySelector<HTMLInputElement>("input[data-jor]"); if (jc && tipo && jc.dataset.mexeu !== "1") jc.checked = tipo === "mentoria";
+  }
+  function cadAbas(): string[] { const f = cadForm(); return f ? [...f.querySelectorAll<HTMLElement>("[data-cad-painel]")].map((x) => x.dataset.cadPainel!) : []; }
+  function cadAtual(): string { return cadForm()?.querySelector<HTMLElement>("[data-cad-painel]:not([hidden])")?.dataset.cadPainel || "dados"; }
+  /** Confere a aba; devolve a mensagem do que falta (vazio se está tudo certo). */
+  function cadConferir(k: string): string {
+    if (k === "dados") {
+      if (!cadValor("nome")) return "Escreva o nome completo.";
+      if (cadValor("celular").replace(/\D/g, "").length !== 11) return "Preencha o celular com DDD: (11) 98765-4321.";
+      const em = cadValor("email"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return "Confira o e-mail.";
+    }
+    if (k === "acesso") {
+      if (!/^\d{4}$/.test(cadValor("codigo"))) return "O código precisa ter 4 números.";
+      const lk = cadValor("link"); if (lk && !/^https?:\/\/\S+\.\S+/i.test(lk)) return "Escreva o link completo, começando com https://";
+      if (!cadValor("entrada") || !cadValor("validade")) return "Preencha a entrada e o acesso até.";
+      if (cadValor("validade") < cadValor("entrada")) return "O acesso até precisa ser depois da entrada.";
+    }
+    return "";
+  }
+  function cadIr(k: string) {
+    const f = cadForm(); if (!f) return;
+    const abas = cadAbas(), n = abas.indexOf(k); if (n < 0) return;
+    f.querySelectorAll<HTMLElement>("[data-cad-painel]").forEach((x) => { x.hidden = x.dataset.cadPainel !== k; });
+    f.querySelectorAll<HTMLElement>('[data-a="cad-aba"]').forEach((b) => {
+      const i = abas.indexOf(b.dataset.v!), at = i === n;
+      b.setAttribute("aria-selected", String(at));
+      const ok = i < n && !cadConferir(b.dataset.v!); b.classList.toggle("ok", ok);
+      b.querySelector("i")!.textContent = ok ? "✓" : String(i + 1);
+    });
+    const novo = !f.dataset.id;
+    (f.querySelector('[data-a="cad-voltar"]') as HTMLElement).hidden = n === 0;
+    (f.querySelector("[data-cad-cancelar]") as HTMLElement).hidden = n > 0;
+    const prox = f.querySelector<HTMLElement>('[data-a="cad-prox"]')!, nomes: Record<string, string> = { dados: "Dados do aluno", acesso: "Acesso", conteudos: "Conteúdos liberados", obs: "Observações" };
+    prox.hidden = n >= abas.length - 1; if (!prox.hidden) prox.textContent = "Próximo: " + nomes[abas[n + 1]] + " →";
+    (f.querySelector("[data-cad-salvar]") as HTMLElement).hidden = novo ? n === 0 : false;
+    atualizarCad();
+    f.querySelector<HTMLElement>(".cad-abas")?.scrollIntoView({ block: "nearest" });
+  }
   function modal() {
     const m = ui.modal;
     if (!m) return "";
     let corpo = "";
     if (m.tipo === "aluna") {
       const a = m.id ? aluna(m.id) : null;
-      const d = hoje();
+      const d = hoje(), cod = a ? a.codigo : m.codigo || novoCodigo();
+      const jor = S.config.jornada;
+      const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
+      const ent = a ? a.entrada : d, val = a ? a.validade || maisAno(a.entrada) : maisAno(d);
+      const prazo = (meses: number, t: string) => `<button type="button" class="cad-chip" data-a="cad-prazo" data-v="${meses}">${t}</button>`;
+      const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
-      <form data-f="aluna" data-id="${a ? a.id : ""}">
+      <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
         <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
-        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Ela entra com o login e o código de 4 números."}</p>
-        <div class="campos">
-          <label class="grupo nome"><span class="rotulo">Nome</span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" required /></label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" /></label>
-          <label class="grupo" style="flex:1 1 220px"><span class="rotulo">Código</span>
-            <span style="display:flex;gap:8px"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(a ? a.codigo : m.codigo || novoCodigo())}" required /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span>
-          </label>
-          <label class="grupo" style="flex:1 1 200px"><span class="rotulo">Celular (WhatsApp)</span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" required /></label>
-          <label class="grupo" style="flex:1 1 220px"><span class="rotulo">E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
-          <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Entrada</span><input class="campo" type="date" name="entrada" value="${a ? a.entrada : d}" required /></label>
-          <label class="grupo" style="flex:1 1 180px"><span class="rotulo">Acesso até</span><input class="campo" type="date" name="validade" value="${a ? a.validade || maisAno(a.entrada) : maisAno(d)}" required /></label>
+        <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
+        <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
+        ${painelAba("dados", `<div class="cad-grade">
+          <label class="cad-c cad-full"><span>Nome completo <b>*</b></span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" autocomplete="off" /></label>
+          <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
+          <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
+          ${a ? "" : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>
+          <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${fotoNova && fotoPara === "aln" ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>`}
+        </div>`)}
+        ${painelAba("acesso", `<div class="cad-grade">
+          <label class="cad-c cad-full"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
+          <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
+          <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span></label>
+          <label class="cad-c"><span>Entrada <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
+          <label class="cad-c"><span>Acesso até <b>*</b></span><input class="campo" type="date" name="validade" value="${val}" /><span class="cad-chips">${prazo(6, "6 meses")}${prazo(12, "1 ano")}${prazo(24, "2 anos")}</span></label>
         </div>
-        <div class="rodape-modal">
-          <button class="botao">${a ? "Salvar" : "Cadastrar"}</button>
-          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
-          ${a ? `<span style="flex:1"></span><button type="button" class="botao-neutro grande botao-remover" data-a="remover-aluna" data-id="${a.id}">Remover aluna</button>` : ""}
+        <h4 class="cad-sub">Mensagem de acesso</h4>
+        <div class="cad-msg" data-cad-msg></div>`)}
+        ${a ? "" : painelAba("conteudos", `<p class="cad-dica">Marque os cursos que ela recebe agora. Módulos e aulas avulsas: depois, em Liberar conteúdo.</p>
+          <div class="cad-cursos">${S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
+        ${a ? "" : painelAba("obs", `<label class="cad-c cad-full"><span>Observação (opcional)</span><textarea class="campo" name="obs" rows="5" maxlength="2000" placeholder="Ex.: veio pela live de outubro, prefere contato à tarde."></textarea><small>Fica na ficha dela, em Observações.</small></label>`)}
+        <div class="rodape-modal cad-pe">
+          <button type="button" class="botao-neutro grande" data-a="cad-voltar" hidden>← Voltar</button>
+          <button type="button" class="botao-neutro grande" data-a="fechar" data-cad-cancelar>Cancelar</button>
+          ${a ? `<button type="button" class="botao-neutro grande botao-remover" data-a="remover-aluna" data-id="${a.id}">Remover aluna</button>` : ""}
+          <span style="flex:1"></span>
+          <button type="button" class="botao-neutro grande" data-a="cad-prox">Próximo: ${abas[1][1]} →</button>
+          <button class="botao" data-cad-salvar ${a ? "" : "hidden"}>${a ? "Salvar" : "Cadastrar"}</button>
         </div>
       </form>`;
       if (!ui.focar) ui.focar = a ? null : "alunaNome";
+      queueMicrotask(atualizarCad);
     } else if (m.tipo === "liberar") {
       const a = aluna(m.id); const ac = a.acesso;
       corpo = `
@@ -6193,7 +6260,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
 
-      case "aluna-nova": ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
+      case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
       case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
@@ -6354,7 +6421,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "gerar-codigo": ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); return;
+      case "cad-aba": { const at = cadAtual(), abas = cadAbas(); if (abas.indexOf(d.v) > abas.indexOf(at)) { for (const k of abas.slice(0, abas.indexOf(d.v))) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } } } cadIr(d.v); return; }
+      case "cad-prox": { const at = cadAtual(), e = cadConferir(at); if (e) { toast(e); return; } const abas = cadAbas(); cadIr(abas[abas.indexOf(at) + 1]); return; }
+      case "cad-voltar": { const abas = cadAbas(); cadIr(abas[Math.max(0, abas.indexOf(cadAtual()) - 1)]); return; }
+      case "cad-prazo": { const f = cadForm(); if (!f) return; const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
+      case "aln-foto": fotoPara = "aln"; arquivoFoto.click(); return;
+      case "gerar-codigo": ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
       case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
       case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
       case "preencher-datas": {
@@ -7779,6 +7851,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "aluna": {
+        for (const k of ["dados", "acesso"]) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } }
+        const lkDig = v("link"), linkAl = lkDig === (LINKS.geral || enderecoDaMentoria()) ? "" : lkDig, obs = v("obs"), cursosCad = [...form.querySelectorAll<HTMLInputElement>('input[name="cad-c"]:checked')].map((x) => x.value);
+        const fotoAl = fotoPara === "aln" ? fotoNova : null;
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
         const nome = v("nome");
@@ -7792,6 +7867,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (id) {
             const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
+            if (linkAl !== (LINKS.aluna.get(id) ?? "")) { const r = linkAl ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
@@ -7800,7 +7876,18 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             };
           }
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
-          if (r.id) await registrar(String(r.id), "Aluna cadastrada");
+          if (r.id) {
+            const nid = String(r.id);
+            await registrar(nid, "Aluna cadastrada");
+            // O resto do cadastro: se algo falhar aqui, a aluna já existe e o aviso diz o que faltou.
+            const faltou: string[] = [];
+            if (cursosCad.length) { try { await rpc("salvar_liberacao", { p_aluna: nid, p_produtos: cursosCad, p_modulos: [], p_aulas: [] }); } catch { faltou.push("liberar os cursos"); } }
+            if (linkAl) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl }); if (x.error) faltou.push("salvar o link"); }
+            if (obs) { const x = await supabase.from("anotacoes_aluna").insert({ aluna_id: nid, texto: obs }); if (x.error) faltou.push("salvar a observação"); }
+            if (fotoAl) { try { await rpc("salvar_foto_aluna", { p_aluna: nid, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[nid] = fotoAl.foto; } catch { faltou.push("salvar a foto"); } }
+            fotoNova = null; fotoPara = null;
+            if (faltou.length) toast(nome + " cadastrada, mas não consegui " + faltou.join(", ") + ". Faça pela ficha dela.");
+          }
           ui.modal = null;
           const msg = nome + " cadastrada. Login " + loginNovo + ", código " + cod + ".";
           return r.id ? { msg, texto: "cadastro de " + nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: String(r.id) }); } } : msg;
@@ -8459,6 +8546,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
   });
   app.addEventListener("input", (e) => {
+    { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="aluna"]')) { if (ti.dataset?.jor !== undefined && ti.name === "cad-c") ti.dataset.mexeu = "1"; atualizarCad(); } }
     { const ti = e.target as HTMLInputElement; const cam = ti.dataset?.cnCaminho; if (cam && ui.cn) { const ps = cam.split("."); let o: Record<string, unknown> = ui.cn as unknown as Record<string, unknown>; for (const k of ps.slice(0, -1)) o = o[k] as Record<string, unknown>; o[ps[ps.length - 1]] = ti.value; } }
     { const ti = e.target as HTMLInputElement; if (ti.dataset?.cnIa && ui.cn?.ia) (ui.cn.ia as unknown as Record<string, string>)[ti.dataset.cnIa] = ti.value; }
     { const ti = e.target as HTMLInputElement; const k = ti.dataset?.cn; if (k && ui.cn) { if (k === "tipo") { const n = ui.cn; queueMicrotask(() => { if (ui.tab === "cursoNovo") render(); }); const velho = TIPOS_CURSO.find((x) => x[0] === n.tipo)?.[1] || ""; if (!n.rotulo.trim() || n.rotulo === velho) { n.rotulo = TIPOS_CURSO.find((x) => x[0] === ti.value)?.[1] || ""; const r = document.querySelector<HTMLInputElement>('[data-cn="rotulo"]'); if (r) { r.value = n.rotulo; if (n.rotulo) r.closest(".cn-grupo")?.classList.remove("cn-erro"); } if (n.rotulo) n.erro = n.erro.split(",").filter((x) => x && x !== "rotulo").join(","); } } (ui.cn as unknown as Record<string, string>)[k] = ti.value; if (ti.value.trim() && ui.cn.erro) { ui.cn.erro = ui.cn.erro.split(",").filter((x) => x && x !== k).join(","); ti.closest(".cn-grupo")?.classList.remove("cn-erro"); } } }
@@ -8767,6 +8855,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   });
   arquivoFoto.addEventListener("change", () => {
     const file = arquivoFoto.files?.[0]; arquivoFoto.value = "";
+    if (file && fotoPara === "aln") {
+      if (file.size > 8 * 1024 * 1024) { toast("A foto pode ter no máximo 8MB."); return; }
+      void lerImagem(file).then(async (im) => {
+        const pronta = await editarFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 }, "foto da aluna", () => { fotoPara = "aln"; arquivoFoto.click(); });
+        if (!pronta) return;
+        fotoNova = pronta; fotoPara = "aln";
+        const c = document.getElementById("alnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const bt = document.querySelector('[data-a="aln-foto"]'); if (bt) bt.textContent = "Trocar foto";
+      }).catch((e) => toast(motivo(e)));
+      return;
+    }
     if (file && fotoPara === "eqn") {
       if (file.size > 2 * 1024 * 1024) { toast("A foto pode ter no máximo 2MB."); return; }
       void lerImagem(file).then(async (im) => {
