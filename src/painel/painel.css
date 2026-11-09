@@ -4845,3 +4845,14 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ac-vazio span { font-size: 12.5px; color: var(--texto-3); }
 @media (max-width: 600px) { .ac-tipos { grid-template-columns: 1fr 1fr; } }
 .cfg-acesso-seg button b svg { width: 16px; height: 16px; margin-right: 6px; flex-shrink: 0; }
+
+/* Atualizar sem piscar: a marca gira por cima da tela enquanto os dados chegam */
+.atu-capa { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: rgba(10, 9, 7, .28); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); opacity: 0; transition: opacity .28s ease; pointer-events: all; }
+.atu-capa.on { opacity: 1; }
+.atu-caixa { position: relative; display: grid; place-items: center; width: 150px; height: 150px; border-radius: 50%; background: #121110; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); transform: scale(.92); transition: transform .28s ease; }
+.atu-capa.on .atu-caixa { transform: scale(1); }
+.atu-anel { position: absolute; inset: 8px; border-radius: 50%; border: 2px solid rgba(217, 184, 116, .18); border-top-color: #d9b874; animation: girar .9s linear infinite; }
+.atu-selo { font-family: "Cormorant Garamond", Georgia, serif; font-size: 26px; letter-spacing: .14em; color: #d9b874; line-height: 1; margin-top: -10px; animation: atu-pulsa 1.4s ease-in-out infinite; }
+.atu-txt { position: absolute; bottom: 42px; font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: #9c968b; }
+@keyframes atu-pulsa { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .atu-anel, .atu-selo { animation: none; } }
