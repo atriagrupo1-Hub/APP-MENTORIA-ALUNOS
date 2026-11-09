@@ -264,16 +264,28 @@ let versaoCfg: "mentoria" | "geral" = "mentoria";
 const LINKS = { geral: "", aluna: new Map<string, string>() };
 /** Vídeos "como acessar o app" (0128), no depósito público capas/acesso. */
 const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
+/** Celular de cada aluna (0129): escolhe o vídeo de instalação que vai junto com o acesso. */
+const APARELHO = new Map<string, "android" | "iphone">();
+const NOME_APARELHO = { android: "Android", iphone: "iPhone" } as const;
+/** As linhas do acesso que vão na mensagem: link, login, código e, se houver, o vídeo do celular dela. */
+function linhasAcesso(link: string, login: string, codigo: string, aparelho?: "android" | "iphone" | "") {
+  let t = "Link do aplicativo: " + link + "\nLogin: " + login + "\nCódigo: " + codigo;
+  const vid = aparelho ? VIDEOS_ACESSO[aparelho] : undefined;
+  if (aparelho && vid) t += "\n\nVídeo de como instalar no " + NOME_APARELHO[aparelho] + ": " + supabase.storage.from("capas").getPublicUrl(vid).data.publicUrl;
+  return t;
+}
 const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
 async function carregarLinks(euP: Promise<Eu | null>) {
   const [g, al] = await Promise.all([
     supabase.from("configuracoes").select("link_app, acesso_videos").maybeSingle(),
-    euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link") : null)),
+    euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link, aparelho") : null)),
   ]);
   LINKS.geral = String((g.data as { link_app?: string | null } | null)?.link_app ?? "").trim();
   const va = ((g.data as { acesso_videos?: Record<string, string> | null } | null)?.acesso_videos ?? {}) as Record<string, string>;
   VIDEOS_ACESSO.android = va.android || undefined; VIDEOS_ACESSO.iphone = va.iphone || undefined;
-  LINKS.aluna = new Map(((al?.data ?? []) as { aluna_id: string; link: string }[]).map((x) => [String(x.aluna_id), String(x.link)]));
+  const linhas = (al?.data ?? []) as { aluna_id: string; link: string | null; aparelho: "android" | "iphone" | null }[];
+  LINKS.aluna = new Map(linhas.filter((x) => x.link).map((x) => [String(x.aluna_id), String(x.link)]));
+  APARELHO.clear(); linhas.forEach((x) => { if (x.aparelho) APARELHO.set(String(x.aluna_id), x.aparelho); });
 }
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
@@ -1510,6 +1522,7 @@ export function montar(app: HTMLElement) {
           ${ui.linkEdit === a.id
             ? `<div class="aa-dado aa-link-ed"><span>Link do aplicativo</span><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;min-width:0"><input class="campo" id="linkAluna" type="url" inputmode="url" maxlength="500" value="${h(LINKS.aluna.get(a.id) ?? "")}" placeholder="${h(LINKS.geral || enderecoDaMentoria())}" style="flex:1 1 240px;min-width:0" /><button class="botao" data-a="link-aluna-salvar" data-id="${a.id}">Salvar</button><button class="botao-neutro" data-a="link-aluna-cancelar">Cancelar</button></span></div>`
             : linha("Link do aplicativo", `<span style="overflow-wrap:anywhere">${h(linkDe(a.id))}</span>${LINKS.aluna.has(a.id) ? ` <em style="font-style:normal;font-weight:400;font-size:12px;opacity:.7">(só desta aluna)</em>` : ""} <button class="link" data-a="link-aluna-editar" data-id="${a.id}">editar</button>${LINKS.aluna.has(a.id) ? ` <button class="link" data-a="link-aluna-geral" data-id="${a.id}">usar o geral</button>` : ""}`)}
+          ${linha("Celular", `${APARELHO.get(a.id) ? NOME_APARELHO[APARELHO.get(a.id)!] : "Não informado"} <button class="link" data-a="editar-aluna" data-id="${a.id}" data-v="acesso">trocar</button>`)}
           ${linha("Login", h(a.login))}
           ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
           ${linha("Acesso liberado em", br(a.entrada))}
@@ -5795,7 +5808,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const nome = cadValor("nome"), pn = nome.split(/\s+/)[0] || "", link = cadValor("link") || LINKS.geral || enderecoDaMentoria();
     const lg = f.elements.namedItem("login") as HTMLInputElement | null; if (lg && !lg.value) lg.placeholder = cadLogin() || "gerado pelo nome";
     const msg = f.querySelector("[data-cad-msg]");
-    if (msg) msg.innerHTML = `Olá, <b>${h(pn || "nome")}</b>! Aqui abaixo está o seu acesso ao aplicativo.<br><br>Link do aplicativo: <b>${h(link)}</b><br>Login: <b>${h(cadLogin() || "login")}</b><br>Código: <b>${h(cadValor("codigo") || "····")}</b>`;
+    const apa = (f.querySelector<HTMLInputElement>('input[name="aparelho"]:checked')?.value || "") as "android" | "iphone" | "";
+    const vidL = apa ? (VIDEOS_ACESSO[apa] ? `<br><br>Vídeo de como instalar no ${NOME_APARELHO[apa]}: <b>(link do vídeo)</b>` : `<br><br><em>Sem vídeo do ${NOME_APARELHO[apa]} em Configurações → Acesso do aluno: a mensagem vai sem vídeo.</em>`) : "";
+    if (msg) msg.innerHTML = `Olá, <b>${h(pn || "nome")}</b>! Aqui abaixo está o seu acesso ao aplicativo.<br><br>Link do aplicativo: <b>${h(link)}</b><br>Login: <b>${h(cadLogin() || "login")}</b><br>Código: <b>${h(cadValor("codigo") || "····")}</b>${vidL}`;
     const tipo = (f.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value) || "";
     const jc = f.querySelector<HTMLInputElement>("input[data-jor]"); if (jc && tipo && jc.dataset.mexeu !== "1") jc.checked = tipo === "mentoria";
   }
@@ -5809,6 +5824,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const em = cadValor("email"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return "Confira o e-mail.";
     }
     if (k === "acesso") {
+      if (!cadForm()?.dataset.id && !cadForm()?.querySelector('input[name="aparelho"]:checked')) return "Escolha o celular da aluna: Android ou iPhone.";
       if (!/^\d{4}$/.test(cadValor("codigo"))) return "O código precisa ter 4 números.";
       const lk = cadValor("link"); if (lk && !/^https?:\/\/\S+\.\S+/i.test(lk)) return "Escreva o link completo, começando com https://";
       if (!cadValor("entrada") || !cadValor("validade")) return "Preencha a entrada e o acesso até.";
@@ -5861,6 +5877,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
           <label class="cad-c cad-full"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
+          <div class="cad-c cad-full"><span>Celular da aluna ${a ? "" : "<b>*</b>"}</span><div class="cad-seg">${(["android", "iphone"] as const).map((k) => `<label><input type="radio" name="aparelho" value="${k}" ${a && APARELHO.get(a.id) === k ? "checked" : ""} /><span>${NOME_APARELHO[k]}${VIDEOS_ACESSO[k] ? "" : " · sem vídeo"}</span></label>`).join("")}</div><small>Define qual vídeo de instalação vai junto com o acesso (vídeos em Configurações → Acesso do aluno).</small></div>
           <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
           <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span></label>
           <label class="cad-c"><span>Entrada <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
@@ -6262,7 +6279,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
-      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
       case "desfazer-confirmar": {
         const x = pilha.shift(); ui.modal = null;
@@ -6374,7 +6391,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "copiar-acesso": {
-        const txt = "Olá, " + primeiroNome(al!.nome) + "! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
+        const txt = "Olá, " + primeiroNome(al!.nome) + "! Aqui abaixo está o seu acesso ao aplicativo.\n\n" + linhasAcesso(linkDe(al!.id), al!.login, al!.codigo, APARELHO.get(al!.id));
         const ok = () => toast("Link, login e código de " + primeiroNome(al!.nome) + " copiados.");
         const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
@@ -6385,7 +6402,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const nome = primeiroNome(al!.nome);
         const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
         const msg = a === "whatsapp"
-          ? "Olá, " + nome + "! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          ? "Olá, " + nome + "! Aqui abaixo está o seu acesso ao aplicativo.\n\n" + linhasAcesso(linkDe(al!.id), al!.login, al!.codigo, APARELHO.get(al!.id)) + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
         window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
@@ -7523,7 +7540,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const v = a === "link-aluna-geral" ? "" : (document.querySelector<HTMLInputElement>("#linkAluna")?.value ?? "").trim();
         if (v && !/^https?:\/\/\S+\.\S+/i.test(v)) { toast("Escreva o link completo, começando com https://"); return; }
         const id = d.id, antes = LINKS.aluna.get(id) ?? "", nome = primeiroNome(al!.nome);
-        const gravar = async (x: string) => { const r = x ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: x, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; };
+        const gravar = async (x: string) => { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: x || null, atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; };
         ui.linkEdit = null;
         void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
         return;
@@ -7852,6 +7869,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "aluna": {
         for (const k of ["dados", "acesso"]) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } }
+        const aparelho = (form.querySelector<HTMLInputElement>('input[name="aparelho"]:checked')?.value || "") as "android" | "iphone" | "";
         const lkDig = v("link"), linkAl = lkDig === (LINKS.geral || enderecoDaMentoria()) ? "" : lkDig, obs = v("obs"), cursosCad = [...form.querySelectorAll<HTMLInputElement>('input[name="cad-c"]:checked')].map((x) => x.value);
         const fotoAl = fotoPara === "aln" ? fotoNova : null;
         const cod = v("codigo");
@@ -7867,7 +7885,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (id) {
             const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
-            if (linkAl !== (LINKS.aluna.get(id) ?? "")) { const r = linkAl ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; }
+            if (linkAl !== (LINKS.aluna.get(id) ?? "") || (aparelho && aparelho !== APARELHO.get(id))) { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl || null, ...(aparelho ? { aparelho } : {}), atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
@@ -7882,7 +7900,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             // O resto do cadastro: se algo falhar aqui, a aluna já existe e o aviso diz o que faltou.
             const faltou: string[] = [];
             if (cursosCad.length) { try { await rpc("salvar_liberacao", { p_aluna: nid, p_produtos: cursosCad, p_modulos: [], p_aulas: [] }); } catch { faltou.push("liberar os cursos"); } }
-            if (linkAl) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl }); if (x.error) faltou.push("salvar o link"); }
+            if (linkAl || aparelho) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl || null, aparelho: aparelho || null }); if (x.error) faltou.push(linkAl ? "salvar o link e o celular" : "salvar o celular"); }
             if (obs) { const x = await supabase.from("anotacoes_aluna").insert({ aluna_id: nid, texto: obs }); if (x.error) faltou.push("salvar a observação"); }
             if (fotoAl) { try { await rpc("salvar_foto_aluna", { p_aluna: nid, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[nid] = fotoAl.foto; } catch { faltou.push("salvar a foto"); } }
             fotoNova = null; fotoPara = null;
