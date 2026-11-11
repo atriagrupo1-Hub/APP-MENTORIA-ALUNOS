@@ -4494,7 +4494,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
         ${sec("2", "Textos do card", `<small>Em cima do nome</small>${h(c.cardRotulo || "—")}<small>Nome</small>${h(c.nome)}<small>Descrição</small>${h(c.descricao || "—")}<small>Botão</small>${h(c.cardBotao || "—")}`)}
         ${sec("3", "Onde aparece", (abas.map((x) => tag(x)).join("") + cats.map((x) => tag(x.nome)).join("")) || `<em class="cf-falta">Em nenhum lugar do app</em>`)}
         ${sec("4", "Visual", pers ? "Personalizado" : "Padrão do app")}
-        ${ehCursoTeste(c) ? "" : sec("5", "Publicação", `${tag(!c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
+        ${sec("5", "Publicação", `${tag(!c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
       </div>
       <div class="cf-cel"><div class="cf-im">${capa ? `<img src="${h(capa)}" alt="" />` : ""}</div><div class="cf-tx"><p class="cf-rot">${h(c.cardRotulo)}</p><p class="cf-nome">${h(c.nome)}</p>${c.descricao ? `<p class="cf-desc">${h(c.descricao)}</p>` : ""}<div class="cf-bar"><i></i></div><span class="cf-bt">${h(c.cardBotao || "Ver")} ›</span></div></div>
     </div>`;
