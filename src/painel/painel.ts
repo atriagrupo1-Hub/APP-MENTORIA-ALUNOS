@@ -4474,8 +4474,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
         <form id="formCurso" data-f="curso-config" class="ce-form">
           <section class="cs-cartao ce-bloco" data-ce-bloco="1">
             ${cab("1", "Capa do curso", dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "curso.formato"))}
-            <div class="ce-capa"><span class="ce-capa-img" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
-              <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div></div>
+            <div class="ce-capa"><span class="ce-capa-img" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<button type="button" class="cur-sem-capa" data-a="curso-capa" data-id="${c.id}" style="all:unset;cursor:pointer;display:grid;place-items:center;width:100%;height:100%" aria-label="Escolher imagem da capa">Sem imagem</button>`}</span>
+              <div class="cc-capa-bts">${capa ? `<button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button>` : `<button type="button" class="al-botao-ouro" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Escolher imagem</button>`}</div></div>
           </section>
           <section class="cs-cartao ce-bloco" data-ce-bloco="2">
             ${cab("2", "Textos do card", "")}
