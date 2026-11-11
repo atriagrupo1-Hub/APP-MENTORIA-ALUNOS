@@ -4363,8 +4363,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
         <div class="ma2-kpis"><span><b>${c.modulos.length}</b>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</span><span><b>${aus.length}</b>${nomeItens(c, aus.length)}</span><span><b>${pubs}</b>${pubs === 1 ? "Publicada" : "Publicadas"}</span><span><b>${bloq}</b>${bloq === 1 ? "Bloqueada" : "Bloqueadas"}</span><span class="ma2-pct"><b>${pct}%</b>Publicado<i><em style="width:${pct}%"></em></i></span></div></div>`; })()}
       <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
-        <button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}">${IC_EXPANDIR}Expandir</button>
-        <button type="button" class="al-botao" data-a="mods-recolher">${IC_RECOLHER}Recolher</button>
+        ${c.modulos.some((m) => ui.abertos.has(m.id)) ? `<button type="button" class="al-botao" data-a="mods-recolher" aria-expanded="true">${IC_RECOLHER}Recolher</button>` : `<button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}" aria-expanded="false">${IC_EXPANDIR}Expandir</button>`}
         <span style="flex:1"></span>
         <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button>
       </div>
