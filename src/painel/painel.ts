@@ -4353,9 +4353,10 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     </span>` : ""}</span>`;
   }
   /** Aulas que já abriram para alguma aluna (por liberação individual com data já passada). */
-  function aulasLiberadas() { const ag = new Date().toISOString(), out = new Set<string>(); for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula") { const q = k.abre || k.em; if (q && q <= ag) out.add(k.alvo); } return out; }
+  function aulasAbertas() { const ag = new Date().toISOString(), out = new Set<string>(); for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula") { const q = k.abre || k.em; if (q && q <= ag) out.add(k.alvo); } return out; }
   function modulosCurso(c: Curso) {
     const q = norm(ui.modBusca || "").trim();
+    const abertasMod = aulasAbertas();
     return `
       ${(() => { const aus = c.modulos.flatMap((m) => m.aulas), pubs = aus.filter((a) => a.pub && !a.rascunho).length, bloq = aus.filter((a) => a.acesso === "bloqueada").length, pct = aus.length ? Math.round((pubs / aus.length) * 100) : 0;
         return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2><p>Organize, publique e libere os conteúdos do curso. Arraste pela alça para mudar a ordem.</p></div>
@@ -4401,7 +4402,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
               <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, nomeItens(c, 1).toLowerCase(), nomeItens(c, 2).toLowerCase())}${(() => { const sg = m.aulas.reduce((t, a) => t + (a.duracao || 0), 0); if (!sg) return ""; const hh = Math.floor(sg / 3600), mm = Math.round((sg % 3600) / 60); return " · " + (hh ? hh + "h" + String(mm).padStart(2, "0") : mm + " min"); })()}</span></button></span>
-              ${(() => { const lb = m.aulas.filter((a) => a.acesso === "liberada" || aulasLiberadas().has(a.id)).length, n = m.aulas.length, pc = n ? Math.round((lb / n) * 100) : 0; return `<span class="ma2-lib" title="Aulas já liberadas para as alunas"><em>${lb}/${n} liberadas</em><i><b style="width:${pc}%"></b></i></span>`; })()}
+              ${(() => { const lb = m.aulas.filter((a) => a.acesso === "liberada" || abertasMod.has(a.id)).length, n = m.aulas.length, pc = n ? Math.round((lb / n) * 100) : 0; return `<span class="ma2-lib" title="Aulas já liberadas para as alunas"><em>${lb}/${n} liberadas</em><i><b style="width:${pc}%"></b></i></span>`; })()}
               <span class="mest">${ehModTeste(m) ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
