@@ -4908,3 +4908,27 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cc2-ult p { margin: 0 0 2px; font-size: 13.5px; color: var(--texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cc2-ult span { font-size: 12.5px; color: var(--texto-3); }
 .cc2-info { margin: 2px 0 8px; font-size: 13px; color: var(--texto-3); } .cc2-info b { color: var(--texto); font-weight: 800; }
+
+/* Visão geral do curso: 3 botões (Conteúdo | Alunas | Comentários) e o painel do escolhido */
+.vg-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 10px; }
+.vg-tile { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 10px 14px; border: 1px solid var(--linha-suave); border-radius: 12px; background: var(--aa-cartao); color: var(--texto); font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.vg-tile:hover { border-color: var(--linha); }
+.vg-tile.on { border-color: var(--al-ouro, #d9b874); background: var(--al-ouro-fundo, rgba(217,184,116,.1)); }
+.vg-tit { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 800; }
+.vg-tit svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.vg-tile b { font-size: 21px; font-weight: 900; line-height: 1.2; margin-top: 2px; }
+.vg-tile b.vg-alerta { color: var(--al-ouro, #d9b874); }
+.vg-rot { font-size: 11.5px; color: var(--texto-3); }
+.vg-x { font-size: 11.5px; color: var(--texto-2); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.vg-painel { border: 1px solid var(--al-ouro, #d9b874); border-radius: 12px; padding: 12px 16px; background: var(--aa-cartao); }
+.vg-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.vg-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; border: 1px solid var(--linha); background: none; color: var(--texto-2); font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.vg-chip i { font-style: normal; opacity: .75; }
+.vg-chip[aria-pressed="true"] { background: var(--al-ouro, #d9b874); border-color: var(--al-ouro, #d9b874); color: var(--al-ouro-txt, #1a1408); }
+.vg-al { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 0; border: 0; border-bottom: 1px solid var(--linha-suave); background: none; color: var(--texto); font: inherit; text-align: left; cursor: pointer; }
+.vg-al:last-of-type { border-bottom: 0; }
+.vg-al b { font-size: 13.5px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vg-al span:last-child { font-size: 12px; color: var(--texto-3); white-space: nowrap; }
+.vg-per { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; }
+.vg-pe { display: flex; justify-content: flex-end; margin-top: 6px; }
+@media (max-width: 760px) { .vg-tiles { grid-template-columns: 1fr; } }

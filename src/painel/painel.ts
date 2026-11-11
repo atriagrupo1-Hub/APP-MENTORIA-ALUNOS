@@ -599,7 +599,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
@@ -3960,38 +3960,7 @@ export function montar(app: HTMLElement) {
     });
     const IC_OK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`, IC_BAL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`, IC_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const estado = (k: Comentario) => k.estado === "moderar" ? pilula("Pendente", "ouro") : k.estado === "publicado" ? pilula("Aprovado", "verde") : pilula("Oculto", "neutro");
-    return `
-      <div class="cs-inds">
-        ${ind(IC_CUR.pessoas, String(ativas.length), "Alunas ativas", varMes(ativas.length, antAlunas))}
-        ${ind(IC_CUR.camadas, String(c.modulos.length), "Módulos", `<span class="eng-var neutro">–</span>`)}
-        ${ind(IC_CURSO.play, String(aulas.length), aulas.length === 1 ? "Conteúdo" : "Conteúdos", varMes(aulas.length, antAulas))}
-        ${ind(IC_CUR.cal, c.criado ? br(diaDe(c.criado)) : "—", "Data de criação", c.criado ? `<em>Criado há ${diasCriado} ${diasCriado === 1 ? "dia" : "dias"}</em>` : "")}
-      </div>
-      <div class="cs-tres">
-        <section class="cs-cartao">
-          <header><h3>Últimas alunas adicionadas</h3>${verTodas("alunas")}</header>
-          <div class="cs-tabela-rola"><table class="cs-tabela cs-tabela-pq">
-            <thead><tr><th>Aluna</th><th>Data de inclusão</th><th>Status</th><th></th></tr></thead>
-            <tbody>${ultimas.map(({ a, incluida }) => `<tr><td><button type="button" class="cs-aluna" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td><td>${dataHoraCurta(incluida)}</td><td>${statusAluna(a)}</td><td class="dir"><button type="button" class="eng-mais" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">⋯</button></td></tr>`).join("") || `<tr><td colspan="4" class="cs-vazio">Nenhuma aluna neste curso ainda.</td></tr>`}</tbody>
-          </table></div>
-        </section>
-        <section class="cs-cartao">
-          <header><h3>Últimos conteúdos adicionados</h3>${verTodas("modulos", "Ver todos")}</header>
-          ${novasAulas.map((o) => linhaAula(o, o.x.criado)).join("") || `<p class="ini-vazio">Nenhum conteúdo ainda.</p>`}
-        </section>
-        <section class="cs-cartao">
-          <header><h3>Últimos conteúdos liberados</h3>${verTodas("relatorios", "Ver todos")}</header>
-          ${liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)).join("") || `<p class="ini-vazio">Nenhum conteúdo liberado ainda.</p>`}
-        </section>
-      </div>
-      <section class="cs-cartao cs-coms">
-        <header class="cs-coms-cab"><h3>Últimos comentários</h3>${verTodas("comentarios", "Ver todos")}<span style="flex:1"></span>
-          <span class="cs-coms-fil">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-per" data-v="${v}" aria-pressed="${per === v}">${t}</button>`).join("")}</span>
-          <select class="campo cs-coms-mod" data-cs-com-mod aria-label="Módulo"><option value="">Todos os módulos</option>${c.modulos.map((m, mi) => `<option value="${m.id}" ${modF === m.id ? "selected" : ""}>Módulo ${numModulo(c, mi)}</option>`).join("")}</select>
-        </header>
-        <div class="cs-tabela-rola"><table class="cs-tabela">
-          <thead><tr><th>Aluna</th><th>Conteúdo</th><th>Comentário</th><th>Data</th><th>Status</th><th class="dir">Ações</th></tr></thead>
-          <tbody>${coms.slice(0, 10).map((k) => `
+    const comLinhas = (ks: Comentario[]) => ks.slice(0, 10).map((k) => `
             <tr${ui.comAlvo === k.id ? ' class="cs-alvo"' : ""}>
               <td><span class="cs-aluna">${avatarDe(k.autoraId, k.autora)}<b>${h(k.autora)}</b></span></td>
               <td class="cs-cinza">${h(localAula(k.aula))}</td>
@@ -4007,9 +3976,43 @@ export function montar(app: HTMLElement) {
             ${ui.respondendo === k.id ? `<tr><td colspan="6"><form data-f="com-resposta" data-id="${k.id}" class="cs-com-form">
               <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta. Ela aparece para as alunas como Equipe AION." required>${h(k.resposta)}</textarea>
               <div class="acoes"><button class="al-botao-ouro">Enviar resposta</button><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button></div>
-            </form></td></tr>` : ""}`).join("") || `<tr><td colspan="6" class="cs-vazio">Nenhum comentário neste período.</td></tr>`}</tbody>
-        </table></div>
-      </section>`;
+            </form></td></tr>` : ""}`).join("") || `<tr><td colspan="6" class="cs-vazio">Nenhum comentário aqui.</td></tr>`;
+    // Visão geral em 3 botões (Conteúdo | Alunas | Comentários); o escolhido abre embaixo com os botões internos.
+    const sec = ui.vgSec, sub = ui.vgSub[sec] || "";
+    const agend = new Map<string, string>();
+    for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula" && k.abre && k.abre > agora && (!agend.has(k.alvo) || k.abre < agend.get(k.alvo)!)) agend.set(k.alvo, k.abre);
+    const agendadas = aulas.filter((o) => agend.has(o.x.id)).sort((x, y) => agend.get(x.x.id)!.localeCompare(agend.get(y.x.id)!));
+    const sete = new Date(Date.now() - 7 * 864e5).toISOString();
+    const paradas = ativas.filter((x) => !x.a.ultimoAcessoEm || x.a.ultimoAcessoEm < sete);
+    const todosComs = comentariosDoCurso(c), semResp = todosComs.filter((k) => k.estado === "moderar");
+    const ultLib = liberadas[0];
+    const tile = (k: string, ic: string, nome: string, n: string, rot: string, x: string, alerta = false) => `<button type="button" class="vg-tile${sec === k ? " on" : ""}" data-a="vg-sec" data-v="${k}" aria-pressed="${sec === k}"><span class="vg-tit">${ic}${nome}</span><b${alerta ? ' class="vg-alerta"' : ""}>${n}</b><span class="vg-rot">${rot}</span><span class="vg-x">${x}</span></button>`;
+    const chips = (ops: [string, string, number | null][]) => { const at = ops.some(([k]) => k === sub) ? sub : ops[0][0]; return [at, `<div class="vg-chips">${ops.map(([k, t, n]) => `<button type="button" class="vg-chip" data-a="vg-sub" data-v="${k}" aria-pressed="${at === k}">${t}${n != null ? `<i>${n}</i>` : ""}</button>`).join("")}</div>`] as const; };
+    const linhaAl = ({ a, incluida }: AlunaCurso) => `<button type="button" class="vg-al" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b><span>${br(diaDe(incluida))} · ${a.bloqueada ? "Bloqueada" : vencida(a) ? "Vencida" : "Ativa"}</span></button>`;
+    let painel = "";
+    if (sec === "conteudo") {
+      const [at, ch] = chips([["novas", "Últimas adicionadas", null], ["liberadas", "Últimas liberadas", null], ["agendadas", "Agendadas", agendadas.length]]);
+      const lista = at === "liberadas" ? liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)) : at === "agendadas" ? agendadas.slice(0, 8).map((o) => linhaAula(o, agend.get(o.x.id)!)) : novasAulas.map((o) => linhaAula(o, o.x.criado));
+      painel = ch + (lista.join("") || `<p class="ini-vazio">${at === "agendadas" ? "Nenhuma aula agendada." : "Nada ainda."}</p>`) + `<div class="vg-pe">${verTodas("modulos", "Ver todos")}</div>`;
+    } else if (sec === "alunas") {
+      const [at, ch] = chips([["ultimas", "Últimas adicionadas", null], ["ativas", "Ativas", ativas.length], ["paradas", "Paradas há 7 dias", paradas.length], ["todas", "Todas", todas.length]]);
+      const base = at === "ativas" ? ativas : at === "paradas" ? paradas : at === "todas" ? todas : ultimas;
+      painel = ch + (base.slice().sort((x, y) => y.incluida.localeCompare(x.incluida)).slice(0, 8).map(linhaAl).join("") || `<p class="ini-vazio">Nenhuma aluna aqui.</p>`) + `<div class="vg-pe">${verTodas("alunas")}</div>`;
+    } else {
+      const [at, ch] = chips([["sem", "Sem resposta", semResp.length], ["aprovados", "Aprovados", todosComs.filter((k) => k.estado === "publicado").length], ["periodo", "Por período", null], ["todos", "Todos", todosComs.length]]);
+      const ks = at === "sem" ? semResp : at === "aprovados" ? todosComs.filter((k) => k.estado === "publicado") : at === "periodo" ? coms : todosComs;
+      painel = ch + (at === "periodo" ? `<div class="vg-per"><span class="cs-coms-fil">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-per" data-v="${v}" aria-pressed="${per === v}">${t}</button>`).join("")}</span>
+          <select class="campo cs-coms-mod" data-cs-com-mod aria-label="Módulo"><option value="">Todos os módulos</option>${c.modulos.map((m, mi) => `<option value="${m.id}" ${modF === m.id ? "selected" : ""}>Módulo ${numModulo(c, mi)}</option>`).join("")}</select></div>` : "")
+        + `<div class="cs-tabela-rola"><table class="cs-tabela"><thead><tr><th>Aluna</th><th>Conteúdo</th><th>Comentário</th><th>Data</th><th>Status</th><th class="dir">Ações</th></tr></thead><tbody>${comLinhas(ks)}</tbody></table></div><div class="vg-pe">${verTodas("comentarios", "Ver todos")}</div>`;
+    }
+    void antAlunas; void antAulas; void varMes; void ind; void diasCriado;
+    return `
+      <div class="vg-tiles">
+        ${tile("conteudo", IC_CURSO.play, "Conteúdo", String(aulas.length), nomeItens(c, aulas.length).toLowerCase() + " em " + p(c.modulos.length, "módulo", "módulos"), ultLib ? "Última liberada " + br(diaDe(abriu.get(ultLib.x.id)!)) : "Nenhuma liberada ainda")}
+        ${tile("alunas", IC_CUR.pessoas, "Alunas", String(ativas.length), "ativas de " + todas.length, paradas.length ? p(paradas.length, "parada", "paradas") + " há 7 dias" : "Todas estudando")}
+        ${tile("comentarios", IC_BAL, "Comentários", String(semResp.length), "sem resposta", todosComs.length + " no total", semResp.length > 0)}
+      </div>
+      <section class="vg-painel">${painel}</section>`;
   }
 
   /* --- Módulos e aulas: uma linha por módulo; a seta abre as aulas --- */
@@ -7561,6 +7564,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
         return;
       }
+      case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
+      case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
       case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
