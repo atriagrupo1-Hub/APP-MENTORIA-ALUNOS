@@ -3591,7 +3591,6 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa cur cc2">
       <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
-      <p class="cur-sub cc2-sub">Gerencie todos os cursos criados, acompanhe status, publicação e organização por categoria.</p>
       <div class="cc2-criar"><button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button></div>
       <div class="kg-barra">
         <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
