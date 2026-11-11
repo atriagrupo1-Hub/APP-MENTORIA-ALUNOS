@@ -89,6 +89,8 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
+/** Como chamar os itens de um produto: curso = aulas, áudio = áudios, e-book = conteúdos. */
+const nomeItens = (c: { tipo: string }, n: number) => c.tipo === "audio" ? (n === 1 ? "Áudio" : "Áudios") : c.tipo === "ebook" ? (n === 1 ? "Conteúdo" : "Conteúdos") : (n === 1 ? "Aula" : "Aulas");
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string; cardRotulo: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
@@ -3358,7 +3360,7 @@ export function montar(app: HTMLElement) {
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
         ${it ? `<span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-item-tirar" data-id="${it.id}">Tirar desta categoria</button>` : ""}
       </span>` : ""}</span>`; };
-    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Conteúdo" : "Conteúdos"}</em></span></div>`; };
+    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
     const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa), ec = estado3(c.visivel, c.bloq); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(ec)}</button>`; };
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_S}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar curso</button>${menu(c)}`;
     const cartao = (c: Curso) => `
@@ -3556,7 +3558,7 @@ export function montar(app: HTMLElement) {
     const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
       : `<span class="cc2-selos"><span class="cc2-selo az">Publicado</span><span class="cc2-selo ${!c.visivel ? "vm" : c.bloq ? "am" : "vd"}">${!c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Liberado"}</span></span>`;
     const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
-    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Conteúdo" : "Conteúdos"}</em></span></div>`; };
+    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
     const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
     // Ações secundárias no ⋮ (todas já existiam no painel).
     const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
