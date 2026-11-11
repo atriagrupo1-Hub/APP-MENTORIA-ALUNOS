@@ -4298,8 +4298,8 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .ka-nome { padding: 0; text-align: left; font-family: "Cormorant Garamond", Georgia, serif; font-size: 22px; font-weight: 600; color: var(--texto); background: none; border: 0; cursor: pointer; }
 .ka-nome:hover { color: #9a7230; }
 .ka-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
-.ka-stats span { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; background: #faf8f4; border: 1px solid var(--linha-suave); border-radius: 10px; }
-.ka-stats b { font-size: 17px; }
+.ka-stats span { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; background: var(--al-cab, #f3efe7); border: 1px solid var(--linha-suave); border-radius: 10px; }
+.ka-stats b { font-size: 17px; color: var(--texto); }
 .ka-stats em { font-style: normal; font-size: 11px; color: var(--texto-2); }
 .ka-bts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .ka-bts svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
