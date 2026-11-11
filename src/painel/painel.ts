@@ -76,6 +76,8 @@ type Curso = {
   rotuloInicio: string; nomeCurto: string;
   /** Card do curso (0112): estilo próprio e textos (vazio = o texto padrão). */
   estilo: Estilo | null; cardRotulo: string; cardBotao: string;
+  /** Tipo escolhido ao criar (0124): videoaula, ebook, audio, mentoria, curso; vazio = curso. */
+  tipo: string;
 };
 type Versiculo = { id: string; texto: string; ref: string; visivel: boolean };
 type Destaque = {
@@ -87,6 +89,8 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
+/** Como chamar os itens de um produto: curso = aulas, áudio = áudios, e-book = conteúdos. */
+const nomeItens = (c: { tipo: string }, n: number) => c.tipo === "audio" ? (n === 1 ? "Áudio" : "Áudios") : c.tipo === "ebook" ? (n === 1 ? "Conteúdo" : "Conteúdos") : (n === 1 ? "Aula" : "Aulas");
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string; cardRotulo: string };
 type Cat = { id: string; nome: string; visivel: boolean; pub: boolean; icone: string; capa: string; descricao: string; criado: string };
 type Aluna = {
@@ -264,16 +268,35 @@ let versaoCfg: "mentoria" | "geral" = "mentoria";
 const LINKS = { geral: "", aluna: new Map<string, string>() };
 /** Vídeos "como acessar o app" (0128), no depósito público capas/acesso. */
 const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
+/** Celular de cada aluna (0129): escolhe o vídeo de instalação que vai junto com o acesso. */
+const APARELHO = new Map<string, "android" | "iphone">();
+/** Última aula liberada de cada produto (0130). */
+type UltLib = { aula: string; titulo: string; mod: number | null; num: number | null; quando: string; alunas: number; avisadas: number };
+const ULT_LIB = new Map<string, UltLib>();
+const NOME_APARELHO = { android: "Android", iphone: "iPhone" } as const;
+/** As linhas do acesso que vão na mensagem: link, login, código e, se houver, o vídeo do celular dela. */
+function linhasAcesso(link: string, login: string, codigo: string, aparelho?: "android" | "iphone" | "") {
+  let t = "Link do aplicativo: " + link + "\nLogin: " + login + "\nCódigo: " + codigo;
+  const vid = aparelho ? VIDEOS_ACESSO[aparelho] : undefined;
+  if (aparelho && vid) t += "\n\nVídeo de como instalar no " + NOME_APARELHO[aparelho] + ": " + supabase.storage.from("capas").getPublicUrl(vid).data.publicUrl;
+  return t;
+}
 const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
 async function carregarLinks(euP: Promise<Eu | null>) {
+  await supabase.rpc("listar_ultimas_liberacoes").then(({ data }) => {
+    ULT_LIB.clear();
+    ((data ?? []) as Record<string, unknown>[]).forEach((x) => ULT_LIB.set(String(x.produto_id), { aula: String(x.aula_id), titulo: String(x.aula_titulo ?? ""), mod: x.modulo_numero == null ? null : Number(x.modulo_numero), num: x.aula_numero == null ? null : Number(x.aula_numero), quando: String(x.quando), alunas: Number(x.alunas), avisadas: Number(x.avisadas) }));
+  });
   const [g, al] = await Promise.all([
     supabase.from("configuracoes").select("link_app, acesso_videos").maybeSingle(),
-    euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link") : null)),
+    euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link, aparelho") : null)),
   ]);
   LINKS.geral = String((g.data as { link_app?: string | null } | null)?.link_app ?? "").trim();
   const va = ((g.data as { acesso_videos?: Record<string, string> | null } | null)?.acesso_videos ?? {}) as Record<string, string>;
   VIDEOS_ACESSO.android = va.android || undefined; VIDEOS_ACESSO.iphone = va.iphone || undefined;
-  LINKS.aluna = new Map(((al?.data ?? []) as { aluna_id: string; link: string }[]).map((x) => [String(x.aluna_id), String(x.link)]));
+  const linhas = (al?.data ?? []) as { aluna_id: string; link: string | null; aparelho: "android" | "iphone" | null }[];
+  LINKS.aluna = new Map(linhas.filter((x) => x.link).map((x) => [String(x.aluna_id), String(x.link)]));
+  APARELHO.clear(); linhas.forEach((x) => { if (x.aparelho) APARELHO.set(String(x.aluna_id), x.aparelho); });
 }
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
@@ -283,7 +306,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
-    supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao, rascunho, publicado_em, libera_modo, libera_dias").order("ordem"),
+    supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao, rascunho, publicado_em, libera_modo, libera_dias, tipo_conteudo").order("ordem"),
     supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto, rascunho, publicado_em, libera_modo, libera_dias").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
@@ -366,7 +389,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     inicio: c.inicio ?? 1, descricao: c.descricao ?? "", fundacao: c.fundacao ?? "",
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
     criado: c.criado_em ?? "", capa: c.capa_path ?? "",
-    rotuloInicio: c.rotulo_inicio ?? "", nomeCurto: c.nome_curto ?? "", estilo: limparEstilo(c.estilo), cardRotulo: c.card_rotulo ?? "", cardBotao: c.card_botao ?? "",
+    rotuloInicio: c.rotulo_inicio ?? "", nomeCurto: c.nome_curto ?? "", estilo: limparEstilo(c.estilo), cardRotulo: c.card_rotulo ?? "", cardBotao: c.card_botao ?? "", tipo: c.tipo_conteudo ?? "",
   }));
 
   // Celular e e-mail (0041). Se a leitura falhar, a lista abre do mesmo jeito, só sem eles.
@@ -576,9 +599,9 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    ceEd: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -1510,6 +1533,7 @@ export function montar(app: HTMLElement) {
           ${ui.linkEdit === a.id
             ? `<div class="aa-dado aa-link-ed"><span>Link do aplicativo</span><span style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex:1;min-width:0"><input class="campo" id="linkAluna" type="url" inputmode="url" maxlength="500" value="${h(LINKS.aluna.get(a.id) ?? "")}" placeholder="${h(LINKS.geral || enderecoDaMentoria())}" style="flex:1 1 240px;min-width:0" /><button class="botao" data-a="link-aluna-salvar" data-id="${a.id}">Salvar</button><button class="botao-neutro" data-a="link-aluna-cancelar">Cancelar</button></span></div>`
             : linha("Link do aplicativo", `<span style="overflow-wrap:anywhere">${h(linkDe(a.id))}</span>${LINKS.aluna.has(a.id) ? ` <em style="font-style:normal;font-weight:400;font-size:12px;opacity:.7">(só desta aluna)</em>` : ""} <button class="link" data-a="link-aluna-editar" data-id="${a.id}">editar</button>${LINKS.aluna.has(a.id) ? ` <button class="link" data-a="link-aluna-geral" data-id="${a.id}">usar o geral</button>` : ""}`)}
+          ${linha("Celular", `${APARELHO.get(a.id) ? NOME_APARELHO[APARELHO.get(a.id)!] : "Não informado"} <button class="link" data-a="editar-aluna" data-id="${a.id}" data-v="acesso">trocar</button>`)}
           ${linha("Login", h(a.login))}
           ${linha("Código de acesso", a.codigo ? `<span style="letter-spacing:.14em">${verCod ? h(a.codigo) : "••••"}</span><button class="link" data-a="ver-codigo-aluna" data-id="${a.id}">${verCod ? "ocultar" : "mostrar"}</button>` : naoInf)}
           ${linha("Acesso liberado em", br(a.entrada))}
@@ -3343,7 +3367,7 @@ export function montar(app: HTMLElement) {
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
         ${it ? `<span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-item-tirar" data-id="${it.id}">Tirar desta categoria</button>` : ""}
       </span>` : ""}</span>`; };
-    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Conteúdo" : "Conteúdos"}</em></span></div>`; };
+    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
     const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa), ec = estado3(c.visivel, c.bloq); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(ec)}</button>`; };
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_S}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar curso</button>${menu(c)}`;
     const cartao = (c: Curso) => `
@@ -3533,13 +3557,15 @@ export function montar(app: HTMLElement) {
     const catsDo = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
     const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
     const nAl = (c: Curso) => numerosCurso(c).alunas;
-    const lista2 = S.cursos.filter((c) => (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
+    const tipoDe = (c: Curso) => (c.tipo === "ebook" ? "ebooks" : c.tipo === "audio" ? "audios" : "cursos");
+    const nTipo = (t: string) => t === "todos" ? S.cursos.length : S.cursos.filter((c) => tipoDe(c) === t).length;
+    const lista2 = S.cursos.filter((c) => (ui.prodTipo === "todos" || tipoDe(c) === ui.prodTipo) && (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
         && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
     const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
       : `<span class="cc2-selos"><span class="cc2-selo az">Publicado</span><span class="cc2-selo ${!c.visivel ? "vm" : c.bloq ? "am" : "vd"}">${!c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Liberado"}</span></span>`;
     const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
-    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${au === 1 ? "Conteúdo" : "Conteúdos"}</em></span></div>`; };
+    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
     const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
     // Ações secundárias no ⋮ (todas já existiam no painel).
     const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
@@ -3554,12 +3580,15 @@ export function montar(app: HTMLElement) {
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
     // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
     const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
+    const statsTxt = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<p class="cc2-info"><b>${n}</b> ${n === 1 ? "aluna ativa" : "alunas ativas"} · <b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"} · <b>${au}</b> ${nomeItens(c, au).toLowerCase()}</p>`; };
+    const ultLib = (c: Curso) => { const u = ULT_LIB.get(c.id); if (!u) return ""; const d = new Date(u.quando); const dt = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
+      return `<div class="cc2-ult"><h5>Última liberação</h5><p title="${h(u.titulo)}">${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</p><span>${dt} · ${p(u.alunas, "aluna", "alunas")} · ${u.avisadas} ${u.avisadas === 1 ? "avisada" : "avisadas"} no celular</span></div>`; };
     const card2 = (c: Curso) => `
       <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
           <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${cats(c)}${selos(c)}${stats(c)}${quando(c)}
+          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}${quando(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
       </article>`;
@@ -3573,7 +3602,7 @@ export function montar(app: HTMLElement) {
     const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo kg-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
     <section class="tela ativa cur cc2">
-      <p class="cur-sub cc2-sub">Gerencie todos os cursos criados, acompanhe status, publicação e organização por categoria.</p>
+      <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
       <div class="cc2-criar"><button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button></div>
       <div class="kg-barra">
         <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
@@ -3931,38 +3960,7 @@ export function montar(app: HTMLElement) {
     });
     const IC_OK = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`, IC_BAL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4.5 4v-4h-1.5z"/></svg>`, IC_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
     const estado = (k: Comentario) => k.estado === "moderar" ? pilula("Pendente", "ouro") : k.estado === "publicado" ? pilula("Aprovado", "verde") : pilula("Oculto", "neutro");
-    return `
-      <div class="cs-inds">
-        ${ind(IC_CUR.pessoas, String(ativas.length), "Alunas ativas", varMes(ativas.length, antAlunas))}
-        ${ind(IC_CUR.camadas, String(c.modulos.length), "Módulos", `<span class="eng-var neutro">–</span>`)}
-        ${ind(IC_CURSO.play, String(aulas.length), aulas.length === 1 ? "Conteúdo" : "Conteúdos", varMes(aulas.length, antAulas))}
-        ${ind(IC_CUR.cal, c.criado ? br(diaDe(c.criado)) : "—", "Data de criação", c.criado ? `<em>Criado há ${diasCriado} ${diasCriado === 1 ? "dia" : "dias"}</em>` : "")}
-      </div>
-      <div class="cs-tres">
-        <section class="cs-cartao">
-          <header><h3>Últimas alunas adicionadas</h3>${verTodas("alunas")}</header>
-          <div class="cs-tabela-rola"><table class="cs-tabela cs-tabela-pq">
-            <thead><tr><th>Aluna</th><th>Data de inclusão</th><th>Status</th><th></th></tr></thead>
-            <tbody>${ultimas.map(({ a, incluida }) => `<tr><td><button type="button" class="cs-aluna" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td><td>${dataHoraCurta(incluida)}</td><td>${statusAluna(a)}</td><td class="dir"><button type="button" class="eng-mais" data-a="ficha" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">⋯</button></td></tr>`).join("") || `<tr><td colspan="4" class="cs-vazio">Nenhuma aluna neste curso ainda.</td></tr>`}</tbody>
-          </table></div>
-        </section>
-        <section class="cs-cartao">
-          <header><h3>Últimos conteúdos adicionados</h3>${verTodas("modulos", "Ver todos")}</header>
-          ${novasAulas.map((o) => linhaAula(o, o.x.criado)).join("") || `<p class="ini-vazio">Nenhum conteúdo ainda.</p>`}
-        </section>
-        <section class="cs-cartao">
-          <header><h3>Últimos conteúdos liberados</h3>${verTodas("relatorios", "Ver todos")}</header>
-          ${liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)).join("") || `<p class="ini-vazio">Nenhum conteúdo liberado ainda.</p>`}
-        </section>
-      </div>
-      <section class="cs-cartao cs-coms">
-        <header class="cs-coms-cab"><h3>Últimos comentários</h3>${verTodas("comentarios", "Ver todos")}<span style="flex:1"></span>
-          <span class="cs-coms-fil">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-per" data-v="${v}" aria-pressed="${per === v}">${t}</button>`).join("")}</span>
-          <select class="campo cs-coms-mod" data-cs-com-mod aria-label="Módulo"><option value="">Todos os módulos</option>${c.modulos.map((m, mi) => `<option value="${m.id}" ${modF === m.id ? "selected" : ""}>Módulo ${numModulo(c, mi)}</option>`).join("")}</select>
-        </header>
-        <div class="cs-tabela-rola"><table class="cs-tabela">
-          <thead><tr><th>Aluna</th><th>Conteúdo</th><th>Comentário</th><th>Data</th><th>Status</th><th class="dir">Ações</th></tr></thead>
-          <tbody>${coms.slice(0, 10).map((k) => `
+    const comLinhas = (ks: Comentario[]) => ks.slice(0, 10).map((k) => `
             <tr${ui.comAlvo === k.id ? ' class="cs-alvo"' : ""}>
               <td><span class="cs-aluna">${avatarDe(k.autoraId, k.autora)}<b>${h(k.autora)}</b></span></td>
               <td class="cs-cinza">${h(localAula(k.aula))}</td>
@@ -3978,9 +3976,43 @@ export function montar(app: HTMLElement) {
             ${ui.respondendo === k.id ? `<tr><td colspan="6"><form data-f="com-resposta" data-id="${k.id}" class="cs-com-form">
               <textarea id="respostaCampo" class="campo" name="resposta" rows="3" placeholder="Escreva a resposta. Ela aparece para as alunas como Equipe AION." required>${h(k.resposta)}</textarea>
               <div class="acoes"><button class="al-botao-ouro">Enviar resposta</button><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button></div>
-            </form></td></tr>` : ""}`).join("") || `<tr><td colspan="6" class="cs-vazio">Nenhum comentário neste período.</td></tr>`}</tbody>
-        </table></div>
-      </section>`;
+            </form></td></tr>` : ""}`).join("") || `<tr><td colspan="6" class="cs-vazio">Nenhum comentário aqui.</td></tr>`;
+    // Visão geral em 3 botões (Conteúdo | Alunas | Comentários); o escolhido abre embaixo com os botões internos.
+    const sec = ui.vgSec, sub = ui.vgSub[sec] || "";
+    const agend = new Map<string, string>();
+    for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula" && k.abre && k.abre > agora && (!agend.has(k.alvo) || k.abre < agend.get(k.alvo)!)) agend.set(k.alvo, k.abre);
+    const agendadas = aulas.filter((o) => agend.has(o.x.id)).sort((x, y) => agend.get(x.x.id)!.localeCompare(agend.get(y.x.id)!));
+    const sete = new Date(Date.now() - 7 * 864e5).toISOString();
+    const paradas = ativas.filter((x) => !x.a.ultimoAcessoEm || x.a.ultimoAcessoEm < sete);
+    const todosComs = comentariosDoCurso(c), semResp = todosComs.filter((k) => k.estado === "moderar");
+    const ultLib = liberadas[0];
+    const tile = (k: string, ic: string, nome: string, n: string, rot: string, x: string, alerta = false) => `<button type="button" class="vg-tile${sec === k ? " on" : ""}" data-a="vg-sec" data-v="${k}" aria-pressed="${sec === k}" title="${h(x)}"><span class="vg-tit">${ic}${nome}</span><b${alerta ? ' class="vg-alerta"' : ""}>${n}</b><span class="vg-rot">${rot}</span><span class="vg-x">${x}</span></button>`;
+    const chips = (ops: [string, string, number | null][]) => { const at = ops.some(([k]) => k === sub) ? sub : ops[0][0]; return [at, `<div class="vg-chips">${ops.map(([k, t, n]) => `<button type="button" class="vg-chip" data-a="vg-sub" data-v="${k}" aria-pressed="${at === k}">${t}${n != null ? `<i>${n}</i>` : ""}</button>`).join("")}</div>`] as const; };
+    const linhaAl = ({ a, incluida }: AlunaCurso) => `<button type="button" class="vg-al" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b><span>${br(diaDe(incluida))} · ${a.bloqueada ? "Bloqueada" : vencida(a) ? "Vencida" : "Ativa"}</span></button>`;
+    let painel = "";
+    if (sec === "conteudo") {
+      const [at, ch] = chips([["novas", "Últimas adicionadas", null], ["liberadas", "Últimas liberadas", null], ["agendadas", "Agendadas", agendadas.length]]);
+      const lista = at === "liberadas" ? liberadas.map((o) => linhaAula(o, abriu.get(o.x.id)!)) : at === "agendadas" ? agendadas.slice(0, 8).map((o) => linhaAula(o, agend.get(o.x.id)!)) : novasAulas.map((o) => linhaAula(o, o.x.criado));
+      painel = ch + (lista.join("") || `<p class="ini-vazio">${at === "agendadas" ? "Nenhuma aula agendada." : "Nada ainda."}</p>`) + `<div class="vg-pe">${verTodas("modulos", "Ver todos")}</div>`;
+    } else if (sec === "alunas") {
+      const [at, ch] = chips([["ultimas", "Últimas adicionadas", null], ["ativas", "Ativas", ativas.length], ["paradas", "Paradas há 7 dias", paradas.length], ["todas", "Todas", todas.length]]);
+      const base = at === "ativas" ? ativas : at === "paradas" ? paradas : at === "todas" ? todas : ultimas;
+      painel = ch + (base.slice().sort((x, y) => y.incluida.localeCompare(x.incluida)).slice(0, 8).map(linhaAl).join("") || `<p class="ini-vazio">Nenhuma aluna aqui.</p>`) + `<div class="vg-pe">${verTodas("alunas")}</div>`;
+    } else {
+      const [at, ch] = chips([["sem", "Sem resposta", semResp.length], ["aprovados", "Aprovados", todosComs.filter((k) => k.estado === "publicado").length], ["periodo", "Por período", null], ["todos", "Todos", todosComs.length]]);
+      const ks = at === "sem" ? semResp : at === "aprovados" ? todosComs.filter((k) => k.estado === "publicado") : at === "periodo" ? coms : todosComs;
+      painel = ch + (at === "periodo" ? `<div class="vg-per"><span class="cs-coms-fil">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]].map(([v, t]) => `<button type="button" class="al-filtro cs-fil" data-a="cs-com-per" data-v="${v}" aria-pressed="${per === v}">${t}</button>`).join("")}</span>
+          <select class="campo cs-coms-mod" data-cs-com-mod aria-label="Módulo"><option value="">Todos os módulos</option>${c.modulos.map((m, mi) => `<option value="${m.id}" ${modF === m.id ? "selected" : ""}>Módulo ${numModulo(c, mi)}</option>`).join("")}</select></div>` : "")
+        + `<div class="cs-tabela-rola"><table class="cs-tabela"><thead><tr><th>Aluna</th><th>Conteúdo</th><th>Comentário</th><th>Data</th><th>Status</th><th class="dir">Ações</th></tr></thead><tbody>${comLinhas(ks)}</tbody></table></div><div class="vg-pe">${verTodas("comentarios", "Ver todos")}</div>`;
+    }
+    void antAlunas; void antAulas; void varMes; void ind; void diasCriado;
+    return `
+      <div class="vg-tiles">
+        ${tile("conteudo", IC_CURSO.play, "Conteúdo", String(aulas.length), nomeItens(c, aulas.length).toLowerCase() + " em " + p(c.modulos.length, "módulo", "módulos"), ultLib ? "Última liberada " + br(diaDe(abriu.get(ultLib.x.id)!)) : "Nenhuma liberada ainda")}
+        ${tile("alunas", IC_CUR.pessoas, "Alunas", String(ativas.length), "ativas de " + todas.length, paradas.length ? p(paradas.length, "parada", "paradas") + " há 7 dias" : "Todas estudando")}
+        ${tile("comentarios", IC_BAL, "Comentários", String(semResp.length), "sem resposta", todosComs.length + " no total", semResp.length > 0)}
+      </div>
+      <section class="vg-painel">${painel}</section>`;
   }
 
   /* --- Módulos e aulas: uma linha por módulo; a seta abre as aulas --- */
@@ -4447,6 +4479,26 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   }
 
   /* --- Configurações: informações à esquerda; capa e ações rápidas à direita --- */
+  /** Sobre o curso, só para ler (modelo 1): cada parte com o seu Editar. */
+  function fichaCurso(c: Curso) {
+    const capa = previas["cur-" + c.id] || capaSite(c.capa);
+    const cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
+    const abas = [...new Set(cats.map((x) => x.aba))].map((id) => cat(id)?.nome).filter(Boolean) as string[];
+    const est = estado3(c.visivel, c.bloq);
+    const pers = Object.keys(estCc(c)).length > 0;
+    const sec = (n: string, tit: string, corpo: string) => `<div class="cf-sec"><h4>${tit}</h4><div class="cf-v">${corpo}</div><button type="button" class="cf-ed" data-a="ce-editar" data-v="${n}">Editar</button></div>`;
+    const tag = (t: string, cls = "") => `<span class="cf-tag ${cls}">${h(t)}</span>`;
+    return `<div class="cf">
+      <div class="cf-lista">
+        ${sec("1", "Capa", capa ? `<img class="cf-capa" src="${h(capa)}" alt="" />` : `<em class="cf-falta">Sem capa</em>`)}
+        ${sec("2", "Textos do card", `<small>Em cima do nome</small>${h(c.cardRotulo || "—")}<small>Nome</small>${h(c.nome)}<small>Descrição</small>${h(c.descricao || "—")}<small>Botão</small>${h(c.cardBotao || "—")}`)}
+        ${sec("3", "Onde aparece", (abas.map((x) => tag(x)).join("") + cats.map((x) => tag(x.nome)).join("")) || `<em class="cf-falta">Em nenhum lugar do app</em>`)}
+        ${sec("4", "Visual", pers ? "Personalizado" : "Padrão do app")}
+        ${ehCursoTeste(c) ? "" : sec("5", "Publicação", `${tag(!c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
+      </div>
+      <div class="cf-cel"><div class="cf-im">${capa ? `<img src="${h(capa)}" alt="" />` : ""}</div><div class="cf-tx"><p class="cf-rot">${h(c.cardRotulo)}</p><p class="cf-nome">${h(c.nome)}</p>${c.descricao ? `<p class="cf-desc">${h(c.descricao)}</p>` : ""}<div class="cf-bar"><i></i></div><span class="cf-bt">${h(c.cardBotao || "Ver")} ›</span></div></div>
+    </div>`;
+  }
   function configCurso(c: Curso) {
     const capa = previas["cur-" + c.id] || capaSite(c.capa);
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
@@ -4455,14 +4507,15 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab ce-cab-n"><h3>${n}. ${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCurso(c);
     return `
-      <div class="cs-config cs-ed ce" data-form-de="formCurso">
+      <div class="ce-voltar"><button type="button" class="al-botao" data-a="ce-ver">← Voltar</button><span>Editando: <b>${h(({ "1": "Capa", "2": "Textos do card", "3": "Onde aparece", "4": "Visual", "5": "Publicação" } as Record<string, string>)[ui.ceEd] || "Curso")}</b></span></div>
+      <div class="cs-config cs-ed ce ce-so ce-so-${h(ui.ceEd)}" data-form-de="formCurso">
         <ol class="ce-passos" aria-label="Passos do curso">${ps.map((x, i) => `<li data-ce-passo="${i + 1}" class="${x.ok ? "ok" : ""}"><i>${x.ok ? "✓" : i + 1}</i>${h(x.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((x) => x.ok).length} de ${ps.length}</b> prontos</span></ol>
         <div class="cs-col">
         <form id="formCurso" data-f="curso-config" class="ce-form">
           <section class="cs-cartao ce-bloco" data-ce-bloco="1">
             ${cab("1", "Capa do curso", dicaCampo(`Formato da capa: 1280 × 720 px (16:9).`, "curso.formato"))}
-            <div class="ce-capa"><span class="ce-capa-img" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span>
-              <div class="cc-capa-bts"><button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button></div></div>
+            <div class="ce-capa"><span class="ce-capa-img" data-previa="cur-${c.id}">${capa ? `<img src="${h(capa)}" alt="" />` : `<button type="button" class="cur-sem-capa" data-a="curso-capa" data-id="${c.id}" style="all:unset;cursor:pointer;display:grid;place-items:center;width:100%;height:100%" aria-label="Escolher imagem da capa">Sem imagem</button>`}</span>
+              <div class="cc-capa-bts">${capa ? `<button type="button" class="al-botao" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Trocar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="curso" data-id="${c.id}">${IC_CURSO.lapis}Recortar</button><button type="button" class="al-botao botao-remover" data-a="curso-capa-tirar" data-id="${c.id}">${IC_MOD.lixo}Remover</button>` : `<button type="button" class="al-botao-ouro" data-a="curso-capa" data-id="${c.id}">${IC_IMG}Escolher imagem</button>`}</div></div>
           </section>
           <section class="cs-cartao ce-bloco" data-ce-bloco="2">
             ${cab("2", "Textos do card", "")}
@@ -4653,7 +4706,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
-      : aba === "config" ? configCurso(c)
+      : aba === "config" ? (ui.ceEd ? configCurso(c) : fichaCurso(c))
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
@@ -5795,7 +5848,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const nome = cadValor("nome"), pn = nome.split(/\s+/)[0] || "", link = cadValor("link") || LINKS.geral || enderecoDaMentoria();
     const lg = f.elements.namedItem("login") as HTMLInputElement | null; if (lg && !lg.value) lg.placeholder = cadLogin() || "gerado pelo nome";
     const msg = f.querySelector("[data-cad-msg]");
-    if (msg) msg.innerHTML = `Olá, <b>${h(pn || "nome")}</b>! Aqui abaixo está o seu acesso ao aplicativo.<br><br>Link do aplicativo: <b>${h(link)}</b><br>Login: <b>${h(cadLogin() || "login")}</b><br>Código: <b>${h(cadValor("codigo") || "····")}</b>`;
+    const apa = (f.querySelector<HTMLInputElement>('input[name="aparelho"]:checked')?.value || "") as "android" | "iphone" | "";
+    const vidL = apa ? (VIDEOS_ACESSO[apa] ? `<br><br>Vídeo de como instalar no ${NOME_APARELHO[apa]}: <b>(link do vídeo)</b>` : `<br><br><em>Sem vídeo do ${NOME_APARELHO[apa]} em Configurações → Acesso do aluno: a mensagem vai sem vídeo.</em>`) : "";
+    if (msg) msg.innerHTML = `Olá, <b>${h(pn || "nome")}</b>! Aqui abaixo está o seu acesso ao aplicativo.<br><br>Link do aplicativo: <b>${h(link)}</b><br>Login: <b>${h(cadLogin() || "login")}</b><br>Código: <b>${h(cadValor("codigo") || "····")}</b>${vidL}`;
     const tipo = (f.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value) || "";
     const jc = f.querySelector<HTMLInputElement>("input[data-jor]"); if (jc && tipo && jc.dataset.mexeu !== "1") jc.checked = tipo === "mentoria";
   }
@@ -5809,6 +5864,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const em = cadValor("email"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return "Confira o e-mail.";
     }
     if (k === "acesso") {
+      if (!cadForm()?.dataset.id && !cadForm()?.querySelector('input[name="aparelho"]:checked')) return "Escolha o celular da aluna: Android ou iPhone.";
       if (!/^\d{4}$/.test(cadValor("codigo"))) return "O código precisa ter 4 números.";
       const lk = cadValor("link"); if (lk && !/^https?:\/\/\S+\.\S+/i.test(lk)) return "Escreva o link completo, começando com https://";
       if (!cadValor("entrada") || !cadValor("validade")) return "Preencha a entrada e o acesso até.";
@@ -5861,6 +5917,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
           <label class="cad-c cad-full"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
+          <div class="cad-c cad-full"><span>Celular da aluna ${a ? "" : "<b>*</b>"}</span><div class="cad-seg">${(["android", "iphone"] as const).map((k) => `<label><input type="radio" name="aparelho" value="${k}" ${a && APARELHO.get(a.id) === k ? "checked" : ""} /><span>${NOME_APARELHO[k]}${VIDEOS_ACESSO[k] ? "" : " · sem vídeo"}</span></label>`).join("")}</div><small>Define qual vídeo de instalação vai junto com o acesso (vídeos em Configurações → Acesso do aluno).</small></div>
           <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
           <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span></label>
           <label class="cad-c"><span>Entrada <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
@@ -6262,7 +6319,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
-      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; break;
+      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
       case "desfazer-confirmar": {
         const x = pilha.shift(); ui.modal = null;
@@ -6374,7 +6431,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "copiar-acesso": {
-        const txt = "Olá, " + primeiroNome(al!.nome) + "! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo;
+        const txt = "Olá, " + primeiroNome(al!.nome) + "! Aqui abaixo está o seu acesso ao aplicativo.\n\n" + linhasAcesso(linkDe(al!.id), al!.login, al!.codigo, APARELHO.get(al!.id));
         const ok = () => toast("Link, login e código de " + primeiroNome(al!.nome) + " copiados.");
         const falha = () => toast("Login " + al!.login + " · código " + al!.codigo);
         if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falha); else falha();
@@ -6385,7 +6442,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const nome = primeiroNome(al!.nome);
         const ult = al!.ultimaAula ? acharAula(al!.ultimaAula) : null;
         const msg = a === "whatsapp"
-          ? "Olá, " + nome + "! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: " + linkDe(al!.id) + "\nLogin: " + al!.login + "\nCódigo: " + al!.codigo + "\n\nQualquer dúvida, é só me chamar por aqui."
+          ? "Olá, " + nome + "! Aqui abaixo está o seu acesso ao aplicativo.\n\n" + linhasAcesso(linkDe(al!.id), al!.login, al!.codigo, APARELHO.get(al!.id)) + "\n\nQualquer dúvida, é só me chamar por aqui."
           : "Olá, " + nome + "! Sentimos sua falta na mentoria." + (ult ? " Sua próxima aula está esperando: " + ult.a.nome + "." : "") + "\n\nSe tiver qualquer dificuldade para entrar, me chame por aqui.";
         // Abre antes de qualquer espera: o navegador só deixa abrir janela no clique.
         window.open("https://wa.me/55" + al!.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
@@ -6868,7 +6925,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         confirmar({ titulo: "Ocultar " + k.nome + "?", texto: "A categoria e tudo o que está dentro dela somem da área de membros para todas as alunas, até você ligar de novo.", palavra: "OCULTAR", rotulo: "Ocultar categoria" }, trabalho);
         break;
       }
-      case "abrir-curso": {
+      case "abrir-curso": { ui.ceEd = "";
         ui.curso = d.id; ui.tab = "curso"; ui.editando = null; ui.modPagina = null; ui.cursoAba = d.v || "visao"; ui.curAlBusca = ""; ui.curAlFiltro = ""; ui.curAlDe = ""; ui.curAlAte = "";
         ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
@@ -7079,7 +7136,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "curso-cancelar": toast("Alterações descartadas."); break;
+      case "curso-cancelar": ui.ceEd = ""; toast("Alterações descartadas."); break;
       case "curso-remover": {
         const c = curso(d.id)!;
         confirmar({ titulo: "Apagar o curso " + c.nome + "?", texto: "O curso, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado de vez, junto com as liberações, o progresso e os comentários das alunas nele. Fica na Lixeira por 30 dias. Para confirmar, escreva APAGAR.", palavra: "APAGAR", rotulo: "Apagar curso" }, async () => {
@@ -7523,11 +7580,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const v = a === "link-aluna-geral" ? "" : (document.querySelector<HTMLInputElement>("#linkAluna")?.value ?? "").trim();
         if (v && !/^https?:\/\/\S+\.\S+/i.test(v)) { toast("Escreva o link completo, começando com https://"); return; }
         const id = d.id, antes = LINKS.aluna.get(id) ?? "", nome = primeiroNome(al!.nome);
-        const gravar = async (x: string) => { const r = x ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: x, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; };
+        const gravar = async (x: string) => { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: x || null, atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; };
         ui.linkEdit = null;
         void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
         return;
       }
+      case "ce-editar": ui.ceEd = d.v; window.scrollTo(0, 0); break;
+      case "ce-ver": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.ceEd = ""; render(); }); return; } ui.ceEd = ""; break;
+      case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
+      case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
+      case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
       case "cfg-versao": {
@@ -7852,6 +7914,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "aluna": {
         for (const k of ["dados", "acesso"]) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } }
+        const aparelho = (form.querySelector<HTMLInputElement>('input[name="aparelho"]:checked')?.value || "") as "android" | "iphone" | "";
         const lkDig = v("link"), linkAl = lkDig === (LINKS.geral || enderecoDaMentoria()) ? "" : lkDig, obs = v("obs"), cursosCad = [...form.querySelectorAll<HTMLInputElement>('input[name="cad-c"]:checked')].map((x) => x.value);
         const fotoAl = fotoPara === "aln" ? fotoNova : null;
         const cod = v("codigo");
@@ -7867,7 +7930,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (id) {
             const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
-            if (linkAl !== (LINKS.aluna.get(id) ?? "")) { const r = linkAl ? await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl, atualizado_em: new Date().toISOString() }) : await supabase.from("aluna_link").delete().eq("aluna_id", id); if (r.error) throw r.error; }
+            if (linkAl !== (LINKS.aluna.get(id) ?? "") || (aparelho && aparelho !== APARELHO.get(id))) { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl || null, ...(aparelho ? { aparelho } : {}), atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
@@ -7882,7 +7945,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             // O resto do cadastro: se algo falhar aqui, a aluna já existe e o aviso diz o que faltou.
             const faltou: string[] = [];
             if (cursosCad.length) { try { await rpc("salvar_liberacao", { p_aluna: nid, p_produtos: cursosCad, p_modulos: [], p_aulas: [] }); } catch { faltou.push("liberar os cursos"); } }
-            if (linkAl) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl }); if (x.error) faltou.push("salvar o link"); }
+            if (linkAl || aparelho) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl || null, aparelho: aparelho || null }); if (x.error) faltou.push(linkAl ? "salvar o link e o celular" : "salvar o celular"); }
             if (obs) { const x = await supabase.from("anotacoes_aluna").insert({ aluna_id: nid, texto: obs }); if (x.error) faltou.push("salvar a observação"); }
             if (fotoAl) { try { await rpc("salvar_foto_aluna", { p_aluna: nid, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[nid] = fotoAl.foto; } catch { faltou.push("salvar a foto"); } }
             fotoNova = null; fotoPara = null;
@@ -8175,6 +8238,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       case "curso-config": {
         if (!v("cardRotulo").trim() || !v("nome").trim() || !v("cardBotao").trim()) { toast("Preencha o texto em cima do nome, o nome do curso e o texto do botão."); return; }
+        ui.ceEd = "";
         const c = curso(ui.curso)!; const cid = c.id;
         // Categorias marcadas, só das abas ligadas.
         const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value);
