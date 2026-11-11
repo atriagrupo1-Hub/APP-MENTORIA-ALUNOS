@@ -4711,14 +4711,14 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       : visaoGeralCurso(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
     const cv = (() => {
-      if (aba !== "visao") return "";
+      const titAba = ({ visao: ["Visão geral", "Acompanhe a estrutura, as alunas e as atividades."], config: ["Sobre o curso", "Capa, textos, onde aparece e publicação."], modulos: ["Módulos e aulas", "Organize os módulos e as aulas."], alunas: ["Alunas", "Quem tem acesso a este curso."], comentarios: ["Comentários", "Responda e modere os comentários das alunas."], relatorios: ["Relatórios", "Como o curso está indo."] } as Record<string, [string, string]>)[aba] || ["Visão geral", ""];
       const im = capaSite(c.capa), cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
       const st = !c.visivel ? ["Oculto", "cz"] : c.bloq ? ["Bloqueado", "am"] : ["Ativo", "vd"];
       const kS = "cvst:" + c.id, kP = "cvpub:" + c.id;
       const it = (v: string, t: string, on: boolean) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
       return `
       <nav class="ka-trilha"><button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span>/</span><b>${h(c.nome)}</b></nav>
-      <div class="cv-tit"><div><h1>Visão geral</h1><p>Acompanhe a estrutura, as alunas e as atividades.</p></div>
+      <div class="cv-tit"><div><h1>${h(titAba[0])}</h1><p>${h(titAba[1])}</p></div>
         <select class="campo cv-trocar" data-curso-trocar aria-label="Trocar de curso">${S.cursos.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.nome)}</option>`).join("")}</select></div>
       <div class="cv-card">
         <span class="cv-capa">${im ? `<img src="${h(im)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
