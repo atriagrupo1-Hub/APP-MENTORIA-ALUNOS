@@ -4951,3 +4951,34 @@ html:not([data-tema="claro"]) .pm-res.off { background: rgba(192,67,47,.14); } h
 html:not([data-tema="claro"]) .pm-res dt, html:not([data-tema="claro"]) .pm-res span { color: var(--texto-2); } html:not([data-tema="claro"]) .pm-res dd { color: var(--texto); }
 html:not([data-tema="claro"]) .pm-info, html:not([data-tema="claro"]) .pm-info b { color: var(--texto-2); }
 html:not([data-tema="claro"]) .ce-falta { color: #e8b45a; } html:not([data-tema="claro"]) .ce-falta.ok { color: #8fd3a8; }
+
+/* Sobre o curso: ficha só para ler (modelo 1) */
+.cf { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 22px; align-items: start; }
+.cf-lista { border: 1px solid var(--linha-suave); border-radius: 14px; padding: 4px 18px; background: var(--aa-cartao); }
+.cf-sec { display: grid; grid-template-columns: 160px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 14px 0; border-bottom: 1px solid var(--linha-suave); }
+.cf-sec:last-child { border-bottom: 0; }
+.cf-sec h4 { margin: 2px 0 0; font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--texto-3); }
+.cf-v { font-size: 14px; line-height: 1.5; color: var(--texto); min-width: 0; overflow-wrap: anywhere; }
+.cf-v small { display: block; font-size: 12px; color: var(--texto-3); margin-top: 4px; }
+.cf-v small:first-child { margin-top: 0; }
+.cf-capa { width: 200px; aspect-ratio: 16/9; object-fit: cover; border-radius: 9px; display: block; }
+.cf-tag { display: inline-block; padding: 3px 10px; margin: 2px 6px 2px 0; border-radius: 99px; font-size: 12px; font-weight: 800; background: var(--al-ouro-fundo, rgba(217,184,116,.14)); color: var(--al-ouro, #d9b874); }
+.cf-tag.ok { background: rgba(47,138,85,.16); color: #8fd3a8; }
+html[data-tema="claro"] .cf-tag.ok { background: #e3f1e5; color: #1f6b3a; }
+.cf-falta { color: #e8b45a; font-style: normal; }
+.cf-ed { padding: 6px 13px; border-radius: 8px; border: 1px solid var(--al-ouro, #d9b874); background: none; color: var(--al-ouro, #d9b874); font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.cf-ed:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)); }
+.cf-cel { position: sticky; top: 90px; border: 6px solid #1c1c1c; border-radius: 26px; overflow: hidden; background: #000; color: #fff; }
+.cf-im { aspect-ratio: 16/9; background: #151515; } .cf-im img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cf-tx { padding: 12px 14px 14px; }
+.cf-rot { margin: 0; font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: #d9b874; font-weight: 800; }
+.cf-nome { margin: 4px 0; font: 600 20px/1.15 "Cormorant Garamond", Georgia, serif; }
+.cf-desc { margin: 0; font-size: 12px; color: #bbb; }
+.cf-bar { height: 4px; background: #333; border-radius: 4px; margin: 10px 0; } .cf-bar i { display: block; width: 38%; height: 100%; background: #d9b874; border-radius: 4px; }
+.cf-bt { display: block; background: #fff; color: #111; border-radius: 9px; text-align: center; padding: 8px; font-weight: 800; font-size: 13px; }
+@media (max-width: 900px) { .cf { grid-template-columns: 1fr; } .cf-sec { grid-template-columns: 1fr auto; } .cf-sec h4 { grid-column: 1 / -1; } .cf-cel { position: static; max-width: 300px; } }
+/* Editando uma parte: só ela aparece */
+.ce-voltar { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; font-size: 13.5px; color: var(--texto-2); }
+.ce-so .ce-passos { display: none; }
+.ce-so-1 [data-ce-bloco]:not([data-ce-bloco="1"]), .ce-so-2 [data-ce-bloco]:not([data-ce-bloco="2"]), .ce-so-3 [data-ce-bloco]:not([data-ce-bloco="3"]), .ce-so-5 [data-ce-bloco]:not([data-ce-bloco="5"]), .ce-so-4 [data-ce-bloco] { display: none !important; }
+.ce-so:not(.ce-so-4) .ce-visual { display: none; }

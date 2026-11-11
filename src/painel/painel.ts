@@ -599,7 +599,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    ceEd: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
@@ -4479,6 +4479,26 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   }
 
   /* --- Configurações: informações à esquerda; capa e ações rápidas à direita --- */
+  /** Sobre o curso, só para ler (modelo 1): cada parte com o seu Editar. */
+  function fichaCurso(c: Curso) {
+    const capa = previas["cur-" + c.id] || capaSite(c.capa);
+    const cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
+    const abas = [...new Set(cats.map((x) => x.aba))].map((id) => cat(id)?.nome).filter(Boolean) as string[];
+    const est = estado3(c.visivel, c.bloq);
+    const pers = Object.keys(estCc(c)).length > 0;
+    const sec = (n: string, tit: string, corpo: string) => `<div class="cf-sec"><h4>${tit}</h4><div class="cf-v">${corpo}</div><button type="button" class="cf-ed" data-a="ce-editar" data-v="${n}">Editar</button></div>`;
+    const tag = (t: string, cls = "") => `<span class="cf-tag ${cls}">${h(t)}</span>`;
+    return `<div class="cf">
+      <div class="cf-lista">
+        ${sec("1", "Capa", capa ? `<img class="cf-capa" src="${h(capa)}" alt="" />` : `<em class="cf-falta">Sem capa</em>`)}
+        ${sec("2", "Textos do card", `<small>Em cima do nome</small>${h(c.cardRotulo || "—")}<small>Nome</small>${h(c.nome)}<small>Descrição</small>${h(c.descricao || "—")}<small>Botão</small>${h(c.cardBotao || "—")}`)}
+        ${sec("3", "Onde aparece", (abas.map((x) => tag(x)).join("") + cats.map((x) => tag(x.nome)).join("")) || `<em class="cf-falta">Em nenhum lugar do app</em>`)}
+        ${sec("4", "Visual", pers ? "Personalizado" : "Padrão do app")}
+        ${ehCursoTeste(c) ? "" : sec("5", "Publicação", `${tag(!c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
+      </div>
+      <div class="cf-cel"><div class="cf-im">${capa ? `<img src="${h(capa)}" alt="" />` : ""}</div><div class="cf-tx"><p class="cf-rot">${h(c.cardRotulo)}</p><p class="cf-nome">${h(c.nome)}</p>${c.descricao ? `<p class="cf-desc">${h(c.descricao)}</p>` : ""}<div class="cf-bar"><i></i></div><span class="cf-bt">${h(c.cardBotao || "Ver")} ›</span></div></div>
+    </div>`;
+  }
   function configCurso(c: Curso) {
     const capa = previas["cur-" + c.id] || capaSite(c.capa);
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
@@ -4487,7 +4507,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab ce-cab-n"><h3>${n}. ${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCurso(c);
     return `
-      <div class="cs-config cs-ed ce" data-form-de="formCurso">
+      <div class="ce-voltar"><button type="button" class="al-botao" data-a="ce-ver">← Voltar</button><span>Editando: <b>${h(({ "1": "Capa", "2": "Textos do card", "3": "Onde aparece", "4": "Visual", "5": "Publicação" } as Record<string, string>)[ui.ceEd] || "Curso")}</b></span></div>
+      <div class="cs-config cs-ed ce ce-so ce-so-${h(ui.ceEd)}" data-form-de="formCurso">
         <ol class="ce-passos" aria-label="Passos do curso">${ps.map((x, i) => `<li data-ce-passo="${i + 1}" class="${x.ok ? "ok" : ""}"><i>${x.ok ? "✓" : i + 1}</i>${h(x.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((x) => x.ok).length} de ${ps.length}</b> prontos</span></ol>
         <div class="cs-col">
         <form id="formCurso" data-f="curso-config" class="ce-form">
@@ -4685,7 +4706,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
-      : aba === "config" ? configCurso(c)
+      : aba === "config" ? (ui.ceEd ? configCurso(c) : fichaCurso(c))
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
@@ -6904,7 +6925,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         confirmar({ titulo: "Ocultar " + k.nome + "?", texto: "A categoria e tudo o que está dentro dela somem da área de membros para todas as alunas, até você ligar de novo.", palavra: "OCULTAR", rotulo: "Ocultar categoria" }, trabalho);
         break;
       }
-      case "abrir-curso": {
+      case "abrir-curso": { ui.ceEd = "";
         ui.curso = d.id; ui.tab = "curso"; ui.editando = null; ui.modPagina = null; ui.cursoAba = d.v || "visao"; ui.curAlBusca = ""; ui.curAlFiltro = ""; ui.curAlDe = ""; ui.curAlAte = "";
         ui.abertos.clear(); // os módulos começam todos fechados
         window.scrollTo(0, 0); break;
@@ -7115,7 +7136,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "curso-cancelar": toast("Alterações descartadas."); break;
+      case "curso-cancelar": ui.ceEd = ""; toast("Alterações descartadas."); break;
       case "curso-remover": {
         const c = curso(d.id)!;
         confirmar({ titulo: "Apagar o curso " + c.nome + "?", texto: "O curso, com " + p(c.modulos.length, "módulo", "módulos") + " e " + p(totalAulas(c), "aula", "aulas") + ", é apagado de vez, junto com as liberações, o progresso e os comentários das alunas nele. Fica na Lixeira por 30 dias. Para confirmar, escreva APAGAR.", palavra: "APAGAR", rotulo: "Apagar curso" }, async () => {
@@ -7564,6 +7585,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
         return;
       }
+      case "ce-editar": ui.ceEd = d.v; window.scrollTo(0, 0); break;
+      case "ce-ver": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.ceEd = ""; render(); }); return; } ui.ceEd = ""; break;
       case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
       case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
       case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
@@ -8215,6 +8238,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       case "curso-config": {
         if (!v("cardRotulo").trim() || !v("nome").trim() || !v("cardBotao").trim()) { toast("Preencha o texto em cima do nome, o nome do curso e o texto do botão."); return; }
+        ui.ceEd = "";
         const c = curso(ui.curso)!; const cid = c.id;
         // Categorias marcadas, só das abas ligadas.
         const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="catx"]:checked')].filter((i) => !i.closest<HTMLElement>("[data-oc-aba]")?.hidden).map((i) => i.value);
