@@ -4982,3 +4982,8 @@ html[data-tema="claro"] .cf-tag.ok { background: #e3f1e5; color: #1f6b3a; }
 .ce-so .ce-passos { display: none; }
 .ce-so-1 [data-ce-bloco]:not([data-ce-bloco="1"]), .ce-so-2 [data-ce-bloco]:not([data-ce-bloco="2"]), .ce-so-3 [data-ce-bloco]:not([data-ce-bloco="3"]), .ce-so-5 [data-ce-bloco]:not([data-ce-bloco="5"]), .ce-so-4 [data-ce-bloco] { display: none !important; }
 .ce-so:not(.ce-so-4) .ce-visual { display: none; }
+/* Editar Publicação: só o quadro de publicação, centralizado em cima, sem a prévia do card */
+.ce-so:not(.ce-so-5) .cv-pub { display: none; }
+.ce-so-5 .cs-col-prev, .ce-so-5 .ce-visual { display: none !important; }
+.ce-so-5 { grid-template-columns: minmax(0, 1fr) !important; max-width: 920px; margin: 0 auto; }
+.ce-so-5 .cv-pub { order: -1; }
