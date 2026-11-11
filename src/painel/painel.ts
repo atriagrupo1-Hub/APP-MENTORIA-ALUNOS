@@ -4352,16 +4352,21 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="mod:${m.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculto</span></button>
     </span>` : ""}</span>`;
   }
+  /** Aulas que já abriram para alguma aluna (por liberação individual com data já passada). */
+  function aulasAbertas() { const ag = new Date().toISOString(), out = new Set<string>(); for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula") { const q = k.abre || k.em; if (q && q <= ag) out.add(k.alvo); } return out; }
   function modulosCurso(c: Curso) {
     const q = norm(ui.modBusca || "").trim();
+    const abertasMod = aulasAbertas();
     return `
-      <div class="ma-cab"><div><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2><p>Organize a sequência e o acesso aos conteúdos do curso.</p></div>
-        <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button></div>
-      <div class="ma-chips"><span><b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"}</span><span><b>${totalAulas(c)}</b> ${totalAulas(c) === 1 ? "aula" : "aulas"}</span><em>${c.modulos.length ? "Estrutura cadastrada" : "Sem módulos ainda"}</em><small>Arraste pela alça para mudar a ordem</small></div>
+      ${(() => { const aus = c.modulos.flatMap((m) => m.aulas), pubs = aus.filter((a) => a.pub && !a.rascunho).length, bloq = aus.filter((a) => a.acesso === "bloqueada").length, pct = aus.length ? Math.round((pubs / aus.length) * 100) : 0;
+        return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2><p>Organize, publique e libere os conteúdos do curso. Arraste pela alça para mudar a ordem.</p></div>
+        <div class="ma2-kpis"><span><b>${c.modulos.length}</b>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</span><span><b>${aus.length}</b>${nomeItens(c, aus.length)}</span><span><b>${pubs}</b>${pubs === 1 ? "Publicada" : "Publicadas"}</span><span><b>${bloq}</b>${bloq === 1 ? "Bloqueada" : "Bloqueadas"}</span><span class="ma2-pct"><b>${pct}%</b>Publicado<i><em style="width:${pct}%"></em></i></span></div></div>`; })()}
       <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
         <button type="button" class="al-botao" data-a="mods-expandir" data-id="${c.id}">${IC_EXPANDIR}Expandir</button>
         <button type="button" class="al-botao" data-a="mods-recolher">${IC_RECOLHER}Recolher</button>
+        <span style="flex:1"></span>
+        <button type="button" class="al-botao-ouro" data-a="cs-add-mod">${IC_CURSO.mais}Adicionar módulo</button>
       </div>
       ${ui.csAddMod ? `
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
@@ -4396,7 +4401,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
               <label class="ms-ck" title="Selecionar"><input type="checkbox" data-mod-sel="${m.id}" ${ui.modSel.has(m.id) ? "checked" : ""} aria-label="Selecionar ${h(m.rot)} ${numModulo(c, i)}" /></label>
               <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
               <span class="cs-mod-capa">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(m.pub, !m.ativo))}</span>
-              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, "aula", "aulas")}</span></button></span>
+              <span class="cs-mod-nome"><button type="button" class="cs-mod-txt" data-a="mod-abrir-fechar" data-id="${m.id}"><b>${h(m.rot)} ${numModulo(c, i)} — ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${p(m.aulas.length, nomeItens(c, 1).toLowerCase(), nomeItens(c, 2).toLowerCase())}${(() => { const sg = m.aulas.reduce((t, a) => t + (a.duracao || 0), 0); if (!sg) return ""; const hh = Math.floor(sg / 3600), mm = Math.round((sg % 3600) / 60); return " · " + (hh ? hh + "h" + String(mm).padStart(2, "0") : mm + " min"); })()}</span></button></span>
+              ${(() => { const lb = m.aulas.filter((a) => a.acesso === "liberada" || abertasMod.has(a.id)).length, n = m.aulas.length, pc = n ? Math.round((lb / n) * 100) : 0; return `<span class="ma2-lib" title="Aulas já liberadas para as alunas"><em>${lb}/${n} liberadas</em><i><b style="width:${pc}%"></b></i></span>`; })()}
               <span class="mest">${ehModTeste(m) ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
                 <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
@@ -4711,14 +4717,14 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       : visaoGeralCurso(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
     const cv = (() => {
-      if (aba !== "visao") return "";
+      const titAba = ({ visao: ["Visão geral", "Acompanhe a estrutura, as alunas e as atividades."], config: ["Sobre o curso", "Capa, textos, onde aparece e publicação."], modulos: ["Módulos e aulas", "Organize os módulos e as aulas."], alunas: ["Alunas", "Quem tem acesso a este curso."], comentarios: ["Comentários", "Responda e modere os comentários das alunas."], relatorios: ["Relatórios", "Como o curso está indo."] } as Record<string, [string, string]>)[aba] || ["Visão geral", ""];
       const im = capaSite(c.capa), cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
       const st = !c.visivel ? ["Oculto", "cz"] : c.bloq ? ["Bloqueado", "am"] : ["Ativo", "vd"];
       const kS = "cvst:" + c.id, kP = "cvpub:" + c.id;
       const it = (v: string, t: string, on: boolean) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
       return `
       <nav class="ka-trilha"><button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span>/</span><b>${h(c.nome)}</b></nav>
-      <div class="cv-tit"><div><h1>Visão geral</h1><p>Acompanhe a estrutura, as alunas e as atividades.</p></div>
+      <div class="cv-tit"><div><h1>${h(titAba[0])}</h1><p>${h(titAba[1])}</p></div>
         <select class="campo cv-trocar" data-curso-trocar aria-label="Trocar de curso">${S.cursos.map((x) => `<option value="${x.id}" ${x.id === c.id ? "selected" : ""}>${h(x.nome)}</option>`).join("")}</select></div>
       <div class="cv-card">
         <span class="cv-capa">${im ? `<img src="${h(im)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
