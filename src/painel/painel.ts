@@ -76,6 +76,8 @@ type Curso = {
   rotuloInicio: string; nomeCurto: string;
   /** Card do curso (0112): estilo próprio e textos (vazio = o texto padrão). */
   estilo: Estilo | null; cardRotulo: string; cardBotao: string;
+  /** Tipo escolhido ao criar (0124): videoaula, ebook, audio, mentoria, curso; vazio = curso. */
+  tipo: string;
 };
 type Versiculo = { id: string; texto: string; ref: string; visivel: boolean };
 type Destaque = {
@@ -295,7 +297,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   const equipeP = euP.then((e) => (e && e.papel !== "Suporte" ? supabase.rpc("equipe_do_painel") : null));
   const ondaA = Promise.all([
     supabase.from("categorias").select("*").order("ordem"),
-    supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao, rascunho, publicado_em, libera_modo, libera_dias").order("ordem"),
+    supabase.from("produtos").select("id, titulo, categoria_id, categoria_aba_id, publicado, bloqueado_geral, libera_em, inicio, descricao, fundacao, aviso_material, ordem, criado_em, capa_path, rotulo_inicio, nome_curto, estilo, card_rotulo, card_botao, rascunho, publicado_em, libera_modo, libera_dias, tipo_conteudo").order("ordem"),
     supabase.from("modulos").select("id, produto_id, numero, sem_numero, titulo, ordem, bloqueado_geral, publicado, libera_em, criado_em, intro, capa_horizontal_path, capa_path, cor_destaque, estilo, rotulo, botao_texto, rascunho, publicado_em, libera_modo, libera_dias").not("produto_id", "is", null).order("ordem"),
     supabase.from("aulas").select("*").order("ordem").order("numero"),
     supabase.from("aula_midia").select("aula_id, video_ref"),
@@ -378,7 +380,7 @@ async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
     inicio: c.inicio ?? 1, descricao: c.descricao ?? "", fundacao: c.fundacao ?? "",
     aviso: c.aviso_material ?? "", modulos: modsDo.get(c.id) ?? [],
     criado: c.criado_em ?? "", capa: c.capa_path ?? "",
-    rotuloInicio: c.rotulo_inicio ?? "", nomeCurto: c.nome_curto ?? "", estilo: limparEstilo(c.estilo), cardRotulo: c.card_rotulo ?? "", cardBotao: c.card_botao ?? "",
+    rotuloInicio: c.rotulo_inicio ?? "", nomeCurto: c.nome_curto ?? "", estilo: limparEstilo(c.estilo), cardRotulo: c.card_rotulo ?? "", cardBotao: c.card_botao ?? "", tipo: c.tipo_conteudo ?? "",
   }));
 
   // Celular e e-mail (0041). Se a leitura falhar, a lista abre do mesmo jeito, só sem eles.
@@ -590,7 +592,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "cursos" as "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -3546,7 +3548,9 @@ export function montar(app: HTMLElement) {
     const catsDo = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
     const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
     const nAl = (c: Curso) => numerosCurso(c).alunas;
-    const lista2 = S.cursos.filter((c) => (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
+    const tipoDe = (c: Curso) => (c.tipo === "ebook" ? "ebooks" : c.tipo === "audio" ? "audios" : "cursos");
+    const nTipo = (t: string) => S.cursos.filter((c) => tipoDe(c) === t).length;
+    const lista2 = S.cursos.filter((c) => tipoDe(c) === ui.prodTipo && (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
         && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
     const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
@@ -3586,6 +3590,7 @@ export function montar(app: HTMLElement) {
     const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo kg-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
     return `
     <section class="tela ativa cur cc2">
+      <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
       <p class="cur-sub cc2-sub">Gerencie todos os cursos criados, acompanhe status, publicação e organização por categoria.</p>
       <div class="cc2-criar"><button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button></div>
       <div class="kg-barra">
@@ -7545,6 +7550,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         void executar(async () => { await gravar(v); return { msg: v ? "Link de " + nome + " salvo." : nome + " volta a usar o link geral.", texto: "link do aplicativo de " + nome, desfazer: () => gravar(antes) }; });
         return;
       }
+      case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : "cursos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
       case "cfg-versao": {
