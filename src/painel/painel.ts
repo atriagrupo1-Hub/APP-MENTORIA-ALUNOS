@@ -283,7 +283,7 @@ function linhasAcesso(link: string, login: string, codigo: string, aparelho?: "a
 }
 const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
 async function carregarLinks(euP: Promise<Eu | null>) {
-  await supabase.rpc("ultimas_liberacoes").then(({ data }) => {
+  await supabase.rpc("listar_ultimas_liberacoes").then(({ data }) => {
     ULT_LIB.clear();
     ((data ?? []) as Record<string, unknown>[]).forEach((x) => ULT_LIB.set(String(x.produto_id), { aula: String(x.aula_id), titulo: String(x.aula_titulo ?? ""), mod: x.modulo_numero == null ? null : Number(x.modulo_numero), num: x.aula_numero == null ? null : Number(x.aula_numero), quando: String(x.quando), alunas: Number(x.alunas), avisadas: Number(x.avisadas) }));
   });

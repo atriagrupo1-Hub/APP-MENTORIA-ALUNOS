@@ -1,5 +1,5 @@
 -- Card do produto: a última aula liberada de cada produto, para quantas alunas e quantas foram avisadas no celular.
-create or replace function public.ultimas_liberacoes()
+create or replace function public.listar_ultimas_liberacoes()
 returns table (produto_id uuid, aula_id uuid, aula_titulo text, modulo_numero int, aula_numero int, quando timestamptz, alunas bigint, avisadas bigint)
 language sql stable security definer set search_path = public as $$
   with lib as (
@@ -15,5 +15,5 @@ language sql stable security definer set search_path = public as $$
     from ult u join aulas a on a.id = u.aula_id join modulos m on m.id = a.modulo_id
    where eh_equipe();
 $$;
-revoke all on function public.ultimas_liberacoes() from public, anon;
-grant execute on function public.ultimas_liberacoes() to authenticated;
+revoke all on function public.listar_ultimas_liberacoes() from public, anon;
+grant execute on function public.listar_ultimas_liberacoes() to authenticated;
