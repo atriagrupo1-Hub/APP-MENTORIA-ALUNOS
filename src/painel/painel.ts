@@ -3580,6 +3580,7 @@ export function montar(app: HTMLElement) {
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
     // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
     const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
+    const statsTxt = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<p class="cc2-info"><b>${n}</b> ${n === 1 ? "aluna ativa" : "alunas ativas"} · <b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"} · <b>${au}</b> ${nomeItens(c, au).toLowerCase()}</p>`; };
     const ultLib = (c: Curso) => { const u = ULT_LIB.get(c.id); if (!u) return ""; const d = new Date(u.quando); const dt = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
       return `<div class="cc2-ult"><h5>Última liberação</h5><p title="${h(u.titulo)}">${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</p><span>${dt} · ${p(u.alunas, "aluna", "alunas")} · ${u.avisadas} ${u.avisadas === 1 ? "avisada" : "avisadas"} no celular</span></div>`; };
     const card2 = (c: Curso) => `
@@ -3587,7 +3588,7 @@ export function montar(app: HTMLElement) {
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
           <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${cats(c)}${selos(c)}${stats(c)}${ultLib(c)}${quando(c)}
+          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}${quando(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
       </article>`;
