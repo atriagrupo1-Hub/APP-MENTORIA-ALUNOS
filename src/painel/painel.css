@@ -4903,3 +4903,7 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .prod-abas button:hover { color: var(--texto); }
 .prod-abas button[aria-selected="true"] { color: var(--texto); border-bottom-color: var(--al-ouro, #d9b874); }
 .prod-abas button[aria-selected="true"] span { background: var(--al-ouro, #d9b874); color: var(--al-ouro-txt, #1a1408); }
+.cc2-ult { margin: 10px 0 2px; padding: 10px 12px; border: 1px solid var(--linha-suave); border-radius: 11px; min-width: 0; }
+.cc2-ult h5 { margin: 0 0 5px; font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--texto-3); font-weight: 700; }
+.cc2-ult p { margin: 0 0 2px; font-size: 13.5px; color: var(--texto); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc2-ult span { font-size: 12.5px; color: var(--texto-3); }

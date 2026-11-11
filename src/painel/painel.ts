@@ -270,6 +270,9 @@ const LINKS = { geral: "", aluna: new Map<string, string>() };
 const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
 /** Celular de cada aluna (0129): escolhe o vídeo de instalação que vai junto com o acesso. */
 const APARELHO = new Map<string, "android" | "iphone">();
+/** Última aula liberada de cada produto (0130). */
+type UltLib = { aula: string; titulo: string; mod: number | null; num: number | null; quando: string; alunas: number; avisadas: number };
+const ULT_LIB = new Map<string, UltLib>();
 const NOME_APARELHO = { android: "Android", iphone: "iPhone" } as const;
 /** As linhas do acesso que vão na mensagem: link, login, código e, se houver, o vídeo do celular dela. */
 function linhasAcesso(link: string, login: string, codigo: string, aparelho?: "android" | "iphone" | "") {
@@ -280,6 +283,10 @@ function linhasAcesso(link: string, login: string, codigo: string, aparelho?: "a
 }
 const linkDe = (id: string) => LINKS.aluna.get(id) || LINKS.geral || enderecoDaMentoria();
 async function carregarLinks(euP: Promise<Eu | null>) {
+  void supabase.rpc("ultimas_liberacoes").then(({ data }) => {
+    ULT_LIB.clear();
+    ((data ?? []) as Record<string, unknown>[]).forEach((x) => ULT_LIB.set(String(x.produto_id), { aula: String(x.aula_id), titulo: String(x.aula_titulo ?? ""), mod: x.modulo_numero == null ? null : Number(x.modulo_numero), num: x.aula_numero == null ? null : Number(x.aula_numero), quando: String(x.quando), alunas: Number(x.alunas), avisadas: Number(x.avisadas) }));
+  });
   const [g, al] = await Promise.all([
     supabase.from("configuracoes").select("link_app, acesso_videos").maybeSingle(),
     euP.then((e) => (e ? supabase.from("aluna_link").select("aluna_id, link, aparelho") : null)),
@@ -3573,12 +3580,14 @@ export function montar(app: HTMLElement) {
     const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
     // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
     const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
+    const ultLib = (c: Curso) => { const u = ULT_LIB.get(c.id); if (!u) return ""; const d = new Date(u.quando); const dt = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
+      return `<div class="cc2-ult"><h5>Última liberação</h5><p title="${h(u.titulo)}">${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</p><span>${dt} · ${p(u.alunas, "aluna", "alunas")} · ${u.avisadas} ${u.avisadas === 1 ? "avisada" : "avisadas"} no celular</span></div>`; };
     const card2 = (c: Curso) => `
       <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
           <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${cats(c)}${selos(c)}${stats(c)}${quando(c)}
+          ${cats(c)}${selos(c)}${stats(c)}${ultLib(c)}${quando(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
       </article>`;
