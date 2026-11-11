@@ -3986,7 +3986,7 @@ export function montar(app: HTMLElement) {
     const paradas = ativas.filter((x) => !x.a.ultimoAcessoEm || x.a.ultimoAcessoEm < sete);
     const todosComs = comentariosDoCurso(c), semResp = todosComs.filter((k) => k.estado === "moderar");
     const ultLib = liberadas[0];
-    const tile = (k: string, ic: string, nome: string, n: string, rot: string, x: string, alerta = false) => `<button type="button" class="vg-tile${sec === k ? " on" : ""}" data-a="vg-sec" data-v="${k}" aria-pressed="${sec === k}"><span class="vg-tit">${ic}${nome}</span><b${alerta ? ' class="vg-alerta"' : ""}>${n}</b><span class="vg-rot">${rot}</span><span class="vg-x">${x}</span></button>`;
+    const tile = (k: string, ic: string, nome: string, n: string, rot: string, x: string, alerta = false) => `<button type="button" class="vg-tile${sec === k ? " on" : ""}" data-a="vg-sec" data-v="${k}" aria-pressed="${sec === k}" title="${h(x)}"><span class="vg-tit">${ic}${nome}</span><b${alerta ? ' class="vg-alerta"' : ""}>${n}</b><span class="vg-rot">${rot}</span><span class="vg-x">${x}</span></button>`;
     const chips = (ops: [string, string, number | null][]) => { const at = ops.some(([k]) => k === sub) ? sub : ops[0][0]; return [at, `<div class="vg-chips">${ops.map(([k, t, n]) => `<button type="button" class="vg-chip" data-a="vg-sub" data-v="${k}" aria-pressed="${at === k}">${t}${n != null ? `<i>${n}</i>` : ""}</button>`).join("")}</div>`] as const; };
     const linhaAl = ({ a, incluida }: AlunaCurso) => `<button type="button" class="vg-al" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b><span>${br(diaDe(incluida))} · ${a.bloqueada ? "Bloqueada" : vencida(a) ? "Vencida" : "Ativa"}</span></button>`;
     let painel = "";

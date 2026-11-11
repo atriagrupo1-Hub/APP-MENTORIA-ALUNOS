@@ -4932,3 +4932,9 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .vg-per { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 8px; }
 .vg-pe { display: flex; justify-content: flex-end; margin-top: 6px; }
 @media (max-width: 760px) { .vg-tiles { grid-template-columns: 1fr; } }
+/* botões bem menores: uma linha só */
+.vg-tile { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 0 6px; padding: 7px 12px; border-radius: 10px; }
+.vg-tit { font-size: 12.5px; margin-right: auto; align-self: center; }
+.vg-tile b { font-size: 15px; margin: 0; line-height: 1.3; }
+.vg-rot { font-size: 11.5px; }
+.vg-x { display: none; }
