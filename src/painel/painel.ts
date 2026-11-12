@@ -1367,7 +1367,7 @@ export function montar(app: HTMLElement) {
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Conteúdo liberado">
           <header class="aa-cab"><div><h2>Conteúdo liberado</h2><p><span class="aa-conta tem">${lib.length}</span> Tudo o que está liberado hoje para as alunas.</p></div><button type="button" class="aa-fechar" data-a="ini-conteudo-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ini-conteudo">${[...new Set(lib.map((x) => x.c))].map((c) => `<h3 class="ini-grupo-tit">${h(c.nome)}<span>${p(lib.filter((x) => x.c === c).length, "item", "itens")}</span></h3>${lib.filter((x) => x.c === c).map((x) => `
-            <button type="button" class="ini-item" data-a="abrir-aula" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
+            <button type="button" class="ini-item" data-a="abrir-aula-lib" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
@@ -7467,6 +7467,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const velha = x.m.aulas.map((k) => k.id);
         if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + x.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: velha }); } }; });
         return;
+      }
+      case "abrir-aula-lib": {
+        // Abre a aula já na parte "Publicação e liberação".
+        const x = acharAula(d.id); if (!x) return;
+        ui.iniConteudo = false; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = "";
+        setTimeout(() => document.querySelector(".pm-aula [data-pm-box], [data-pm-box]")?.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
+        break;
       }
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0); break; }
       case "aula-voltar-modulo": { ui.pmEditar = false;
