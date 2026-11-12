@@ -1196,9 +1196,9 @@ export function montar(app: HTMLElement) {
       </button>`;
     const carregando = `<span class="ini-met-car">…</span>`;
     const metricas = [
-      metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "aba", "engajamento"),
+      metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
       metrica(IC_INI.onda, "Engajamento", eng == null ? carregando : eng + "%", "das alunas acessaram no período", eng == null ? "" : variacao(eng, engAnt, true), linha(diasPer.map((d) => { const x = diaR.get(d); return x && x.total ? x.ativas / x.total : 0; })), "aba", "engajamento"),
-      metrica(IC_INI.play, "Aulas assistidas", assist ? String(assist.length) : carregando, "registros de aula no período", assist ? variacao(assist.length, assistAnt, true) : "", linha(assist ? porDia(assist.map((x) => x.quando)) : []), "ini-ativ-tipo", "assistiu"),
+      metrica(IC_INI.play, "Aulas assistidas", assist ? String(assist.length) : carregando, "registros de aula no período", assist ? variacao(assist.length, assistAnt, true) : "", linha(assist ? porDia(assist.map((x) => x.quando)) : []), "ini-ativ-assistidas"),
       metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ini-lista", "novas"),
     ].join("");
 
@@ -1300,8 +1300,8 @@ export function montar(app: HTMLElement) {
       ${painelListaIni()}
       ${ui.ativTodas ? `
         <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
-        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Últimas atividades">
-          <header class="aa-cab"><div><h2>Últimas atividades</h2><p>${br(de)} a ${br(ate)} · ${p((atvF || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${tipo === "assistiu" ? "Aulas assistidas" : "Últimas atividades"}">
+          <header class="aa-cab"><div><h2>${tipo === "assistiu" ? "Aulas assistidas" : "Últimas atividades"}</h2><p>${br(de)} a ${br(ate)} · ${tipo === "assistiu" ? p((atvF || []).length, "aula assistida", "aulas assistidas") : p((atvF || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ativ">${(atvF || []).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")}</div>
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
@@ -1341,7 +1341,12 @@ export function montar(app: HTMLElement) {
     const sete = diaDe(new Date(Date.now() - 6 * 864e5));
     const novasL: ListaIni = { id: "novas", titulo: "Alunas adicionadas recentemente", sub: "Cadastradas nos últimos 7 dias.", icone: IC_INI.pessoa,
       lista: S.alunas.filter((a) => a.criadaEm && diaDe(a.criadaEm) >= sete).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm)), direita: (a) => br(diaDe(a.criadaEm)) };
-    const aberta = ui.iniLista === "novas" ? novasL : listasAcessos().find((l) => l.id === ui.iniLista);
+    const per = periodoIni();
+    const ultimo = new Map<string, string>();
+    for (const x of ativ && ativ.chave === per.chave ? ativ.lista : []) { const d = diaDe(x.quando); if (d >= per.de && d <= per.ate && (!ultimo.has(x.aluna) || x.quando > ultimo.get(x.aluna)!)) ultimo.set(x.aluna, x.quando); }
+    const ativasL: ListaIni = { id: "ativas", titulo: "Alunas ativas", sub: "Acessaram, assistiram ou comentaram entre " + br(per.de) + " e " + br(per.ate) + ".", icone: IC_INI.pessoas,
+      lista: S.alunas.filter((a) => ultimo.has(a.id)).sort((x, y) => ultimo.get(y.id)!.localeCompare(ultimo.get(x.id)!)), direita: (a) => haTempo(ultimo.get(a.id)!) };
+    const aberta = ui.iniLista === "novas" ? novasL : ui.iniLista === "ativas" ? ativasL : listasAcessos().find((l) => l.id === ui.iniLista);
     return aberta ? `
         <div class="aa-fundo" data-a="ini-lista-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${h(aberta.titulo)}">
@@ -6826,6 +6831,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
+      case "ini-ativ-assistidas": ui.iniTipo = "assistiu"; ui.ativTodas = true; break;
       case "ini-ativ-recarregar": ativ = null; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
       case "ini-moderar": {
