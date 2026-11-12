@@ -823,14 +823,14 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
-  const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
     const c = curso(ui.curso); const x = ui.aula ? acharAula(ui.aula) : null;
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
-      case "inicio": return ["Início", "o que pede atenção hoje"];
+      case "inicio": return ["Visão geral", "o que pede atenção hoje"];
       case "reduzir": return ["Reduzir PDF", ""];
       case "lixeira": return ["Lixeira", lixo ? p(lixo.length, "item", "itens") : ""];
       case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
@@ -1003,6 +1003,15 @@ export function montar(app: HTMLElement) {
     </div>`;
   }
 
+  /** Topo do painel: os quatro grupos do menu e as telas de cada um. */
+  const GRUPOS_TP = [
+    { nome: "Visão geral", abas: ["inicio"] },
+    { nome: "Alunas", abas: ["alunas", "engajamento", "comentarios"] },
+    { nome: "Conteúdos", abas: ["cursos", "layout"] },
+    { nome: "Administração", abas: ["equipe", "registro", "config", "lixeira", "reduzir"] },
+  ];
+  const IC_SINO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>`;
+  const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.7-.7.6 2.7 2.6 1-.9 2.6 1.6 2.3-2.3 1.6.3 2.8-2.8.3-1.2 2.5-2.5-1.2-2.5 1.2-1.2-2.5-2.8-.3.3-2.8-2.3-1.6 1.6-2.3-.9-2.6 2.6-1 .6-2.7 2.7.7z"/></svg>`;
   function painel() {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
@@ -1011,31 +1020,39 @@ export function montar(app: HTMLElement) {
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
-    <div class="casca">
-      <aside class="lado" aria-label="Menu do painel">
-        <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
-        <nav class="lado-menu">
-          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
-        </nav>
-      </aside>
-      <div class="principal">
-        <div class="topo">
-          <div class="busca-geral">
-            <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, celular, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+    <div class="casca casca2">
+      <header class="tp">
+        <div class="tp-linha">
+          <button type="button" class="tp-marca" data-a="aba" data-v="inicio" aria-label="Ir para a Visão geral"><span class="tp-selo">AIŌN</span><span class="tp-rot">Administração</span></button>
+          <nav class="tp-nav" aria-label="Menu do painel">${GRUPOS_TP.map((g) => { const ids = g.abas.filter((id) => abas.some(([x]) => x === id)); if (!ids.length) return ""; const on = ids.includes(abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab)); const alvo = ids.find((id) => !abaBloq(id)) || ids[0]; return `<button type="button" class="tp-item" data-a="aba" data-v="${alvo}" ${on ? 'aria-current="page"' : ""}>${g.nome}</button>`; }).join("")}</nav>
+          <span class="tp-esp"></span>
+          <div class="busca-geral tp-busca">
+            <svg class="tp-lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="buscaGeral" class="campo" type="search" placeholder="Buscar na plataforma" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+            <kbd class="tp-tecla" aria-hidden="true">↵</kbd>
             <div id="buscaResultados">${resultadosBusca()}</div>
           </div>
-          <button class="al-botao topo-sug" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
-          <button class="al-botao topo-atu" data-a="atualizar-dados" title="Buscar de novo os dados, sem sair desta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar</button>
-          ${S.config.novidades ? `<button class="al-botao topo-nov" data-a="novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>Novidades</button>` : ""}
-          ${botaoTema()}
+          <span class="est3 tp-sino-w"><button type="button" class="tp-bt" data-a="estado-menu" data-v="sino" aria-haspopup="menu" aria-expanded="${ui.estMenu === "sino"}" aria-label="Notificações">${IC_SINO}${tarefasInicio() ? `<i class="tp-ponto">${tarefasInicio() > 99 ? "99+" : tarefasInicio()}</i>` : ""}</button>${ui.estMenu === "sino" ? `<span class="pf-pop tp-sino-pop" role="menu">
+            <span class="tp-pop-tit">Para fazer agora</span>
+            <button type="button" role="menuitem" data-a="ir-comentarios">${IC_INI.balao}<span>Comentários para moderar</span>${badge(paraResponder().length) || `<em>em dia</em>`}</button>
+            ${listasAcessos().map((l) => `<button type="button" role="menuitem" data-a="sino-lista" data-v="${l.id}">${l.icone}<span>${l.titulo}</span>${badge(l.lista.length) || `<em>em dia</em>`}</button>`).join("")}
+          </span>` : ""}</span>
+          ${abas.some(([x]) => x === "config") ? `<button type="button" class="tp-bt" data-a="aba" data-v="config" aria-label="Configurações" title="Configurações" ${ui.tab === "config" ? 'aria-current="page"' : ""}>${IC_ENGR}</button>` : ""}
           <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
             <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
             <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
+            <button type="button" role="menuitem" data-a="atualizar-dados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar dados</button>
+            <button type="button" role="menuitem" data-a="tema"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>Tema ${tema === "claro" ? "escuro" : "claro"}</button>
+            <button type="button" role="menuitem" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
+            ${S.config.novidades ? `<button type="button" role="menuitem" data-a="novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>Novidades</button>` : ""}
             ${ehDono() ? `<button type="button" role="menuitem" data-a="novidades-chave" class="pf-nov">Botão Novidades<span class="pf-chave${S.config.novidades ? " on" : ""}">${S.config.novidades ? "Ativado" : "Desativado"}</span></button>` : ""}
             <span class="pf-sep"></span>
             <button type="button" role="menuitem" class="pf-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
           </span>` : ""}</span>
         </div>
+        ${(() => { const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab))); const ids = g ? g.abas.filter((id) => abas.some(([x]) => x === id)) : []; if (ids.length < 2) return ""; return `<nav class="tp-sub" aria-label="${g!.nome}">${ids.map((id) => { const nome = abas.find(([x]) => x === id)![1]; const on = abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab) === id; const nb = id === "comentarios" ? paraResponder().length : 0; return abaBloq(id) ? `<button type="button" class="tp-sub-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true">${ICONE_MENU[id] || ""}${nome}</button>` : `<button type="button" class="tp-sub-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}${nome}${badge(nb)}</button>`; }).join("")}</nav>`; })()}
+      </header>
+      <div class="principal">
         <div class="conteudo">
           ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || (ui.tab === "inicio" && INI_EXTRA) ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
@@ -6855,6 +6872,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-abrir-cat": ui.tab = "layout"; ui.catEditar = d.id; ui.catAnima = true; window.scrollTo(0, 0); break;
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
+      case "sino-lista": ui.tab = "inicio"; ui.iniLista = d.v; ui.estMenu = ""; window.scrollTo(0, 0); break;
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
       case "ini-conteudo": ui.iniConteudo = true; break;
