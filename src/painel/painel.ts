@@ -1733,7 +1733,7 @@ export function montar(app: HTMLElement) {
       const n = c.modulos.reduce((s2, m) => s2 + m.aulas.filter((k) => libs.has(k.id)).length, 0);
       return n ? { c, n } : null;
     }).filter(Boolean) as { c: Curso; n: number }[];
-    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["produtos", "Produtos"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
+    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["produtos", "Produtos"], ["progresso", "Progresso"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
     const aba = ABAS_AL.some(([k]) => k === ui.acessoAba) ? ui.acessoAba : "geral";
     const naoInf = `<span class="aa-vazio">não informado</span>`;
     const linha = (rotulo: string, valor: string) => `<div class="aa-dado"><span>${rotulo}</span><b>${valor}</b></div>`;
