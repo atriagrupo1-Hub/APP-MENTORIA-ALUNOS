@@ -5687,3 +5687,8 @@ html[data-tema="claro"] .cn-opcoes button { color: var(--texto); background: var
 html[data-tema="claro"] .cn-opcoes svg { stroke: var(--texto); }
 html[data-tema="claro"] .cn-cab { border-bottom-color: var(--linha-suave); }
 .casca2 .vgx-abas button { font-size: 15px; }
+.casca2 .vgx-recente .vgx-tl b { font-size: 15px; font-weight: 600; color: #EEEEF0; }
+.casca2 .vgx-recente .vgx-tl span { margin-top: 6px; font-size: 13px; color: #C9CBD0; }
+.casca2 .vgx-recente .vgx-tl li::before { top: 22px; width: 7px; height: 7px; background: #E2C68C; }
+html[data-tema="claro"] .casca2 .vgx-recente .vgx-tl b { color: var(--texto); }
+html[data-tema="claro"] .casca2 .vgx-recente .vgx-tl span { color: var(--texto-2); }
