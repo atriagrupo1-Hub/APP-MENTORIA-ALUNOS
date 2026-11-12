@@ -594,7 +594,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", vgxGrupo: "mentoria", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
     filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1230,7 +1230,15 @@ export function montar(app: HTMLElement) {
         <span class="m2-sub">${sub}${vari}</span>
       </button>`;
     const carregando = `<span class="ini-met-car">…</span>`;
-    const metricas = [
+    const gTot = ui.vgxGrupo || "mentoria";
+    const doG = S.alunas.filter((a) => daMentoria(a) === (gTot === "mentoria"));
+    const totalCard = `
+      <div class="ini-met m2 m2-total">
+        <span class="m2-topo"><span class="m2-rot">Total de alunos(as)</span><span class="m2-ic">${IC_INI.pessoas}</span></span>
+        <span class="m2-meio"><span class="ini-met-val">${doG.length}</span><button type="button" class="vgx-link m2-ver" data-a="vgx-total-ver">${IC_INI.seta}Ver</button></span>
+        <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Alunos mentoria"], ["geral", "Alunos geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
+      </div>`;
+    const metricas = totalCard + [
       metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
       metrica(IC_INI.onda, "Atividades dos alunos", atv ? String(atv.length) : carregando, "acessos, aulas, e-books, comentários e curtidas", atv ? variacao(atv.length, atvAnt, true) : "", linha(atv ? porDia(atv.map((x) => x.quando)) : []), "ini-ativ-abrir"),
       metrica(IC_CAL_AG, "Conteúdo liberado", String(lib.length), "itens liberados para as alunas", "", linha(porDia(concPer)), "ini-conteudo"),
@@ -6973,6 +6981,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
+      case "vgx-grupo": ui.vgxGrupo = d.v; break;
+      case "vgx-total-ver": ui.tab = "alunas"; ui.grupoAl = (ui.vgxGrupo || "mentoria") as "mentoria" | "geral"; window.scrollTo(0, 0); break;
       case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
       case "ini-conteudo": ui.iniConteudo = true; break;
       case "ini-conteudo-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniConteudo = false; break;
