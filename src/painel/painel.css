@@ -5945,3 +5945,10 @@ html[data-tema="claro"] .aa-pp-pct { color: #8a6420; }
 .aa-pp .al-mod { grid-template-columns: minmax(0, 1fr) 120px 40px 80px; }
 .aa-pp .al-mod-nome, .aa-pp .al-mod-qt { font-size: 11px; }
 .aa-pp .al-mod-pct { font-size: 11px; font-weight: 600; }
+.cad-acoes-acesso { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; }
+.cad-acoes-acesso .botao-neutro { min-height: 34px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
+html:not([data-tema="claro"]) .cad-al .cad-renovar { color: #202018; background: #E2C68C; border-color: #E2C68C; }
+html:not([data-tema="claro"]) .cad-al .cad-renovar:hover { background: #EED9AD; }
+html:not([data-tema="claro"]) .cad-al .cad-bloquear { color: #DFA19F; }
+html[data-tema="claro"] .cad-al .cad-renovar { color: #202018; background: #E2C68C; border-color: #E2C68C; }
+html[data-tema="claro"] .cad-al .cad-bloquear { color: #b8352d; }
