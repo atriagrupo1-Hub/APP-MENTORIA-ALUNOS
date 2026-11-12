@@ -4858,6 +4858,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <div class="cf-cel"><div class="cf-im">${capa ? `<img src="${h(capa)}" alt="" />` : ""}</div><div class="cf-tx"><p class="cf-rot">${h(c.cardRotulo)}</p><p class="cf-nome">${h(c.nome)}</p>${c.descricao ? `<p class="cf-desc">${h(c.descricao)}</p>` : ""}<div class="cf-bar"><i></i></div><span class="cf-bt">${h(c.cardBotao || "Ver")} ›</span></div></div>
     </div>`;
   }
+  void fichaCurso; // ficha "só para ler" guardada; o Sobre o curso voltou ao editor completo (como era antes)
   function configCurso(c: Curso) {
     const capa = previas["cur-" + c.id] || capaSite(c.capa);
     const aaC = (k: string, nome: string) => `<button type="button" class="kx-aa" data-a="curso-est" data-id="${c.id}" data-v="${k}" aria-label="Estilo: ${h(nome)}"><b>Aa</b>Estilo</button>`;
@@ -4866,8 +4867,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const cab = (n: string, tit: string, dica: string) => `<div class="ce-cab ce-cab-n"><h3>${n}. ${tit}</h3>${dica}<span class="ce-selo" data-ce-selo="${n}"></span></div>`;
     const ps = passosCurso(c);
     return `
-      <div class="ce-voltar"><button type="button" class="al-botao" data-a="ce-ver">← Voltar</button><span>Editando: <b>${h(({ "1": "Capa", "2": "Textos do card", "3": "Onde aparece", "4": "Visual", "5": "Publicação" } as Record<string, string>)[ui.ceEd] || "Curso")}</b></span></div>
-      <div class="cs-config cs-ed ce ce-so ce-so-${h(ui.ceEd)}" data-form-de="formCurso">
+      <div class="cs-config cs-ed ce" data-form-de="formCurso">
         <ol class="ce-passos" aria-label="Passos do curso">${ps.map((x, i) => `<li data-ce-passo="${i + 1}" class="${x.ok ? "ok" : ""}"><i>${x.ok ? "✓" : i + 1}</i>${h(x.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((x) => x.ok).length} de ${ps.length}</b> prontos</span></ol>
         <div class="cs-col">
         <form id="formCurso" data-f="curso-config" class="ce-form">
@@ -5065,7 +5065,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const conteudo = aba === "modulos" ? modulosCurso(c)
       : aba === "alunas" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
-      : aba === "config" ? (ui.ceEd ? configCurso(c) : fichaCurso(c))
+      : aba === "config" ? configCurso(c)
       : aba === "relatorios" ? relatoriosCurso(c, todas)
       : visaoGeralCurso(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
