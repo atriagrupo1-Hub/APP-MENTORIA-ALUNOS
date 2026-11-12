@@ -5861,3 +5861,15 @@ html[data-tema="claro"] .al2-barra i { background: #b08a3e; }
 .al2-tab .vgx-bt.pequeno { min-height: 30px; padding: 6px 10px; font-size: 12px; }
 .al2-ic { width: 28px; height: 28px; }
 .al2-ic svg { width: 14px; height: 14px; }
+/* Alunas e acessos: tipografia e cores do guia (cabeçalhos 10 · nome 13/600 · dados 12 · secundárias 11 · status 11/550 · botões 12/600) */
+.al2-tab th { font-family: "IBM Plex Mono", monospace; font-size: 10px; font-weight: 400; }
+.al2-tab td, .al2-prog > span:first-child, .al2-zap > span { font-size: 12px; font-weight: 400; }
+.al2-quem b { font-size: 13px; font-weight: 600; }
+.al2-quem > span > span, .al2-nada, .al2-pe, .al2-prods em { font-size: 11px; font-weight: 400; }
+.al2-st { font-size: 11px; font-weight: 550; }
+.al2 .vgx-bt, .al2 .vgx-bt.pequeno, .al2-cab .al-botao-ouro, .al2-cab .vgx-bt, .al2-tab .vgx-bt.pequeno { font-size: 12px; font-weight: 600; }
+.al2-busca input, .al2-sel { font-size: 12px; }
+html:not([data-tema="claro"]) .casca2 .al2-painel { background: #191A1E; border-color: #2B2D32; }
+html:not([data-tema="claro"]) .al2-tab td, html:not([data-tema="claro"]) .al2-quem b { color: #EEEEF0; }
+html:not([data-tema="claro"]) .al2-quem > span > span, html:not([data-tema="claro"]) .al2-pe, html:not([data-tema="claro"]) .al2-nada { color: #94979E; }
+.al2-st.verde { color: #9AC7AB; } .al2-st.ouro { color: #DFC089; }
