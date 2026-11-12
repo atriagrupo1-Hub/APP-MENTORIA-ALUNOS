@@ -5958,4 +5958,9 @@ html[data-tema="claro"] .cad-al .cad-bloquear { color: #b8352d; }
 .cad-cod-gerar svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 html[data-tema="claro"] .cad-cod-gerar { color: var(--texto-2); }
 html[data-tema="claro"] .cad-cod-gerar:hover { color: #8a6420; background: var(--aa-cinza); }
-[data-painel] .cad-cod-gerar:not(:disabled):hover { box-shadow: none; }
+[data-painel] .cad-cod-gerar:not(:disabled):hover { box-shadow: none; }.cad-topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.cad-topo .titulo { margin: 0; }
+.cad-desfazer { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 6px 10px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; color: #EEEEF0; background: #222429; border: 1px solid #35373D; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.cad-desfazer:hover:not(:disabled) { background: #303237; border-color: #5A5B60; }
+.cad-desfazer:disabled { opacity: .45; cursor: default; }
+html[data-tema="claro"] .cad-desfazer { color: var(--texto); background: var(--aa-cartao); border-color: var(--linha-suave); }

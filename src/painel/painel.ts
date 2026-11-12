@@ -6126,7 +6126,24 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
   function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
   function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || nome.split(/\s+/)[0] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
+  /* Desfazer dentro do cadastro (editar): guarda o formulário antes de cada alteração, até 5. Nada vai ao banco. */
+  let cadHist: Record<string, string>[] = []; let cadAntes: Record<string, string> | null = null;
+  const fotoCad = (f: HTMLFormElement) => { const o: Record<string, string> = {}; for (const el of Array.from(f.elements) as HTMLInputElement[]) { if (!el.name || el.type === "button" || el.type === "submit") continue; if (el.type === "radio") { if (el.checked) o[el.name] = el.value; else if (!(el.name in o)) o[el.name] = ""; } else if (el.type === "checkbox") o[el.name + ":" + el.value] = el.checked ? "1" : ""; else o[el.name] = el.value; } return o; };
+  const mesmaFoto = (x: Record<string, string>, y: Record<string, string>) => Object.keys(x).every((k) => x[k] === y[k]);
+  function cadGuardar(f: HTMLFormElement, antes = fotoCad(f)) { cadHist.push(antes); if (cadHist.length > 5) cadHist.shift(); cadBotaoDesfazer(); }
+  function cadBotaoDesfazer() { const b = document.querySelector<HTMLButtonElement>(".cad-desfazer"); if (b) { b.disabled = !cadHist.length; b.textContent = "↶ Desfazer" + (cadHist.length ? " (" + cadHist.length + ")" : ""); } }
+  function cadDesfazer(f: HTMLFormElement) {
+    const o = cadHist.pop(); if (!o) return;
+    for (const el of Array.from(f.elements) as HTMLInputElement[]) {
+      if (!el.name || el.type === "button" || el.type === "submit") continue;
+      if (el.type === "radio") el.checked = o[el.name] === el.value; else if (el.type === "checkbox") el.checked = o[el.name + ":" + el.value] === "1"; else if (el.name in o) el.value = o[el.name];
+    }
+    cadAntes = fotoCad(f); atualizarCad(); cadBotaoDesfazer();
+  }
+  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
   function atualizarCad() {
+    cadBotaoDesfazer();
     const f = cadForm(); if (!f) return;
     const nome = cadValor("nome"), pn = nome.split(/\s+/)[0] || "", link = cadValor("link") || LINKS.geral || enderecoDaMentoria();
     const lg = f.elements.namedItem("login") as HTMLInputElement | null; if (lg && !lg.value) lg.placeholder = cadLogin() || "gerado pelo nome";
@@ -6188,7 +6205,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}</div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
@@ -6606,7 +6623,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
-      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
+      case "editar-aluna": cadHist = []; cadAntes = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
       case "desfazer-confirmar": {
         const x = pilha.shift(); ui.modal = null;
@@ -6768,9 +6785,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cad-aba": { const at = cadAtual(), abas = cadAbas(); if (abas.indexOf(d.v) > abas.indexOf(at)) { for (const k of abas.slice(0, abas.indexOf(d.v))) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } } } cadIr(d.v); return; }
       case "cad-prox": { const at = cadAtual(), e = cadConferir(at); if (e) { toast(e); return; } const abas = cadAbas(); cadIr(abas[abas.indexOf(at) + 1]); return; }
       case "cad-voltar": { const abas = cadAbas(); cadIr(abas[Math.max(0, abas.indexOf(cadAtual()) - 1)]); return; }
-      case "cad-prazo": { const f = cadForm(); if (!f) return; const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
+      case "cad-prazo": { const f = cadForm(); if (!f) return; cadGuardar(f); const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
       case "aln-foto": fotoPara = "aln"; arquivoFoto.click(); return;
-      case "gerar-codigo": ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
+      case "gerar-codigo": if (el.closest("form.cad-al")) cadGuardar(el.closest("form") as HTMLFormElement); ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
       case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
       case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
       case "preencher-datas": {
@@ -6829,6 +6846,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
+      case "cad-desfazer": { const f = el.closest("form") as HTMLFormElement | null; if (f) cadDesfazer(f); return; }
       case "cad-mostrar-cod": { const i = document.querySelector<HTMLInputElement>('.cad-al input[name="codigo"]'); if (i) { const ver = i.type === "password"; i.type = ver ? "text" : "password"; el.textContent = ver ? "Esconder" : "Mostrar"; } return; }
       case "bloquear-aluna":
         confirmar({ titulo: "Bloquear " + al!.nome + "?", texto: "Ela perde o acesso na hora, em qualquer aparelho. Dá para desbloquear depois.", palavra: "BLOQUEAR", rotulo: "Bloquear aluna" }, async () => {
