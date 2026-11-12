@@ -4504,7 +4504,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <div class="cf-lista">
         ${sec("1", "Capa", capa ? `<img class="cf-capa" src="${h(capa)}" alt="" />` : `<em class="cf-falta">Sem capa</em>`)}
         ${sec("2", "Textos do card", `<small>Em cima do nome</small>${h(c.cardRotulo || "—")}<small>Nome</small>${h(c.nome)}<small>Descrição</small>${h(c.descricao || "—")}<small>Botão</small>${h(c.cardBotao || "—")}`)}
-        ${sec("3", "Onde aparece", (abas.map((x) => tag(x)).join("") + cats.map((x) => tag(x.nome)).join("")) || `<em class="cf-falta">Em nenhum lugar do app</em>`)}
+        ${sec("3", "Botão e categoria", abas.length || cats.length ? `<small>Botão do app</small>${abas.map((x) => tag(x)).join("") || "—"}<small>Categoria</small>${cats.map((x) => tag(x.nome)).join("") || `<em class="cf-falta">Sem categoria</em>`}` : `<em class="cf-falta">Em nenhum lugar do app</em>`)}
         ${sec("4", "Visual", pers ? "Personalizado" : "Padrão do app")}
         ${sec("5", "Publicação", `${tag(c.rascunho ? "Rascunho · não publicado" : !c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && !c.rascunho && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
       </div>
