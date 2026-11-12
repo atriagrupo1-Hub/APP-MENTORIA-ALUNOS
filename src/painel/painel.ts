@@ -2464,17 +2464,19 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- ALUNAS ---------- */
+  /** Quantos produtos a aluna tem (produtos com pelo menos uma aula liberada para ela). */
+  const nProdutos = (a: Aluna) => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).length; };
   const FILTROS_AL: [string, string, (a: Aluna) => boolean][] = [
-    ["todas", "Todas", () => true],
-    ["novas", "Recém-adicionadas", nova],
-    ["ativas", "Ativas", (a) => { const s = situacao(a); return s === "ativa" || s === "vencendo"; }],
+    ["todas", "Todos os status", () => true],
+    ["ativas", "Ativo", (a) => situacao(a) === "ativa"],
     ["vencendo", "Vencendo", (a) => situacao(a) === "vencendo"],
-    ["vencidas", "Vencidas", (a) => situacao(a) === "vencida"],
-    ["bloqueadas", "Bloqueadas", (a) => a.bloqueada],
-    ["paradas", "Sem acesso recente", parada],
+    ["paradas", "Sem atividade", parada],
+    ["nunca", "Nunca acessou", (a) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso],
+    ["bloqueadas", "Bloqueado", (a) => a.bloqueada],
   ];
   const ORDENS: Record<string, (x: Aluna, y: Aluna) => number> = {
     progresso: (x, y) => progressoDe(x) - progressoDe(y) || x.nome.localeCompare(y.nome, "pt"),
+    produtos: (x, y) => nProdutos(y) - nProdutos(x) || x.nome.localeCompare(y.nome, "pt"),
     // Pela hora do cadastro: a última aluna adicionada vem primeiro. Sem a
     // hora (acabou de entrar, antes de recarregar), conta como a mais nova.
     recentes: (x, y) => (y.criadaEm || "9999").localeCompare(x.criadaEm || "9999") || x.nome.localeCompare(y.nome, "pt"),
@@ -2555,11 +2557,11 @@ export function montar(app: HTMLElement) {
       </div>
       <div class="al2-barra">
         <label class="al2-busca"><span class="sr">Buscar alunas</span><input id="busca" type="search" placeholder="Buscar nome, login ou telefone" value="${h(ui.busca)}" data-i="busca" aria-label="Buscar alunas" /></label>
-        <select class="al2-sel" data-filtro-al aria-label="Filtrar por status do acesso">${FILTROS_AL.map(([id, nome]) => `<option value="${id}" ${ui.filtroAl === id ? "selected" : ""}>${id === "todas" ? "Todos os status" : nome}</option>`).join("")}</select>
+        <select class="al2-sel" data-filtro-al aria-label="Filtrar por status do acesso">${FILTROS_AL.map(([id, nome]) => `<option value="${id}" ${ui.filtroAl === id ? "selected" : ""}>${nome}</option>`).join("")}</select>
         <span class="al2-esp"></span>
         <button type="button" class="vgx-bt pequeno" data-a="al-lote" ${ui.sel.length ? "" : "disabled"} title="${ui.sel.length ? "" : "Selecione alunas na tabela"}">Ação em lote${ui.sel.length ? " (" + ui.sel.length + ")" : ""}</button>
         <select class="al2-sel" data-ordem aria-label="Ordenar alunas">
-          ${[["recentes", "Mais recentes"], ["nome", "Nome A–Z"], ["progresso", "Menor progresso"], ["antigas", "Mais antigas"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
+          ${[["recentes", "Mais recentes"], ["nome", "Nome A–Z"], ["produtos", "Mais produtos"], ["progresso", "Menor progresso"], ["antigas", "Mais antigas"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
         </select>
       </div>
       ${ui.sel.length ? barraLote() : ""}
