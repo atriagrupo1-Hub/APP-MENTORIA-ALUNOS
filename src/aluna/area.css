@@ -1642,3 +1642,6 @@ html[data-tema="claro"] .cur-tit { color: #1a1206; }
 .cur-prog i { background: #fff; }
 .cur-prog span { background: #333; }
 .cur-bt { color: #000; background: #fff; border-color: #fff; box-shadow: none; }
+
+/* Presentes: linha de divisão entre os cartões das categorias */
+.pres-div { grid-column: 1 / -1; width: 100%; height: 1px; margin: 6px 0; border: 0; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--ouro, #d6b36a) 55%, transparent), transparent); }

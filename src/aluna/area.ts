@@ -1437,8 +1437,7 @@ export function montar(raiz: HTMLElement) {
     return `
     <div class="pagina">
       ${titulo ? `<h1 class="todos-mod serif${ehPres ? " tit-" + h(t.presTitEstilo || "padrao") : ""}">${h(titulo)}</h1>` : ""}
-      ${lista.length ? `<div class="mods-abas pres-abas" aria-label="Presentes">${lista.map((x) => `<button${est(estCat(x.curso), "botao", "botao")} data-a="curso-pres" data-v="${x.ci}-${x.i}"><span>${h(x.curso.nome)}</span><span class="pres-aba-seta" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
-      <div class="cat-grade${ehPres ? " pg-est-" + h(t.presEstilo || "padrao") : ""}">${lista.map(cartaoPresente).join("") || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
+      <div class="cat-grade${ehPres ? " pg-est-" + h(t.presEstilo || "padrao") : ""}">${lista.map(cartaoPresente).join(`<hr class="pres-div" aria-hidden="true" />`) || `<div class="vazio">${aba && !/presente/i.test(aba.titulo) ? "Em breve, novidades para você." : "Em breve, presentes para você."}</div>`}</div>
     </div>`;
   }
   function telaCategoria() {
