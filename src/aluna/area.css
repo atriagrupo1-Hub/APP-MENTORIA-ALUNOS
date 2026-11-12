@@ -217,6 +217,9 @@
   .mv-topo { display: grid; grid-template-columns: minmax(0, 44%) minmax(0, 1fr); gap: 16px; align-items: start; }
   .mv-capa-mod { position: relative; display: block; aspect-ratio: 2 / 3; overflow: hidden; background: var(--reserva); border: 1px solid color-mix(in srgb, var(--mc) 60%, transparent); border-radius: 6px; box-shadow: 0 0 22px -10px var(--mc); }
   .mv-capa-mod img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  /* Capa deitada (16:9): vai inteira em cima, ocupando a largura; o texto vem embaixo. */
+  .mv-topo.deitada { grid-template-columns: 1fr; }
+  .mv-topo.deitada .mv-capa-mod { aspect-ratio: 16 / 9; }
   .mv-txt { min-width: 0; padding-top: 6px; }
   .mv-rot { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: var(--mc); }
   .mv-rot span { flex: 0 0 28px; height: 1px; background: var(--mc); }
