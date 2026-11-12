@@ -1233,9 +1233,9 @@ export function montar(app: HTMLElement) {
     const gTot = ui.vgxGrupo || "mentoria";
     const doG = S.alunas.filter((a) => daMentoria(a) === (gTot === "mentoria"));
     const totalCard = `
-      <div class="ini-met m2 m2-total">
+      <div class="ini-met m2 m2-total" data-a="ini-lista" data-v="total" role="button" tabindex="0">
         <span class="m2-topo"><span class="m2-rot">Total de alunos(as)</span><span class="m2-ic">${IC_INI.pessoas}</span></span>
-        <span class="m2-meio"><span class="ini-met-val">${doG.length}</span><button type="button" class="vgx-link m2-ver" data-a="vgx-total-ver">${IC_INI.seta}Ver</button></span>
+        <span class="m2-meio"><span class="ini-met-val">${doG.length}</span></span>
         <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Alunos mentoria"], ["geral", "Alunos geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
       </div>`;
     const metricas = totalCard + [
@@ -1492,7 +1492,10 @@ export function montar(app: HTMLElement) {
     for (const x of ativ && ativ.chave === per.chave ? ativ.lista : []) { const d = diaDe(x.quando); if (d >= per.de && d <= per.ate && (!ultimo.has(x.aluna) || x.quando > ultimo.get(x.aluna)!)) ultimo.set(x.aluna, x.quando); }
     const ativasL: ListaIni = { id: "ativas", titulo: "Alunas ativas", sub: "Acessaram, assistiram ou comentaram entre " + br(per.de) + " e " + br(per.ate) + ".", icone: IC_INI.pessoas,
       lista: S.alunas.filter((a) => ultimo.has(a.id)).sort((x, y) => ultimo.get(y.id)!.localeCompare(ultimo.get(x.id)!)), direita: (a) => haTempo(ultimo.get(a.id)!) };
-    const aberta = ui.iniLista === "novas" ? novasL : ui.iniLista === "ativas" ? ativasL : listasAcessos().find((l) => l.id === ui.iniLista);
+    const gT = ui.vgxGrupo || "mentoria";
+    const totalL: ListaIni = { id: "total", titulo: gT === "mentoria" ? "Alunos mentoria" : "Alunos geral", sub: "Total de alunos(as) cadastrados neste grupo.", icone: IC_INI.pessoas,
+      lista: S.alunas.filter((a) => daMentoria(a) === (gT === "mentoria")).sort((x, y) => x.nome.localeCompare(y.nome, "pt")), direita: (a) => br(cadastroDe(a)) };
+    const aberta = ui.iniLista === "total" ? totalL : ui.iniLista === "novas" ? novasL : ui.iniLista === "ativas" ? ativasL : listasAcessos().find((l) => l.id === ui.iniLista);
     return aberta ? `
         <div class="aa-fundo" data-a="ini-lista-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${h(aberta.titulo)}">
