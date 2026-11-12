@@ -1199,7 +1199,7 @@ export function montar(app: HTMLElement) {
       metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "aba", "engajamento"),
       metrica(IC_INI.onda, "Engajamento", eng == null ? carregando : eng + "%", "das alunas acessaram no período", eng == null ? "" : variacao(eng, engAnt, true), linha(diasPer.map((d) => { const x = diaR.get(d); return x && x.total ? x.ativas / x.total : 0; })), "aba", "engajamento"),
       metrica(IC_INI.play, "Aulas assistidas", assist ? String(assist.length) : carregando, "registros de aula no período", assist ? variacao(assist.length, assistAnt, true) : "", linha(assist ? porDia(assist.map((x) => x.quando)) : []), "ini-ativ-tipo", "assistiu"),
-      metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ir-alunas-recentes"),
+      metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ini-lista", "novas"),
     ].join("");
 
     // Fila única de tarefas, cada uma com a ação direta.
@@ -1338,7 +1338,10 @@ export function montar(app: HTMLElement) {
         </div>`;
   /** A lista inteira de um grupo de acessos, num painel à direita. */
   function painelListaIni() {
-    const aberta = listasAcessos().find((l) => l.id === ui.iniLista);
+    const sete = diaDe(new Date(Date.now() - 6 * 864e5));
+    const novasL: ListaIni = { id: "novas", titulo: "Alunas adicionadas recentemente", sub: "Cadastradas nos últimos 7 dias.", icone: IC_INI.pessoa,
+      lista: S.alunas.filter((a) => a.criadaEm && diaDe(a.criadaEm) >= sete).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm)), direita: (a) => br(diaDe(a.criadaEm)) };
+    const aberta = ui.iniLista === "novas" ? novasL : listasAcessos().find((l) => l.id === ui.iniLista);
     return aberta ? `
         <div class="aa-fundo" data-a="ini-lista-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${h(aberta.titulo)}">
