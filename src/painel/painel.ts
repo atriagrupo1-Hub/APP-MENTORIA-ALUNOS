@@ -1365,7 +1365,7 @@ export function montar(app: HTMLElement) {
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Conteúdo liberado">
           <header class="aa-cab"><div><h2>Conteúdo liberado</h2><p><span class="aa-conta tem">${lib.length}</span> Tudo o que está liberado hoje para as alunas.</p></div><button type="button" class="aa-fechar" data-a="ini-conteudo-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ini-conteudo">${[...new Set(lib.map((x) => x.c))].map((c) => `<h3 class="ini-grupo-tit">${h(c.nome)}<span>${p(lib.filter((x) => x.c === c).length, "item", "itens")}</span></h3>${lib.filter((x) => x.c === c).map((x) => `
-            <button type="button" class="ini-item" data-a="abrir-aula" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("") `).join("") || vazio("Nada liberado ainda.")}</div>
+            <button type="button" class="ini-item" data-a="abrir-aula" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
