@@ -5466,3 +5466,7 @@ html[data-tema="claro"] .vgx-st.perto { color: #8a6420; }
 .vgx-scab .vgx-link { white-space: nowrap; }
 .vgx-col, .vgx-meio > * { min-width: 0; }
 .vgx-tl li { min-width: 0; overflow-wrap: anywhere; }
+.vgx-meio { align-items: stretch; }
+.vgx-central { display: flex; flex-direction: column; }
+.vgx-central .vgx-cpe { margin-top: auto; }
+.vgx-col > .vgx-recente { flex: 1 1 auto; display: flex; flex-direction: column; }

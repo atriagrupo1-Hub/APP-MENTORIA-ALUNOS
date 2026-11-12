@@ -1398,7 +1398,9 @@ export function montar(app: HTMLElement) {
           <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
         </div>
       </section>`;
-    const recentes = (atv || []).slice(0, 5);
+    // Sem repetir: uma linha por aluna e tipo; quatro linhas, para fechar reto com a Central.
+    const vistos = new Set<string>();
+    const recentes = (atv || []).filter((x) => { const k = x.aluna + "|" + GRUPO_ATV[x.tipo]; if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, 4);
     const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
     const fraseAtv = (x: Atividade) => x.tipo === "acessou" ? "acessou a plataforma" : x.tipo === "comentou" ? "deixou um comentário" : x.tipo === "respondeu" ? "respondeu um comentário" : x.tipo === "concluiu" ? "concluiu uma aula" : x.tipo === "abriu_ebook" ? "abriu um e-book" : x.tipo === "curtiu" || x.tipo === "curtiu_comentario" ? "curtiu" : "assistiu uma aula";
     const recente = `
