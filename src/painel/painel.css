@@ -5712,3 +5712,4 @@ html[data-tema="claro"] .lq-corpo { border-bottom-color: var(--linha-suave); }
 html[data-tema="claro"] .lq-tag { color: var(--texto); }
 html[data-tema="claro"] .lq-tag i { color: #8a6420; border-color: var(--linha-suave); }
 html[data-tema="claro"] .lq-tag em, html[data-tema="claro"] .lq-st { color: #2f7a3a; }
+.ini-mod-tit { margin: 12px 0 2px; padding: 6px 10px; font-size: 13px; font-weight: 700; letter-spacing: .02em; color: var(--texto-2); background: var(--aa-cinza); border-radius: 6px; }
