@@ -24,6 +24,8 @@ import { abrirSeletorEstilo } from "./seletor-estilo";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
+// Fontes da Visão geral nova (Manrope e IBM Plex Mono).
+if (typeof document !== "undefined" && !document.getElementById("fonte-vgx")) { const l = document.createElement("link"); l.id = "fonte-vgx"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;550;600;650;700;750;800&family=IBM+Plex+Mono:wght@400;500&display=swap"; document.head.appendChild(l); }
 
 /* ---------- tipos ---------- */
 
