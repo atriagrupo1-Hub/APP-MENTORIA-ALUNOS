@@ -6200,13 +6200,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
           <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
-          <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><input class="campo" name="codigo" type="${a ? "password" : "text"}" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span></label>
+          <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><span class="campo cad-cod"><input name="codigo" type="${a ? "password" : "text"}" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" aria-label="Código de acesso" /><button type="button" class="cad-cod-gerar" data-a="gerar-codigo" aria-label="Gerar um código novo" title="Gerar um código novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15"/></svg></button></span><button type="button" class="botao-neutro grande" data-a="cad-mostrar-cod">${a ? "Mostrar" : "Esconder"}</button></span></label>
           <label class="cad-c"><span>Cadastro <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
           <label class="cad-c"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
           <label class="cad-c"><span>Acesso até <b>*</b></span><input class="campo" type="date" name="validade" value="${val}" /><span class="cad-chips">${prazo(6, "6 meses")}${prazo(12, "1 ano")}${prazo(24, "2 anos")}</span></label>
           <div class="cad-c"><span>Celular da aluna ${a ? "" : "<b>*</b>"}</span><div class="cad-seg">${(["android", "iphone"] as const).map((k) => `<label><input type="radio" name="aparelho" value="${k}" ${a && APARELHO.get(a.id) === k ? "checked" : ""} /><span>${NOME_APARELHO[k]}${VIDEOS_ACESSO[k] ? "" : " · sem vídeo"}</span></label>`).join("")}</div><small>Define qual vídeo de instalação vai junto com o acesso (vídeos em Configurações → Acesso do aluno).</small></div>
           ${a ? `<div class="cad-full cad-acoes-acesso">
-            <button type="button" class="botao-neutro grande" data-a="cad-mostrar-cod">Mostrar código</button>
             <button type="button" class="botao-neutro grande" data-a="copiar-acesso" data-id="${a.id}">Copiar mensagem</button>
             <button type="button" class="botao-neutro grande cad-renovar" data-a="renovar" data-id="${a.id}">Renovar acesso</button>
             ${a.bloqueada ? `<button type="button" class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear acesso</button>` : `<button type="button" class="botao-neutro grande cad-bloquear" data-a="bloquear-aluna" data-id="${a.id}">Bloquear acesso</button>`}
@@ -6830,7 +6829,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "cad-mostrar-cod": { const i = document.querySelector<HTMLInputElement>('.cad-al input[name="codigo"]'); if (i) { const ver = i.type === "password"; i.type = ver ? "text" : "password"; el.textContent = ver ? "Esconder código" : "Mostrar código"; } return; }
+      case "cad-mostrar-cod": { const i = document.querySelector<HTMLInputElement>('.cad-al input[name="codigo"]'); if (i) { const ver = i.type === "password"; i.type = ver ? "text" : "password"; el.textContent = ver ? "Esconder" : "Mostrar"; } return; }
       case "bloquear-aluna":
         confirmar({ titulo: "Bloquear " + al!.nome + "?", texto: "Ela perde o acesso na hora, em qualquer aparelho. Dá para desbloquear depois.", palavra: "BLOQUEAR", rotulo: "Bloquear aluna" }, async () => {
           await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "bloqueada" });

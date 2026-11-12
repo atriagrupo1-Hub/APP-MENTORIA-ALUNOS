@@ -5947,8 +5947,15 @@ html[data-tema="claro"] .aa-pp-pct { color: #8a6420; }
 .aa-pp .al-mod-pct { font-size: 11px; font-weight: 600; }
 .cad-acoes-acesso { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; }
 .cad-acoes-acesso .botao-neutro { min-height: 34px; padding: 6px 12px; font-size: 12px; font-weight: 600; }
-html:not([data-tema="claro"]) .cad-al .cad-renovar { color: #202018; background: #E2C68C; border-color: #E2C68C; }
-html:not([data-tema="claro"]) .cad-al .cad-renovar:hover { background: #EED9AD; }
 html:not([data-tema="claro"]) .cad-al .cad-bloquear { color: #DFA19F; }
-html[data-tema="claro"] .cad-al .cad-renovar { color: #202018; background: #E2C68C; border-color: #E2C68C; }
 html[data-tema="claro"] .cad-al .cad-bloquear { color: #b8352d; }
+
+.cad-cod { display: flex; align-items: center; gap: 6px; flex: 1 1 auto; min-width: 0; padding: 0 6px 0 0; }
+.cad-cod input { flex: 1 1 auto; min-width: 0; height: 100%; min-height: 42px; padding: 0 14px; font: inherit; color: inherit; background: none; border: 0; outline: none; }
+.cad-cod:focus-within { border-color: #A08B61; }
+.cad-cod-gerar { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; padding: 0; color: #C9CBD0; background: none; border: 0; border-radius: 6px; cursor: pointer; }
+.cad-cod-gerar:hover { color: #E2C68C; background: rgba(255, 255, 255, .06); }
+.cad-cod-gerar svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+html[data-tema="claro"] .cad-cod-gerar { color: var(--texto-2); }
+html[data-tema="claro"] .cad-cod-gerar:hover { color: #8a6420; background: var(--aa-cinza); }
+[data-painel] .cad-cod-gerar:not(:disabled):hover { box-shadow: none; }
