@@ -6000,3 +6000,4 @@ html[data-tema="claro"] .cad-prod-est { color: #2f7a3a; background-color: #e6f3e
 html[data-tema="claro"] .cad-prod-est:has(option[value="off"]:checked) { color: #b8352d; background-color: #fbe9e7; border-color: #f0c9c5; }
 html[data-tema="claro"] .cad-prod-est option { color: var(--texto); background: #fff; }
 .aa-cel { display: inline-flex; align-items: center; gap: 8px; }
+.cad-topo-dir { display: flex; align-items: center; gap: 8px; margin-left: auto; }

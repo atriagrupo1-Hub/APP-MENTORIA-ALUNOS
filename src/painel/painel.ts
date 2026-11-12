@@ -6226,7 +6226,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}</div>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cn-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
