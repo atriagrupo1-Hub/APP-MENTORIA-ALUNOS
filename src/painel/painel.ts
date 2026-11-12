@@ -1733,7 +1733,7 @@ export function montar(app: HTMLElement) {
       const n = c.modulos.reduce((s2, m) => s2 + m.aulas.filter((k) => libs.has(k.id)).length, 0);
       return n ? { c, n } : null;
     }).filter(Boolean) as { c: Curso; n: number }[];
-    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
+    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["produtos", "Produtos"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
     const aba = ABAS_AL.some(([k]) => k === ui.acessoAba) ? ui.acessoAba : "geral";
     const naoInf = `<span class="aa-vazio">não informado</span>`;
     const linha = (rotulo: string, valor: string) => `<div class="aa-dado"><span>${rotulo}</span><b>${valor}</b></div>`;
@@ -1807,6 +1807,17 @@ export function montar(app: HTMLElement) {
           return `<div class="al-mod"><span class="al-mod-nome">Módulo ${numModulo(c, i)} - ${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pct}%"></i></span><span class="al-mod-pct">${pct}%</span><span class="al-mod-qt">${n} de ${p(lib.length, "aula", "aulas")}</span>${seta}</div>`;
         }).join("")}</div>` : `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`}
         ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
+    }
+    else if (aba === "produtos") {
+      // Data em que adquiriu: a primeira liberação do produto (ou de um módulo/aula dele); sem registro, o cadastro dela.
+      const quando = (c: Curso) => {
+        const ids = new Set<string>([c.id, ...c.modulos.map((m) => m.id), ...c.modulos.flatMap((m) => m.aulas.map((k) => k.id))]);
+        const ds = a.concessoes.filter((k) => ids.has(k.alvo) && k.em).map((k) => k.em).sort();
+        return ds[0] ? { dia: br(diaDe(ds[0])), cad: false } : { dia: br(cadastroDe(a)), cad: true };
+      };
+      corpo = `
+        <h3 class="aa-secao" style="margin-top:4px">Produtos da aluna</h3>
+        ${produtos.length ? `<div class="aa-cartao aa-prods">${produtos.map((x) => { const q = quando(x.c); return `<div class="aa-prod-l"><span class="aa-icone pequeno">${IC.play}</span><span class="nome"><b>${h(x.c.nome)}</b><span>${p(x.n, "aula liberada", "aulas liberadas")}</span></span><span class="aa-prod-d"><span>${q.cad ? "Cadastro" : "Adquirido em"}</span><b>${q.dia}</b></span></div>`; }).join("")}</div>` : `<div class="aa-obs">Nenhum produto liberado.</div>`}`;
     }
     else if (aba === "pagamentos") corpo = `
         <div class="aa-obs">Nenhuma informação de pagamento registrada.</div>`;

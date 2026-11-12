@@ -5919,3 +5919,15 @@ html:not([data-tema="claro"]) .cad-al .botao-neutro { color: #EEEEF0; background
 html:not([data-tema="claro"]) .cad-al .botao-neutro:hover { background: #303237; border-color: #5A5B60; }
 html:not([data-tema="claro"]) .cad-al .botao { color: #202018; background: #E2C68C; border-color: #E2C68C; border-radius: 6px; }
 html:not([data-tema="claro"]) .cad-al .cad-pe { border-top-color: #2B2D32; }
+.aa-prods { display: flex; flex-direction: column; padding: 4px 16px; }
+.aa-prod-l { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linha-suave); }
+.aa-prod-l:first-child { border-top: 0; }
+.aa-prod-l .nome { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.aa-prod-l .nome b { font-size: 13px; font-weight: 600; }
+.aa-prod-l .nome > span { font-size: 11px; color: var(--texto-3); }
+.aa-prod-d { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; white-space: nowrap; }
+.aa-prod-d > span { font-size: 11px; color: var(--texto-3); }
+.aa-prod-d b { font-size: 12px; font-weight: 600; }
+html:not([data-tema="claro"]) .aa-prod-l { border-top-color: #2B2D32; }
+html:not([data-tema="claro"]) .aa-prod-l .nome > span, html:not([data-tema="claro"]) .aa-prod-d > span { color: #94979E; }
+@media (min-width: 761px) { .casca2 .aa-painel.largo { width: min(700px, calc(100vw - 12px)); } }
