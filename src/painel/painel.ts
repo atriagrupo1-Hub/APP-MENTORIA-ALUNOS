@@ -594,7 +594,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
     filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1054,11 +1054,15 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" title="${nome}" aria-label="${nome}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${({ inicio: "Visão geral", cursos: "Produtos", config: "Experiência da aluna" } as Record<string, string>)[id] || nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
+        <div class="lado-pe2">
+          <button type="button" class="lado-item" data-a="ajuda-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.5a2.3 2.3 0 1 1 3.3 2.1c-.7.4-1.1.9-1.1 1.7M12 16.3v.2"/></svg><span>Ajuda</span></button>
+          <button type="button" class="lado-item" data-a="perfil-abrir"><span class="lado-av2">${h(iniciais(eu?.nome || "").slice(0, 1))}</span><span>Seu perfil</span></button>
+        </div>
       </aside>
       <div class="principal">
-        <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
+        <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
           ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
@@ -1326,6 +1330,7 @@ export function montar(app: HTMLElement) {
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
       </div>` : ""}
       <div class="ini-mets">${metricas}</div>
+      ${vgxResto(atv, de, ate)}
       <div class="ini-corpo${INI_EXTRA ? "" : " so"}">
         <div class="ini-principal">
           ${INI_EXTRA ? `<div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
@@ -1354,6 +1359,80 @@ export function montar(app: HTMLElement) {
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
+  }
+  /** Visão geral: central de atenção, ritmo da comunidade, atividade recente, vencimentos e rascunhos. */
+  function vgxResto(atv: Atividade[] | null, de: string, ate: string) {
+    const ls = listasAcessos(), coms = paraResponder();
+    const n2 = (n: number) => String(n).padStart(2, "0");
+    const IC_REL = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`;
+    const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>`;
+    const linhas: { g: string; ic: string; cor: string; t: string; d: string; n: number; bt: string; a: string; v: string }[] = [
+      { g: "comentarios", ic: IC_INI.balao, cor: "verm", t: "Comentários aguardando moderação", d: "Revise perguntas e relatos antes de disponibilizá-los para a comunidade.", n: coms.length, bt: "Moderar", a: "ir-comentarios", v: "" },
+      { g: "acessos", ic: IC_REL, cor: "ouro", t: "Acessos vencem nos próximos 15 dias", d: "Confira os vencimentos e organize a continuidade de cada aluna.", n: ls[0].lista.length, bt: "Ver acessos", a: "ini-lista", v: "vencem" },
+      { g: "alunas", ic: IC_INI.pessoas, cor: "azul", t: "Alunas sem atividade há mais de 14 dias", d: "Acompanhe quem se afastou e registre o próximo contato.", n: ls[1].lista.length, bt: "Acompanhar", a: "ini-lista", v: "parada" },
+      { g: "alunas", ic: IC_CAD, cor: "ouro", t: "Alunas ainda não fizeram o primeiro acesso", d: "Verifique as instruções de entrada e os conteúdos liberados.", n: ls[2].lista.length, bt: "Ver alunas", a: "ini-lista", v: "comecar" },
+    ];
+    const total = linhas.reduce((t, l) => t + l.n, 0);
+    const aba = ui.vgxAba || "tudo";
+    const central = `
+      <section class="vgx-card vgx-central">
+        <header class="vgx-ccab"><div><h3>Central de atenção <span class="vgx-cont">${total}</span></h3><p>Ações recomendadas para hoje</p></div><span class="vgx-pill">Prioridade operacional</span></header>
+        <nav class="vgx-abas">${[["tudo", "Tudo"], ["comentarios", "Comentários"], ["acessos", "Acessos"], ["alunas", "Alunas"]].map(([v, n]) => `<button type="button" data-a="vgx-aba" data-v="${v}" aria-pressed="${aba === v}">${n}</button>`).join("")}</nav>
+        ${linhas.filter((l) => aba === "tudo" || l.g === aba).map((l) => `
+        <div class="vgx-linha"><span class="vgx-lic ${l.cor}">${l.ic}</span><span class="vgx-ltxt"><b>${l.t}</b><span>${l.d}</span></span><span class="vgx-num">${n2(l.n)}</span><button type="button" class="vgx-bt" data-a="${l.a}"${l.v ? ` data-v="${l.v}"` : ""}>${l.bt}</button></div>`).join("")}
+        <footer class="vgx-cpe"><span>Os grupos podem conter a mesma aluna.</span><button type="button" class="vgx-link" data-a="aba" data-v="engajamento">${IC_INI.seta}Ver engajamento</button></footer>
+      </section>`;
+    // Ritmo: constantes (acessam e avançam), retomando (precisam de um empurrão) e distantes (sem acesso há 14 dias ou nunca).
+    const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a));
+    const dist = base.filter((a) => parada(a) || !a.ultimoAcesso).length;
+    const ret = base.filter((a) => !(parada(a) || !a.ultimoAcesso) && nivel(a)[2] === "empurrao").length;
+    const cons = base.length - dist - ret;
+    const pc = (n: number) => (base.length ? Math.round((n / base.length) * 100) : 0);
+    const eng = pc(cons + ret);
+    const C = 2 * Math.PI * 52;
+    const ritmo = `
+      <section class="vgx-card vgx-ritmo">
+        <header class="vgx-scab"><h3>Ritmo da comunidade</h3><span>${br(de)} a ${br(ate)}</span></header>
+        <div class="vgx-rcorpo">
+          <svg class="vgx-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="fundo"/><circle cx="60" cy="60" r="52" class="val" stroke-dasharray="${((eng / 100) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" class="n">${eng}<tspan>%</tspan></text><text x="60" y="80" text-anchor="middle" class="r">ENGAJAMENTO</text></svg>
+          <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
+        </div>
+      </section>`;
+    const recentes = (atv || []).slice(0, 5);
+    const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+    const fraseAtv = (x: Atividade) => x.tipo === "acessou" ? "acessou a plataforma" : x.tipo === "comentou" ? "deixou um comentário" : x.tipo === "respondeu" ? "respondeu um comentário" : x.tipo === "concluiu" ? "concluiu uma aula" : x.tipo === "abriu_ebook" ? "abriu um e-book" : x.tipo === "curtiu" || x.tipo === "curtiu_comentario" ? "curtiu" : "assistiu uma aula";
+    const recente = `
+      <section class="vgx-card vgx-recente">
+        <header class="vgx-scab"><h3>Atividade recente</h3><button type="button" class="vgx-link fraco" data-a="ini-ativ-abrir">${de === ate ? "Hoje" : "Ver todas"}</button></header>
+        <ol class="vgx-tl">${recentes.map((x) => `<li><b>${h(primeiroNome(x.nome))} ${fraseAtv(x)}</b><span>${diaDe(x.quando) === hoje() ? hora(x.quando) : br(diaDe(x.quando))}${x.aula ? " · " + h(x.aula) : ""}</span></li>`).join("") || `<li class="vazio">${atv ? "Nenhuma atividade no período." : "Carregando…"}</li>`}</ol>
+      </section>`;
+    const venc = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje()).sort((x, y) => x.validade.localeCompare(y.validade)).slice(0, 5);
+    const tabela = `
+      <div class="vgx-tit"><h2>Próximos vencimentos</h2><button type="button" class="vgx-link" data-a="aba" data-v="alunas">${IC_INI.seta}Todos os acessos</button></div>
+      <section class="vgx-card vgx-tab"><table>
+        <thead><tr><th>Aluna</th><th>Modalidade</th><th>Vencimento</th><th>Status</th><th>Progresso</th><th></th></tr></thead>
+        <tbody>${venc.map((a) => { const d = diasEntre(hoje(), a.validade), pg = progressoDe(a); return `<tr>
+          <td><span class="vgx-quem">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>${h(a.login)}</span></span></span></td>
+          <td>${daMentoria(a) ? "Mentoria" : "Geral"}</td>
+          <td class="mono">${br(a.validade)}</td>
+          <td><span class="vgx-st${d <= 15 ? " perto" : ""}">${d === 0 ? "Vence hoje" : "Vence em " + p(d, "dia", "dias")}</span></td>
+          <td><span class="vgx-prog"><i style="width:${pg}%"></i></span><span class="vgx-pct">${pg}%</span></td>
+          <td><button type="button" class="vgx-bt" data-a="ini-abrir-aluna" data-id="${a.id}">Gerenciar acesso</button></td></tr>`; }).join("") || `<tr><td colspan="6" class="vgx-vazio">Nenhum acesso com vencimento marcado.</td></tr>`}</tbody>
+      </table></section>`;
+    const rasc = S.cursos.filter((c) => c.rascunho).slice(0, 2);
+    const tipoNome = (c: Curso) => (c.tipo === "ebook" ? "E-book" : c.tipo === "audio" ? "Áudio" : "Curso");
+    const pctC = (c: Curso) => { const t = totalAulas(c); return t ? Math.round((c.modulos.reduce((s2, m) => s2 + m.aulas.filter((x) => x.pub).length, 0) / t) * 100) : 0; };
+    const rascunhos = `
+      <div class="vgx-tit"><h2>Continue de onde parou</h2><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Biblioteca de produtos</button></div>
+      <div class="vgx-rasc">${rasc.map((c) => `
+        <section class="vgx-card vgx-rc"><div class="vgx-rtopo"><span class="vgx-pill">Rascunho</span>${ICONE_MENU.cursos || ""}</div><h3>${h(c.nome)}</h3><p>${tipoNome(c)} · ${h(cat(c.cat)?.nome || "Sem categoria")}</p><span class="vgx-prog"><i style="width:${Math.max(8, pctC(c))}%"></i></span><div class="vgx-racoes"><button type="button" class="vgx-bt" data-a="abrir-curso" data-id="${c.id}">Continuar edição</button><button type="button" class="vgx-link" data-a="abrir-curso" data-id="${c.id}">Ver estrutura</button></div></section>`).join("")}
+        <section class="vgx-card vgx-novo"><span class="vgx-sobre">Próximo conteúdo</span><h3>Crie uma nova jornada.</h3><p>Cursos, e-books ou áudios, com uma etapa para cada decisão.</p><button type="button" class="al-botao-ouro" data-a="curso-novo"><span aria-hidden="true">+</span> Criar produto</button></section>
+      </div>`;
+    return `
+      <div class="vgx-meio">${central}<div class="vgx-col">${ritmo}${recente}</div></div>
+      ${tabela}
+      ${rascunhos}
+      <footer class="vgx-rodape"><span>AIŌN · Administração</span></footer>`;
   }
   const GRUPO_ATV: Record<Atividade["tipo"], string> = { acessou: "acessou", assistiu: "aulas", concluiu: "aulas", abriu_ebook: "ebooks", comentou: "comentarios", respondeu: "comentarios", curtiu: "curtidas", curtiu_comentario: "curtidas" };
   /** Cada aula/e-book liberado hoje para pelo menos uma aluna ativa, com quantas têm. */
@@ -1412,10 +1491,11 @@ export function montar(app: HTMLElement) {
         </aside>` : "";
   }
   /** O seletor de período, no alto do Início. */
+  const diaCurto = (d: string) => { const [a, m, dd] = d.split("-"); return Number(dd) + " " + ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."][Number(m) - 1] + " " + a; };
   function seletorPeriodo() {
     const { de, ate } = periodoIni();
     return `<span class="ini-periodo">
-      <button class="al-botao" data-a="ini-periodo" aria-expanded="${ui.periodoAberto}">${IC_INI.cal}${br(de)} - ${br(ate)}<span aria-hidden="true">⌄</span></button>
+      <button class="al-botao" data-a="ini-periodo" aria-expanded="${ui.periodoAberto}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>${diaCurto(de) === diaCurto(ate) ? diaCurto(ate) : diaCurto(de).replace(/ \d{4}$/, "") + " – " + diaCurto(ate)}</button>
       ${ui.periodoAberto ? `<span class="ini-periodo-pop" role="dialog" aria-label="Escolher período">
         <span class="ini-rapidos">${[["hoje", "Hoje"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"], ["mes", "Este mês"]].map(([v, n]) => `<button class="al-filtro" data-a="ini-periodo-rapido" data-v="${v}">${n}</button>`).join("")}</span>
         <label>De <input id="iniDe" type="date" class="campo" value="${de}" /></label>
@@ -6889,6 +6969,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "sino-lista": ui.tab = "inicio"; ui.iniLista = d.v; ui.estMenu = ""; window.scrollTo(0, 0); break;
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
+      case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
+      case "vgx-aba": ui.vgxAba = d.v; break;
       case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
       case "ini-conteudo": ui.iniConteudo = true; break;
       case "ini-conteudo-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniConteudo = false; break;
