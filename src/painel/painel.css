@@ -5719,3 +5719,5 @@ html[data-tema="claro"] .lq-tag em, html[data-tema="claro"] .lq-st { color: #2f7
 .lq-info b { font-size: 15px; font-weight: 700; color: #EEEEF0; }
 html[data-tema="claro"] .lq-info > span { background: var(--aa-cinza); border-color: var(--linha-suave); }
 html[data-tema="claro"] .lq-info b { color: var(--texto); }
+.casca2 .vgx-ltxt span { font-size: 14px; }
+.casca2 .vgx-ltxt b { font-size: 15px; }
