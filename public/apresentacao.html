@@ -70,6 +70,21 @@
     cel.style.marginBottom = (-(alto * (1 - e))) + "px";
   }
   window.addEventListener("resize", ajustar); ajustar();
+  // Cadastro de demonstração já preenchido na tela de entrada do app (dá para apagar e digitar outro).
+  var DEMO = ["Rodrigo M.", "1234"];
+  function preencher() {
+    try {
+      var d = document.getElementById("app").contentDocument; if (!d) return;
+      var ins = d.querySelectorAll("input"); if (ins.length < 2) return;
+      [0, 1].forEach(function (i) {
+        var el = ins[i]; if (el.value || el.dataset.demo) return;
+        var set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+        set.call(el, DEMO[i]); el.dataset.demo = "1";
+        el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    } catch (e) {}
+  }
+  setInterval(preencher, 700);
   function hora() { var d = new Date(); document.getElementById("hora").textContent = d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
   hora(); setInterval(hora, 20000);
 </script>
