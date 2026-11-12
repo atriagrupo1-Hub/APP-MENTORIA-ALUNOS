@@ -1392,7 +1392,7 @@ export function montar(app: HTMLElement) {
     const C = 2 * Math.PI * 52;
     const ritmo = `
       <section class="vgx-card vgx-ritmo">
-        <header class="vgx-scab"><h3>Ritmo da comunidade</h3><span>${br(de)} a ${br(ate)}</span></header>
+        <header class="vgx-scab"><h3>Ritmo da comunidade</h3><button type="button" class="vgx-link" data-a="aba" data-v="engajamento">${IC_INI.seta}Ver todos</button></header>
         <div class="vgx-rcorpo">
           <svg class="vgx-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="fundo"/><circle cx="60" cy="60" r="52" class="val" stroke-dasharray="${((eng / 100) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" class="n">${eng}<tspan>%</tspan></text><text x="60" y="80" text-anchor="middle" class="r">ENGAJAMENTO</text></svg>
           <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
@@ -1403,7 +1403,7 @@ export function montar(app: HTMLElement) {
     const fraseAtv = (x: Atividade) => x.tipo === "acessou" ? "acessou a plataforma" : x.tipo === "comentou" ? "deixou um comentário" : x.tipo === "respondeu" ? "respondeu um comentário" : x.tipo === "concluiu" ? "concluiu uma aula" : x.tipo === "abriu_ebook" ? "abriu um e-book" : x.tipo === "curtiu" || x.tipo === "curtiu_comentario" ? "curtiu" : "assistiu uma aula";
     const recente = `
       <section class="vgx-card vgx-recente">
-        <header class="vgx-scab"><h3>Atividade recente</h3><button type="button" class="vgx-link fraco" data-a="ini-ativ-abrir">${de === ate ? "Hoje" : "Ver todas"}</button></header>
+        <header class="vgx-scab"><h3>Atividade recente</h3><button type="button" class="vgx-link" data-a="ini-ativ-abrir">${IC_INI.seta}Ver todas</button></header>
         <ol class="vgx-tl">${recentes.map((x) => `<li><b>${h(primeiroNome(x.nome))} ${fraseAtv(x)}</b><span>${diaDe(x.quando) === hoje() ? hora(x.quando) : br(diaDe(x.quando))}${x.aula ? " · " + h(x.aula) : ""}</span></li>`).join("") || `<li class="vazio">${atv ? "Nenhuma atividade no período." : "Carregando…"}</li>`}</ol>
       </section>`;
     const venc = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje()).sort((x, y) => x.validade.localeCompare(y.validade)).slice(0, 5);
