@@ -24,6 +24,8 @@ import { abrirSeletorEstilo } from "./seletor-estilo";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
+// Fontes da Visão geral nova (Manrope e IBM Plex Mono).
+if (typeof document !== "undefined" && !document.getElementById("fonte-vgx")) { const l = document.createElement("link"); l.id = "fonte-vgx"; l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;550;600;650;700;750;800&family=IBM+Plex+Mono:wght@400;500&display=swap"; document.head.appendChild(l); }
 
 /* ---------- tipos ---------- */
 
@@ -300,7 +302,86 @@ async function carregarLinks(euP: Promise<Eu | null>) {
   LINKS.aluna = new Map(linhas.filter((x) => x.link).map((x) => [String(x.aluna_id), String(x.link)]));
   APARELHO.clear(); linhas.forEach((x) => { if (x.aparelho) APARELHO.set(String(x.aluna_id), x.aparelho); });
 }
+/*
+ * PRÉVIA — "salvar de teste": na prévia (?previa=1) nada vai ao banco real.
+ * Cada gravação responde "ok" na hora e fica numa lista, só neste navegador
+ * (some ao recarregar). Depois de cada leitura do banco, a lista é aplicada
+ * por cima dos dados, para a tela mostrar o que foi salvo no teste.
+ */
+const PREVIA = typeof location !== "undefined" && new URLSearchParams(location.search).get("previa") === "1";
+type Gravacao = { tipo: "rpc" | "funcao" | "tabela"; nome: string; metodo: string; corpo: Record<string, unknown> };
+const TESTE: Gravacao[] = [];
+let nTeste = 0;
+const idTeste = () => "00000000-0000-4000-8000-" + String(Date.now() % 1e12).padStart(12, "0").slice(0, 10) + String(++nTeste).padStart(2, "0");
+if (PREVIA && typeof window !== "undefined") {
+  const SUPA = String(import.meta.env.VITE_SUPABASE_URL || "");
+  const LEITURA = /^(pode|eh_|conferir|listar|meu_|meus_|minha_|minhas_|resumo_|relatorio_|engajamento_|equipe_do_|alunas_do_|contatos_|comentarios_para|comentarios_do|curtidas_da|aulas_concluidas|atividades_|opcoes_|lixeira_listar|sinal_painel)/;
+  const anterior = window.fetch.bind(window);
+  window.fetch = async (entrada: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
+    const metodo = (init?.method || (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
+    if (url.startsWith(SUPA) && metodo !== "GET" && metodo !== "HEAD") {
+      const c = url.slice(SUPA.length).split("?")[0];
+      const livre = c.startsWith("/auth/v1/") || c === "/functions/v1/entrar" || ["/functions/v1/extrair-ebook", "/functions/v1/gerar-descricao-curso", "/functions/v1/gerar-capa"].includes(c) || (c.startsWith("/rest/v1/rpc/") && LEITURA.test(c.slice(13)));
+      if (!livre) {
+        const sp = document.querySelector("#previaSelo span"); if (sp) sp.textContent = "● Prévia · salvo só no teste (some ao recarregar)";
+        let corpo: Record<string, unknown> = {};
+        try { corpo = typeof init?.body === "string" ? JSON.parse(init.body) : {}; } catch { /* corpo não é JSON */ }
+        const json = (x: unknown, st = 200) => new Response(JSON.stringify(x), { status: st, headers: { "Content-Type": "application/json" } });
+        if (c.startsWith("/rest/v1/rpc/")) {
+          const nome = c.slice(13); TESTE.push({ tipo: "rpc", nome, metodo, corpo });
+          if (nome === "renovar_acesso") { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return json(d.toISOString()); }
+          if (nome === "salvar_liberacao") return json(0);
+          return json(null);
+        }
+        if (c.startsWith("/functions/v1/")) {
+          const nome = c.slice(14); const id = idTeste(); TESTE.push({ tipo: "funcao", nome, metodo, corpo: { ...corpo, id } });
+          return json({ id, ...corpo }, 201);
+        }
+        if (c.startsWith("/rest/v1/")) {
+          const nome = c.slice(9); const linhas = (Array.isArray(corpo) ? corpo : [corpo]).map((x) => ({ id: idTeste(), ...(x as Record<string, unknown>) }));
+          for (const l of linhas) TESTE.push({ tipo: "tabela", nome, metodo, corpo: l });
+          const um = String((init?.headers as Record<string, string> | undefined)?.Accept || (init?.headers as Record<string, string> | undefined)?.accept || "").includes("vnd.pgrst.object");
+          return metodo === "DELETE" ? new Response(null, { status: 204 }) : json(um ? linhas[0] : linhas, 201);
+        }
+        return json({}, 200); // depósito de arquivos
+      }
+    }
+    return anterior(entrada, init);
+  };
+}
+/** Aplica as gravações de teste por cima do que veio do banco. */
+function aplicarTeste(d: Dados): Dados {
+  if (!TESTE.length) return d;
+  const al = (id: unknown) => d.alunas.find((x) => x.id === String(id));
+  for (const g of TESTE) {
+    const b = g.corpo;
+    if (g.tipo === "funcao" && g.nome === "cadastrar-aluna" && !al(b.id)) {
+      d.alunas.unshift({ id: String(b.id), nome: String(b.nome || ""), login: String(b.login || ""), codigo: String(b.codigo || ""), celular: String(b.celular || ""), email: String(b.email || ""),
+        entrada: String(b.entrada || ""), validade: String(b.validade || ""), bloqueada: false, liberadas: 0, acesso: { cursos: [], modulos: [], aulas: [] }, datas: {}, cronograma: {},
+        ultimoAcesso: "", ultimaAula: "", concluidas: 0, nota: 0, nComentarios: 0, criadaEm: new Date().toISOString(), feitas: new Set<string>(), notas: [], contatos: [], concessoes: [] });
+    }
+    if (g.tipo === "rpc") {
+      const a = al(b.p_aluna); if (!a) continue;
+      if (g.nome === "salvar_ficha_aluna" || g.nome === "restaurar_ficha_aluna") Object.assign(a, { nome: String(b.p_nome ?? a.nome), login: String(b.p_login ?? a.login).toLowerCase(), codigo: String(b.p_codigo ?? a.codigo), entrada: String(b.p_entrada ?? a.entrada), validade: String(b.p_validade ?? b.p_acesso_ate ?? a.validade).slice(0, 10), celular: String(b.p_celular ?? a.celular), email: String(b.p_email ?? a.email) });
+      if (g.nome === "salvar_liberacao") { a.acesso = { cursos: (b.p_produtos as string[]) || [], modulos: (b.p_modulos as string[]) || [], aulas: (b.p_aulas as string[]) || [] }; const agora = new Date().toISOString(); a.concessoes = [...a.acesso.cursos.map((x) => ({ escopo: "produto", alvo: x, em: agora, abre: "" })), ...a.acesso.modulos.map((x) => ({ escopo: "modulo", alvo: x, em: agora, abre: "" })), ...a.acesso.aulas.map((x) => ({ escopo: "aula", alvo: x, em: agora, abre: "" }))]; }
+      if (g.nome === "definir_status_aluna") a.bloqueada = b.p_status === "bloqueada";
+      if (g.nome === "renovar_acesso") { const v = new Date((a.validade || new Date().toISOString().slice(0, 10)) + "T12:00:00"); v.setFullYear(v.getFullYear() + Number(b.p_anos || 0)); v.setMonth(v.getMonth() + Number(b.p_meses || 0)); v.setDate(v.getDate() + Number(b.p_dias || 0)); a.validade = v.toISOString().slice(0, 10); }
+      if (g.nome === "salvar_foto_aluna" && b.p_foto) d.fotos[a.id] = String(b.p_foto);
+      if (g.nome === "remover_aluna") d.alunas = d.alunas.filter((x) => x !== a);
+    }
+    if (g.tipo === "tabela" && g.nome === "aluna_link" && b.aluna_id) {
+      if (b.link) LINKS.aluna.set(String(b.aluna_id), String(b.link)); else if ("link" in b) LINKS.aluna.delete(String(b.aluna_id));
+      if (b.aparelho) APARELHO.set(String(b.aluna_id), b.aparelho as "android" | "iphone");
+    }
+  }
+  return d;
+}
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
+  const d = await lerTudoBanco(quem);
+  return PREVIA ? aplicarTeste(d) : d;
+}
+async function lerTudoBanco(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
   const euP = Promise.resolve(quem);
@@ -594,8 +675,8 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
-    filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", libVer: "", vgxGrupo: "mentoria", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    filtroAl: "todas", grupoAl: "todas" as "todas" | "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
@@ -823,14 +904,14 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
-  const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
     const c = curso(ui.curso); const x = ui.aula ? acharAula(ui.aula) : null;
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
-      case "inicio": return ["Início", "o que pede atenção hoje"];
+      case "inicio": return ["Visão geral", "o que pede atenção hoje"];
       case "reduzir": return ["Reduzir PDF", ""];
       case "lixeira": return ["Lixeira", lixo ? p(lixo.length, "item", "itens") : ""];
       case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
@@ -1003,6 +1084,15 @@ export function montar(app: HTMLElement) {
     </div>`;
   }
 
+  /** Topo do painel: os quatro grupos do menu e as telas de cada um. */
+  const GRUPOS_TP = [
+    { nome: "Visão geral", abas: ["inicio"] },
+    { nome: "Alunas", abas: ["alunas", "engajamento", "comentarios"] },
+    { nome: "Conteúdos", abas: ["cursos", "layout"] },
+    { nome: "Administração", abas: ["equipe", "registro", "config", "lixeira", "reduzir"] },
+  ];
+  const IC_SINO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>`;
+  const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.7-.7.6 2.7 2.6 1-.9 2.6 1.6 2.3-2.3 1.6.3 2.8-2.8.3-1.2 2.5-2.5-1.2-2.5 1.2-1.2-2.5-2.8-.3.3-2.8-2.3-1.6 1.6-2.3-.9-2.6 2.6-1 .6-2.7 2.7.7z"/></svg>`;
   function painel() {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
@@ -1011,33 +1101,51 @@ export function montar(app: HTMLElement) {
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
-    <div class="casca">
-      <aside class="lado" aria-label="Menu do painel">
-        <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
-        <nav class="lado-menu">
-          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
-        </nav>
-      </aside>
-      <div class="principal">
-        <div class="topo">
-          <div class="busca-geral">
-            <input id="buscaGeral" class="campo" type="search" placeholder="Buscar aluna, celular, aula ou comentário" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+    <div class="casca casca2">
+      <header class="tp">
+        <div class="tp-linha">
+          <button type="button" class="tp-marca" data-a="aba" data-v="inicio" aria-label="Ir para a Visão geral"><span class="tp-selo">AIŌN</span><span class="tp-rot">Administração</span></button>
+          <nav class="tp-nav" aria-label="Menu do painel">${GRUPOS_TP.map((g) => { const ids = g.abas.filter((id) => abas.some(([x]) => x === id)); if (!ids.length) return ""; const on = ids.includes(abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab)); const alvo = ids.find((id) => !abaBloq(id)) || ids[0]; return `<button type="button" class="tp-item" data-a="aba" data-v="${alvo}" ${on ? 'aria-current="page"' : ""}>${g.nome}</button>`; }).join("")}</nav>
+          <span class="tp-esp"></span>
+          <div class="busca-geral tp-busca">
+            <svg class="tp-lupa" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input id="buscaGeral" class="campo" type="search" placeholder="Buscar na plataforma" value="${h(ui.buscaGeral)}" data-i="buscaGeral" autocomplete="off" aria-label="Busca geral" />
+            <kbd class="tp-tecla" aria-hidden="true">↵</kbd>
             <div id="buscaResultados">${resultadosBusca()}</div>
           </div>
-          <button class="al-botao topo-sug" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
-          <button class="al-botao topo-atu" data-a="atualizar-dados" title="Buscar de novo os dados, sem sair desta página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar</button>
-          ${S.config.novidades ? `<button class="al-botao topo-nov" data-a="novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>Novidades</button>` : ""}
-          ${botaoTema()}
+          <span class="est3 tp-sino-w"><button type="button" class="tp-bt" data-a="estado-menu" data-v="sino" aria-haspopup="menu" aria-expanded="${ui.estMenu === "sino"}" aria-label="Notificações">${IC_SINO}${tarefasInicio() ? `<i class="tp-ponto">${tarefasInicio() > 99 ? "99+" : tarefasInicio()}</i>` : ""}</button>${ui.estMenu === "sino" ? `<span class="pf-pop tp-sino-pop" role="menu">
+            <span class="tp-pop-tit">Para fazer agora</span>
+            <button type="button" role="menuitem" data-a="ir-comentarios">${IC_INI.balao}<span>Comentários para moderar</span>${badge(paraResponder().length) || `<em>em dia</em>`}</button>
+            ${listasAcessos().map((l) => `<button type="button" role="menuitem" data-a="sino-lista" data-v="${l.id}">${l.icone}<span>${l.titulo}</span>${badge(l.lista.length) || `<em>em dia</em>`}</button>`).join("")}
+          </span>` : ""}</span>
+          ${abas.some(([x]) => x === "config") ? `<button type="button" class="tp-bt" data-a="aba" data-v="config" aria-label="Configurações" title="Configurações" ${ui.tab === "config" ? 'aria-current="page"' : ""}>${IC_ENGR}</button>` : ""}
           <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
             <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
             <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
+            <button type="button" role="menuitem" data-a="atualizar-dados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar dados</button>
+            <button type="button" role="menuitem" data-a="tema"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>Tema ${tema === "claro" ? "escuro" : "claro"}</button>
+            <button type="button" role="menuitem" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
+            ${S.config.novidades ? `<button type="button" role="menuitem" data-a="novidades"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>Novidades</button>` : ""}
             ${ehDono() ? `<button type="button" role="menuitem" data-a="novidades-chave" class="pf-nov">Botão Novidades<span class="pf-chave${S.config.novidades ? " on" : ""}">${S.config.novidades ? "Ativado" : "Desativado"}</span></button>` : ""}
             <span class="pf-sep"></span>
             <button type="button" role="menuitem" class="pf-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
           </span>` : ""}</span>
         </div>
+      </header>
+      <aside class="lado" aria-label="Menu do painel">
+        <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
+        <nav class="lado-menu">
+          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${({ inicio: "Visão geral", cursos: "Produtos", config: "Experiência da aluna" } as Record<string, string>)[id] || nome}</span>${badge(nb)}</button>`; }).join("")}
+        </nav>
+        <div class="lado-pe2">
+          <button type="button" class="lado-item" data-a="ajuda-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.8 9.5a2.3 2.3 0 1 1 3.3 2.1c-.7.4-1.1.9-1.1 1.7M12 16.3v.2"/></svg><span>Ajuda</span></button>
+          <button type="button" class="lado-item" data-a="perfil-abrir"><span class="lado-av2">${h(iniciais(eu?.nome || "").slice(0, 1))}</span><span>Seu perfil</span></button>
+        </div>
+      </aside>
+      <div class="principal">
+        <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1103,8 +1211,8 @@ export function montar(app: HTMLElement) {
    * últimos comentários, últimas atividades das alunas e alunas
    * adicionadas recentemente. Tudo dentro do período escolhido.
    */
-  type Atividade = { tipo: "assistiu" | "comentou" | "acessou"; aluna: string; nome: string; aula: string; quando: string };
-  let ativ: { chave: string; lista: Atividade[] } | null = null; let ativCarregando = "";
+  type Atividade = { tipo: "assistiu" | "comentou" | "acessou" | "concluiu" | "abriu_ebook" | "respondeu" | "curtiu" | "curtiu_comentario"; aluna: string; nome: string; aula: string; quando: string };
+  let ativ: { chave: string; erro?: boolean; lista: Atividade[] } | null = null; let ativCarregando = "";
   const periodoIni = () => {
     const ate = ui.iniAte || hoje();
     const de = ui.iniDe || ate.slice(0, 8) + "01";
@@ -1115,9 +1223,12 @@ export function montar(app: HTMLElement) {
     if ((ativ && ativ.chave === chave) || ativCarregando === chave) return;
     ativCarregando = chave;
     void (async () => {
-      const r = await supabase.rpc("atividades_recentes", { p_de: de + "T00:00:00-03:00", p_ate: ate + "T23:59:59-03:00", p_limite: 200 });
+      // Busca também o período anterior, do mesmo tamanho, para a comparação.
+      const n = diasEntre(de, ate) + 1;
+      const antDe = diaDe(new Date(Date.parse(de + "T12:00:00") - n * 864e5));
+      const r = await supabase.rpc("atividades_alunas", { p_de: antDe + "T00:00:00-03:00", p_ate: ate + "T23:59:59-03:00", p_limite: 2000 });
       ativCarregando = "";
-      ativ = { chave, lista: ((r.data ?? []) as Record<string, string>[]).map((x) => ({ tipo: x.tipo as Atividade["tipo"], aluna: x.aluna_id, nome: x.aluna_nome, aula: x.aula_titulo ?? "", quando: x.quando })) };
+      ativ = { chave, erro: !!r.error, lista: ((r.data ?? []) as Record<string, string>[]).map((x) => ({ tipo: x.tipo as Atividade["tipo"], aluna: x.aluna_id, nome: x.aluna_nome, aula: x.titulo ?? "", quando: x.quando })) };
       if (ui.tab === "inicio") render();
     })();
   }
@@ -1141,8 +1252,14 @@ export function montar(app: HTMLElement) {
     return al ? aaAvatar(al) : `<span class="avatar" style="--cor:#b07a2a" aria-hidden="true">${h(iniciais(nome))}</span>`;
   };
   const linhaAtividade = (x: Atividade) => {
-    const [cls, ic, txt] = x.tipo === "assistiu" ? ["verde", IC_INI.play, `assistiu a aula <b>"${h(x.aula)}"</b>`]
-      : x.tipo === "comentou" ? ["roxo", IC_INI.balao, `comentou na aula <b>"${h(x.aula)}"</b>`]
+    const q = `<b>"${h(x.aula)}"</b>`;
+    const [cls, ic, txt] = x.tipo === "assistiu" ? ["verde", IC_INI.play, `assistiu a aula ${q}`]
+      : x.tipo === "concluiu" ? ["verde", IC_INI.play, `concluiu a aula ${q}`]
+      : x.tipo === "abriu_ebook" ? ["verde", ICONE_MENU.layout, `abriu o e-book ${q}`]
+      : x.tipo === "comentou" ? ["roxo", IC_INI.balao, `comentou na aula ${q}`]
+      : x.tipo === "respondeu" ? ["roxo", IC_INI.balao, `respondeu um comentário na aula ${q}`]
+      : x.tipo === "curtiu" ? ["roxo", IC_INI.balao, `curtiu a aula ${q}`]
+      : x.tipo === "curtiu_comentario" ? ["roxo", IC_INI.balao, `curtiu um comentário na aula ${q}`]
       : ["azul", IC_INI.pessoa, "acessou a plataforma"];
     return `<div class="ini-item"><span class="ini-ic ${cls}">${ic}</span><span class="ini-txt"><span><b>${h(x.nome)}</b> ${txt}</span></span><span class="ini-quando">${haTempo(x.quando)}</span></div>`;
   };
@@ -1151,48 +1268,317 @@ export function montar(app: HTMLElement) {
   const paraResponder = () => S.comentarios.filter((k) => k.estado === "moderar" && !k.resposta).sort((x, y) => y.criado.localeCompare(x.criado));
   const badge = (n: number) => (n ? `<span class="badge-alerta" aria-label="${n} para fazer">${n > 99 ? "99+" : n}</span>` : "");
   function tarefasInicio() { return paraResponder().length + listasAcessos().reduce((t, l) => t + l.lista.length, 0); }
+  /** Atalhos do Início (Cadastrar aluna, Liberar conteúdo, Criar produto, Enviar acesso): guardados, fora da tela por enquanto. */
+  const ATALHOS_INI = false as boolean;
+  /** Boas-vindas, "Para fazer agora" e a coluna lateral do Início: apagados da tela (código guardado). */
+  const INI_EXTRA = false as boolean;
+  /** "O que aconteceu" (linha do tempo) do Início: apagado da tela (código guardado). */
+  const INI_TEMPO = false as boolean;
   function telaInicio() {
     const { de, ate, chave } = periodoIni();
-    carregarAtividades();
-    const noPeriodo = (iso: string) => { if (!iso) return false; const d = diaDe(iso); return d >= de && d <= ate; };
-    const novas = S.alunas.filter((a) => noPeriodo(a.criadaEm)).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm));
-    const atv = ativ && ativ.chave === chave ? ativ.lista : null;
-    const cartao = (ic: string, titulo: string, acao: string, corpo: string) => `
-      <section class="ini-cartao">
-        <header><span class="ini-cab-ic">${ic}</span><h3>${titulo}</h3><button class="al-botao pequeno" data-a="${acao}">Ver todos ${IC_INI.seta}</button></header>
-        <div class="ini-lista">${corpo}</div>
-      </section>`;
+    carregarAtividades(); carregarResumoEng();
+    const ativOk = ativ && ativ.chave === chave ? ativ : null;
+    const tudo = ativOk ? ativOk.lista : null;
+    const nDias = diasEntre(de, ate) + 1;
+    const desloca = (dia: string, n: number) => diaDe(new Date(Date.parse(dia + "T12:00:00") + n * 864e5));
+    const antDe = desloca(de, -nDias), antAte = desloca(de, -1);
+    const entre = (iso: string, a: string, b: string) => { if (!iso) return false; const d = diaDe(iso); return d >= a && d <= b; };
+    const atv = tudo ? tudo.filter((x) => entre(x.quando, de, ate)) : null;
+    // Lista cortada em 500: o período anterior pode estar incompleto, então não compara.
+    const antCompleto = !!tudo && tudo.length < 2000;
+    const r = resEng && resEng.chave === chave ? resEng.r : null;
     const vazio = (t: string) => `<p class="ini-vazio">${t}</p>`;
-    const ls = listasAcessos(), nResp = paraResponder().length;
-    const tarefa = (ic: string, titulo: string, n: number, acao: string, v = "") => `<button type="button" class="ini-tarefa${n ? " tem" : ""}" data-a="${acao}"${v ? ` data-v="${v}"` : ""}><span class="ini-cab-ic">${ic}</span><span class="ini-tarefa-txt">${titulo}</span>${n ? badge(n) : `<span class="ini-tarefa-ok">em dia</span>`}</button>`;
+    const emDia = (t = "Em dia") => `<span class="ini-ok">✓ ${t}</span>`;
+    // Dias do período (até 31 pontos, os mais recentes) para os minigráficos.
+    const diasPer: string[] = []; for (let i = Math.max(0, nDias - 31); i < nDias; i++) diasPer.push(desloca(de, i));
+    const linha = (vals: number[]) => {
+      if (vals.length < 2 || !vals.some((v) => v)) return `<svg class="ini-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26H100" class="base"/></svg>`;
+      const mx = Math.max(...vals) || 1;
+      const pts = vals.map((v, i) => `${((i / (vals.length - 1)) * 100).toFixed(1)},${(26 - (v / mx) * 22).toFixed(1)}`);
+      return `<svg class="ini-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><path d="M0,28L${pts.join("L")}L100,28Z" class="area"/><path d="M${pts.join("L")}"/></svg>`;
+    };
+    const porDia = (isos: string[]) => { const m = new Map<string, number>(); isos.forEach((s) => { const d = diaDe(s); m.set(d, (m.get(d) || 0) + 1); }); return diasPer.map((d) => m.get(d) || 0); };
+    const atvAnt = tudo && antCompleto ? tudo.filter((x) => entre(x.quando, antDe, antAte)).length : undefined;
+    const lib = conteudoLiberado();
+    const concPer = S.alunas.flatMap((a) => a.concessoes.filter((k) => entre(k.em, de, ate)).map((k) => k.em));
+    const novas = S.alunas.filter((a) => entre(a.criadaEm, de, ate));
+    const novasAnt = S.alunas.filter((a) => entre(a.criadaEm, antDe, antAte)).length;
+    const diaR = new Map((r?.dias || []).map((x) => [x.dia, x]));
+    const metrica = (ic: string, rot: string, val: string, sub: string, vari: string, graf: string, acao: string, v = "") => `
+      <button type="button" class="ini-met m2" data-a="${acao}"${v ? ` data-v="${v}"` : ""}>
+        <span class="m2-topo"><span class="m2-rot">${rot}</span><span class="m2-ic">${ic}</span></span>
+        <span class="m2-meio"><span class="ini-met-val">${val}</span>${graf}</span>
+        <span class="m2-sub">${sub}${vari}</span>
+      </button>`;
+    const carregando = `<span class="ini-met-car">…</span>`;
+    const gTot = ui.vgxGrupo || "mentoria";
+    const doG = S.alunas.filter((a) => daMentoria(a) === (gTot === "mentoria"));
+    const totalCard = `
+      <div class="ini-met m2 m2-total" data-a="ini-lista" data-v="total" role="button" tabindex="0">
+        <span class="m2-topo"><span class="m2-rot">Total de alunos(as)</span><span class="m2-ic">${IC_INI.pessoas}</span></span>
+        <span class="m2-meio"><span class="ini-met-val">${doG.length}</span></span>
+        <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Alunos mentoria"], ["geral", "Alunos geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
+      </div>`;
+    const metricas = totalCard + [
+      metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
+      metrica(IC_INI.onda, "Atividades dos alunos", atv ? String(atv.length) : carregando, "acessos, aulas, e-books, comentários e curtidas", atv ? variacao(atv.length, atvAnt, true) : "", linha(atv ? porDia(atv.map((x) => x.quando)) : []), "ini-ativ-abrir"),
+      metrica(IC_CAL_AG, "Conteúdo liberado", String(lib.length), "itens liberados para as alunas", "", linha(porDia(concPer)), "ini-conteudo"),
+      metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ini-lista", "novas"),
+    ].join("");
+
+    // Fila única de tarefas, cada uma com a ação direta.
+    const ls = listasAcessos(), coms = paraResponder();
+    const nTarefas = coms.length + ls.reduce((t, l) => t + l.lista.length, 0);
+    const ACAO_FILA: Record<string, (a: Aluna) => string> = {
+      vencem: (a) => `<button class="al-botao pequeno" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button><button class="al-botao-ouro pequeno" data-a="renovar" data-id="${a.id}">Renovar</button>`,
+      parada: (a) => `<button class="al-botao-ouro pequeno" data-a="whatsapp-volta" data-id="${a.id}">Chamar no WhatsApp</button>`,
+      comecar: (a) => `<button class="al-botao-ouro pequeno" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>`,
+    };
+    const grupoFila = (ic: string, titulo: string, n: number, abrir: string, v: string, linhas: string) => `
+      <section class="ini-cartao ini-fila">
+        <button type="button" class="ini-fila-cab" data-a="${abrir}"${v ? ` data-v="${v}"` : ""}><span class="ini-fila-ic">${ic}</span><b>${titulo}</b>${n ? badge(n) : emDia()}${n ? `<span class="ini-fila-ver">Ver ${n > 3 ? "todas" : ""} ${IC_INI.seta}</span>` : ""}</button>
+        ${linhas}
+      </section>`;
+    const fila = [
+      grupoFila(IC_INI.balao, "Comentários para moderar", coms.length, "ir-comentarios", "", coms.slice(0, 3).map((k) => `
+        <div class="ini-fila-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><span class="ini-fila-acoes"><button class="al-botao-ouro pequeno" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">Moderar</button></span></div>`).join("")),
+      ...ls.map((l) => grupoFila(l.icone, l.titulo, l.lista.length, "ini-lista", l.id, l.lista.slice(0, 3).map((a) => `
+        <div class="ini-fila-item"><button class="ac-quem" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b><span>${h(cursoPrincipal(a))} · ${l.direita(a)}</span></span></button><span class="ini-fila-acoes">${ACAO_FILA[l.id](a)}</span></div>`).join(""))),
+    ].join("");
+
+    // Coluna lateral: próxima liberação, última liberação e alertas.
+    const agoraIso = new Date().toISOString();
+    const agend = new Map<string, { abre: string; n: number }>();
+    for (const a of S.alunas) for (const k of a.concessoes) if (k.escopo === "aula" && k.abre && k.abre > agoraIso) {
+      const x = agend.get(k.alvo);
+      if (!x || k.abre < x.abre) agend.set(k.alvo, { abre: k.abre, n: (x?.n || 0) + 1 }); else x.n++;
+    }
+    const prox = [...agend.entries()].sort((x, y) => x[1].abre.localeCompare(y[1].abre))[0];
+    const proxA = prox ? acharAula(prox[0]) : null;
+    const ult = [...ULT_LIB.entries()].sort((x, y) => y[1].quando.localeCompare(x[1].quando))[0];
+    const ultC = ult ? S.cursos.find((c) => c.id === ult[0]) : null;
+    const dataHoraCurta = (iso: string) => { const d = new Date(iso); return d.toLocaleDateString("pt-BR", { timeZone: FUSO, day: "2-digit", month: "2-digit" }) + " às " + d.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" }); };
+    const vencidas = S.alunas.filter((a) => !a.bloqueada && vencida(a)).length;
+    const semCel = S.alunas.filter((a) => !a.bloqueada && !vencida(a) && !a.celular).length;
+    const comVelhos = coms.filter((k) => Date.now() - Date.parse(k.criado) > 48 * 3600e3).length;
+    const alerta = (n: number, txt: string, ok: string, acao: string) => `<button type="button" class="ini-alerta${n ? " tem" : ""}" data-a="${acao}"><span class="ini-alerta-n">${n || "✓"}</span><span>${n ? txt : ok}</span></button>`;
+    const lado = `
+      <section class="ini-cartao ini-lib">
+        <header><span class="ini-cab-ic">${IC_CAL_AG}</span><h3>Próxima liberação</h3></header>
+        ${proxA ? `<button type="button" class="ini-lib-item" data-a="abrir-aula" data-id="${proxA.a.id}"><b>${h(proxA.a.nome)}</b><span>${h(proxA.c.nome)}</span><span class="ini-lib-quando">${dataHoraCurta(prox![1].abre)} · ${p(prox![1].n, "aluna", "alunas")}</span></button>` : vazio("Nenhuma aula agendada.")}
+      </section>
+      <section class="ini-cartao ini-lib">
+        <header><span class="ini-cab-ic">${IC_INI.play}</span><h3>Última liberação</h3></header>
+        ${ult && ultC ? `<button type="button" class="ini-lib-item" data-a="abrir-aula" data-id="${ult[1].aula}"><b>${h(ult[1].titulo)}</b><span>${h(ultC.nome)}${ult[1].mod != null ? " · Módulo " + ult[1].mod : ""}${ult[1].num != null ? " · Aula " + ult[1].num : ""}</span><span class="ini-lib-quando">${haTempo(ult[1].quando)} · ${p(ult[1].alunas, "aluna", "alunas")}</span></button>` : vazio("Nenhuma liberação ainda.")}
+      </section>
+      <section class="ini-cartao ini-alertas">
+        <header><span class="ini-cab-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l9 16H3z"/><path d="M12 10v4.5M12 17.2v.3"/></svg></span><h3>Alertas</h3></header>
+        ${alerta(vencidas, p(vencidas, "acesso vencido", "acessos vencidos"), "Nenhum acesso vencido", "aba")}
+        ${alerta(comVelhos, p(comVelhos, "comentário esperando há mais de 48 h", "comentários esperando há mais de 48 h"), "Comentários respondidos em dia", "ir-comentarios")}
+        ${alerta(semCel, p(semCel, "aluna sem WhatsApp cadastrado", "alunas sem WhatsApp cadastrado"), "Todas com WhatsApp", "aba")}
+      </section>`.replace(/data-a="aba">/g, `data-a="aba" data-v="alunas">`);
+
+    // Linha do tempo, com filtro por tipo.
+    const tipo = ui.iniTipo;
+    const atvF = atv ? atv.filter((x) => !tipo || GRUPO_ATV[x.tipo] === tipo) : null;
+    const contaTipo = (t: string) => (atv ? atv.filter((x) => GRUPO_ATV[x.tipo] === t).length : 0);
+    const chipsTipo = [["", "Todas", atv ? atv.length : 0], ["acessou", "Acessos", contaTipo("acessou")], ["aulas", "Aulas", contaTipo("aulas")], ["ebooks", "E-books", contaTipo("ebooks")], ["comentarios", "Comentários", contaTipo("comentarios")], ["curtidas", "Curtidas", contaTipo("curtidas")]]
+      .map(([v, n, c]) => `<button class="al-filtro" data-a="ini-ativ-tipo" data-v="${v}" aria-pressed="${tipo === v}">${n}<span class="ini-chip-n">${c}</span></button>`).join("");
+    const corpoTempo = ativOk?.erro
+      ? `<div class="ini-erro"><span>Não consegui carregar as atividades.</span><button class="al-botao pequeno" data-a="ini-ativ-recarregar">Tentar de novo</button></div>`
+      : !atvF ? vazio("Carregando…") : atvF.slice(0, 8).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.");
+
+    const hora = Number(new Date().toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", hour12: false }).slice(0, 2));
+    const saud = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+    const dataLonga = new Date().toLocaleDateString("pt-BR", { timeZone: FUSO, weekday: "long", day: "numeric", month: "long" });
+    const atalho = (ic: string, txt: string, acao: string, v = "") => `<button type="button" class="ini-atalho" data-a="${acao}"${v ? ` data-v="${v}"` : ""}><span class="ini-atalho-ic">${ic}</span>${txt}</button>`;
     return `
-    <section class="tela ativa ini">
-      <div class="ini-tarefas" aria-label="Para fazer agora">
-        <h3>Para fazer agora</h3>
-        <div class="ini-tarefas-lista">
-          ${tarefa(IC_INI.balao, "Comentários para moderar", nResp, "ir-comentarios")}
-          ${tarefa(IC_INI.cal, "Acessos que vencem em 15 dias", ls[0].lista.length, "ini-lista", "vencem")}
-          ${tarefa(IC_INI.pessoas, "Sem acesso há mais de 14 dias", ls[1].lista.length, "ini-lista", "parada")}
-          ${tarefa(IC_INI.pessoa, "Ainda sem o primeiro acesso", ls[2].lista.length, "ini-lista", "comecar")}
+    <section class="tela ativa ini ini2">
+      <div class="vgx-cab">
+        <div><span class="vgx-sobre">Painel de controle</span><h1>Visão geral</h1><p>Tudo o que você precisa acompanhar, em um só lugar.</p></div>
+        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cn-fundo" data-a="criar-fechar"></span><span class="cn-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
+          <span class="cn-cab"><b>O que deseja criar?</b><button type="button" class="cn-x" data-a="criar-fechar" aria-label="Fechar">${xis}</button></span>
+          <span class="cn-opcoes">
+            <button type="button" data-a="curso-novo">${ICONE_MENU.cursos || IC_INI.play}<b>Produto</b><span>Curso, e-book ou áudio</span></button>
+            <button type="button" data-a="aluna-nova">${IC_INI.pessoas}<b>Aluna</b><span>Dados, acesso e conteúdo</span></button>
+            <button type="button" data-a="aba" data-v="layout">${ICONE_MENU.layout}<b>Categoria</b><span>Organize sua biblioteca</span></button>
+          </span>
+        </span>` : ""}</span></div>
+      </div>
+      <button type="button" class="vgx-atencao${nTarefas ? "" : " ok"}" data-a="estado-menu" data-v="sino"><i aria-hidden="true"></i><span>${nTarefas ? `<b>${p(nTarefas, "ponto de atenção", "pontos de atenção")} na operação.</b> Priorize comentários pendentes e acessos próximos do vencimento.` : "<b>Tudo em dia na operação.</b> Nenhum comentário ou acesso pedindo atenção."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>
+      ${INI_EXTRA ? `<div class="ini-boas">
+        <div class="ini-boas-txt">
+          <span class="ini-boas-data">${h(dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))}</span>
+          <h1>${saud}, ${h(primeiroNome(eu?.nome || ""))}</h1>
+          <p>${nTarefas ? `Você tem <b>${p(nTarefas, "tarefa", "tarefas")}</b> esperando por você.` : "Tudo em dia por aqui. ✓"}</p>
         </div>
+        <div class="ini-boas-dir">${seletorPeriodo()}</div>
+      </div>` : ""}
+      ${ATALHOS_INI ? `<div class="ini-atalhos">
+        ${atalho(IC_INI.pessoa, "Cadastrar aluna", "aluna-nova")}
+        ${atalho(IC_CAL_AG, "Liberar conteúdo", "aba", "cursos")}
+        ${atalho(ICONE_MENU.layout, "Criar produto", "curso-novo")}
+        ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
+      </div>` : ""}
+      <div class="ini-mets">${metricas}</div>
+      ${vgxResto()}
+      <div class="ini-corpo${INI_EXTRA ? "" : " so"}">
+        <div class="ini-principal">
+          ${INI_EXTRA ? `<div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
+          ${fila}` : ""}
+          ${INI_TEMPO ? `<section class="ini-cartao ini-tempo">
+            <header><span class="ini-cab-ic">${IC_INI.onda}</span><h3>O que aconteceu</h3><button class="al-botao pequeno" data-a="ini-ativ-todas">Ver todas ${IC_INI.seta}</button></header>
+            <div class="ini-chips">${chipsTipo}</div>
+            <div class="ini-lista">${corpoTempo}</div>
+          </section>` : ""}
+        </div>
+        ${INI_EXTRA ? `<aside class="ini-lado">${lado}</aside>` : ""}
       </div>
-      <div class="ini-grade">
-        ${cartao(IC_INI.balao, "Comentários para moderar" + (nResp ? " " + badge(nResp) : ""), "ir-comentarios", paraResponder().slice(0, 3).map((k) => `
-          <div class="ini-item a-responder">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><button class="al-botao pequeno ini-moderar" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">Moderar</button></div>`).join("") || vazio("Nenhum comentário para moderar. Tudo em dia."))}
-        ${cartao(IC_INI.onda, "Últimas atividades", "ini-ativ-todas", atv ? (atv.slice(0, 3).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")) : vazio("Carregando…"))}
-        ${cartao(IC_INI.pessoas, "Alunas adicionadas recentemente", "ir-alunas-recentes", novas.slice(0, 3).map((a) => `
-          <button class="ini-item ini-aluna" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="ini-txt"><b>${h(a.nome)}</b></span><span class="ini-quando">${br(diaDe(a.criadaEm))}</span></button>`).join("") || vazio("Nenhuma aluna cadastrada no período."))}
-      </div>
-      ${blocoAcessos()}
-      ${blocoConteudo()}
+      ${painelListaIni()}
       ${ui.ativTodas ? `
         <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
-        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Últimas atividades">
-          <header class="aa-cab"><div><h2>Últimas atividades</h2><p>${br(de)} a ${br(ate)} · ${p((atv || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
-          <div class="aa-corpo" data-rolagem="ativ">${(atv || []).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")}</div>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Atividades dos alunos">
+          <header class="aa-cab"><div><h2>Atividades dos alunos</h2><p>${br(de)} a ${br(ate)} · ${p((atvF || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
+          <div class="aa-corpo" data-rolagem="ativ">${(atvF || []).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")}</div>
         </aside>` : ""}
+      ${ui.iniConteudo ? `
+        <div class="aa-fundo" data-a="ini-conteudo-fechar"></div>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Conteúdo liberado">
+          <header class="aa-cab"><div><h2>Conteúdo liberado</h2><p><span class="aa-conta tem">${lib.length}</span> Tudo o que está liberado hoje para as alunas.</p></div><button type="button" class="aa-fechar" data-a="ini-conteudo-fechar" aria-label="Fechar">${xis}</button></header>
+          <div class="aa-corpo" data-rolagem="ini-conteudo">${[...new Set(lib.map((x) => x.c))].map((c) => `<h3 class="ini-grupo-tit">${h(c.nome)}<span>${p(lib.filter((x) => x.c === c).length, "item", "itens")}</span></h3>${[...new Set(lib.filter((x) => x.c === c).map((x) => x.m))].map((m) => `<h4 class="ini-mod-tit">Módulo ${numModulo(c, c.modulos.indexOf(m))} · ${h(m.nome)}</h4>${lib.filter((x) => x.m === m).map((x) => `
+            <button type="button" class="ini-item" data-a="lib-ver" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
+        </aside>` : ""}
+      ${ui.libVer ? quadroLib(ui.libVer, lib) : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
+  }
+  /** Só o quadro de liberação de uma aula (somente leitura); "Editar" leva para a aula. */
+  function quadroLib(id: string, lib: { a: Aula; m: Modulo; c: Curso; n: number }[]) {
+    const x = acharAula(id); if (!x) return "";
+    const a = x.a, n = lib.find((y) => y.a.id === id)?.n || 0;
+    const dt = (d: string) => (d ? br(diaDe(d.includes("T") ? d : d + "T12:00:00")) : "—");
+    const futura = !!a.libera && a.libera > new Date().toISOString();
+    const status = a.rascunho ? "Não publicado" : "Publicado";
+    const libTxt = a.rascunho ? "Não liberado" : !a.libera ? "Liberado imediatamente" : futura ? "Libera em " + dt(a.libera) : "Liberado em " + dt(a.libera);
+    const k = cat(x.c.cat);
+    const linha = (r: string, v: string) => `<span class="lq-l"><span>${r}</span><b>${v}</b></span>`;
+    return `<span class="cn-fundo" data-a="lib-fechar"></span>
+      <div class="cn-modal lq" role="dialog" aria-modal="true" aria-label="Publicação e liberação">
+        <div class="cn-cab"><b>Publicação e liberação</b><button type="button" class="cn-x" data-a="lib-fechar" aria-label="Fechar">${xis}</button></div>
+        <div class="lq-corpo">
+                    <div class="lq-info">
+            <span><i>Curso</i><b>${h(x.c.nome)}</b></span>
+            <span><i>Categoria</i><b>${h(k?.nome || "Sem categoria")}</b></span>
+            <span><i>Módulo</i><b>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · ${h(x.m.nome)}</b></span>
+            <span><i>Liberação do módulo</i><b>${x.m.libera ? (x.m.libera > new Date().toISOString() ? "Libera em " : "Liberado em ") + dt(x.m.libera) : "Imediata"}</b></span>
+            <span class="lq-aula"><i>Aula ${a.num}</i><b>${h(a.nome)}</b><small>Duração: ${a.duracao ? (a.duracao >= 3600 ? Math.floor(a.duracao / 3600) + "h " + String(Math.round((a.duracao % 3600) / 60)).padStart(2, "0") + " min" : Math.max(1, Math.round(a.duracao / 60)) + " min") : "não informada"}</small></span>
+          </div>
+          <p class="lq-st${a.rascunho ? " off" : futura ? " ag" : ""}">${status} • ${libTxt}</p>
+          ${linha("Data de criação:", dt(a.criado))}
+          ${linha("Data de publicação:", dt(a.publicadoEm))}
+          ${linha("Data de liberação:", a.libera ? dt(a.libera) : dt(a.publicadoEm || a.criado) + " (imediata)")}
+        </div>
+        <div class="lq-pe">
+          <span class="lq-tag"><span>Categoria:</span><i>${h(k?.nome || "Sem categoria")}</i></span>
+          <span class="lq-tag"><span>Liberação para alunas:</span><em>${n ? "Liberada · " + p(n, "aluna", "alunas") : "Nenhuma aluna"}</em></span>
+          <button type="button" class="vgx-bt lq-ed" data-a="abrir-aula-lib" data-id="${a.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Editar</button>
+        </div>
+      </div>`;
+  }
+  /** Visão geral: central de atenção, ritmo da comunidade, atividade recente, vencimentos e rascunhos. */
+  function vgxResto() {
+    const ls = listasAcessos(), coms = paraResponder();
+    const n2 = (n: number) => String(n).padStart(2, "0");
+    const IC_REL = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`;
+    const IC_CAD = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>`;
+    const linhas: { g: string; ic: string; cor: string; t: string; d: string; n: number; bt: string; a: string; v: string }[] = [
+      { g: "comentarios", ic: IC_INI.balao, cor: "verm", t: "Comentários aguardando moderação", d: "Revise perguntas e relatos antes de disponibilizá-los para a comunidade.", n: coms.length, bt: "Moderar", a: "ir-comentarios", v: "" },
+      { g: "acessos", ic: IC_REL, cor: "ouro", t: "Acessos vencem nos próximos 15 dias", d: "Confira os vencimentos e organize a continuidade de cada aluna.", n: ls[0].lista.length, bt: "Ver acessos", a: "ini-lista", v: "vencem" },
+      { g: "alunas", ic: IC_INI.pessoas, cor: "azul", t: "Alunas sem atividade há mais de 14 dias", d: "Acompanhe quem se afastou e registre o próximo contato.", n: ls[1].lista.length, bt: "Acompanhar", a: "ini-lista", v: "parada" },
+      { g: "alunas", ic: IC_CAD, cor: "ouro", t: "Alunas ainda não fizeram o primeiro acesso", d: "Verifique as instruções de entrada e os conteúdos liberados.", n: ls[2].lista.length, bt: "Ver alunas", a: "ini-lista", v: "comecar" },
+    ];
+    const total = linhas.reduce((t, l) => t + l.n, 0);
+    const aba = ui.vgxAba || "tudo";
+    const central = `
+      <section class="vgx-card vgx-central">
+        <header class="vgx-ccab"><div><h3>Central de atenção <span class="vgx-cont">${total}</span></h3><p>Ações recomendadas para hoje</p></div><span class="vgx-pill">Prioridade operacional</span></header>
+        <nav class="vgx-abas">${[["tudo", "Tudo"], ["comentarios", "Comentários"], ["acessos", "Acessos"], ["alunas", "Alunas"]].map(([v, n]) => `<button type="button" data-a="vgx-aba" data-v="${v}" aria-pressed="${aba === v}">${n}</button>`).join("")}</nav>
+        ${linhas.filter((l) => aba === "tudo" || l.g === aba).map((l) => `
+        <div class="vgx-linha"><span class="vgx-lic ${l.cor}">${l.ic}</span><span class="vgx-ltxt"><b>${l.t}</b><span>${l.d}</span></span><span class="vgx-num">${n2(l.n)}</span><button type="button" class="vgx-bt" data-a="${l.a}"${l.v ? ` data-v="${l.v}"` : ""}>${l.bt}</button></div>`).join("")}
+        <footer class="vgx-cpe"><span>Os grupos podem conter a mesma aluna.</span><button type="button" class="vgx-link" data-a="aba" data-v="engajamento">${IC_INI.seta}Ver engajamento</button></footer>
+      </section>`;
+    // Ritmo: constantes (acessam e avançam), retomando (precisam de um empurrão) e distantes (sem acesso há 14 dias ou nunca).
+    const base = S.alunas.filter((a) => !a.bloqueada && !vencida(a));
+    const dist = base.filter((a) => parada(a) || !a.ultimoAcesso).length;
+    const ret = base.filter((a) => !(parada(a) || !a.ultimoAcesso) && nivel(a)[2] === "empurrao").length;
+    const cons = base.length - dist - ret;
+    const pc = (n: number) => (base.length ? Math.round((n / base.length) * 100) : 0);
+    const eng = pc(cons + ret);
+    const C = 2 * Math.PI * 52;
+    const ritmo = `
+      <section class="vgx-card vgx-ritmo">
+        <header class="vgx-scab"><h3>Ritmo da comunidade</h3><button type="button" class="vgx-link" data-a="aba" data-v="engajamento">${IC_INI.seta}Ver todos</button></header>
+        <div class="vgx-rcorpo">
+          <svg class="vgx-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="fundo"/><circle cx="60" cy="60" r="52" class="val" stroke-dasharray="${((eng / 100) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" class="n">${eng}<tspan>%</tspan></text><text x="60" y="80" text-anchor="middle" class="r">ENGAJAMENTO</text></svg>
+          <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
+        </div>
+      </section>`;
+    // Conteúdo agendado: o que tem data de liberação no futuro (curso, módulo, aula ou liberação marcada para alunas).
+    const agoraIso = new Date().toISOString();
+    const futuro = (d: string) => !!d && (d.includes("T") ? d > agoraIso : d > hoje());
+    const ag = new Map<string, { titulo: string; curso: string; quando: string }>();
+    const poe = (id: string, titulo: string, curso: string, quando: string) => { const x = ag.get(id); if (!x || quando < x.quando) ag.set(id, { titulo, curso, quando }); };
+    for (const c of S.cursos) {
+      if (futuro(c.libera)) poe(c.id, c.nome, c.nome, c.libera);
+      for (const m of c.modulos) {
+        if (futuro(m.libera)) poe(m.id, m.nome, c.nome, m.libera);
+        for (const x of m.aulas) if (futuro(x.libera)) poe(x.id, x.nome, c.nome, x.libera);
+      }
+    }
+    for (const al of S.alunas) for (const k of al.concessoes) if (k.abre && k.abre > agoraIso) { const x = acharAula(k.alvo); if (x) poe(x.a.id, x.a.nome, x.c.nome, k.abre); }
+    const agendados = [...ag.values()].sort((x, y) => x.quando.localeCompare(y.quando)).slice(0, 4);
+    const quandoLib = (d: string) => { const dia = br(diaDe(d.includes("T") ? d : d + "T12:00:00")); return d.includes("T") ? dia + " às " + new Date(d).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" }) : dia; };
+    const recente = `
+      <section class="vgx-card vgx-recente">
+        <header class="vgx-scab"><h3>Conteúdo agendado</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></header>
+        <ol class="vgx-tl">${agendados.map((x) => `<li><b>${h(x.curso)}</b><span>${x.titulo !== x.curso ? h(x.titulo) + " · " : ""}Libera em ${quandoLib(x.quando)}</span></li>`).join("") || `<li class="vazio">Nenhum conteúdo agendado para liberação.</li>`}</ol>
+      </section>`;
+    const venc = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje()).sort((x, y) => x.validade.localeCompare(y.validade)).slice(0, 5);
+    const tabela = `
+      <div class="vgx-tit"><h2>Próximos vencimentos</h2><button type="button" class="vgx-link" data-a="aba" data-v="alunas">${IC_INI.seta}Todos os acessos</button></div>
+      <section class="vgx-card vgx-tab"><table>
+        <thead><tr><th>Aluna</th><th>Modalidade</th><th>Vencimento</th><th>Status</th><th>Progresso</th><th></th></tr></thead>
+        <tbody>${venc.map((a) => { const d = diasEntre(hoje(), a.validade), pg = progressoDe(a); return `<tr>
+          <td><span class="vgx-quem">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>${h(a.login)}</span></span></span></td>
+          <td>${daMentoria(a) ? "Mentoria" : "Geral"}</td>
+          <td class="mono">${br(a.validade)}</td>
+          <td><span class="vgx-st${d <= 15 ? " perto" : ""}">${d === 0 ? "Vence hoje" : "Vence em " + p(d, "dia", "dias")}</span></td>
+          <td><span class="vgx-prog"><i style="width:${pg}%"></i></span><span class="vgx-pct">${pg}%</span></td>
+          <td><button type="button" class="vgx-bt" data-a="ini-abrir-aluna" data-id="${a.id}">Gerenciar acesso</button></td></tr>`; }).join("") || `<tr><td colspan="6" class="vgx-vazio">Nenhum acesso com vencimento marcado.</td></tr>`}</tbody>
+      </table></section>`;
+    const rasc = S.cursos.filter((c) => c.rascunho).slice(0, 2);
+    const tipoNome = (c: Curso) => (c.tipo === "ebook" ? "E-book" : c.tipo === "audio" ? "Áudio" : "Curso");
+    const pctC = (c: Curso) => { const t = totalAulas(c); return t ? Math.round((c.modulos.reduce((s2, m) => s2 + m.aulas.filter((x) => x.pub).length, 0) / t) * 100) : 0; };
+    const rascunhos = `
+      <div class="vgx-tit"><h2>Continue de onde parou</h2><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Biblioteca de produtos</button></div>
+      <div class="vgx-rasc">${rasc.map((c) => `
+        <section class="vgx-card vgx-rc"><div class="vgx-rtopo"><span class="vgx-pill">Rascunho</span>${ICONE_MENU.cursos || ""}</div><h3>${h(c.nome)}</h3><p>${tipoNome(c)} · ${h(cat(c.cat)?.nome || "Sem categoria")}</p><span class="vgx-prog"><i style="width:${Math.max(8, pctC(c))}%"></i></span><div class="vgx-racoes"><button type="button" class="vgx-bt" data-a="abrir-curso" data-id="${c.id}">Continuar edição</button><button type="button" class="vgx-link" data-a="abrir-curso" data-id="${c.id}">Ver estrutura</button></div></section>`).join("")}
+        <section class="vgx-card vgx-novo"><span class="vgx-sobre">Próximo conteúdo</span><h3>Crie uma nova jornada.</h3><p>Cursos, e-books ou áudios, com uma etapa para cada decisão.</p><button type="button" class="al-botao-ouro" data-a="curso-novo"><span aria-hidden="true">+</span> Criar produto</button></section>
+      </div>`;
+    return `
+      <div class="vgx-meio">${central}<div class="vgx-col">${ritmo}${recente}</div></div>
+      ${tabela}
+      ${rascunhos}
+      <footer class="vgx-rodape"><span>AIŌN · Administração</span></footer>`;
+  }
+  const GRUPO_ATV: Record<Atividade["tipo"], string> = { acessou: "acessou", assistiu: "aulas", concluiu: "aulas", abriu_ebook: "ebooks", comentou: "comentarios", respondeu: "comentarios", curtiu: "curtidas", curtiu_comentario: "curtidas" };
+  /** Cada aula/e-book liberado hoje para pelo menos uma aluna ativa, com quantas têm. */
+  function conteudoLiberado() {
+    const n = new Map<string, number>();
+    for (const al of S.alunas) { if (al.bloqueada || vencida(al)) continue; for (const id of new Set(aulasDaLiberacao(al))) n.set(id, (n.get(id) || 0) + 1); }
+    const out: { a: Aula; m: Modulo; c: Curso; n: number }[] = [];
+    for (const c of S.cursos) for (const m of c.modulos) for (const a of m.aulas) if (n.has(a.id)) out.push({ a, m, c, n: n.get(a.id)! });
+    return out;
   }
   /*
    * "Alunas e acessos" (segunda parte do Início): três listas lado a
@@ -1223,101 +1609,33 @@ export function montar(app: HTMLElement) {
           <span class="ini-quando">${l.direita(a)}</span>
           <span class="menu-acoes"><button class="ini-mais" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>${ui.menu === a.id ? menuAluna(a) : ""}</span>
         </div>`;
-  function blocoAcessos() {
-    const ls = listasAcessos();
-    const aberta = ls.find((l) => l.id === ui.iniLista);
-    return `
-      <section class="ac-bloco">
-        <header class="ac-cab"><span class="ini-cab-ic">${IC_INI.pessoas}</span><span class="ac-cab-txt"><h3>Alunas e acessos</h3><span>Acompanhe o acesso das alunas na sua mentoria.</span></span><button class="al-botao pequeno" data-a="aba" data-v="alunas">Ver todos ${IC_INI.seta}</button></header>
-        <div class="ac-colunas">${ls.map((l) => `
-          <div class="ac-coluna">
-            <button class="ac-topo" data-a="ini-lista" data-v="${l.id}" aria-label="Ver a lista inteira: ${h(l.titulo)}">
-              <span class="ac-ic">${l.icone}</span>
-              <span class="ac-topo-txt"><b>${l.titulo}</b><span>${l.sub}</span></span>
-              <span class="aa-conta${l.lista.length ? " tem" : ""}">${l.lista.length}</span>${seta}
-            </button>
-            ${l.lista.slice(0, 3).map((a) => linhaIni(l, a)).join("") || `<p class="ini-vazio">Nenhuma aluna aqui agora.</p>`}
-          </div>`).join("")}
-        </div>
-      </section>
-      ${aberta ? `
+  /** A lista inteira de um grupo de acessos, num painel à direita. */
+  function painelListaIni() {
+    const sete = diaDe(new Date(Date.now() - 6 * 864e5));
+    const novasL: ListaIni = { id: "novas", titulo: "Alunas adicionadas recentemente", sub: "Cadastradas nos últimos 7 dias.", icone: IC_INI.pessoa,
+      lista: S.alunas.filter((a) => a.criadaEm && diaDe(a.criadaEm) >= sete).sort((x, y) => y.criadaEm.localeCompare(x.criadaEm)), direita: (a) => br(diaDe(a.criadaEm)) };
+    const per = periodoIni();
+    const ultimo = new Map<string, string>();
+    for (const x of ativ && ativ.chave === per.chave ? ativ.lista : []) { const d = diaDe(x.quando); if (d >= per.de && d <= per.ate && (!ultimo.has(x.aluna) || x.quando > ultimo.get(x.aluna)!)) ultimo.set(x.aluna, x.quando); }
+    const ativasL: ListaIni = { id: "ativas", titulo: "Alunas ativas", sub: "Acessaram, assistiram ou comentaram entre " + br(per.de) + " e " + br(per.ate) + ".", icone: IC_INI.pessoas,
+      lista: S.alunas.filter((a) => ultimo.has(a.id)).sort((x, y) => ultimo.get(y.id)!.localeCompare(ultimo.get(x.id)!)), direita: (a) => haTempo(ultimo.get(a.id)!) };
+    const gT = ui.vgxGrupo || "mentoria";
+    const totalL: ListaIni = { id: "total", titulo: gT === "mentoria" ? "Alunos mentoria" : "Alunos geral", sub: "Total de alunos(as) cadastrados neste grupo.", icone: IC_INI.pessoas,
+      lista: S.alunas.filter((a) => daMentoria(a) === (gT === "mentoria")).sort((x, y) => x.nome.localeCompare(y.nome, "pt")), direita: (a) => br(cadastroDe(a)) };
+    const aberta = ui.iniLista === "total" ? totalL : ui.iniLista === "novas" ? novasL : ui.iniLista === "ativas" ? ativasL : listasAcessos().find((l) => l.id === ui.iniLista);
+    return aberta ? `
         <div class="aa-fundo" data-a="ini-lista-fechar"></div>
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${h(aberta.titulo)}">
           <header class="aa-cab"><div><h2>${aberta.titulo}</h2><p><span class="aa-conta tem">${aberta.lista.length}</span> ${aberta.sub}</p></div><button type="button" class="aa-fechar" data-a="ini-lista-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ini-${aberta.id}">${aberta.lista.map((a) => linhaIni(aberta, a)).join("") || `<p class="ini-vazio">Nenhuma aluna aqui agora.</p>`}</div>
-        </aside>` : ""}`;
-  }
-  /*
-   * Terceira parte do Início: aulas liberadas (hoje, ontem ou na última
-   * semana), o último curso, os últimos módulos e as últimas categorias.
-   * "Liberada" é o dia em que a aula abriu para a aluna: a data marcada
-   * na aula ou o cronograma do módulo (dias depois da entrada dela).
-   */
-  type Liberacao = { aula: Aula; m: Modulo; c: Curso; dia: string; alunas: number };
-  function aulasLiberadas(de: string, ate: string): Liberacao[] {
-    const conta = new Map<string, { dia: string; n: number }>();
-    for (const al of S.alunas) {
-      if (al.bloqueada || vencida(al)) continue;
-      const libs = new Set(aulasDaLiberacao(al));
-      for (const c of S.cursos) for (const m of c.modulos) for (const a of m.aulas) {
-        if (!libs.has(a.id)) continue;
-        let dia = al.datas[a.id] || "";
-        if (!dia && al.cronograma[m.id] != null && al.entrada) dia = diaDe(new Date(Date.parse(al.entrada + "T12:00:00") + al.cronograma[m.id] * 864e5));
-        if (!dia || dia < de || dia > ate) continue;
-        const k = a.id + "|" + dia; const x = conta.get(k); if (x) x.n++; else conta.set(k, { dia, n: 1 });
-      }
-    }
-    const out: Liberacao[] = [];
-    for (const [k, v] of conta) {
-      const x = acharAula(k.split("|")[0]); if (!x) continue;
-      out.push({ aula: x.a, m: x.m, c: x.c, dia: v.dia, alunas: v.n });
-    }
-    return out.sort((x, y) => y.dia.localeCompare(x.dia) || x.c.modulos.indexOf(x.m) - y.c.modulos.indexOf(y.m) || x.m.aulas.indexOf(x.aula) - y.m.aulas.indexOf(y.aula));
-  }
-  const quandoDia = (dia: string) => { const n = diasEntre(dia, hoje()); return n === 0 ? "hoje" : n === 1 ? "ontem" : n > 0 ? "há " + n + " dias" : br(dia); };
-  function blocoConteudo() {
-    const hj = hoje(); const menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
-    const f = ui.iniLib || "hoje";
-    const [de, ate] = f === "hoje" ? [hj, hj] : f === "ontem" ? [menos(1), menos(1)] : [menos(6), hj];
-    const libs = aulasLiberadas(de, ate);
-    const nomeAula = (x: Liberacao) => `Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} - Aula ${x.aula.num}`;
-    const capaAula = (a: Aula) => (a.capa ? urlDaCapa(a.capa) : "");
-    const ultimoCurso = S.cursos.slice().sort((x, y) => y.criado.localeCompare(x.criado))[0];
-    const mods = S.cursos.flatMap((c) => c.modulos.map((m, i) => ({ c, m, i }))).sort((x, y) => y.m.criado.localeCompare(x.m.criado)).slice(0, 4);
-    const cats = S.cats.slice().sort((x, y) => y.criado.localeCompare(x.criado)).slice(0, 4);
-    const capaCurso = (c: Curso) => { if (c.capa) return urlDaCapa(c.capa); const k = cat(c.cat); return k ? capaCat(k) : ""; };
-    const img = (src: string) => (src ? `<img src="${h(src)}" alt="" loading="lazy" onerror="this.remove()" />` : "");
-    const cab = (ic: string, titulo: string, sub: string, extra = "") => `<header class="ct-cab"><span class="ini-cab-ic">${ic}</span><span class="ct-cab-txt"><h3>${titulo}</h3><span>${sub}</span></span>${extra}</header>`;
-    return `
-      <div class="ct-grade">
-        <section class="ini-cartao ct">
-          ${cab(IC_INI.play, "Aulas liberadas", "As aulas que abriram para as alunas.")}
-          <div class="ct-filtros">${[["hoje", "Hoje"], ["ontem", "Ontem"], ["semana", "Última semana"]].map(([v, n]) => `<button class="al-filtro" data-a="ini-lib" data-v="${v}" aria-pressed="${f === v}">${n}</button>`).join("")}</div>
-          <div class="ini-lista">${libs.slice(0, ui.iniLibTodas ? 999 : 4).map((x) => `
-            <button class="ct-item" data-a="abrir-aula" data-id="${x.aula.id}"><span class="ct-mini">${img(capaAula(x.aula))}</span><span class="ini-txt"><b>${nomeAula(x)}</b><span>${p(x.alunas, "aluna", "alunas")} · ${quandoDia(x.dia)}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhuma aula liberada ${f === "hoje" ? "hoje" : f === "ontem" ? "ontem" : "na última semana"}.</p>`}
-          ${libs.length > 4 ? `<button class="al-botao pequeno ct-mais" data-a="ini-lib-todas">${ui.iniLibTodas ? "Ver menos" : "Ver todas (" + libs.length + ")"}</button>` : ""}</div>
-        </section>
-        <section class="ini-cartao ct">
-          ${cab(`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.5c1.5 1.5 3.4 2.2 5.5 2.2s4-.7 5.5-2.2v-4.5M21.5 9.5v5"/></svg>`, "Último curso adicionado", "Curso mais recente na plataforma.", ultimoCurso ? `<button class="al-botao pequeno" data-a="aba" data-v="cursos">Ver todos ${IC_INI.seta}</button>` : "")}
-          ${ultimoCurso ? `<button class="ct-curso" data-a="abrir-curso" data-id="${ultimoCurso.id}"><span class="ct-curso-img">${img(capaCurso(ultimoCurso))}</span><span class="ct-curso-txt"><b>${h(ultimoCurso.nome)}</b><span>${p(totalAulas(ultimoCurso), "aula", "aulas")} · ${p(ultimoCurso.modulos.length, "módulo", "módulos")}</span></span>${seta}</button>` : `<p class="ini-vazio">Nenhum curso ainda.</p>`}
-        </section>
-        <section class="ini-cartao ct">
-          ${cab(`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12M3.5 16L12 20.5 20.5 16"/></svg>`, "Últimos módulos adicionados", "Módulos mais recentes na plataforma.", `<button class="al-botao pequeno" data-a="aba" data-v="cursos">Ver todos ${IC_INI.seta}</button>`)}
-          <div class="ini-lista">${mods.map(({ c, m, i }) => `
-            <button class="ct-item" data-a="abrir-curso" data-id="${c.id}"><span class="ct-num">${numModulo(c, i)}</span><span class="ini-txt"><b>Módulo ${numModulo(c, i)} - ${h(m.nome.charAt(0) + m.nome.slice(1).toLowerCase())}</b><span>${m.criado ? haTempo(m.criado) : ""}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhum módulo ainda.</p>`}</div>
-        </section>
-        <section class="ini-cartao ct">
-          ${cab(ICONE_MENU.layout, "Últimas categorias adicionadas", "Categorias mais recentes na plataforma.")}
-          <div class="ini-lista">${cats.map((k) => `
-            <button class="ct-item" data-a="ini-abrir-cat" data-id="${k.id}"><span class="ct-mini">${img(capaCat(k))}</span><span class="ini-txt"><b>${h(k.nome)}</b><span>${k.criado ? haTempo(k.criado) : ""}</span></span>${seta}</button>`).join("") || `<p class="ini-vazio">Nenhuma categoria ainda.</p>`}</div>
-        </section>
-      </div>`;
+        </aside>` : "";
   }
   /** O seletor de período, no alto do Início. */
+  const diaCurto = (d: string) => { const [a, m, dd] = d.split("-"); return Number(dd) + " " + ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."][Number(m) - 1] + " " + a; };
   function seletorPeriodo() {
     const { de, ate } = periodoIni();
     return `<span class="ini-periodo">
-      <button class="al-botao" data-a="ini-periodo" aria-expanded="${ui.periodoAberto}">${IC_INI.cal}${br(de)} - ${br(ate)}<span aria-hidden="true">⌄</span></button>
+      <button class="al-botao" data-a="ini-periodo" aria-expanded="${ui.periodoAberto}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>${diaCurto(de) === diaCurto(ate) ? diaCurto(ate) : diaCurto(de).replace(/ \d{4}$/, "") + " – " + diaCurto(ate)}</button>
       ${ui.periodoAberto ? `<span class="ini-periodo-pop" role="dialog" aria-label="Escolher período">
         <span class="ini-rapidos">${[["hoje", "Hoje"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"], ["mes", "Este mês"]].map(([v, n]) => `<button class="al-filtro" data-a="ini-periodo-rapido" data-v="${v}">${n}</button>`).join("")}</span>
         <label>De <input id="iniDe" type="date" class="campo" value="${de}" /></label>
@@ -1494,7 +1812,7 @@ export function montar(app: HTMLElement) {
       const n = c.modulos.reduce((s2, m) => s2 + m.aulas.filter((k) => libs.has(k.id)).length, 0);
       return n ? { c, n } : null;
     }).filter(Boolean) as { c: Curso; n: number }[];
-    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["progresso", "Progresso"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
+    const ABAS_AL: [string, string][] = [["geral", "Visão geral"], ["acessos", "Acessos"], ["produtos", "Produtos"], ["progresso", "Progresso"], ["pagamentos", "Pagamentos"], ["observacoes", "Observações"]];
     const aba = ABAS_AL.some(([k]) => k === ui.acessoAba) ? ui.acessoAba : "geral";
     const naoInf = `<span class="aa-vazio">não informado</span>`;
     const linha = (rotulo: string, valor: string) => `<div class="aa-dado"><span>${rotulo}</span><b>${valor}</b></div>`;
@@ -1516,7 +1834,7 @@ export function montar(app: HTMLElement) {
             ${linha("Nome completo", h(a.nome))}
             ${linha("Login", h(a.login))}
             ${linha("E-mail", a.email ? h(a.email) : naoInf)}
-            ${linha("Celular", a.celular ? h(fone(a.celular)) : naoInf)}
+            ${linha("Celular", a.celular ? `<span class="aa-cel">${h(fone(a.celular))}<button type="button" class="al2-ic" data-a="copiar-cel" data-id="${a.id}" aria-label="Copiar o número" title="Copiar número"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button></span>` : naoInf)}
             ${linha("Data de cadastro", br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada))}
             ${linha("Status", status)}
           </div>
@@ -1562,12 +1880,40 @@ export function montar(app: HTMLElement) {
       corpo = `
         <h3 class="aa-secao" style="margin-top:4px">Progresso geral</h3>
         <div class="al-prog-geral"><span class="al-pct">${pctG}%</span><span class="al-barra-p"><i style="width:${pctG}%"></i></span><span class="al-prog-txt">${feitasLib} de ${libs.size} ${libs.size === 1 ? "aula concluída" : "aulas concluídas"}</span></div>
-        <h3 class="aa-secao">Progresso por módulo</h3>
-        ${mods.length ? `<div class="al-mods">${mods.map(({ c, m, i, lib }) => {
-          const n = lib.filter((k) => a.feitas.has(k.id)).length; const pct = Math.round(n / lib.length * 100);
-          return `<div class="al-mod"><span class="al-mod-nome">Módulo ${numModulo(c, i)} - ${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pct}%"></i></span><span class="al-mod-pct">${pct}%</span><span class="al-mod-qt">${n} de ${p(lib.length, "aula", "aulas")}</span>${seta}</div>`;
-        }).join("")}</div>` : `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`}
+        <h3 class="aa-secao">Progresso por produto</h3>
+        ${(() => {
+          type ModP = { nome: string; feitas: number; total: number };
+          type ProdP = { nome: string; mods: ModP[]; sim?: boolean };
+          const reais: ProdP[] = S.cursos.map((c) => ({ nome: c.nome, mods: mods.filter((x) => x.c === c).map(({ c: cc, m, i, lib }) => ({ nome: "Módulo " + numModulo(cc, i) + " - " + m.nome, feitas: lib.filter((k) => a.feitas.has(k.id)).length, total: lib.length })) })).filter((x) => x.mods.length);
+          // Só na prévia: três produtos de exemplo, para ver o desenho. Nada disso existe no banco.
+          const sim: ProdP[] = new URLSearchParams(location.search).has("previa") && !reais.length ? [
+            { nome: "Bênçãos Ilimitadas", sim: true, mods: [{ nome: "Módulo 0 - Boas-vindas e diagnóstico", feitas: 2, total: 2 }, { nome: "Módulo 1 - Descobrindo o verdadeiro", feitas: 2, total: 3 }, { nome: "Módulo 2 - A prosperidade", feitas: 0, total: 4 }] },
+            { nome: "Manuscrito Sagrado", sim: true, mods: [{ nome: "Parte 1 - Origem", feitas: 1, total: 1 }, { nome: "Parte 2 - O código", feitas: 0, total: 2 }] },
+            { nome: "Ritual da manhã", sim: true, mods: [{ nome: "Semana 1", feitas: 7, total: 7 }, { nome: "Semana 2", feitas: 4, total: 7 }] },
+          ] : [];
+          const lista = reais.length ? reais : sim;
+          if (!lista.length) return `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`;
+          return (sim.length ? `<p class="aa-sim">Simulação com 3 produtos de exemplo (só na prévia; não existe no banco).</p>` : "") + lista.map((pr) => {
+            const f = pr.mods.reduce((t, m) => t + m.feitas, 0), tt = pr.mods.reduce((t, m) => t + m.total, 0), pc = tt ? Math.round((f / tt) * 100) : 0;
+            return `<div class="aa-cartao aa-pp">
+              <div class="aa-pp-cab"><b>${h(pr.nome)}</b><span class="aa-pp-pct">${pc}%</span></div>
+              <div class="aa-pp-barra"><span class="al-barra-p"><i style="width:${pc}%"></i></span><span class="aa-pp-qt">${f} de ${p(tt, "aula", "aulas")}</span></div>
+              <div class="al-mods">${pr.mods.map((m) => { const pm = m.total ? Math.round((m.feitas / m.total) * 100) : 0; return `<div class="al-mod"><span class="al-mod-nome">${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pm}%"></i></span><span class="al-mod-pct">${pm}%</span><span class="al-mod-qt">${m.feitas} de ${p(m.total, "aula", "aulas")}</span></div>`; }).join("")}</div>
+            </div>`;
+          }).join("");
+        })()}
         ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
+    }
+    else if (aba === "produtos") {
+      // Data em que adquiriu: a primeira liberação do produto (ou de um módulo/aula dele); sem registro, o cadastro dela.
+      const quando = (c: Curso) => {
+        const ids = new Set<string>([c.id, ...c.modulos.map((m) => m.id), ...c.modulos.flatMap((m) => m.aulas.map((k) => k.id))]);
+        const ds = a.concessoes.filter((k) => ids.has(k.alvo) && k.em).map((k) => k.em).sort();
+        return ds[0] ? { dia: br(diaDe(ds[0])), cad: false } : { dia: br(cadastroDe(a)), cad: true };
+      };
+      corpo = `
+        <h3 class="aa-secao" style="margin-top:4px">Produtos da aluna</h3>
+        ${produtos.length ? `<div class="aa-cartao aa-prods">${produtos.map((x) => { const q = quando(x.c); return `<div class="aa-prod-l"><span class="aa-icone pequeno">${IC.play}</span><span class="nome"><b>${h(x.c.nome)}</b><span>${p(x.n, "aula liberada", "aulas liberadas")}</span></span><span class="aa-prod-d"><span>${q.cad ? "Cadastro" : "Adquirido em"}</span><b>${q.dia}</b></span></div>`; }).join("")}</div>` : `<div class="aa-obs">Nenhum produto liberado.</div>`}`;
     }
     else if (aba === "pagamentos") corpo = `
         <div class="aa-obs">Nenhuma informação de pagamento registrada.</div>`;
@@ -1842,7 +2188,7 @@ export function montar(app: HTMLElement) {
       const r = await supabase.rpc("resumo_engajamento", { p_de: de, p_ate: ate });
       resEngCarregando = "";
       resEng = { chave, r: r.error ? null : (r.data as ResumoEng) };
-      if (ui.tab === "engajamento") render();
+      if (ui.tab === "engajamento" || ui.tab === "inicio") render();
     })();
   }
   // Variação em relação ao período anterior. Sem dado anterior, não mostra nada.
@@ -2197,16 +2543,19 @@ export function montar(app: HTMLElement) {
   }
 
   /* ---------- ALUNAS ---------- */
+  /** Quantos produtos a aluna tem (produtos com pelo menos uma aula liberada para ela). */
+  const nProdutos = (a: Aluna) => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).length; };
   const FILTROS_AL: [string, string, (a: Aluna) => boolean][] = [
-    ["todas", "Todas", () => true],
-    ["novas", "Recém-adicionadas", nova],
-    ["ativas", "Ativas", (a) => { const s = situacao(a); return s === "ativa" || s === "vencendo"; }],
+    ["todas", "Todos os status", () => true],
+    ["ativas", "Ativo", (a) => situacao(a) === "ativa"],
     ["vencendo", "Vencendo", (a) => situacao(a) === "vencendo"],
-    ["vencidas", "Vencidas", (a) => situacao(a) === "vencida"],
-    ["bloqueadas", "Bloqueadas", (a) => a.bloqueada],
-    ["paradas", "Sem acesso recente", parada],
+    ["paradas", "Sem atividade", parada],
+    ["nunca", "Nunca acessou", (a) => !a.bloqueada && !vencida(a) && !a.ultimoAcesso],
+    ["bloqueadas", "Bloqueado", (a) => a.bloqueada],
   ];
   const ORDENS: Record<string, (x: Aluna, y: Aluna) => number> = {
+    progresso: (x, y) => progressoDe(x) - progressoDe(y) || x.nome.localeCompare(y.nome, "pt"),
+    produtos: (x, y) => nProdutos(y) - nProdutos(x) || x.nome.localeCompare(y.nome, "pt"),
     // Pela hora do cadastro: a última aluna adicionada vem primeiro. Sem a
     // hora (acabou de entrar, antes de recarregar), conta como a mais nova.
     recentes: (x, y) => (y.criadaEm || "9999").localeCompare(x.criadaEm || "9999") || x.nome.localeCompare(y.nome, "pt"),
@@ -2225,7 +2574,7 @@ export function montar(app: HTMLElement) {
     const ids = new Set(j.modulos.flatMap((m) => m.aulas.map((x) => x.id)));
     return a.acesso.aulas.some((id) => ids.has(id)) || aulasDaLiberacao(a).some((id) => ids.has(id));
   }
-  const doGrupo = (a: Aluna) => daMentoria(a) === (ui.grupoAl === "mentoria");
+  const doGrupo = (a: Aluna) => ui.grupoAl === "todas" || daMentoria(a) === (ui.grupoAl === "mentoria");
   /** As alunas da busca e do filtro, na ordem escolhida — é também o que a planilha exporta. */
   function listaAlunas() {
     const q = norm(ui.busca).trim();
@@ -2260,75 +2609,73 @@ export function montar(app: HTMLElement) {
     const ids = new Set(S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((k) => libs.has(k.id)))).map((c) => c.cat));
     return S.cats.filter((k) => ids.has(k.id)).map((k) => k.nome).join(", ");
   };
+  void categoriasDe; void ICONE_AL; // guardados para quando voltarem à lista
   function telaAlunas() {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
     const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
+    const algumas = !todas && lista.some((a) => ui.sel.includes(a.id));
     const anima = ui.aaAnima; ui.aaAnima = "";
     const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
     const pg = Math.min(Math.max(1, ui.paginaAl), paginas); ui.paginaAl = pg;
     const ini = (pg - 1) * POR_PAGINA; const pagina = lista.slice(ini, ini + POR_PAGINA);
+    const IC_BAIXAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
+    const IC_MAIS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
+    const total = S.alunas.filter(doGrupo).length;
     return `
-    <section class="tela ativa al">
-      <div class="al-barra">
-        <label class="al-busca">${ICONE_AL.lupa}<input id="busca" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" aria-label="Procurar aluna" /></label>
-        <button class="al-botao" data-a="exportar">${ICONE_AL.planilha}Exportar planilha</button>
-        <label class="al-ordenar"><span>Ordenar por</span>
-          <select class="campo" data-ordem aria-label="Ordenar alunas">
-            ${[["recentes", "Mais recentes primeiro"], ["antigas", "Mais antigas primeiro"], ["nome", "Nome (A–Z)"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
-          </select>
-        </label>
+    <section class="tela ativa al al2">
+      <div class="vgx-cab al2-cab">
+        <div><span class="vgx-sobre">Relacionamento</span><h1>Alunas e acessos</h1><p>Cada jornada tem um ritmo. Tenha clareza sobre quem precisa de você.</p></div>
+        <div class="vgx-dir"><button type="button" class="vgx-bt" data-a="exportar">${IC_BAIXAR}Exportar CSV</button><span class="vgx-criar"><button type="button" class="al-botao-ouro" data-a="aluna-nova">${IC_MAIS}Adicionar aluna</button></span></div>
       </div>
-      <div class="al-grupos cfg-versao-seg" role="group" aria-label="Quais alunas mostrar">
-        ${([["mentoria", "Alunos mentoria", IC_CFG.modulos], ["geral", "Alunos gerais", IC_CFG.inicio]] as const).map(([k, t, ic]) => `<button type="button" data-a="al-grupo" data-v="${k}" aria-pressed="${ui.grupoAl === k}">${ic}${t} (${S.alunas.filter((a) => daMentoria(a) === (k === "mentoria")).length})</button>`).join("")}
-        ${dicaCampo(`Alunos mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Alunos gerais: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de lista (e o app dela) na hora.`, "al.grupos")}
+      <div class="al-modal-barra">
+        <div class="al-modal-abas" role="tablist" aria-label="Modalidade">
+          ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}</button>`).join("")}
+        </div>
+        <span class="al-modal-ajuda">${dicaCampo(`Mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Geral: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de aba (e o app dela) na hora.`, "al.grupos")}</span>
       </div>
-      <div class="al-filtros">
-        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="al-filtro" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter((a) => fn(a) && doGrupo(a)).length})</button>`).join("")}
+      <div class="al2-barra">
+        <label class="al2-busca"><span class="sr">Buscar alunas</span><input id="busca" type="search" placeholder="Buscar nome, login ou telefone" value="${h(ui.busca)}" data-i="busca" aria-label="Buscar alunas" /></label>
+        <select class="al2-sel" data-filtro-al aria-label="Filtrar por status do acesso">${FILTROS_AL.map(([id, nome]) => `<option value="${id}" ${ui.filtroAl === id ? "selected" : ""}>${nome}</option>`).join("")}</select>
+        <span class="al2-esp"></span>
+        <button type="button" class="vgx-bt pequeno" data-a="al-lote" ${ui.sel.length ? "" : "disabled"} title="${ui.sel.length ? "" : "Selecione alunas na tabela"}">Ação em lote${ui.sel.length ? " (" + ui.sel.length + ")" : ""}</button>
+        <select class="al2-sel" data-ordem aria-label="Ordenar alunas">
+          ${[["recentes", "Mais recentes"], ["nome", "Nome A–Z"], ["produtos", "Mais produtos"], ["progresso", "Menor progresso"], ["antigas", "Mais antigas"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
+        </select>
       </div>
       ${ui.sel.length ? barraLote() : ""}
-      ${lista.length ? `
-      <div class="al-tabela" role="table" aria-label="Alunas">
-        <div class="al-linha al-cab" role="row">
-          <span role="columnheader"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></span>
-          <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Telefone</span><span role="columnheader">Botão do app</span><span role="columnheader">Status</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
+      <div class="al2-painel"><div class="al2-rola">
+        <table class="al2-tab">
+          <thead><tr>
+            <th scope="col" class="al2-ck"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} ${algumas ? "data-parcial" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></th>
+            <th scope="col">Aluna</th><th scope="col">Modalidade</th><th scope="col">Produtos</th><th scope="col">Último acesso</th><th scope="col">Engajamento</th><th scope="col">WhatsApp</th><th scope="col"><span class="sr">Ações</span></th>
+          </tr></thead>
+          <tbody>${pagina.map(linhaAluna).join("") || `<tr><td colspan="8" class="al2-vazio">${S.alunas.length ? "Nenhuma aluna corresponde a estes filtros." : "Nenhuma aluna cadastrada ainda."}</td></tr>`}</tbody>
+        </table></div>
+        <div class="al2-pe">
+          <span>${lista.length ? p(lista.length, "aluna", "alunas").replace(/^(\d+)/, "$1 de " + total) + "." : "Nenhuma aluna encontrada."}</span>
+          ${paginas > 1 ? `<span class="al2-pags"><button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${numsPag(pg, paginas).map((n) => n === "…" ? `<span>…</span>` : `<button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${n}" aria-current="${n === pg ? "page" : "false"}">${n}</button>`).join("")}<button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${pg + 1}" ${pg >= paginas ? "disabled" : ""} aria-label="Próxima página">›</button></span>` : `<span>Página 1 de 1 · ${POR_PAGINA} por página</span>`}
         </div>
-        ${pagina.map(linhaAluna).join("")}
-        <div class="cs-pags al-pag2">
-          ${paginas > 1 ? `<span class="cs-pag-nums"><button type="button" data-a="al-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${numsPag(pg, paginas).map((n) => n === "…" ? `<span>…</span>` : `<button type="button" data-a="al-pag" data-v="${n}" aria-current="${n === pg ? "page" : "false"}">${n}</button>`).join("")}<button type="button" data-a="al-pag" data-v="${pg + 1}" ${pg >= paginas ? "disabled" : ""} aria-label="Próxima página">›</button></span>` : ""}
-          <span style="flex:1"></span>
-          <span class="cs-nota">${ini + 1}–${Math.min(ini + POR_PAGINA, lista.length)} de ${lista.length}</span>
-        </div>
-      </div>` : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
+      </div>
+      <footer class="vgx-rodape"><span>AIŌN · Administração</span></footer>
       ${ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
     </section>`;
   }
   function linhaAluna(a: Aluna) {
-    const sit = situacao(a); const [rot] = sitInfo(sit);
-    const cor = sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho";
     const marc = ui.sel.includes(a.id);
     const pct = progressoDe(a);
     return `
-    <div class="al-linha${marc ? " marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}" role="row">
-      <span role="cell"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></span>
-      <button type="button" class="al-quem" role="cell" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button>
-      <span role="cell" class="al-cel" data-rot="Login">${h(a.login)}</span>
-      <span role="cell" class="al-cel" data-rot="Telefone">${a.celular ? h(fone(a.celular)) : "—"}</span>
-      <span role="cell" class="al-cel" data-rot="Categoria">${h(categoriasDe(a)) || "—"}</span>
-      <span role="cell" class="al-cel" data-rot="Status"><span class="al-status ${cor}">${h(rot)}</span></span>
-      <span role="cell" class="al-cel" data-rot="Último acesso">${ultimoAcessoTxt(a)}</span>
-      <span role="cell" class="al-cel al-prog" data-rot="Progresso"><span class="al-prog-n">${pct}%</span><span class="al-barra-p"><i style="width:${pct}%"></i></span></span>
-      <span role="cell" class="al-acoes">
-        <button class="al-botao pequeno quadrado" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}" title="Abrir ficha">${IC_CAT.olho}</button>
-        <button class="al-botao pequeno quadrado" data-a="editar-aluna" data-id="${a.id}" aria-label="Editar dados de ${h(a.nome)}" title="Editar dados">${IC_CAT.lapis}</button>
-        <span class="menu-acoes">
-          <button class="al-botao pequeno quadrado" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>
-          ${ui.menu === a.id ? menuAluna(a) : ""}
-        </span>
-      </span>
-    </div>`;
+    <tr class="${marc ? "marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}">
+      <td class="al2-ck"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></td>
+      <td><button type="button" class="al2-quem" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button></td>
+      <td>${daMentoria(a) ? "Mentoria" : "Geral"}</td>
+      <td>${(() => { const libs = new Set(aulasDaLiberacao(a)); const ps = S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); return ps.length ? `<span class="al2-prods" title="${h(ps.join(", "))}">${p(ps.length, "produto", "produtos")}</span>` : `<span class="al2-nada">Nenhum</span>`; })()}</td>
+      <td>${ultimoAcessoTxt(a)}</td>
+      <td class="al2-eng">${(() => { const g = nivel(a)[2]; const [t, c] = g === "recem" ? ["Novo", "cinza"] : g === "avancando" ? ["Alto", "verde"] : g === "ritmo" ? ["Médio", "ouro"] : ["Baixo", "vermelho"]; return `<span class="al2-st ${c}" title="Engajamento ${a.nota}/100 · progresso ${pct}%">${t}</span><span class="al2-eng-n">${g === "recem" ? "sem dados" : a.nota + "/100"}</span>`; })()}</td>
+      <td>${a.celular ? `<span class="al2-zap"><span>${h(fone(a.celular))}</span><button type="button" class="al2-ic" data-a="copiar-cel" data-id="${a.id}" aria-label="Copiar o WhatsApp de ${h(a.nome)}" title="Copiar número"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button><a class="al2-ic zap" href="https://wa.me/55${a.celular.replace(/\D/g, "")}" target="_blank" rel="noopener" aria-label="Abrir conversa com ${h(a.nome)} no WhatsApp" title="Abrir conversa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.3 18.4z"/><path d="M9.2 8.6c.2-.4.5-.4.8-.4h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .4-.1.6l-.5.6c.5 1 1.3 1.8 2.3 2.3l.6-.5c.2-.1.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3 0 .6-.4.8-.5.3-1.4.5-2.5 0a8.5 8.5 0 0 1-4.3-4.3c-.5-1.1-.3-2 0-2.5z"/></svg></a></span>` : `<span class="al2-nada">Sem número</span>`}</td>
+      <td class="al2-acoes"><button type="button" class="vgx-bt pequeno" data-a="aa-aluna" data-id="${a.id}">Ver detalhes</button><span class="menu-acoes"><button type="button" class="vgx-bt pequeno al2-mais" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>${ui.menu === a.id ? menuAluna(a) : ""}</span></td>
+    </tr>`;
   }
-
 
   /* ---------- CATEGORIAS ---------- */
   /*
@@ -5859,8 +6206,44 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   /** Cadastrar/editar aluna em abas: as abas só mostram e escondem partes do mesmo formulário (nada se perde ao trocar). */
   function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
   function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
-  function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || nome.split(/\s+/)[0] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
+  /** Login automático: primeiro nome + ponto + inicial do sobrenome (ex.: atria.g). */
+  // O banco guarda o login em minúsculas e compara sem diferença de maiúscula; aqui ele aparece como Maria.S
+  // Aceita letras sem acento, números, ponto, hífen e espaço entre as palavras (mesma regra do cadastro no servidor).
+  const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._ -]/g, "").replace(/\s+/g, " ").trim();
+  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/).map(semAcento).filter(Boolean); const pn = p2[0] || ""; return pn ? pn[0].toUpperCase() + pn.slice(1).toLowerCase() + (p2[1] ? " " + p2[1][0].toUpperCase() + "." : "") : ""; };
+  function cadLogin() { const nome = cadValor("nome"); return semAcento(cadValor("login") || loginAuto(nome)); }
+  /* Desfazer dentro do cadastro (editar): guarda o formulário antes de cada alteração, até 5. Nada vai ao banco. */
+  let cadHist: Record<string, string>[] = []; let cadAntes: Record<string, string> | null = null;
+  const fotoCad = (f: HTMLFormElement) => { const o: Record<string, string> = {}; for (const el of Array.from(f.elements) as HTMLInputElement[]) { if (!el.name || el.type === "button" || el.type === "submit") continue; if (el.type === "radio") { if (el.checked) o[el.name] = el.value; else if (!(el.name in o)) o[el.name] = ""; } else if (el.type === "checkbox") o[el.name + ":" + el.value] = el.checked ? "1" : ""; else o[el.name] = el.value; } return o; };
+  const mesmaFoto = (x: Record<string, string>, y: Record<string, string>) => Object.keys(x).every((k) => x[k] === y[k]);
+  function cadGuardar(f: HTMLFormElement, antes = fotoCad(f)) { cadHist.push(antes); if (cadHist.length > 5) cadHist.shift(); cadBotaoDesfazer(); }
+  function cadBotaoDesfazer() { const b = document.querySelector<HTMLButtonElement>(".cad-desfazer"); if (b) { b.disabled = !cadHist.length; b.textContent = "↶ Desfazer" + (cadHist.length ? " (" + cadHist.length + ")" : ""); } }
+  function cadDesfazer(f: HTMLFormElement) {
+    const o = cadHist.pop(); if (!o) return;
+    for (const el of Array.from(f.elements) as HTMLInputElement[]) {
+      if (!el.name || el.type === "button" || el.type === "submit") continue;
+      if (el.type === "radio") el.checked = o[el.name] === el.value; else if (el.type === "checkbox") el.checked = o[el.name + ":" + el.value] === "1"; else if (el.name in o) el.value = o[el.name];
+    }
+    cadAntes = fotoCad(f); atualizarCad(); cadBotaoDesfazer();
+  }
+  // Nome + sobrenome → campo "nome" (o que é salvo) e, no cadastro novo, o login automático.
+  document.addEventListener("input", (e) => {
+    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al") as HTMLFormElement | null; if (!f) return;
+    const lg = f.elements.namedItem("login") as HTMLInputElement | null;
+    if (t.name === "login") { t.dataset.auto = t.value ? "0" : "1"; return; }
+    if (!t.hasAttribute("data-nome-parte")) return;
+    const nomeEl = f.elements.namedItem("nome") as HTMLInputElement;
+    // Login ainda "automático"? Vazio, ou igual ao que o nome de antes geraria (regra nova ou a antiga, só o primeiro nome).
+    if (lg && lg.dataset.auto === undefined) { const v0 = lg.value.toLowerCase(), n0 = nomeEl.value; lg.dataset.auto = !v0 || v0 === loginAuto(n0).toLowerCase() || v0 === semAcento(n0.trim().split(/\s+/)[0] || "").toLowerCase() ? "1" : "0"; }
+    const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim();
+    nomeEl.value = (pn + " " + sn).trim();
+    if (lg && lg.dataset.auto === "1") lg.value = loginAuto(pn + " " + sn);
+    atualizarCad();
+  });
+  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
   function atualizarCad() {
+    cadBotaoDesfazer();
     const f = cadForm(); if (!f) return;
     const nome = cadValor("nome"), pn = nome.split(/\s+/)[0] || "", link = cadValor("link") || LINKS.geral || enderecoDaMentoria();
     const lg = f.elements.namedItem("login") as HTMLInputElement | null; if (lg && !lg.value) lg.placeholder = cadLogin() || "gerado pelo nome";
@@ -5876,7 +6259,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   /** Confere a aba; devolve a mensagem do que falta (vazio se está tudo certo). */
   function cadConferir(k: string): string {
     if (k === "dados") {
-      if (!cadValor("nome")) return "Escreva o nome completo.";
+      if (!cadValor("pnome") || !cadValor("snome")) return "Preencha o nome e o sobrenome.";
       if (cadValor("celular").replace(/\D/g, "").length !== 11) return "Preencha o celular com DDD: (11) 98765-4321.";
       const em = cadValor("email"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return "Confira o e-mail.";
     }
@@ -5916,39 +6299,58 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const a = m.id ? aluna(m.id) : null;
       const d = hoje(), cod = a ? a.codigo : m.codigo || novoCodigo();
       const jor = S.config.jornada;
-      const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
+      const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso app"], ["produtos", "Acesso produtos"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
       const ent = a ? a.entrada : d, val = a ? a.validade || maisAno(a.entrada) : maisAno(d);
       const prazo = (meses: number, t: string) => `<button type="button" class="cad-chip" data-a="cad-prazo" data-v="${meses}">${t}</button>`;
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cn-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
-          <label class="cad-c cad-full"><span>Nome completo <b>*</b></span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" autocomplete="off" /></label>
+          <label class="cad-c"><span>Nome <b>*</b></span><input id="alunaNome" class="campo" name="pnome" value="${h(a ? a.nome.trim().split(/\s+/)[0] : "")}" autocomplete="off" data-nome-parte /></label>
+          <label class="cad-c"><span>Sobrenome <b>*</b></span><input class="campo" name="snome" value="${h(a ? a.nome.trim().split(/\s+/).slice(1).join(" ") : "")}" autocomplete="off" data-nome-parte /><input type="hidden" name="nome" value="${h(a ? a.nome : "")}" /></label>
           <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
           <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
-          ${a ? "" : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>
-          <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${fotoNova && fotoPara === "aln" ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>`}
+          ${a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluna da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
+          <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : a && S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : a ? h(iniciais(a.nome)) : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${(fotoNova && fotoPara === "aln") || (a && S.fotos[a.id]) ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
-          <label class="cad-c cad-full"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
-          <div class="cad-c cad-full"><span>Celular da aluna ${a ? "" : "<b>*</b>"}</span><div class="cad-seg">${(["android", "iphone"] as const).map((k) => `<label><input type="radio" name="aparelho" value="${k}" ${a && APARELHO.get(a.id) === k ? "checked" : ""} /><span>${NOME_APARELHO[k]}${VIDEOS_ACESSO[k] ? "" : " · sem vídeo"}</span></label>`).join("")}</div><small>Define qual vídeo de instalação vai junto com o acesso (vídeos em Configurações → Acesso do aluno).</small></div>
-          <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
-          <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><input class="campo" name="codigo" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" /><button type="button" class="botao-neutro grande" data-a="gerar-codigo">Gerar</button></span></label>
-          <label class="cad-c"><span>Entrada <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
+          <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Automático: nome + inicial do sobrenome (ex.: maria.s). Pode editar.</small></label>
+          <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><span class="campo cad-cod"><input name="codigo" type="${a ? "password" : "text"}" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" aria-label="Código de acesso" /><button type="button" class="cad-cod-gerar" data-a="gerar-codigo" aria-label="Gerar um código novo" title="Gerar um código novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15"/></svg></button></span><button type="button" class="botao-neutro grande" data-a="cad-mostrar-cod">${a ? "Mostrar" : "Esconder"}</button></span></label>
+          <label class="cad-c"><span>Cadastro <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
+          <label class="cad-c"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
           <label class="cad-c"><span>Acesso até <b>*</b></span><input class="campo" type="date" name="validade" value="${val}" /><span class="cad-chips">${prazo(6, "6 meses")}${prazo(12, "1 ano")}${prazo(24, "2 anos")}</span></label>
+          <div class="cad-c"><span>Celular da aluna ${a ? "" : "<b>*</b>"}</span><div class="cad-seg">${(["android", "iphone"] as const).map((k) => `<label><input type="radio" name="aparelho" value="${k}" ${a && APARELHO.get(a.id) === k ? "checked" : ""} /><span>${NOME_APARELHO[k]}${VIDEOS_ACESSO[k] ? "" : " · sem vídeo"}</span></label>`).join("")}</div><small>Define qual vídeo de instalação vai junto com o acesso (vídeos em Configurações → Acesso do aluno).</small></div>
+          ${a ? `<div class="cad-full cad-acoes-acesso">
+            <button type="button" class="botao-neutro grande" data-a="copiar-acesso" data-id="${a.id}">Copiar mensagem</button>
+            <button type="button" class="botao-neutro grande cad-renovar" data-a="renovar" data-id="${a.id}">Renovar acesso</button>
+            ${a.bloqueada ? `<button type="button" class="botao-neutro grande" data-a="desbloquear-aluna" data-id="${a.id}">Desbloquear acesso</button>` : `<button type="button" class="botao-neutro grande cad-bloquear" data-a="bloquear-aluna" data-id="${a.id}">Bloquear acesso</button>`}
+          </div>` : ""}
         </div>
         <h4 class="cad-sub">Mensagem de acesso</h4>
         <div class="cad-msg" data-cad-msg></div>`)}
+        ${a ? painelAba("produtos", (() => {
+          // Produtos que ela tem: liberar/bloquear cada um (vale ao Salvar) e ver o que já foi liberado dele.
+          const libs = new Set(aulasDaLiberacao(a));
+          const tem = S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id))));
+          if (!tem.length) return `<p class="cad-dica">Nenhum produto liberado para ela.</p><button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>`;
+          return `<p class="cad-dica">Escolha Liberado ou Bloqueado em cada produto (ex.: pagamento atrasado). Vale ao clicar em Salvar. Clique no nome para ver o que já foi liberado.</p>
+          <div class="cad-prods">${tem.map((c) => {
+            const mods = c.modulos.map((m, i) => ({ m, i, au: m.aulas.filter((x) => libs.has(x.id)) })).filter((x) => x.au.length);
+            const n = mods.reduce((t, x) => t + x.au.length, 0);
+            return `<details class="cad-prod"><summary><span class="cad-prod-nome"><b>${h(c.nome)}</b><small>${p(n, "aula liberada", "aulas liberadas")}</small></span><select class="cad-prod-est" name="prod-${c.id}" data-prod="${c.id}" onclick="event.stopPropagation()" aria-label="Acesso a ${h(c.nome)}"><option value="on" selected>Liberado</option><option value="off">Bloqueado</option></select></summary>
+              <div class="cad-prod-corpo">${mods.map(({ m, i, au }) => `<div class="cad-prod-mod"><b>Módulo ${numModulo(c, i)} · ${h(m.nome)}</b><ul>${au.map((x) => `<li>Aula ${x.num} · ${h(x.nome)}</li>`).join("")}</ul></div>`).join("")}</div></details>`;
+          }).join("")}</div>
+          <button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Editar liberação</button>`;
+        })()) : ""}
         ${a ? "" : painelAba("conteudos", `<p class="cad-dica">Marque os cursos que ela recebe agora. Módulos e aulas avulsas: depois, em Liberar conteúdo.</p>
           <div class="cad-cursos">${S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
         ${a ? "" : painelAba("obs", `<label class="cad-c cad-full"><span>Observação (opcional)</span><textarea class="campo" name="obs" rows="5" maxlength="2000" placeholder="Ex.: veio pela live de outubro, prefere contato à tarde."></textarea><small>Fica na ficha dela, em Observações.</small></label>`)}
         <div class="rodape-modal cad-pe">
           <button type="button" class="botao-neutro grande" data-a="cad-voltar" hidden>← Voltar</button>
           <button type="button" class="botao-neutro grande" data-a="fechar" data-cad-cancelar>Cancelar</button>
-          ${a ? `<button type="button" class="botao-neutro grande botao-remover" data-a="remover-aluna" data-id="${a.id}">Remover aluna</button>` : ""}
           <span style="flex:1"></span>
           <button type="button" class="botao-neutro grande" data-a="cad-prox">Próximo: ${abas[1][1]} →</button>
           <button class="botao" data-cad-salvar ${a ? "" : "hidden"}>${a ? "Salvar" : "Cadastrar"}</button>
@@ -6336,7 +6738,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
-      case "editar-aluna": ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
+      case "editar-aluna": cadHist = []; cadAntes = null; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
       case "desfazer-confirmar": {
         const x = pilha.shift(); ui.modal = null;
@@ -6347,7 +6749,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
       case "al-filtro": ui.filtroAl = d.v; ui.paginaAl = 1; break;
-      case "al-grupo": ui.grupoAl = d.v === "geral" ? "geral" : "mentoria"; ui.paginaAl = 1; ui.sel = []; break;
+      case "al-grupo": ui.grupoAl = d.v === "geral" ? "geral" : d.v === "todas" ? "todas" : "mentoria"; ui.paginaAl = 1; ui.sel = []; break;
       case "sel-limpar": ui.sel = []; break;
       case "lote-remover": {
         const ids = ui.sel.filter((id) => S.alunas.some((x) => x.id === id));
@@ -6498,9 +6900,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cad-aba": { const at = cadAtual(), abas = cadAbas(); if (abas.indexOf(d.v) > abas.indexOf(at)) { for (const k of abas.slice(0, abas.indexOf(d.v))) { const e = cadConferir(k); if (e) { cadIr(k); toast(e); return; } } } cadIr(d.v); return; }
       case "cad-prox": { const at = cadAtual(), e = cadConferir(at); if (e) { toast(e); return; } const abas = cadAbas(); cadIr(abas[abas.indexOf(at) + 1]); return; }
       case "cad-voltar": { const abas = cadAbas(); cadIr(abas[Math.max(0, abas.indexOf(cadAtual()) - 1)]); return; }
-      case "cad-prazo": { const f = cadForm(); if (!f) return; const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
+      case "cad-prazo": { const f = cadForm(); if (!f) return; cadGuardar(f); const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
       case "aln-foto": fotoPara = "aln"; arquivoFoto.click(); return;
-      case "gerar-codigo": ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
+      case "gerar-codigo": if (el.closest("form.cad-al")) cadGuardar(el.closest("form") as HTMLFormElement); ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
       case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
       case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
       case "preencher-datas": {
@@ -6559,6 +6961,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
+      case "cad-desfazer": { const f = el.closest("form") as HTMLFormElement | null; if (f) cadDesfazer(f); return; }
+      case "cad-mostrar-cod": { const i = document.querySelector<HTMLInputElement>('.cad-al input[name="codigo"]'); if (i) { const ver = i.type === "password"; i.type = ver ? "text" : "password"; el.textContent = ver ? "Esconder" : "Mostrar"; } return; }
       case "bloquear-aluna":
         confirmar({ titulo: "Bloquear " + al!.nome + "?", texto: "Ela perde o acesso na hora, em qualquer aparelho. Dá para desbloquear depois.", palavra: "BLOQUEAR", rotulo: "Bloquear aluna" }, async () => {
           await rpc("definir_status_aluna", { p_aluna: al!.id, p_status: "bloqueada" });
@@ -6786,11 +7190,22 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ui.iniDe = de; ui.iniAte = ate; ui.periodoAberto = false; break;
       }
       case "ini-lista": ui.iniLista = d.v; break;
-      case "ini-lib": ui.iniLib = d.v; ui.iniLibTodas = false; break;
-      case "ini-lib-todas": ui.iniLibTodas = !ui.iniLibTodas; break;
       case "ini-abrir-cat": ui.tab = "layout"; ui.catEditar = d.id; ui.catAnima = true; window.scrollTo(0, 0); break;
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
+      case "sino-lista": ui.tab = "inicio"; ui.iniLista = d.v; ui.estMenu = ""; window.scrollTo(0, 0); break;
+      case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
+      case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
+      case "vgx-aba": ui.vgxAba = d.v; break;
+      case "copiar-cel": { const n = fone(al!.celular); const ok = () => toast("WhatsApp de " + primeiroNome(al!.nome) + " copiado: " + n); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(n).then(ok, () => toast(n)); else toast(n); return; }
+      case "al-lote": document.querySelector(".lote")?.scrollIntoView({ block: "center", behavior: "smooth" }); (document.querySelector(".lote select") as HTMLElement | null)?.focus(); return;
+      case "criar-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.estMenu = ""; break;
+      case "vgx-grupo": ui.vgxGrupo = d.v; break;
+      case "vgx-total-ver": ui.tab = "alunas"; ui.grupoAl = (ui.vgxGrupo || "mentoria") as "mentoria" | "geral"; window.scrollTo(0, 0); break;
+      case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
+      case "ini-conteudo": ui.iniConteudo = true; break;
+      case "ini-conteudo-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniConteudo = false; break;
+      case "ini-ativ-recarregar": ativ = null; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
       case "ini-moderar": {
         const k = S.comentarios.find((x) => x.id === d.id); if (!k) return;
@@ -7253,6 +7668,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const velha = x.m.aulas.map((k) => k.id);
         if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + x.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: velha }); } }; });
         return;
+      }
+      case "lib-ver": ui.libVer = d.id; break;
+      case "lib-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.libVer = ""; break;
+      case "abrir-aula-lib": {
+        ui.libVer = "";
+        // Abre a aula já na parte "Publicação e liberação".
+        const x = acharAula(d.id); if (!x) return;
+        ui.iniConteudo = false; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = "";
+        setTimeout(() => document.querySelector(".pm-aula [data-pm-box], [data-pm-box]")?.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
+        break;
       }
       case "abrir-aula": { const x = acharAula(d.id)!; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0); break; }
       case "aula-voltar-modulo": { ui.pmEditar = false;
@@ -7919,7 +8344,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
         const nome = v("nome");
-        const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
+        const loginNovo = semAcento(v("login") || loginAuto(nome)).toLowerCase();
         if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
         const celular = v("celular").replace(/\D/g, "");
         if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
@@ -7930,11 +8355,30 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
             if (linkAl !== (LINKS.aluna.get(id) ?? "") || (aparelho && aparelho !== APARELHO.get(id))) { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl || null, ...(aparelho ? { aparelho } : {}), atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; }
+            // Tipo de aluna: mentoria ⇄ geral muda a liberação da mentoria.
+            const jorC = curso(S.config.jornada), tipoNovo = form.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value || "";
+            const acAntes = { ...o.acesso };
+            if (jorC && tipoNovo && (tipoNovo === "mentoria") !== daMentoria(o)) {
+              const modsJ = new Set(jorC.modulos.map((m) => m.id)), aulasJ = new Set(jorC.modulos.flatMap((m) => m.aulas.map((x) => x.id)));
+              const ac = tipoNovo === "mentoria"
+                ? { c: [...new Set([...o.acesso.cursos, jorC.id])], m: o.acesso.modulos, a: o.acesso.aulas }
+                : { c: o.acesso.cursos.filter((x) => x !== jorC.id), m: o.acesso.modulos.filter((x) => !modsJ.has(x)), a: o.acesso.aulas.filter((x) => !aulasJ.has(x)) };
+              await rpc("salvar_liberacao", { p_aluna: id, p_produtos: ac.c, p_modulos: ac.m, p_aulas: ac.a });
+              await registrar(id, tipoNovo === "mentoria" ? "Passou a aluna da mentoria" : "Passou a aluna geral (mentoria retirada)");
+            }
+            // Acesso produtos: os desligados saem da liberação dela.
+            const fora = [...form.querySelectorAll<HTMLSelectElement>("select[data-prod]")].filter((x) => x.value === "off").map((x) => curso(x.dataset.prod || "")).filter((x): x is Curso => !!x);
+            if (fora.length) {
+              const atual = aluna(id).acesso, mIds = new Set(fora.flatMap((c) => c.modulos.map((m) => m.id))), aIds = new Set(fora.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((x) => x.id)))), cIds = new Set(fora.map((c) => c.id));
+              await rpc("salvar_liberacao", { p_aluna: id, p_produtos: atual.cursos.filter((x) => !cIds.has(x)), p_modulos: atual.modulos.filter((x) => !mIds.has(x)), p_aulas: atual.aulas.filter((x) => !aIds.has(x)) });
+              await registrar(id, "Produto bloqueado: " + fora.map((c) => c.nome).join(", "));
+            }
+            if (fotoAl) { await rpc("salvar_foto_aluna", { p_aluna: id, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[id] = fotoAl.foto; fotoNova = null; fotoPara = null; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
               msg: "Dados de " + nome + " salvos.", texto: "edição dos dados de " + nome,
-              desfazer: async () => { await rpc("restaurar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_acesso_ate: fimDoDia(o.validade), p_celular: o.celular, p_email: o.email }); },
+              desfazer: async () => { await rpc("salvar_liberacao", { p_aluna: id, p_produtos: acAntes.cursos, p_modulos: acAntes.modulos, p_aulas: acAntes.aulas }); await rpc("restaurar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_acesso_ate: fimDoDia(o.validade), p_celular: o.celular, p_email: o.email }); },
             };
           }
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
@@ -8784,6 +9228,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (t.hasAttribute("data-com-data")) { ui.comData = t.value; ui.comPag = 1; render(); return; }
     if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
+    if (t.hasAttribute("data-filtro-al")) { ui.filtroAl = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
     if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }
     if (t.matches("input[type=checkbox]")) {
