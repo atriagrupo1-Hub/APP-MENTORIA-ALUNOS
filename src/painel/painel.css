@@ -5993,3 +5993,9 @@ html[data-tema="claro"] .cad-prod-mod ul { color: var(--texto-2); }
 .al2-eng { white-space: nowrap; }
 .al2-eng .al2-st { margin-right: 8px; }
 .al2-eng-n { font-size: 11px; color: #94979E; }
+.cad-prod-est { min-height: 36px; padding: 0 34px 0 12px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; color: #9AC7AB; background-color: #23322B; border: 1px solid #314239; border-radius: 6px; cursor: pointer; }
+.cad-prod-est:has(option[value="off"]:checked) { color: #DFA19F; background-color: #342528; border-color: #4A3036; }
+.cad-prod-est option { color: #EEEEF0; background: #191A1E; }
+html[data-tema="claro"] .cad-prod-est { color: #2f7a3a; background-color: #e6f3e2; border-color: #c9e3c1; }
+html[data-tema="claro"] .cad-prod-est:has(option[value="off"]:checked) { color: #b8352d; background-color: #fbe9e7; border-color: #f0c9c5; }
+html[data-tema="claro"] .cad-prod-est option { color: var(--texto); background: #fff; }

@@ -6257,11 +6257,11 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           const libs = new Set(aulasDaLiberacao(a));
           const tem = S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id))));
           if (!tem.length) return `<p class="cad-dica">Nenhum produto liberado para ela.</p><button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>`;
-          return `<p class="cad-dica">Desligue para bloquear o produto (ex.: pagamento atrasado). Vale ao clicar em Salvar. Clique no nome para ver o que já foi liberado.</p>
+          return `<p class="cad-dica">Escolha Liberado ou Bloqueado em cada produto (ex.: pagamento atrasado). Vale ao clicar em Salvar. Clique no nome para ver o que já foi liberado.</p>
           <div class="cad-prods">${tem.map((c) => {
             const mods = c.modulos.map((m, i) => ({ m, i, au: m.aulas.filter((x) => libs.has(x.id)) })).filter((x) => x.au.length);
             const n = mods.reduce((t, x) => t + x.au.length, 0);
-            return `<details class="cad-prod"><summary><span class="cad-prod-nome"><b>${h(c.nome)}</b><small>${p(n, "aula liberada", "aulas liberadas")}</small></span><label class="cad-sw" onclick="event.stopPropagation()"><input type="checkbox" name="prodOn" value="${c.id}" checked /><i></i><span class="on">Liberado</span><span class="off">Bloqueado</span></label></summary>
+            return `<details class="cad-prod"><summary><span class="cad-prod-nome"><b>${h(c.nome)}</b><small>${p(n, "aula liberada", "aulas liberadas")}</small></span><select class="cad-prod-est" name="prod-${c.id}" data-prod="${c.id}" onclick="event.stopPropagation()" aria-label="Acesso a ${h(c.nome)}"><option value="on" selected>Liberado</option><option value="off">Bloqueado</option></select></summary>
               <div class="cad-prod-corpo">${mods.map(({ m, i, au }) => `<div class="cad-prod-mod"><b>Módulo ${numModulo(c, i)} · ${h(m.nome)}</b><ul>${au.map((x) => `<li>Aula ${x.num} · ${h(x.nome)}</li>`).join("")}</ul></div>`).join("")}</div></details>`;
           }).join("")}</div>
           <button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Editar liberação</button>`;
@@ -8288,7 +8288,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
               await registrar(id, tipoNovo === "mentoria" ? "Passou a aluna da mentoria" : "Passou a aluna geral (mentoria retirada)");
             }
             // Acesso produtos: os desligados saem da liberação dela.
-            const fora = [...form.querySelectorAll<HTMLInputElement>('input[name="prodOn"]')].filter((x) => !x.checked).map((x) => curso(x.value)).filter((x): x is Curso => !!x);
+            const fora = [...form.querySelectorAll<HTMLSelectElement>("select[data-prod]")].filter((x) => x.value === "off").map((x) => curso(x.dataset.prod || "")).filter((x): x is Curso => !!x);
             if (fora.length) {
               const atual = aluna(id).acesso, mIds = new Set(fora.flatMap((c) => c.modulos.map((m) => m.id))), aIds = new Set(fora.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((x) => x.id)))), cIds = new Set(fora.map((c) => c.id));
               await rpc("salvar_liberacao", { p_aluna: id, p_produtos: atual.cursos.filter((x) => !cIds.has(x)), p_modulos: atual.modulos.filter((x) => !mIds.has(x)), p_aulas: atual.aulas.filter((x) => !aIds.has(x)) });
