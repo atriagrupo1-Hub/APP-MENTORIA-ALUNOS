@@ -1602,7 +1602,7 @@ export function montar(raiz: HTMLElement) {
     ${cabMp(`data-a="categoria" data-v="${ci}"`, cat)}
     <div class="mp mv" style="--mc:${COR}">
       <section class="mv-topo" aria-labelledby="h-cpt">
-        <span class="mv-capa-mod">${img(curso.capa, "")}</span>
+        <span class="mv-capa-mod">${img(curso.capa, "").replace("<img ", `<img onload="if(this.naturalWidth>this.naturalHeight)this.closest('.mv-topo').classList.add('deitada')" `)}</span>
         <div class="mv-txt">
           <p class="mv-rot">${h(cat)}<span aria-hidden="true"></span></p>
           <h1 class="serif mv-tit" id="h-cpt">${h(curso.nome)}</h1>
