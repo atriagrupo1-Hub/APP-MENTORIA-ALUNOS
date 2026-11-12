@@ -596,7 +596,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", vgxGrupo: "mentoria", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", libVer: "", vgxGrupo: "mentoria", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
     filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1367,10 +1367,38 @@ export function montar(app: HTMLElement) {
         <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Conteúdo liberado">
           <header class="aa-cab"><div><h2>Conteúdo liberado</h2><p><span class="aa-conta tem">${lib.length}</span> Tudo o que está liberado hoje para as alunas.</p></div><button type="button" class="aa-fechar" data-a="ini-conteudo-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ini-conteudo">${[...new Set(lib.map((x) => x.c))].map((c) => `<h3 class="ini-grupo-tit">${h(c.nome)}<span>${p(lib.filter((x) => x.c === c).length, "item", "itens")}</span></h3>${lib.filter((x) => x.c === c).map((x) => `
-            <button type="button" class="ini-item" data-a="abrir-aula-lib" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
+            <button type="button" class="ini-item" data-a="lib-ver" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("")}`).join("") || vazio("Nada liberado ainda.")}</div>
         </aside>` : ""}
+      ${ui.libVer ? quadroLib(ui.libVer, lib) : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
+  }
+  /** Só o quadro de liberação de uma aula (somente leitura); "Editar" leva para a aula. */
+  function quadroLib(id: string, lib: { a: Aula; m: Modulo; c: Curso; n: number }[]) {
+    const x = acharAula(id); if (!x) return "";
+    const a = x.a, n = lib.find((y) => y.a.id === id)?.n || 0;
+    const dt = (d: string) => (d ? br(diaDe(d.includes("T") ? d : d + "T12:00:00")) : "—");
+    const futura = !!a.libera && a.libera > new Date().toISOString();
+    const status = a.rascunho ? "Não publicado" : "Publicado";
+    const libTxt = a.rascunho ? "Não liberado" : !a.libera ? "Liberado imediatamente" : futura ? "Libera em " + dt(a.libera) : "Liberado em " + dt(a.libera);
+    const k = cat(x.c.cat);
+    const linha = (r: string, v: string) => `<span class="lq-l"><span>${r}</span><b>${v}</b></span>`;
+    return `<span class="cn-fundo" data-a="lib-fechar"></span>
+      <div class="cn-modal lq" role="dialog" aria-modal="true" aria-label="Publicação e liberação">
+        <div class="cn-cab"><b>Publicação e liberação</b><button type="button" class="cn-x" data-a="lib-fechar" aria-label="Fechar">${xis}</button></div>
+        <div class="lq-corpo">
+          <p class="lq-quem"><b>${h(a.nome)}</b><span>${h(x.c.nome)} · Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${a.num}</span></p>
+          <p class="lq-st${a.rascunho ? " off" : futura ? " ag" : ""}">${status} • ${libTxt}</p>
+          ${linha("Data de criação:", dt(a.criado))}
+          ${linha("Data de publicação:", dt(a.publicadoEm))}
+          ${linha("Data de liberação:", a.libera ? dt(a.libera) : dt(a.publicadoEm || a.criado) + " (imediata)")}
+        </div>
+        <div class="lq-pe">
+          <span class="lq-tag"><span>Categoria:</span><i>${h(k?.nome || "Sem categoria")}</i></span>
+          <span class="lq-tag"><span>Liberação para alunas:</span><em>${n ? "Liberada · " + p(n, "aluna", "alunas") : "Nenhuma aluna"}</em></span>
+          <button type="button" class="vgx-bt lq-ed" data-a="abrir-aula-lib" data-id="${a.id}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>Editar</button>
+        </div>
+      </div>`;
   }
   /** Visão geral: central de atenção, ritmo da comunidade, atividade recente, vencimentos e rascunhos. */
   function vgxResto() {
@@ -7468,7 +7496,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         if (nova) void executar(async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: nova.map((k) => k.id) }); return { msg: "Ordem das aulas salva.", texto: "ordem das aulas de " + x.m.nome, desfazer: async () => { await rpc("ordenar_aulas", { p_modulo: x.m.id, p_ids: velha }); } }; });
         return;
       }
+      case "lib-ver": ui.libVer = d.id; break;
+      case "lib-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.libVer = ""; break;
       case "abrir-aula-lib": {
+        ui.libVer = "";
         // Abre a aula já na parte "Publicação e liberação".
         const x = acharAula(d.id); if (!x) return;
         ui.iniConteudo = false; ui.aula = d.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = "";
