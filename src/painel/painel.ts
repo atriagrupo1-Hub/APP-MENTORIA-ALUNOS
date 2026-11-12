@@ -2539,9 +2539,9 @@ export function montar(app: HTMLElement) {
         <table class="al2-tab">
           <thead><tr>
             <th scope="col" class="al2-ck"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} ${algumas ? "data-parcial" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></th>
-            <th scope="col">Aluna</th><th scope="col">Modalidade</th><th scope="col">Status do acesso</th><th scope="col">Último acesso</th><th scope="col">Progresso</th><th scope="col"><span class="sr">Ações</span></th>
+            <th scope="col">Aluna</th><th scope="col">Modalidade</th><th scope="col">Produtos</th><th scope="col">Último acesso</th><th scope="col">Progresso</th><th scope="col">WhatsApp</th><th scope="col"><span class="sr">Ações</span></th>
           </tr></thead>
-          <tbody>${pagina.map(linhaAluna).join("") || `<tr><td colspan="7" class="al2-vazio">${S.alunas.length ? "Nenhuma aluna corresponde a estes filtros." : "Nenhuma aluna cadastrada ainda."}</td></tr>`}</tbody>
+          <tbody>${pagina.map(linhaAluna).join("") || `<tr><td colspan="8" class="al2-vazio">${S.alunas.length ? "Nenhuma aluna corresponde a estes filtros." : "Nenhuma aluna cadastrada ainda."}</td></tr>`}</tbody>
         </table></div>
         <div class="al2-pe">
           <span>${lista.length ? p(lista.length, "aluna", "alunas").replace(/^(\d+)/, "$1 de " + total) + "." : "Nenhuma aluna encontrada."}</span>
@@ -2553,10 +2553,6 @@ export function montar(app: HTMLElement) {
     </section>`;
   }
   function linhaAluna(a: Aluna) {
-    const sit = situacao(a); const [rot] = sitInfo(sit);
-    const d = a.validade ? diasEntre(hoje(), a.validade) : 0;
-    const txt = sit === "vencendo" ? (d <= 0 ? "Vence hoje" : "Vence em " + p(d, "dia", "dias")) : rot;
-    const cor = sit === "ativa" ? (a.ultimoAcesso ? "verde" : "cinza") : sit === "vencendo" ? "ouro" : "vermelho";
     const marc = ui.sel.includes(a.id);
     const pct = progressoDe(a);
     return `
@@ -2564,9 +2560,10 @@ export function montar(app: HTMLElement) {
       <td class="al2-ck"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></td>
       <td><button type="button" class="al2-quem" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button></td>
       <td>${daMentoria(a) ? "Mentoria" : "Geral"}</td>
-      <td><span class="al2-st ${cor}">${h(txt)}</span></td>
+      <td>${(() => { const libs = new Set(aulasDaLiberacao(a)); const ps = S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); return ps.length ? `<span class="al2-prods" title="${h(ps.join(", "))}">${h(ps[0])}${ps.length > 1 ? ` <em>+${ps.length - 1}</em>` : ""}</span>` : `<span class="al2-nada">Nenhum</span>`; })()}</td>
       <td>${ultimoAcessoTxt(a)}</td>
       <td class="al2-prog"><span>${pct}%</span><span class="al2-barra"><i style="width:${pct}%"></i></span></td>
+      <td>${a.celular ? `<span class="al2-zap"><span>${h(fone(a.celular))}</span><button type="button" class="al2-ic" data-a="copiar-cel" data-id="${a.id}" aria-label="Copiar o WhatsApp de ${h(a.nome)}" title="Copiar número"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button><a class="al2-ic zap" href="https://wa.me/55${a.celular.replace(/\D/g, "")}" target="_blank" rel="noopener" aria-label="Abrir conversa com ${h(a.nome)} no WhatsApp" title="Abrir conversa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.3 18.4z"/><path d="M9.2 8.6c.2-.4.5-.4.8-.4h.5c.2 0 .4.1.5.4l.6 1.5c.1.2 0 .4-.1.6l-.5.6c.5 1 1.3 1.8 2.3 2.3l.6-.5c.2-.1.4-.2.6-.1l1.5.6c.3.1.4.3.4.5v.5c0 .3 0 .6-.4.8-.5.3-1.4.5-2.5 0a8.5 8.5 0 0 1-4.3-4.3c-.5-1.1-.3-2 0-2.5z"/></svg></a></span>` : `<span class="al2-nada">Sem número</span>`}</td>
       <td class="al2-acoes"><button type="button" class="vgx-bt pequeno" data-a="aa-aluna" data-id="${a.id}">Ver detalhes</button><span class="menu-acoes"><button type="button" class="vgx-bt pequeno al2-mais" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>${ui.menu === a.id ? menuAluna(a) : ""}</span></td>
     </tr>`;
   }
@@ -7034,6 +7031,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
+      case "copiar-cel": { const n = fone(al!.celular); const ok = () => toast("WhatsApp de " + primeiroNome(al!.nome) + " copiado: " + n); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(n).then(ok, () => toast(n)); else toast(n); return; }
       case "al-lote": document.querySelector(".lote")?.scrollIntoView({ block: "center", behavior: "smooth" }); (document.querySelector(".lote select") as HTMLElement | null)?.focus(); return;
       case "criar-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.estMenu = ""; break;
       case "vgx-grupo": ui.vgxGrupo = d.v; break;
