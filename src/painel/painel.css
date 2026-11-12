@@ -5990,3 +5990,6 @@ html[data-tema="claro"] .al2-sel[data-filtro-al] { color: var(--texto); backgrou
 html[data-tema="claro"] .cad-prod { background: var(--aa-cartao); border-color: var(--linha-suave); }
 html[data-tema="claro"] .cad-prod-corpo { border-top-color: var(--linha-suave); }
 html[data-tema="claro"] .cad-prod-mod ul { color: var(--texto-2); }
+.al2-eng { white-space: nowrap; }
+.al2-eng .al2-st { margin-right: 8px; }
+.al2-eng-n { font-size: 11px; color: #94979E; }
