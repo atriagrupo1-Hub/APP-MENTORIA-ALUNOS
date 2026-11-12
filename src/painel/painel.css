@@ -5911,7 +5911,7 @@ html:not([data-tema="claro"]) .cad-al .cad-c > span:first-child { color: #C9CBD0
 html:not([data-tema="claro"]) .cad-al .cad-c > span:first-child b { color: #E2C68C; }
 html:not([data-tema="claro"]) .cad-al .campo { color: #DDDFE4; background: #151619; border: 1px solid #363940; border-radius: 5px; }
 html:not([data-tema="claro"]) .cad-al .campo::placeholder { color: #656C76; }
-html:not([data-tema="claro"]) .cad-al .campo:focus { border-color: #E2C68C; outline: 2px solid rgba(226, 198, 140, .35); outline-offset: 0; box-shadow: none; }
+html:not([data-tema="claro"]) .cad-al .campo:focus, html:not([data-tema="claro"]) .cad-al .campo:focus-visible { border-color: #A08B61; outline: none; box-shadow: none; }
 html:not([data-tema="claro"]) .cad-al .cad-seg { border-color: #363940; background: #151619; }
 html:not([data-tema="claro"]) .cad-al .cad-seg span { color: #94979E; }
 html:not([data-tema="claro"]) .cad-al .cad-seg input:checked + span { color: #E2C68C; background: #342D22; box-shadow: inset 0 0 0 1px #4B402B; }
