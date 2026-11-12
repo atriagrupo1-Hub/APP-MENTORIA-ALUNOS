@@ -594,7 +594,7 @@ export function montar(app: HTMLElement) {
     editando: null as null | { tipo: string; id: string }, addAula: null as string | null,
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
-    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniTipo: "", iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
+    abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
     filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
@@ -1103,7 +1103,7 @@ export function montar(app: HTMLElement) {
    * últimos comentários, últimas atividades das alunas e alunas
    * adicionadas recentemente. Tudo dentro do período escolhido.
    */
-  type Atividade = { tipo: "assistiu" | "comentou" | "acessou"; aluna: string; nome: string; aula: string; quando: string };
+  type Atividade = { tipo: "assistiu" | "comentou" | "acessou" | "concluiu" | "abriu_ebook" | "respondeu" | "curtiu" | "curtiu_comentario"; aluna: string; nome: string; aula: string; quando: string };
   let ativ: { chave: string; erro?: boolean; lista: Atividade[] } | null = null; let ativCarregando = "";
   const periodoIni = () => {
     const ate = ui.iniAte || hoje();
@@ -1118,9 +1118,9 @@ export function montar(app: HTMLElement) {
       // Busca também o período anterior, do mesmo tamanho, para a comparação.
       const n = diasEntre(de, ate) + 1;
       const antDe = diaDe(new Date(Date.parse(de + "T12:00:00") - n * 864e5));
-      const r = await supabase.rpc("atividades_recentes", { p_de: antDe + "T00:00:00-03:00", p_ate: ate + "T23:59:59-03:00", p_limite: 500 });
+      const r = await supabase.rpc("atividades_alunas", { p_de: antDe + "T00:00:00-03:00", p_ate: ate + "T23:59:59-03:00", p_limite: 2000 });
       ativCarregando = "";
-      ativ = { chave, erro: !!r.error, lista: ((r.data ?? []) as Record<string, string>[]).map((x) => ({ tipo: x.tipo as Atividade["tipo"], aluna: x.aluna_id, nome: x.aluna_nome, aula: x.aula_titulo ?? "", quando: x.quando })) };
+      ativ = { chave, erro: !!r.error, lista: ((r.data ?? []) as Record<string, string>[]).map((x) => ({ tipo: x.tipo as Atividade["tipo"], aluna: x.aluna_id, nome: x.aluna_nome, aula: x.titulo ?? "", quando: x.quando })) };
       if (ui.tab === "inicio") render();
     })();
   }
@@ -1144,8 +1144,14 @@ export function montar(app: HTMLElement) {
     return al ? aaAvatar(al) : `<span class="avatar" style="--cor:#b07a2a" aria-hidden="true">${h(iniciais(nome))}</span>`;
   };
   const linhaAtividade = (x: Atividade) => {
-    const [cls, ic, txt] = x.tipo === "assistiu" ? ["verde", IC_INI.play, `assistiu a aula <b>"${h(x.aula)}"</b>`]
-      : x.tipo === "comentou" ? ["roxo", IC_INI.balao, `comentou na aula <b>"${h(x.aula)}"</b>`]
+    const q = `<b>"${h(x.aula)}"</b>`;
+    const [cls, ic, txt] = x.tipo === "assistiu" ? ["verde", IC_INI.play, `assistiu a aula ${q}`]
+      : x.tipo === "concluiu" ? ["verde", IC_INI.play, `concluiu a aula ${q}`]
+      : x.tipo === "abriu_ebook" ? ["verde", ICONE_MENU.layout, `abriu o e-book ${q}`]
+      : x.tipo === "comentou" ? ["roxo", IC_INI.balao, `comentou na aula ${q}`]
+      : x.tipo === "respondeu" ? ["roxo", IC_INI.balao, `respondeu um comentário na aula ${q}`]
+      : x.tipo === "curtiu" ? ["roxo", IC_INI.balao, `curtiu a aula ${q}`]
+      : x.tipo === "curtiu_comentario" ? ["roxo", IC_INI.balao, `curtiu um comentário na aula ${q}`]
       : ["azul", IC_INI.pessoa, "acessou a plataforma"];
     return `<div class="ini-item"><span class="ini-ic ${cls}">${ic}</span><span class="ini-txt"><span><b>${h(x.nome)}</b> ${txt}</span></span><span class="ini-quando">${haTempo(x.quando)}</span></div>`;
   };
@@ -1167,7 +1173,7 @@ export function montar(app: HTMLElement) {
     const entre = (iso: string, a: string, b: string) => { if (!iso) return false; const d = diaDe(iso); return d >= a && d <= b; };
     const atv = tudo ? tudo.filter((x) => entre(x.quando, de, ate)) : null;
     // Lista cortada em 500: o período anterior pode estar incompleto, então não compara.
-    const antCompleto = !!tudo && tudo.length < 500;
+    const antCompleto = !!tudo && tudo.length < 2000;
     const r = resEng && resEng.chave === chave ? resEng.r : null;
     const vazio = (t: string) => `<p class="ini-vazio">${t}</p>`;
     const emDia = (t = "Em dia") => `<span class="ini-ok">✓ ${t}</span>`;
@@ -1180,12 +1186,11 @@ export function montar(app: HTMLElement) {
       return `<svg class="ini-spark" viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"><path d="M0,28L${pts.join("L")}L100,28Z" class="area"/><path d="M${pts.join("L")}"/></svg>`;
     };
     const porDia = (isos: string[]) => { const m = new Map<string, number>(); isos.forEach((s) => { const d = diaDe(s); m.set(d, (m.get(d) || 0) + 1); }); return diasPer.map((d) => m.get(d) || 0); };
-    const assist = atv ? atv.filter((x) => x.tipo === "assistiu") : null;
-    const assistAnt = tudo && antCompleto ? tudo.filter((x) => x.tipo === "assistiu" && entre(x.quando, antDe, antAte)).length : undefined;
+    const atvAnt = tudo && antCompleto ? tudo.filter((x) => entre(x.quando, antDe, antAte)).length : undefined;
+    const lib = conteudoLiberado();
+    const concPer = S.alunas.flatMap((a) => a.concessoes.filter((k) => entre(k.em, de, ate)).map((k) => k.em));
     const novas = S.alunas.filter((a) => entre(a.criadaEm, de, ate));
     const novasAnt = S.alunas.filter((a) => entre(a.criadaEm, antDe, antAte)).length;
-    const eng = r && r.total ? Math.round((r.ativas / r.total) * 100) : null;
-    const engAnt = r && r.total_ant ? Math.round((r.ativas_ant / r.total_ant) * 100) : undefined;
     const diaR = new Map((r?.dias || []).map((x) => [x.dia, x]));
     const metrica = (ic: string, rot: string, val: string, sub: string, vari: string, graf: string, acao: string, v = "") => `
       <button type="button" class="ini-met" data-a="${acao}"${v ? ` data-v="${v}"` : ""}>
@@ -1197,8 +1202,8 @@ export function montar(app: HTMLElement) {
     const carregando = `<span class="ini-met-car">…</span>`;
     const metricas = [
       metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
-      metrica(IC_INI.onda, "Engajamento", eng == null ? carregando : eng + "%", "das alunas acessaram no período", eng == null ? "" : variacao(eng, engAnt, true), linha(diasPer.map((d) => { const x = diaR.get(d); return x && x.total ? x.ativas / x.total : 0; })), "aba", "engajamento"),
-      metrica(IC_INI.play, "Aulas assistidas", assist ? String(assist.length) : carregando, "registros de aula no período", assist ? variacao(assist.length, assistAnt, true) : "", linha(assist ? porDia(assist.map((x) => x.quando)) : []), "ini-ativ-assistidas"),
+      metrica(IC_INI.onda, "Atividades dos alunos", atv ? String(atv.length) : carregando, "acessos, aulas, e-books, comentários e curtidas", atv ? variacao(atv.length, atvAnt, true) : "", linha(atv ? porDia(atv.map((x) => x.quando)) : []), "ini-ativ-abrir"),
+      metrica(IC_CAL_AG, "Conteúdo liberado", String(lib.length), "itens liberados para as alunas", "", linha(porDia(concPer)), "ini-conteudo"),
       metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ini-lista", "novas"),
     ].join("");
 
@@ -1256,9 +1261,9 @@ export function montar(app: HTMLElement) {
 
     // Linha do tempo, com filtro por tipo.
     const tipo = ui.iniTipo;
-    const atvF = atv ? atv.filter((x) => !tipo || x.tipo === tipo) : null;
-    const contaTipo = (t: string) => (atv ? atv.filter((x) => x.tipo === t).length : 0);
-    const chipsTipo = [["", "Todas", atv ? atv.length : 0], ["acessou", "Acessos", contaTipo("acessou")], ["assistiu", "Aulas", contaTipo("assistiu")], ["comentou", "Comentários", contaTipo("comentou")]]
+    const atvF = atv ? atv.filter((x) => !tipo || GRUPO_ATV[x.tipo] === tipo) : null;
+    const contaTipo = (t: string) => (atv ? atv.filter((x) => GRUPO_ATV[x.tipo] === t).length : 0);
+    const chipsTipo = [["", "Todas", atv ? atv.length : 0], ["acessou", "Acessos", contaTipo("acessou")], ["aulas", "Aulas", contaTipo("aulas")], ["ebooks", "E-books", contaTipo("ebooks")], ["comentarios", "Comentários", contaTipo("comentarios")], ["curtidas", "Curtidas", contaTipo("curtidas")]]
       .map(([v, n, c]) => `<button class="al-filtro" data-a="ini-ativ-tipo" data-v="${v}" aria-pressed="${tipo === v}">${n}<span class="ini-chip-n">${c}</span></button>`).join("");
     const corpoTempo = ativOk?.erro
       ? `<div class="ini-erro"><span>Não consegui carregar as atividades.</span><button class="al-botao pequeno" data-a="ini-ativ-recarregar">Tentar de novo</button></div>`
@@ -1300,12 +1305,28 @@ export function montar(app: HTMLElement) {
       ${painelListaIni()}
       ${ui.ativTodas ? `
         <div class="aa-fundo" data-a="ini-ativ-fechar"></div>
-        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="${tipo === "assistiu" ? "Aulas assistidas" : "Últimas atividades"}">
-          <header class="aa-cab"><div><h2>${tipo === "assistiu" ? "Aulas assistidas" : "Últimas atividades"}</h2><p>${br(de)} a ${br(ate)} · ${tipo === "assistiu" ? p((atvF || []).length, "aula assistida", "aulas assistidas") : p((atvF || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Atividades dos alunos">
+          <header class="aa-cab"><div><h2>Atividades dos alunos</h2><p>${br(de)} a ${br(ate)} · ${p((atvF || []).length, "atividade", "atividades")}</p></div><button type="button" class="aa-fechar" data-a="ini-ativ-fechar" aria-label="Fechar">${xis}</button></header>
           <div class="aa-corpo" data-rolagem="ativ">${(atvF || []).map(linhaAtividade).join("") || vazio("Nenhuma atividade no período.")}</div>
+        </aside>` : ""}
+      ${ui.iniConteudo ? `
+        <div class="aa-fundo" data-a="ini-conteudo-fechar"></div>
+        <aside class="aa-painel" role="dialog" aria-modal="true" aria-label="Conteúdo liberado">
+          <header class="aa-cab"><div><h2>Conteúdo liberado</h2><p><span class="aa-conta tem">${lib.length}</span> Tudo o que está liberado hoje para as alunas.</p></div><button type="button" class="aa-fechar" data-a="ini-conteudo-fechar" aria-label="Fechar">${xis}</button></header>
+          <div class="aa-corpo" data-rolagem="ini-conteudo">${lib.map((x) => `
+            <button type="button" class="ini-item" data-a="abrir-aula" data-id="${x.a.id}"><span class="ini-ic verde">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="ini-txt"><b>${h(x.a.nome)}</b><span>${h(x.c.nome)} · Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · Aula ${x.a.num}</span></span><span class="ini-quando">${p(x.n, "aluna", "alunas")}</span></button>`).join("") || vazio("Nada liberado ainda.")}</div>
         </aside>` : ""}
       ${ui.acessoAluna ? cadastroAluna(false) : ""}
     </section>`;
+  }
+  const GRUPO_ATV: Record<Atividade["tipo"], string> = { acessou: "acessou", assistiu: "aulas", concluiu: "aulas", abriu_ebook: "ebooks", comentou: "comentarios", respondeu: "comentarios", curtiu: "curtidas", curtiu_comentario: "curtidas" };
+  /** Cada aula/e-book liberado hoje para pelo menos uma aluna ativa, com quantas têm. */
+  function conteudoLiberado() {
+    const n = new Map<string, number>();
+    for (const al of S.alunas) { if (al.bloqueada || vencida(al)) continue; for (const id of new Set(aulasDaLiberacao(al))) n.set(id, (n.get(id) || 0) + 1); }
+    const out: { a: Aula; m: Modulo; c: Curso; n: number }[] = [];
+    for (const c of S.cursos) for (const m of c.modulos) for (const a of m.aulas) if (n.has(a.id)) out.push({ a, m, c, n: n.get(a.id)! });
+    return out;
   }
   /*
    * "Alunas e acessos" (segunda parte do Início): três listas lado a
@@ -6831,7 +6852,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-lista-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniLista = ""; break;
       case "ini-ativ-todas": ui.ativTodas = true; break;
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
-      case "ini-ativ-assistidas": ui.iniTipo = "assistiu"; ui.ativTodas = true; break;
+      case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
+      case "ini-conteudo": ui.iniConteudo = true; break;
+      case "ini-conteudo-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.iniConteudo = false; break;
       case "ini-ativ-recarregar": ativ = null; break;
       case "ini-ativ-fechar": if (alvo !== el && el.classList.contains("aa-fundo")) return; ui.ativTodas = false; break;
       case "ini-moderar": {
