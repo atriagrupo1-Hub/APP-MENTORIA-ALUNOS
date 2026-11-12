@@ -5897,3 +5897,25 @@ html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-pilula.vermelho { col
 html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-editar { color: #E2C68C; background: #342D22; border: 1px solid #4B402B; }
 html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-icone { color: #E2C68C; background: #342D22; }
 html:not([data-tema="claro"]) .casca2 .aa-painel.largo .al-mods > * { background: #191A1E; border-color: #2B2D32; }
+
+/* ===== Cadastrar / editar aluna (modal): tipografia e cores do guia ===== */
+.cad-al { font-family: "Manrope", sans-serif; font-size: 12px; }
+.cad-al .titulo { font-family: "Manrope", sans-serif; font-size: 20px; font-weight: 650; letter-spacing: -.4px; }
+.cad-al .explica, .cad-al .cad-c small, .cad-al .cad-dica, .cad-al .cad-sub { font-size: 11px; font-weight: 400; }
+.cad-al .cad-c > span:first-child { font-size: 11px; font-weight: 600; }
+.cad-al .campo { font-family: "Manrope", sans-serif; font-size: 12px; }
+.cad-al .cad-seg span, .cad-al .cad-chip, .cad-al .botao-neutro, .cad-al .botao { font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; }
+html:not([data-tema="claro"]) .modal:has(.cad-al) { color: #EEEEF0; background: #191A1E; border: 1px solid #2B2D32; }
+html:not([data-tema="claro"]) .cad-al .explica, html:not([data-tema="claro"]) .cad-al .cad-c small, html:not([data-tema="claro"]) .cad-al .cad-dica { color: #94979E; }
+html:not([data-tema="claro"]) .cad-al .cad-c > span:first-child { color: #C9CBD0; }
+html:not([data-tema="claro"]) .cad-al .cad-c > span:first-child b { color: #E2C68C; }
+html:not([data-tema="claro"]) .cad-al .campo { color: #DDDFE4; background: #151619; border: 1px solid #363940; border-radius: 5px; }
+html:not([data-tema="claro"]) .cad-al .campo::placeholder { color: #656C76; }
+html:not([data-tema="claro"]) .cad-al .campo:focus { border-color: #E2C68C; outline: 2px solid rgba(226, 198, 140, .35); outline-offset: 0; box-shadow: none; }
+html:not([data-tema="claro"]) .cad-al .cad-seg { border-color: #363940; background: #151619; }
+html:not([data-tema="claro"]) .cad-al .cad-seg span { color: #94979E; }
+html:not([data-tema="claro"]) .cad-al .cad-seg input:checked + span { color: #E2C68C; background: #342D22; box-shadow: inset 0 0 0 1px #4B402B; }
+html:not([data-tema="claro"]) .cad-al .botao-neutro { color: #EEEEF0; background: #222429; border: 1px solid #35373D; border-radius: 6px; }
+html:not([data-tema="claro"]) .cad-al .botao-neutro:hover { background: #303237; border-color: #5A5B60; }
+html:not([data-tema="claro"]) .cad-al .botao { color: #202018; background: #E2C68C; border-color: #E2C68C; border-radius: 6px; }
+html:not([data-tema="claro"]) .cad-al .cad-pe { border-top-color: #2B2D32; }
