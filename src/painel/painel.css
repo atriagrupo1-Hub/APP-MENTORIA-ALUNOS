@@ -5854,3 +5854,10 @@ html[data-tema="claro"] .al2-barra i { background: #b08a3e; }
 .al2-prods { max-width: 120px; }
 .al2-tab th, .al2-tab td { padding-left: 10px; padding-right: 10px; }
 .al2-zap { gap: 4px; }
+/* Alunas: tabela no tamanho padrão (13px) */
+.al2-tab th { font-size: 10px; }
+.al2-tab td, .al2-quem b, .al2-prog > span:first-child { font-size: 13px; }
+.al2-quem > span > span { margin-top: 3px; font-size: 11px; }
+.al2-tab .vgx-bt.pequeno { min-height: 30px; padding: 6px 10px; font-size: 12px; }
+.al2-ic { width: 28px; height: 28px; }
+.al2-ic svg { width: 14px; height: 14px; }
