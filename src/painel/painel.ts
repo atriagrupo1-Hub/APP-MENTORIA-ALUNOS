@@ -599,7 +599,7 @@ export function montar(app: HTMLElement) {
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
     engDias: 7, engMenu: "" as string,
-    ceEd: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
+    ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
@@ -4041,9 +4041,7 @@ export function montar(app: HTMLElement) {
             ${ehModTeste(m) ? `<span class="mest mest-aula">${seletorPubAula(a)}${seletorAcessoAula(m, a)}</span>` : seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), false, true)}
             <span class="mp-aula-acoes">
               <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
-              <button type="button" class="mp-ic" data-a="aula-duplicar" data-id="${a.id}" aria-label="Duplicar a aula" title="Duplicar">${IC_MOD.copiar}</button>
-              <button type="button" class="mp-ic perigo" data-a="aula-remover" data-id="${a.id}" aria-label="Remover a aula" title="Remover">${IC_MOD.lixo}</button>
-              <button type="button" class="mp-ic mp-seta" data-a="aula-mais" data-id="${a.id}" aria-label="${mais ? "Esconder opções" : "Mais opções"}" aria-expanded="${mais}">${IC_MOD.seta}</button>
+              <span class="est3 kg-menu"><button type="button" class="mp-ic" data-a="estado-menu" data-v="aum:${a.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "aum:" + a.id}" aria-label="Mais ações da aula" title="Mais ações">${IC_ABAC.pontos}</button>${ui.estMenu === "aum:" + a.id ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="aula-duplicar" data-id="${a.id}">${IC_MOD.copiar}Duplicar</button><button type="button" role="menuitem" class="perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir</button></span>` : ""}</span>
             </span>
           </div>
           ${mais ? `<div class="mp-aula-mais">
@@ -4182,7 +4180,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   /** Item "Publicação e liberação" (módulo e curso): publicação, acesso, como liberar e o resumo; grava ao Salvar. */
   function blocoPub(o: PubOpts) {
     const ant = o.ant, e = estado3(o.pub, o.bloq), F = o.form;
-    const modo = o.liberaModo === "cadastro" || o.liberaModo === "prazo" ? o.liberaModo : o.libera ? "data" : "imediato";
+    const modo = ui.pmModoIni || (o.liberaModo === "cadastro" || o.liberaModo === "prazo" ? o.liberaModo : o.libera ? "data" : "imediato");
+    if (ui.pmModoIni) queueMicrotask(() => { ui.pmModoIni = ""; });
     const IC = { pub: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>`, cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`, est: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 6.6L21 12l-6.6 2.4L12 21l-2.4-6.6L3 12l6.6-2.4z"/></svg>`, rel: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`, tag: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12.5V4.5h8l9 9-8 8z"/><circle cx="8" cy="9" r="1.4"/></svg>` };
     const op = (v: string, t: string, dis = false) => `<label class="pm-op${dis ? " dis" : ""}"><input type="radio" name="libModo" value="${v}" form="${F}" ${modo === v ? "checked" : ""} ${dis ? "disabled" : ""} data-pm />${t}</label>`;
     const sel = (nome: string, ops: [string, string][], val: string) => `<select class="campo pm-sel" name="${nome}" form="${F}" data-pm>${ops.map(([v, t]) => `<option value="${v}" ${v === val ? "selected" : ""}>${t}</option>`).join("")}</select>`;
@@ -4329,14 +4328,17 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="aula-pub" data-id="${a.id}" data-v="0"><span class="mpub-pil off">Não publicada</span></button>
     </span>` : ""}</span>`;
   }
+  const IC_CAL_AG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`;
   function seletorAcessoAula(m: Modulo, a: Aula) {
     if (a.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc">Rascunho</span><em>Não publicada: as alunas não veem</em></span>`;
     const e = estado3(a.pub, a.acesso === "bloqueada"), k = "aacc:" + a.id, d = a.liberaDias ?? 0;
     const i = m.aulas.indexOf(a), ant = i > 0 ? m.aulas[i - 1] : null;
     const lib = a.liberaModo === "cadastro" ? p(d, "dia", "dias") + " após o cadastro" : a.liberaModo === "prazo" ? p(d, "dia", "dias") + " após a " + (ant ? h(ant.rot) + " " + ant.num : "aula anterior") : a.libera ? "Em " + dataHoraCurta(a.libera) : "Imediatamente";
-    const [rot, cor, sub] = e === "ativo" ? ["Liberada", "verde", lib] : e === "bloqueado" ? ["Bloqueada", "amarelo", "A aluna vê, mas não acessa"] : ["Oculta", "vermelho", "A aluna não vê nem acessa"];
-    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar o acesso">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
-      <button type="button" role="menuitemradio" aria-checked="${e === "ativo"}" data-a="aula-lib-abrir" data-id="${a.id}"><span class="est3-pil verde">${IC_OLHO}Liberada…</span></button>
+    const agend = e === "ativo" && a.liberaModo !== "cadastro" && a.liberaModo !== "prazo" && !!a.libera && a.libera > new Date().toISOString();
+    const [rot, cor, sub] = agend ? ["Agendada", "azul", "Para " + dataHoraCurta(a.libera)] : e === "ativo" ? ["Liberada", "verde", lib] : e === "bloqueado" ? ["Bloqueada", "amarelo", "A aluna vê, mas não acessa"] : ["Oculta", "vermelho", "A aluna não vê nem acessa"];
+    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar o acesso">${agend ? IC_CAL_AG : e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+      <button type="button" role="menuitemradio" aria-checked="${e === "ativo" && !agend}" data-a="aula-lib-abrir" data-id="${a.id}"><span class="est3-pil verde">${IC_OLHO}Liberada…</span></button>
+      <button type="button" role="menuitemradio" aria-checked="${agend}" data-a="aula-agendar" data-id="${a.id}"><span class="est3-pil azul">${IC_CAL_AG}Agendada…</span></button>
       <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="aula:${a.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueada</span></button>
       <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="aula:${a.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculta</span></button>
     </span>` : ""}</span>`;
@@ -7199,7 +7201,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         });
         return;
       }
-      case "aula-lib-abrir": { const x = acharAula(d.id!); if (!x) return; ui.estMenu = ""; ui.aula = d.id!; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.pmEditar = true; window.scrollTo(0, 0); break; }
+      case "aula-agendar": case "aula-lib-abrir": { if (a === "aula-agendar") ui.pmModoIni = "data"; const x = acharAula(d.id!); if (!x) return; ui.estMenu = ""; ui.aula = d.id!; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.pmEditar = true; window.scrollTo(0, 0); break; }
       case "mod-pub": {
         const x = acharModulo(d.id!); if (!x) return; const rasc = d.v !== "1"; ui.estMenu = "";
         if (x.m.rascunho === rasc) break;
