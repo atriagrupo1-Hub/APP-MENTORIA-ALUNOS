@@ -6129,8 +6129,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
   /** Login automático: primeiro nome + ponto + inicial do sobrenome (ex.: atria.g). */
   // O banco guarda o login em minúsculas e compara sem diferença de maiúscula; aqui ele aparece como Maria.S
-  const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9.]/g, "");
-  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/).map(semAcento).filter(Boolean); const pn = p2[0] || ""; return pn ? pn[0].toUpperCase() + pn.slice(1).toLowerCase() + (p2[1] ? "." + p2[1][0].toUpperCase() : "") : ""; };
+  // Aceita letras sem acento, números, ponto, hífen e espaço entre as palavras (mesma regra do cadastro no servidor).
+  const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9._ -]/g, "").replace(/\s+/g, " ").trim();
+  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/).map(semAcento).filter(Boolean); const pn = p2[0] || ""; return pn ? pn[0].toUpperCase() + pn.slice(1).toLowerCase() + (p2[1] ? " " + p2[1][0].toUpperCase() + "." : "") : ""; };
   function cadLogin() { const nome = cadValor("nome"); return semAcento(cadValor("login") || loginAuto(nome)); }
   /* Desfazer dentro do cadastro (editar): guarda o formulário antes de cada alteração, até 5. Nada vai ao banco. */
   let cadHist: Record<string, string>[] = []; let cadAntes: Record<string, string> | null = null;
@@ -8250,7 +8251,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
         const nome = v("nome");
-        const loginNovo = (v("login") || loginAuto(nome)).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
+        const loginNovo = semAcento(v("login") || loginAuto(nome)).toLowerCase();
         if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
         const celular = v("celular").replace(/\D/g, "");
         if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
