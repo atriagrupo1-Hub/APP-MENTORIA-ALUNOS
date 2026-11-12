@@ -5255,3 +5255,7 @@ textarea.campo { border-radius: var(--ds-raio) !important; font-size: 14px !impo
 .ini-alerta.tem .ini-alerta-n { color: var(--ds-atencao, #d99a2b); background: rgba(217, 154, 43, .15); }
 .tela.ativa.ini2 { display: flex; gap: 20px; }
 .ini-fila-item .ini-txt b { font-family: Lato, system-ui, sans-serif; font-size: 14px; font-weight: 700; }
+.ini-fila-tit { display: flex; align-items: center; gap: 10px; margin-bottom: -6px; }
+.ini-fila-tit h2 { margin: 0; font-family: Lato, system-ui, sans-serif; font-size: 18px; font-weight: 700; }
+.ini-fila .ini-fila-cab { font-size: 15px; }
+.ini-fila .ini-fila-item { border-top: 1px solid var(--linha-suave); }

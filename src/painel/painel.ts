@@ -1211,10 +1211,10 @@ export function montar(app: HTMLElement) {
       comecar: (a) => `<button class="al-botao-ouro pequeno" data-a="whatsapp" data-id="${a.id}">Enviar acesso</button>`,
     };
     const grupoFila = (ic: string, titulo: string, n: number, abrir: string, v: string, linhas: string) => `
-      <div class="ini-fila-grupo">
+      <section class="ini-cartao ini-fila">
         <button type="button" class="ini-fila-cab" data-a="${abrir}"${v ? ` data-v="${v}"` : ""}><span class="ini-fila-ic">${ic}</span><b>${titulo}</b>${n ? badge(n) : emDia()}${n ? `<span class="ini-fila-ver">Ver ${n > 3 ? "todas" : ""} ${IC_INI.seta}</span>` : ""}</button>
         ${linhas}
-      </div>`;
+      </section>`;
     const fila = [
       grupoFila(IC_INI.balao, "Comentários para moderar", coms.length, "ir-comentarios", "", coms.slice(0, 3).map((k) => `
         <div class="ini-fila-item">${avatarDe(k.autoraId, k.autora)}<span class="ini-txt"><b>${h(k.autora)}</b><span>${h(k.texto)}</span></span><span class="ini-quando">${haTempo(k.criado)}</span><span class="ini-fila-acoes"><button class="al-botao-ouro pequeno" data-a="ini-moderar" data-id="${k.id}" aria-label="Moderar o comentário de ${h(k.autora)}">Moderar</button></span></div>`).join("")),
@@ -1287,10 +1287,8 @@ export function montar(app: HTMLElement) {
       <div class="ini-mets">${metricas}</div>
       <div class="ini-corpo">
         <div class="ini-principal">
-          <section class="ini-cartao ini-fila" aria-label="Para fazer agora">
-            <header><span class="ini-cab-ic">${IC_INI.cal}</span><h3>Para fazer agora</h3>${nTarefas ? badge(nTarefas) : emDia()}</header>
-            ${fila}
-          </section>
+          <div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
+          ${fila}
           <section class="ini-cartao ini-tempo">
             <header><span class="ini-cab-ic">${IC_INI.onda}</span><h3>O que aconteceu</h3><button class="al-botao pequeno" data-a="ini-ativ-todas">Ver todas ${IC_INI.seta}</button></header>
             <div class="ini-chips">${chipsTipo}</div>
