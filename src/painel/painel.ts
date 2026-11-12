@@ -1755,7 +1755,7 @@ export function montar(app: HTMLElement) {
             ${linha("Nome completo", h(a.nome))}
             ${linha("Login", h(a.login))}
             ${linha("E-mail", a.email ? h(a.email) : naoInf)}
-            ${linha("Celular", a.celular ? h(fone(a.celular)) : naoInf)}
+            ${linha("Celular", a.celular ? `<span class="aa-cel">${h(fone(a.celular))}<button type="button" class="al2-ic" data-a="copiar-cel" data-id="${a.id}" aria-label="Copiar o número" title="Copiar número"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg></button></span>` : naoInf)}
             ${linha("Data de cadastro", br(a.criadaEm ? diaDe(a.criadaEm) : a.entrada))}
             ${linha("Status", status)}
           </div>
