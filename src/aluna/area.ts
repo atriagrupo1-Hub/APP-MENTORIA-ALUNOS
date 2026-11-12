@@ -216,6 +216,18 @@ export function montar(raiz: HTMLElement) {
     for (const m of cat.modulos.concat(cat.produtos.flatMap((x) => x.modulos || []))) for (const a of m.aulas) MIDIA.set(a.id, { tipo: a.tipo || "video", arquivo: a.arquivoPath || "" });
     // Abas do menu (0075): cada categoria publicada, menos a da mentoria (Início e Módulos).
     const abas = cat.categorias.filter((c) => c.publicado !== false && (!prodJ || c.id !== prodJ.categoriaId)).map((c) => ({ id: c.id, titulo: c.titulo, icone: c.icone || "presentes" }));
+    // Categoria de Presentes com produtos dentro (ex.: E-books): o cartão da categoria abre a lista
+    // de cartões dos produtos dela, e os produtos saem da lista principal de Presentes.
+    for (const c of cats.slice()) {
+      if (c.sub) continue;
+      for (const k of c.cursos.filter((x) => !x.ehCurso && x.catAbaId && !x.itens.length)) {
+        const filhos = c.cursos.filter((x) => x !== k && x.ehCurso && x.catAbaId === k.catAbaId);
+        if (!filhos.length) continue;
+        cats.push({ id: "", nome: k.nome, bloqueada: false, cursos: filhos, sub: true });
+        k.sub = cats.length - 1; k.liberadoDireto = true;
+        c.cursos = c.cursos.filter((x) => !filhos.includes(x));
+      }
+    }
     if (VER_TUDO) {
       for (const md of mods) for (const x of md.aulas) x.bloq = false;
       for (const c of cats) { c.bloqueada = false; for (const k of c.cursos) { k.liberadoDireto = true; k.bloq = false; for (const it of k.itens || []) it.bloq = false; } }
@@ -1367,7 +1379,7 @@ export function montar(raiz: HTMLElement) {
   const catAberta = (c) => !c.bloqueada && (!c.cursos.length || c.cursos.some(cursoLiberado));
   const abreCurso = (curso) => { const ds = curso.itens.map((x) => aberturaDe(x.id)).filter(Boolean).sort(); return ds[0] || null; };
   // Os presentes (Mestres espirituais, Documentários, Frequências, E-books…), cada um num cartão.
-  const PRESENTES = () => CATS().flatMap((c, ci) => c.cursos.map((curso, i) => ({ c, ci, i, curso })));
+  const PRESENTES = () => CATS().flatMap((c, ci) => (c.sub ? [] : c.cursos.map((curso, i) => ({ c, ci, i, curso }))));
   const icPresente = (c, curso) => curso.icone && ICONE_DESTAQUE[curso.icone] ? ICONE_DESTAQUE[curso.icone] : (/descobert/i.test(curso.nome) ? ICONE_DESTAQUE.lupa : /e-?book/i.test(curso.nome) ? ICONE_DESTAQUE.livro : { mestres: ICONE_DESTAQUE.estrela, freq: ICONE_DESTAQUE.som, video: /document/i.test(curso.nome) ? ICONE_DESTAQUE.filme : ICONE_DESTAQUE.video }[tipoDoCurso(c, curso)]);
   const corPresente = (c, curso) => curso.cor && curso.cor in COR_DESTAQUE ? COR_DESTAQUE[curso.cor] : (/descobert/i.test(curso.nome) ? "desc" : /e-?book/i.test(curso.nome) ? "" : { mestres: "mestres", freq: "pres", video: "doc" }[tipoDoCurso(c, curso)]);
   const botaoPresente = (curso) => (/descobert/i.test(curso.nome) ? "Ver as descobertas" : /e-?book/i.test(curso.nome) ? "Ver e-books" : /frequ/i.test(curso.nome) ? "Ver frequências" : /document/i.test(curso.nome) ? "Ver documentários" : "Ver os vídeos");
@@ -2196,6 +2208,7 @@ export function montar(raiz: HTMLElement) {
       case "fechar-leitor": { const o = S.leitorDe || {}; S.leitorDe = null; S.presente = o.presente || S.presente; S.tela = "presente"; render(); window.scrollTo({ top: o.y || 0 }); return; }
       case "ver-curso": S.verCurso = S.verCurso || {}; S.verCurso[d.v] = !S.verCurso[d.v]; break;
       case "curso-pres": { const [ci, i] = d.v.split("-").map(Number); if (!CATS()[ci]?.cursos[i]) return;
+        if (CATS()[ci].cursos[i].sub != null) { pararVideo(); S.perfilDe = null; S.cat = CATS()[ci].cursos[i].sub; S.tela = "categoria"; topo(); break; }
         if (!cursoLiberado(CATS()[ci].cursos[i])) { aviso(CATS()[ci].cursos[i].nome + ": libera em breve."); return; } pararVideo(); S.perfilDe = null; S.cursoPres = d.v; S.tela = "cursoPres"; topo(); break; }
       case "dest-fechado": aviso("Em breve, só para você."); return;
       case "ig-busca": abrirBuscaIg(); return;
