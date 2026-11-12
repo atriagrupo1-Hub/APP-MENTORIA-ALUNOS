@@ -5726,12 +5726,6 @@ html[data-tema="claro"] .lq-info b { color: var(--texto); }
 html[data-tema="claro"] .lq-aula small { color: #8a6420; }
 
 /* ===== ALUNAS E ACESSOS — padrão da Visão geral ===== */
-.al-mods { display: flex; gap: 22px; margin: 0 0 23px; border-bottom: 1px solid #2B2D32; }
-html[data-tema="claro"] .al-mods { border-bottom-color: var(--linha-suave); }
-.al-mods button { display: inline-flex; align-items: center; gap: 7px; padding: 12px 0; font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 600; white-space: nowrap; color: #8E959F; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; }
-.al-mods button[aria-selected="true"] { color: #E2C68C; border-bottom-color: #E2C68C; }
-html[data-tema="claro"] .al-mods button[aria-selected="true"] { color: #8a6420; border-bottom-color: #a5732a; }
-.al-mods button span { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #7F8690; }
 .al-linha { grid-template-columns: 40px minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 136px; }
 @media (max-width: 1100px) { .al-linha { grid-template-columns: 32px 1fr auto; } }
 .casca2 .al { font-family: "Manrope", sans-serif; }
@@ -5758,8 +5752,6 @@ html:not([data-tema="claro"]) .casca2 .al .al-botao { color: #EEEEF0; background
 html:not([data-tema="claro"]) .casca2 .al .al-botao:hover { background: #303237; border-color: #5A5B60; }
 html:not([data-tema="claro"]) .casca2 .al-filtro { color: #A0A3AB; background: #191A1E; border-color: #2B2D32; }
 html:not([data-tema="claro"]) .casca2 .al-filtro[aria-pressed="true"] { color: #202018; background: #E2C68C; border-color: #E2C68C; }
-.al .al-mods { display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: flex-end; gap: 22px; width: auto; }
-.al .al-mods button { flex: 0 0 auto !important; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 12px 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }
 
 /* ===== ALUNAS E ACESSOS — tela externa completa ===== */
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -5821,3 +5813,15 @@ html[data-tema="claro"] .al2-pe { border-top-color: var(--linha-suave); }
 .al2-pags [aria-current="page"] { color: #202018; background: #E2C68C; border-color: #E2C68C; }
 .al2-vazio { padding: 40px !important; font-size: 15px !important; line-height: 1.9; text-align: center; color: #939AA4 !important; white-space: normal !important; }
 .al2 .lote { margin-bottom: 17px; }
+
+
+/* Abas de modalidade (Todas / Mentoria / Geral) com a ajuda "?" alinhada ao centro da barra. */
+.al-modal-barra { display: flex; align-items: center; gap: 14px; margin: 0 0 23px; border-bottom: 1px solid #2B2D32; }
+html[data-tema="claro"] .al-modal-barra { border-bottom-color: var(--linha-suave); }
+.al-modal-abas { display: flex; align-self: stretch; gap: 22px; }
+.al-modal-abas button { padding: 12px 0; font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 600; white-space: nowrap; color: #8E959F; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; }
+.al-modal-abas button:hover { color: #EEEEF0; }
+html[data-tema="claro"] .al-modal-abas button:hover { color: var(--texto); }
+.al-modal-abas button[aria-selected="true"] { color: #E2C68C; border-bottom-color: #E2C68C; }
+html[data-tema="claro"] .al-modal-abas button[aria-selected="true"] { color: #8a6420; border-bottom-color: #a5732a; }
+.al-modal-ajuda { display: flex; align-items: center; }[data-painel] .al-modal-abas button:not(:disabled):hover, [data-painel] .al-modal-abas button:not(:disabled):active { box-shadow: none; transform: none; }

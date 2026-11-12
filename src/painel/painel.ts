@@ -2519,8 +2519,11 @@ export function montar(app: HTMLElement) {
         <div><span class="vgx-sobre">Relacionamento</span><h1>Alunas e acessos</h1><p>Cada jornada tem um ritmo. Tenha clareza sobre quem precisa de você.</p></div>
         <div class="vgx-dir"><button type="button" class="vgx-bt" data-a="exportar">${IC_BAIXAR}Exportar CSV</button><span class="vgx-criar"><button type="button" class="al-botao-ouro" data-a="aluna-nova">${IC_MAIS}Adicionar aluna</button></span></div>
       </div>
-      <div class="al-mods" role="tablist" aria-label="Modalidade">
-        ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}</button>`).join("")}
+      <div class="al-modal-barra">
+        <div class="al-modal-abas" role="tablist" aria-label="Modalidade">
+          ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}</button>`).join("")}
+        </div>
+        <span class="al-modal-ajuda">${dicaCampo(`Mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Geral: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de aba (e o app dela) na hora.`, "al.grupos")}</span>
       </div>
       <div class="al2-barra">
         <label class="al2-busca"><span class="sr">Buscar alunas</span><input id="busca" type="search" placeholder="Buscar nome, login ou telefone" value="${h(ui.busca)}" data-i="busca" aria-label="Buscar alunas" /></label>
