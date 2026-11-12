@@ -302,7 +302,86 @@ async function carregarLinks(euP: Promise<Eu | null>) {
   LINKS.aluna = new Map(linhas.filter((x) => x.link).map((x) => [String(x.aluna_id), String(x.link)]));
   APARELHO.clear(); linhas.forEach((x) => { if (x.aparelho) APARELHO.set(String(x.aluna_id), x.aparelho); });
 }
+/*
+ * PRÉVIA — "salvar de teste": na prévia (?previa=1) nada vai ao banco real.
+ * Cada gravação responde "ok" na hora e fica numa lista, só neste navegador
+ * (some ao recarregar). Depois de cada leitura do banco, a lista é aplicada
+ * por cima dos dados, para a tela mostrar o que foi salvo no teste.
+ */
+const PREVIA = typeof location !== "undefined" && new URLSearchParams(location.search).get("previa") === "1";
+type Gravacao = { tipo: "rpc" | "funcao" | "tabela"; nome: string; metodo: string; corpo: Record<string, unknown> };
+const TESTE: Gravacao[] = [];
+let nTeste = 0;
+const idTeste = () => "00000000-0000-4000-8000-" + String(Date.now() % 1e12).padStart(12, "0").slice(0, 10) + String(++nTeste).padStart(2, "0");
+if (PREVIA && typeof window !== "undefined") {
+  const SUPA = String(import.meta.env.VITE_SUPABASE_URL || "");
+  const LEITURA = /^(pode|eh_|conferir|listar|meu_|meus_|minha_|minhas_|resumo_|relatorio_|engajamento_|equipe_do_|alunas_do_|contatos_|comentarios_para|comentarios_do|curtidas_da|aulas_concluidas|atividades_|opcoes_|lixeira_listar|sinal_painel)/;
+  const anterior = window.fetch.bind(window);
+  window.fetch = async (entrada: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
+    const metodo = (init?.method || (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
+    if (url.startsWith(SUPA) && metodo !== "GET" && metodo !== "HEAD") {
+      const c = url.slice(SUPA.length).split("?")[0];
+      const livre = c.startsWith("/auth/v1/") || c === "/functions/v1/entrar" || ["/functions/v1/extrair-ebook", "/functions/v1/gerar-descricao-curso", "/functions/v1/gerar-capa"].includes(c) || (c.startsWith("/rest/v1/rpc/") && LEITURA.test(c.slice(13)));
+      if (!livre) {
+        const sp = document.querySelector("#previaSelo span"); if (sp) sp.textContent = "● Prévia · salvo só no teste (some ao recarregar)";
+        let corpo: Record<string, unknown> = {};
+        try { corpo = typeof init?.body === "string" ? JSON.parse(init.body) : {}; } catch { /* corpo não é JSON */ }
+        const json = (x: unknown, st = 200) => new Response(JSON.stringify(x), { status: st, headers: { "Content-Type": "application/json" } });
+        if (c.startsWith("/rest/v1/rpc/")) {
+          const nome = c.slice(13); TESTE.push({ tipo: "rpc", nome, metodo, corpo });
+          if (nome === "renovar_acesso") { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return json(d.toISOString()); }
+          if (nome === "salvar_liberacao") return json(0);
+          return json(null);
+        }
+        if (c.startsWith("/functions/v1/")) {
+          const nome = c.slice(14); const id = idTeste(); TESTE.push({ tipo: "funcao", nome, metodo, corpo: { ...corpo, id } });
+          return json({ id, ...corpo }, 201);
+        }
+        if (c.startsWith("/rest/v1/")) {
+          const nome = c.slice(9); const linhas = (Array.isArray(corpo) ? corpo : [corpo]).map((x) => ({ id: idTeste(), ...(x as Record<string, unknown>) }));
+          for (const l of linhas) TESTE.push({ tipo: "tabela", nome, metodo, corpo: l });
+          const um = String((init?.headers as Record<string, string> | undefined)?.Accept || (init?.headers as Record<string, string> | undefined)?.accept || "").includes("vnd.pgrst.object");
+          return metodo === "DELETE" ? new Response(null, { status: 204 }) : json(um ? linhas[0] : linhas, 201);
+        }
+        return json({}, 200); // depósito de arquivos
+      }
+    }
+    return anterior(entrada, init);
+  };
+}
+/** Aplica as gravações de teste por cima do que veio do banco. */
+function aplicarTeste(d: Dados): Dados {
+  if (!TESTE.length) return d;
+  const al = (id: unknown) => d.alunas.find((x) => x.id === String(id));
+  for (const g of TESTE) {
+    const b = g.corpo;
+    if (g.tipo === "funcao" && g.nome === "cadastrar-aluna" && !al(b.id)) {
+      d.alunas.unshift({ id: String(b.id), nome: String(b.nome || ""), login: String(b.login || ""), codigo: String(b.codigo || ""), celular: String(b.celular || ""), email: String(b.email || ""),
+        entrada: String(b.entrada || ""), validade: String(b.validade || ""), bloqueada: false, liberadas: 0, acesso: { cursos: [], modulos: [], aulas: [] }, datas: {}, cronograma: {},
+        ultimoAcesso: "", ultimaAula: "", concluidas: 0, nota: 0, nComentarios: 0, criadaEm: new Date().toISOString(), feitas: new Set<string>(), notas: [], contatos: [], concessoes: [] });
+    }
+    if (g.tipo === "rpc") {
+      const a = al(b.p_aluna); if (!a) continue;
+      if (g.nome === "salvar_ficha_aluna" || g.nome === "restaurar_ficha_aluna") Object.assign(a, { nome: String(b.p_nome ?? a.nome), login: String(b.p_login ?? a.login).toLowerCase(), codigo: String(b.p_codigo ?? a.codigo), entrada: String(b.p_entrada ?? a.entrada), validade: String(b.p_validade ?? b.p_acesso_ate ?? a.validade).slice(0, 10), celular: String(b.p_celular ?? a.celular), email: String(b.p_email ?? a.email) });
+      if (g.nome === "salvar_liberacao") { a.acesso = { cursos: (b.p_produtos as string[]) || [], modulos: (b.p_modulos as string[]) || [], aulas: (b.p_aulas as string[]) || [] }; const agora = new Date().toISOString(); a.concessoes = [...a.acesso.cursos.map((x) => ({ escopo: "produto", alvo: x, em: agora, abre: "" })), ...a.acesso.modulos.map((x) => ({ escopo: "modulo", alvo: x, em: agora, abre: "" })), ...a.acesso.aulas.map((x) => ({ escopo: "aula", alvo: x, em: agora, abre: "" }))]; }
+      if (g.nome === "definir_status_aluna") a.bloqueada = b.p_status === "bloqueada";
+      if (g.nome === "renovar_acesso") { const v = new Date((a.validade || new Date().toISOString().slice(0, 10)) + "T12:00:00"); v.setFullYear(v.getFullYear() + Number(b.p_anos || 0)); v.setMonth(v.getMonth() + Number(b.p_meses || 0)); v.setDate(v.getDate() + Number(b.p_dias || 0)); a.validade = v.toISOString().slice(0, 10); }
+      if (g.nome === "salvar_foto_aluna" && b.p_foto) d.fotos[a.id] = String(b.p_foto);
+      if (g.nome === "remover_aluna") d.alunas = d.alunas.filter((x) => x !== a);
+    }
+    if (g.tipo === "tabela" && g.nome === "aluna_link" && b.aluna_id) {
+      if (b.link) LINKS.aluna.set(String(b.aluna_id), String(b.link)); else if ("link" in b) LINKS.aluna.delete(String(b.aluna_id));
+      if (b.aparelho) APARELHO.set(String(b.aluna_id), b.aparelho as "android" | "iphone");
+    }
+  }
+  return d;
+}
 async function lerTudo(quem: Eu | Promise<Eu | null>): Promise<Dados> {
+  const d = await lerTudoBanco(quem);
+  return PREVIA ? aplicarTeste(d) : d;
+}
+async function lerTudoBanco(quem: Eu | Promise<Eu | null>): Promise<Dados> {
   libPorAula.clear();
   // Tudo sai junto, numa leva só: as duas rodadas e a equipe não esperam umas pelas outras.
   const euP = Promise.resolve(quem);
