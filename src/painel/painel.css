@@ -5078,3 +5078,6 @@ html:not([data-tema="claro"]) .nov-item { background: var(--aa-cartao, rgba(255,
 html:not([data-tema="claro"]) .lx-tipo { background: rgba(183,156,71,.16) !important; }
 html:not([data-tema="claro"]) .cc2-selo.vm { background: rgba(224,46,30,.16) !important; color: rgb(234,138,132) !important; }
 html:not([data-tema="claro"]) .mpub-pil.on { background: rgba(90,120,230,.18) !important; color: #b3c0ff !important; border-color: rgba(90,120,230,.35) !important; }
+.est3-pil.azul { color: #2f4ea3; background: #e6ecfb; }
+html:not([data-tema="claro"]) .est3-pil.azul { color: #b3c0ff; background: rgba(90,120,230,.18); }
+.mp-aula-acoes .kg-menu { position: relative; }
