@@ -1015,7 +1015,7 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
       </aside>
       <div class="principal">
@@ -4368,7 +4368,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const abertasMod = aulasAbertas();
     return `
       ${(() => { const aus = c.modulos.flatMap((m) => m.aulas), pubs = aus.filter((a) => a.pub && !a.rascunho).length, bloq = aus.filter((a) => a.acesso === "bloqueada").length, pct = aus.length ? Math.round((pubs / aus.length) * 100) : 0;
-        return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2></div>
+        return `<div class="ma2-topo"><span></span>
         <div class="ma2-kpis"><span><b>${c.modulos.length}</b>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</span><span><b>${aus.length}</b>${nomeItens(c, aus.length)}</span><span><b>${pubs}</b>${pubs === 1 ? "Publicada" : "Publicadas"}</span><span><b>${bloq}</b>${bloq === 1 ? "Bloqueada" : "Bloqueadas"}</span><span class="ma2-pct"><b>${pct}%</b>Publicado<i><em style="width:${pct}%"></em></i></span></div></div>`; })()}
       <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
@@ -4380,7 +4380,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
         <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>
         <input id="novoModulo" class="campo" name="nome" placeholder="Nome do novo módulo" required />
-        <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
+        <button class="al-botao-ouro">Criar módulo</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
       </form>` : ""}
       ${(() => { const sel = c.modulos.filter((m) => ui.modSel.has(m.id)), tudo = !!c.modulos.length && sel.length === c.modulos.length; return `
       <label class="ms-todos"><input type="checkbox" data-mod-sel-todos="${c.id}" ${tudo ? "checked" : ""} ${c.modulos.length ? "" : "disabled"} />Selecionar todos os módulos</label>
@@ -4985,12 +4985,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       <div class="ea-grade">
         <form id="formAula" data-f="aula" data-id="${a.id}" class="cs-cartao ea-info">
-          <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>Informações da aula</h3><p>Edite o conteúdo e as configurações da aula.</p></div></div>
+          <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>1. Identificação</h3><p>Número e nome da aula.</p></div></div>
           <div class="ea-linha3">
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required /></label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.semNum ? "" : a.num, "Número da aula")}</label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input id="nomeAula" class="campo" name="nome" value="${ui.novaAula === a.id ? "" : h(a.nome)}" placeholder="Nome da nova aula" required /></label>
           </div>
+          <div class="mp-cab ea-bloco"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>2. Conteúdo principal</h3><p>Tipo, vídeo ou arquivo e descrição.</p></div></div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
             <select class="campo" name="tipo" data-aula-tipo>${([["video", "Vídeo"], ["audio", "Áudio"], ["pdf", "PDF (e-book)"]] as const).map(([v, t]) => `<option value="${v}"${tipoA === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
           <label class="grupo" data-campo-video${tipoA === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
@@ -5005,7 +5006,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <label class="grupo ea-ia-campo"><textarea class="campo" name="texto" rows="5" aria-label="Descrição da aula" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(iaDa(a.id)?.sobre ?? a.texto)}</textarea></label>
           <div id="iaPdf">${iaPdfBloco(a.id)}</div>
           <div class="ea-extra ea-extra-dentro" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">3. Materiais complementares ${dicaCampo(AJ.extras)}</h3></div></div>
             <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
             <div class="ea-extra-form">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do conteúdo ${dicaCampo(AJ.extraNome)}</span><input class="campo" name="nome" form="formExtra" placeholder="Ex: Material da aula" required /></label>
@@ -5022,7 +5023,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
         <div class="ea-lado">
           <section class="cs-cartao ea-capa${tipoA === "pdf" ? " em-pe" : ""}" data-capa-aula>
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>4. ${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
             <div id="previaCapa" data-a="escolher-capa" title="Escolher a capa" class="ea-capa-img${previa ? "" : " sem"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${previa ? `<img hidden alt="" src="${h(previa)}" onerror="this.parentElement.classList.add('sem')" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9). Se for PDF, capa em pé: 1024 × 1536 px (2:3).`, "fmt.aula")}</span>
@@ -6635,16 +6636,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
       case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
-      case "cs-add-mod": {
-        // Cria o módulo (ainda desativado) e abre a página completa; salvar ativa, cancelar descarta.
-        const c = curso(ui.curso); if (!c) return; const ult = c.modulos[c.modulos.length - 1];
-        void executar(async () => {
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: c.id, numero: proxNumModulo(c), titulo: "NOVO MÓDULO", rotulo: ult?.rot || "Módulo", publicado: false }).select("id").single());
-          ui.novoMod = r.data!.id; ui.modPagina = r.data!.id; ui.focar = "editarCampo"; window.scrollTo(0, 0);
-          return "Preencha o módulo e clique em Salvar módulo.";
-        });
-        return;
-      }
+      case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
       case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
       case "cs-com-filtro": ui.csComFiltro = d.v; break;
       case "cs-com-per": ui.csComPer = d.v; break;
@@ -7254,16 +7246,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "mod-abrir-fechar": if (ui.abertos.has(d.id)) ui.abertos.delete(d.id); else ui.abertos.add(d.id); break;
-      case "aula-add-abrir": {
-        // Cria a aula (ainda desativada) e abre Editar aula completo; salvar ativa, voltar sem salvar descarta.
-        const x = acharModulo(d.id); if (!x) return; const ult = x.m.aulas[x.m.aulas.length - 1];
-        void executar(async () => {
-          const r = falhou(await supabase.from("aulas").insert({ modulo_id: x.m.id, numero: proxNumAula(x.m), titulo: "Nova aula", rotulo: ult?.rot || "Aula", publicado: false }).select("id").single());
-          ui.novaAula = r.data!.id; ui.aula = r.data!.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.focar = "nomeAula"; window.scrollTo(0, 0);
-          return "Preencha a aula e clique em Salvar aula.";
-        });
-        return;
-      }
+      case "aula-add-abrir": ui.addAula = d.id; ui.focar = "novaAula"; break;
       case "aula-add-cancelar": ui.addAula = null; break;
       case "aula-sobe": case "aula-desce": {
         const x = acharAula(d.id)!; const nova = trocado(x.m.aulas, x.ai, a === "aula-sobe" ? -1 : 1);
@@ -8282,9 +8265,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const ult = c.modulos[c.modulos.length - 1];
         void executar(async () => {
           // A ordem segue o número (gatilho da 0063).
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, numero: num, titulo: v("nome").toUpperCase(), rotulo: ult?.rot || "Módulo" }).select("id").single());
-          ui.abertos.add(r.data!.id);
-          return { msg: "Módulo adicionado.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, numero: num, titulo: v("nome").toUpperCase(), rotulo: ult?.rot || "Módulo", publicado: false }).select("id").single());
+          ui.abertos.add(r.data!.id); ui.csAddMod = false; ui.modPagina = r.data!.id; window.scrollTo(0, 0);
+          return { msg: "Módulo criado como rascunho. Complete e salve.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -8312,9 +8295,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const x = acharModulo(id)!; const num = Number(v("numero"));
         const erro = erroNumero(num, x.m.aulas.map((a) => a.num), "aula"); if (erro) { toast(erro); return; }
         void executar(async () => {
-          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, numero: num, titulo: v("nome"), rotulo: x.m.aulas[x.m.aulas.length - 1]?.rot || "Aula" }).select("id").single());
-          ui.addAula = null;
-          return { msg: "Aula adicionada.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
+          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, numero: num, titulo: v("nome"), rotulo: x.m.aulas[x.m.aulas.length - 1]?.rot || "Aula", publicado: false }).select("id").single());
+          ui.addAula = null; ui.aula = r.data!.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0);
+          return { msg: "Aula criada como rascunho. Complete e salve.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -8735,7 +8718,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       document.querySelectorAll<HTMLElement>("[data-campo-pdf]").forEach((gp) => { gp.hidden = t.value !== "pdf"; });
       const pdf = t.value === "pdf";
       document.querySelector("[data-capa-aula]")?.classList.toggle("em-pe", pdf);
-      const ct = document.querySelector("[data-capa-tit]"); if (ct) ct.textContent = pdf ? "Capa do e-book" : "Capa da aula";
+      const ct = document.querySelector("[data-capa-tit]"); if (ct) ct.textContent = pdf ? "4. Capa do e-book" : "4. Capa da aula";
       const cd = document.querySelector("[data-capa-dica]"); if (cd) cd.textContent = pdf ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)";
       const ex = document.querySelector<HTMLElement>("[data-extra-aula]"); if (ex) ex.hidden = pdf;
       const rd = document.querySelector<HTMLElement>("[data-rot-desc]"); if (rd) rd.textContent = t.value === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)";

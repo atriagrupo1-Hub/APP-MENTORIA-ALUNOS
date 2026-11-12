@@ -5180,3 +5180,8 @@ textarea.campo { border-radius: var(--ds-raio) !important; font-size: 14px !impo
 /* Pendência pede atenção (âmbar), não erro (A17) */
 .ini-tarefa.tem { border-color: color-mix(in srgb, var(--ds-atencao) 50%, transparent) !important; background: var(--ds-atencao-fundo) !important; }
 .ini-tarefa.tem .badge-alerta { background: var(--ds-atencao) !important; color: var(--ds-sobre-ouro) !important; }
+/* Menu lateral agrupado */
+.lado-grupo { display: block; padding: 16px 24px 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #8d877c; }
+.lado-menu > .lado-grupo:first-child { padding-top: 4px; }
+/* Editor de aula em blocos */
+.ea-info .ea-bloco { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--linha-suave); }
