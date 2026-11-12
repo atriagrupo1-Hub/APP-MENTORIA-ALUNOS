@@ -6220,7 +6220,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const a = m.id ? aluna(m.id) : null;
       const d = hoje(), cod = a ? a.codigo : m.codigo || novoCodigo();
       const jor = S.config.jornada;
-      const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
+      const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso app"], ["produtos", "Acesso produtos"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
       const ent = a ? a.entrada : d, val = a ? a.validade || maisAno(a.entrada) : maisAno(d);
       const prazo = (meses: number, t: string) => `<button type="button" class="cad-chip" data-a="cad-prazo" data-v="${meses}">${t}</button>`;
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
@@ -6252,6 +6252,20 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>
         <h4 class="cad-sub">Mensagem de acesso</h4>
         <div class="cad-msg" data-cad-msg></div>`)}
+        ${a ? painelAba("produtos", (() => {
+          // Produtos que ela tem: liberar/bloquear cada um (vale ao Salvar) e ver o que já foi liberado dele.
+          const libs = new Set(aulasDaLiberacao(a));
+          const tem = S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id))));
+          if (!tem.length) return `<p class="cad-dica">Nenhum produto liberado para ela.</p><button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Liberar conteúdo</button>`;
+          return `<p class="cad-dica">Desligue para bloquear o produto (ex.: pagamento atrasado). Vale ao clicar em Salvar. Clique no nome para ver o que já foi liberado.</p>
+          <div class="cad-prods">${tem.map((c) => {
+            const mods = c.modulos.map((m, i) => ({ m, i, au: m.aulas.filter((x) => libs.has(x.id)) })).filter((x) => x.au.length);
+            const n = mods.reduce((t, x) => t + x.au.length, 0);
+            return `<details class="cad-prod"><summary><span class="cad-prod-nome"><b>${h(c.nome)}</b><small>${p(n, "aula liberada", "aulas liberadas")}</small></span><label class="cad-sw" onclick="event.stopPropagation()"><input type="checkbox" name="prodOn" value="${c.id}" checked /><i></i><span class="on">Liberado</span><span class="off">Bloqueado</span></label></summary>
+              <div class="cad-prod-corpo">${mods.map(({ m, i, au }) => `<div class="cad-prod-mod"><b>Módulo ${numModulo(c, i)} · ${h(m.nome)}</b><ul>${au.map((x) => `<li>Aula ${x.num} · ${h(x.nome)}</li>`).join("")}</ul></div>`).join("")}</div></details>`;
+          }).join("")}</div>
+          <button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Editar liberação</button>`;
+        })()) : ""}
         ${a ? "" : painelAba("conteudos", `<p class="cad-dica">Marque os cursos que ela recebe agora. Módulos e aulas avulsas: depois, em Liberar conteúdo.</p>
           <div class="cad-cursos">${S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
         ${a ? "" : painelAba("obs", `<label class="cad-c cad-full"><span>Observação (opcional)</span><textarea class="campo" name="obs" rows="5" maxlength="2000" placeholder="Ex.: veio pela live de outubro, prefere contato à tarde."></textarea><small>Fica na ficha dela, em Observações.</small></label>`)}
@@ -8272,6 +8286,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
                 : { c: o.acesso.cursos.filter((x) => x !== jorC.id), m: o.acesso.modulos.filter((x) => !modsJ.has(x)), a: o.acesso.aulas.filter((x) => !aulasJ.has(x)) };
               await rpc("salvar_liberacao", { p_aluna: id, p_produtos: ac.c, p_modulos: ac.m, p_aulas: ac.a });
               await registrar(id, tipoNovo === "mentoria" ? "Passou a aluna da mentoria" : "Passou a aluna geral (mentoria retirada)");
+            }
+            // Acesso produtos: os desligados saem da liberação dela.
+            const fora = [...form.querySelectorAll<HTMLInputElement>('input[name="prodOn"]')].filter((x) => !x.checked).map((x) => curso(x.value)).filter((x): x is Curso => !!x);
+            if (fora.length) {
+              const atual = aluna(id).acesso, mIds = new Set(fora.flatMap((c) => c.modulos.map((m) => m.id))), aIds = new Set(fora.flatMap((c) => c.modulos.flatMap((m) => m.aulas.map((x) => x.id)))), cIds = new Set(fora.map((c) => c.id));
+              await rpc("salvar_liberacao", { p_aluna: id, p_produtos: atual.cursos.filter((x) => !cIds.has(x)), p_modulos: atual.modulos.filter((x) => !mIds.has(x)), p_aulas: atual.aulas.filter((x) => !aIds.has(x)) });
+              await registrar(id, "Produto bloqueado: " + fora.map((c) => c.nome).join(", "));
             }
             if (fotoAl) { await rpc("salvar_foto_aluna", { p_aluna: id, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[id] = fotoAl.foto; fotoNova = null; fotoPara = null; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");

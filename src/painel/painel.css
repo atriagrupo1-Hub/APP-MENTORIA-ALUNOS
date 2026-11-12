@@ -5967,3 +5967,26 @@ html[data-tema="claro"] .cad-desfazer { color: var(--texto); background: var(--a
 .al2-sel[data-filtro-al] { min-height: 46px; padding: 0 40px 0 16px; font-weight: 600; color: #EEEEF0; background-color: #151619; border: 1.5px solid #E2C68C; border-radius: 8px; }
 .al2-sel[data-filtro-al]:focus { outline: none; box-shadow: 0 0 0 3px rgba(226, 198, 140, .15); }
 html[data-tema="claro"] .al2-sel[data-filtro-al] { color: var(--texto); background-color: var(--aa-cartao); border-color: #b08a3e; }
+.modal:has(.cad-al[data-id]:not([data-id=""])) { max-width: 820px; }
+.cad-prods { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+.cad-prod { background: #151619; border: 1px solid #363940; border-radius: 8px; }
+.cad-prod > summary { display: flex; align-items: center; gap: 12px; padding: 12px 14px; list-style: none; cursor: pointer; }
+.cad-prod > summary::-webkit-details-marker { display: none; }
+.cad-prod-nome { flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; }
+.cad-prod-nome b { font-size: 13px; font-weight: 600; }
+.cad-prod-nome small { font-size: 11px; color: #94979E; }
+.cad-prod-corpo { display: flex; flex-direction: column; gap: 10px; padding: 4px 14px 14px; border-top: 1px solid #2B2D32; }
+.cad-prod-mod b { display: block; margin: 10px 0 4px; font-size: 12px; font-weight: 600; }
+.cad-prod-mod ul { margin: 0; padding-left: 18px; font-size: 12px; color: #C9CBD0; line-height: 1.8; }
+.cad-sw { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.cad-sw input { position: absolute; opacity: 0; pointer-events: none; }
+.cad-sw i { position: relative; width: 34px; height: 20px; background: #4A3036; border-radius: 10px; transition: background .15s; }
+.cad-sw i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .15s; }
+.cad-sw input:checked + i { background: #3d7a55; }
+.cad-sw input:checked + i::after { left: 17px; }
+.cad-sw .on { display: none; color: #9AC7AB; } .cad-sw .off { color: #DFA19F; }
+.cad-sw input:checked ~ .on { display: inline; } .cad-sw input:checked ~ .off { display: none; }
+.cad-sw input:focus-visible + i { outline: 2px solid #E2C68C; outline-offset: 2px; }
+html[data-tema="claro"] .cad-prod { background: var(--aa-cartao); border-color: var(--linha-suave); }
+html[data-tema="claro"] .cad-prod-corpo { border-top-color: var(--linha-suave); }
+html[data-tema="claro"] .cad-prod-mod ul { color: var(--texto-2); }
