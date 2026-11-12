@@ -597,7 +597,7 @@ export function montar(app: HTMLElement) {
     respondendo: null as string | null, extraTipo: "PDF / e-book" as TipoExtra, erroLogin: "",
     focar: null as string | null, arrasto: null as string | null,
     abertos: new Set<string>(), primeiraVez: true, iniDe: "", iniAte: "", periodoAberto: false, ativTodas: false, iniLista: "", vgxAba: "tudo", libVer: "", vgxGrupo: "mentoria", iniTipo: "", iniConteudo: false, iniLib: "hoje", iniLibTodas: false, comAlvo: "", destEditar: null as string | null, paginaAl: 1, catVer: new Set<string>(), catEditar: null as string | null, catAnima: false, catBusca: "", catVista: "cards", catNova: "", catOrdenar: false, destOrdenar: false, previa: "mobile", catxFiltro: "", catxOrdem: "recentes", catxTipo: "curso", catxEditar: "", catxSel: "", layAba: "", layCat: "", abaNova: false, abaRen: "", destAberto: false,
-    filtroAl: "todas", grupoAl: "mentoria" as "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
+    filtroAl: "todas", grupoAl: "todas" as "todas" | "mentoria" | "geral", ordemAl: "recentes", sel: [] as string[], menu: null as string | null,
     ficha: null as string | null, verCodigo: null as string | null,
     buscaGeral: "", buscaAberta: false, inicioVista: "",
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
@@ -2464,7 +2464,7 @@ export function montar(app: HTMLElement) {
     const ids = new Set(j.modulos.flatMap((m) => m.aulas.map((x) => x.id)));
     return a.acesso.aulas.some((id) => ids.has(id)) || aulasDaLiberacao(a).some((id) => ids.has(id));
   }
-  const doGrupo = (a: Aluna) => daMentoria(a) === (ui.grupoAl === "mentoria");
+  const doGrupo = (a: Aluna) => ui.grupoAl === "todas" || daMentoria(a) === (ui.grupoAl === "mentoria");
   /** As alunas da busca e do filtro, na ordem escolhida — é também o que a planilha exporta. */
   function listaAlunas() {
     const q = norm(ui.busca).trim();
@@ -2499,6 +2499,7 @@ export function montar(app: HTMLElement) {
     const ids = new Set(S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((k) => libs.has(k.id)))).map((c) => c.cat));
     return S.cats.filter((k) => ids.has(k.id)).map((k) => k.nome).join(", ");
   };
+  void categoriasDe; // coluna "Botão do app" escondida por enquanto
   function telaAlunas() {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
@@ -2518,8 +2519,8 @@ export function montar(app: HTMLElement) {
           </select>
         </label>
       </div>
-      <div class="al-grupos cfg-versao-seg" role="group" aria-label="Quais alunas mostrar">
-        ${([["mentoria", "Alunos mentoria", IC_CFG.modulos], ["geral", "Alunos gerais", IC_CFG.inicio]] as const).map(([k, t, ic]) => `<button type="button" data-a="al-grupo" data-v="${k}" aria-pressed="${ui.grupoAl === k}">${ic}${t} (${S.alunas.filter((a) => daMentoria(a) === (k === "mentoria")).length})</button>`).join("")}
+      <div class="al-mods" role="tablist" aria-label="Modalidade">
+        ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}<span>${k === "todas" ? S.alunas.length : S.alunas.filter((a) => daMentoria(a) === (k === "mentoria")).length}</span></button>`).join("")}
         ${dicaCampo(`Alunos mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Alunos gerais: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de lista (e o app dela) na hora.`, "al.grupos")}
       </div>
       <div class="al-filtros">
@@ -2530,7 +2531,7 @@ export function montar(app: HTMLElement) {
       <div class="al-tabela" role="table" aria-label="Alunas">
         <div class="al-linha al-cab" role="row">
           <span role="columnheader"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></span>
-          <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Telefone</span><span role="columnheader">Botão do app</span><span role="columnheader">Status</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
+          <span role="columnheader">Aluna</span><span role="columnheader">Modalidade</span><span role="columnheader">Status do acesso</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
         </div>
         ${pagina.map(linhaAluna).join("")}
         <div class="cs-pags al-pag2">
@@ -2551,9 +2552,7 @@ export function montar(app: HTMLElement) {
     <div class="al-linha${marc ? " marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}" role="row">
       <span role="cell"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></span>
       <button type="button" class="al-quem" role="cell" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button>
-      <span role="cell" class="al-cel" data-rot="Login">${h(a.login)}</span>
-      <span role="cell" class="al-cel" data-rot="Telefone">${a.celular ? h(fone(a.celular)) : "—"}</span>
-      <span role="cell" class="al-cel" data-rot="Categoria">${h(categoriasDe(a)) || "—"}</span>
+      <span role="cell" class="al-cel" data-rot="Modalidade">${daMentoria(a) ? "Mentoria" : "Geral"}</span>
       <span role="cell" class="al-cel" data-rot="Status"><span class="al-status ${cor}">${h(rot)}</span></span>
       <span role="cell" class="al-cel" data-rot="Último acesso">${ultimoAcessoTxt(a)}</span>
       <span role="cell" class="al-cel al-prog" data-rot="Progresso"><span class="al-prog-n">${pct}%</span><span class="al-barra-p"><i style="width:${pct}%"></i></span></span>
@@ -6586,7 +6585,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ir-moderar": ui.tab = "comentarios"; ui.filtroCom = "moderar"; window.scrollTo(0, 0); break;
       case "menu": ui.menu = ui.menu === d.id ? null : d.id; break;
       case "al-filtro": ui.filtroAl = d.v; ui.paginaAl = 1; break;
-      case "al-grupo": ui.grupoAl = d.v === "geral" ? "geral" : "mentoria"; ui.paginaAl = 1; ui.sel = []; break;
+      case "al-grupo": ui.grupoAl = d.v === "geral" ? "geral" : d.v === "todas" ? "todas" : "mentoria"; ui.paginaAl = 1; ui.sel = []; break;
       case "sel-limpar": ui.sel = []; break;
       case "lote-remover": {
         const ids = ui.sel.filter((id) => S.alunas.some((x) => x.id === id));

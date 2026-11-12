@@ -5724,3 +5724,37 @@ html[data-tema="claro"] .lq-info b { color: var(--texto); }
 .lq-info > .lq-aula { grid-column: 1 / -1; }
 .lq-aula small { font-size: 13px; font-weight: 600; color: #E2C68C; }
 html[data-tema="claro"] .lq-aula small { color: #8a6420; }
+
+/* ===== ALUNAS E ACESSOS — padrão da Visão geral ===== */
+.al-mods { display: flex; gap: 22px; margin: 0 0 23px; border-bottom: 1px solid #2B2D32; }
+html[data-tema="claro"] .al-mods { border-bottom-color: var(--linha-suave); }
+.al-mods button { display: inline-flex; align-items: center; gap: 7px; padding: 12px 0; font-family: "Manrope", sans-serif; font-size: 15px; font-weight: 600; white-space: nowrap; color: #8E959F; background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; }
+.al-mods button[aria-selected="true"] { color: #E2C68C; border-bottom-color: #E2C68C; }
+html[data-tema="claro"] .al-mods button[aria-selected="true"] { color: #8a6420; border-bottom-color: #a5732a; }
+.al-mods button span { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #7F8690; }
+.al-linha { grid-template-columns: 40px minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(0, 1.1fr) 136px; }
+@media (max-width: 1100px) { .al-linha { grid-template-columns: 32px 1fr auto; } }
+.casca2 .al { font-family: "Manrope", sans-serif; }
+.casca2 .al-cab { font-family: "IBM Plex Mono", monospace; font-size: 11px; font-weight: 400; letter-spacing: .7px; text-transform: uppercase; color: #7F8690; }
+.casca2 .al-linha { padding: 15px 19px; }
+.casca2 .al-cel, .casca2 .al-quem b { font-family: "Manrope", sans-serif; font-size: 15px; }
+.casca2 .al-quem b { font-weight: 600; }
+.casca2 .al-quem > span > span { font-size: 13px; color: #94979E; }
+.casca2 .al .selec { width: 15px; height: 15px; accent-color: #CFB47C; cursor: pointer; }
+.casca2 .al-status { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 550; line-height: 1.3; white-space: nowrap; border: 1px solid; border-radius: 4px; }
+.casca2 .al-status::before { content: ""; width: 5px; height: 5px; background: currentColor; border-radius: 50%; }
+.casca2 .al-barra-p { height: 4px; background: #32343A; border-radius: 3px; overflow: hidden; }
+.casca2 .al-barra-p i { background: #BFA66B; }
+html:not([data-tema="claro"]) .casca2 .al-tabela { background: #191A1E; border: 1px solid #2B2D32; border-radius: 9px; overflow: hidden; }
+html:not([data-tema="claro"]) .casca2 .al-cab { background: #16171A; border-bottom: 1px solid #2B2D32; }
+html:not([data-tema="claro"]) .casca2 .al-linha:not(.al-cab) { border-top: 1px solid #292A2F; }
+html:not([data-tema="claro"]) .casca2 .al-linha:not(.al-cab):hover { background: #1E2024; }
+html:not([data-tema="claro"]) .casca2 .al-cel, html:not([data-tema="claro"]) .casca2 .al-quem b { color: #EEEEF0; }
+html:not([data-tema="claro"]) .casca2 .al-status.verde { color: #9AC7AB; background: #23322B; border-color: #314239; }
+html:not([data-tema="claro"]) .casca2 .al-status.ouro { color: #DFC089; background: #342D22; border-color: #4B402B; }
+html:not([data-tema="claro"]) .casca2 .al-status.vermelho { color: #DFA19F; background: #342528; border-color: #4A3036; }
+html:not([data-tema="claro"]) .casca2 .al-busca, html:not([data-tema="claro"]) .casca2 .al-ordenar .campo { color: #DDDFE4; background: #151619; border: 1px solid #363940; border-radius: 5px; }
+html:not([data-tema="claro"]) .casca2 .al .al-botao { color: #EEEEF0; background: #222429; border: 1px solid #35373D; border-radius: 6px; }
+html:not([data-tema="claro"]) .casca2 .al .al-botao:hover { background: #303237; border-color: #5A5B60; }
+html:not([data-tema="claro"]) .casca2 .al-filtro { color: #A0A3AB; background: #191A1E; border-color: #2B2D32; }
+html:not([data-tema="claro"]) .casca2 .al-filtro[aria-pressed="true"] { color: #202018; background: #E2C68C; border-color: #E2C68C; }
