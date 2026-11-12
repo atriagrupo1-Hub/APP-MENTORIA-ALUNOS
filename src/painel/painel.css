@@ -5721,3 +5721,6 @@ html[data-tema="claro"] .lq-info > span { background: var(--aa-cinza); border-co
 html[data-tema="claro"] .lq-info b { color: var(--texto); }
 .casca2 .vgx-ltxt span { font-size: 14px; }
 .casca2 .vgx-ltxt b { font-size: 15px; }
+.lq-info > .lq-aula { grid-column: 1 / -1; }
+.lq-aula small { font-size: 13px; font-weight: 600; color: #E2C68C; }
+html[data-tema="claro"] .lq-aula small { color: #8a6420; }

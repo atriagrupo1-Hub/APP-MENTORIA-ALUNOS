@@ -1387,13 +1387,12 @@ export function montar(app: HTMLElement) {
       <div class="cn-modal lq" role="dialog" aria-modal="true" aria-label="Publicação e liberação">
         <div class="cn-cab"><b>Publicação e liberação</b><button type="button" class="cn-x" data-a="lib-fechar" aria-label="Fechar">${xis}</button></div>
         <div class="lq-corpo">
-          <p class="lq-quem"><b>${h(a.nome)}</b></p>
-          <div class="lq-info">
+                    <div class="lq-info">
             <span><i>Curso</i><b>${h(x.c.nome)}</b></span>
             <span><i>Categoria</i><b>${h(k?.nome || "Sem categoria")}</b></span>
             <span><i>Módulo</i><b>Módulo ${numModulo(x.c, x.c.modulos.indexOf(x.m))} · ${h(x.m.nome)}</b></span>
             <span><i>Liberação do módulo</i><b>${x.m.libera ? (x.m.libera > new Date().toISOString() ? "Libera em " : "Liberado em ") + dt(x.m.libera) : "Imediata"}</b></span>
-            <span><i>Aula</i><b>Aula ${a.num}</b></span>
+            <span class="lq-aula"><i>Aula ${a.num}</i><b>${h(a.nome)}</b><small>Duração: ${a.duracao ? (a.duracao >= 3600 ? Math.floor(a.duracao / 3600) + "h " + String(Math.round((a.duracao % 3600) / 60)).padStart(2, "0") + " min" : Math.max(1, Math.round(a.duracao / 60)) + " min") : "não informada"}</small></span>
           </div>
           <p class="lq-st${a.rascunho ? " off" : futura ? " ag" : ""}">${status} • ${libTxt}</p>
           ${linha("Data de criação:", dt(a.criado))}
