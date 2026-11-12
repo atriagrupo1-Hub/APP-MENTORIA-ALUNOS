@@ -5758,3 +5758,5 @@ html:not([data-tema="claro"]) .casca2 .al .al-botao { color: #EEEEF0; background
 html:not([data-tema="claro"]) .casca2 .al .al-botao:hover { background: #303237; border-color: #5A5B60; }
 html:not([data-tema="claro"]) .casca2 .al-filtro { color: #A0A3AB; background: #191A1E; border-color: #2B2D32; }
 html:not([data-tema="claro"]) .casca2 .al-filtro[aria-pressed="true"] { color: #202018; background: #E2C68C; border-color: #E2C68C; }
+.al .al-mods { display: flex !important; flex-direction: row !important; flex-wrap: nowrap; align-items: flex-end; gap: 22px; width: auto; }
+.al .al-mods button { flex: 0 0 auto !important; width: auto !important; min-height: 0 !important; margin: 0 !important; padding: 12px 0 !important; background: none !important; box-shadow: none !important; border-radius: 0 !important; }

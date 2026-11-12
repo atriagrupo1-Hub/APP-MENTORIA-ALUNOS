@@ -2520,7 +2520,7 @@ export function montar(app: HTMLElement) {
         </label>
       </div>
       <div class="al-mods" role="tablist" aria-label="Modalidade">
-        ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}<span>${k === "todas" ? S.alunas.length : S.alunas.filter((a) => daMentoria(a) === (k === "mentoria")).length}</span></button>`).join("")}
+        ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}</button>`).join("")}
         ${dicaCampo(`Alunos mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Alunos gerais: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de lista (e o app dela) na hora.`, "al.grupos")}
       </div>
       <div class="al-filtros">
