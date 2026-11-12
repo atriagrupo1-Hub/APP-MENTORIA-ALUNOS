@@ -1066,7 +1066,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -2446,6 +2446,7 @@ export function montar(app: HTMLElement) {
     ["paradas", "Sem acesso recente", parada],
   ];
   const ORDENS: Record<string, (x: Aluna, y: Aluna) => number> = {
+    progresso: (x, y) => progressoDe(x) - progressoDe(y) || x.nome.localeCompare(y.nome, "pt"),
     // Pela hora do cadastro: a última aluna adicionada vem primeiro. Sem a
     // hora (acabou de entrar, antes de recarregar), conta como a mais nova.
     recentes: (x, y) => (y.criadaEm || "9999").localeCompare(x.criadaEm || "9999") || x.nome.localeCompare(y.nome, "pt"),
@@ -2499,74 +2500,73 @@ export function montar(app: HTMLElement) {
     const ids = new Set(S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((k) => libs.has(k.id)))).map((c) => c.cat));
     return S.cats.filter((k) => ids.has(k.id)).map((k) => k.nome).join(", ");
   };
-  void categoriasDe; // coluna "Botão do app" escondida por enquanto
+  void categoriasDe; void ICONE_AL; // guardados para quando voltarem à lista
   function telaAlunas() {
     const { lista } = listaAlunas();
     ui.sel = ui.sel.filter((id) => S.alunas.some((a) => a.id === id));
     const todas = lista.length > 0 && lista.every((a) => ui.sel.includes(a.id));
+    const algumas = !todas && lista.some((a) => ui.sel.includes(a.id));
     const anima = ui.aaAnima; ui.aaAnima = "";
     const paginas = Math.max(1, Math.ceil(lista.length / POR_PAGINA));
     const pg = Math.min(Math.max(1, ui.paginaAl), paginas); ui.paginaAl = pg;
     const ini = (pg - 1) * POR_PAGINA; const pagina = lista.slice(ini, ini + POR_PAGINA);
+    const IC_BAIXAR = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>`;
+    const IC_MAIS = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
+    const total = S.alunas.filter(doGrupo).length;
     return `
-    <section class="tela ativa al">
-      <div class="al-barra">
-        <label class="al-busca">${ICONE_AL.lupa}<input id="busca" placeholder="Procurar por nome, login ou celular" value="${h(ui.busca)}" data-i="busca" aria-label="Procurar aluna" /></label>
-        <button class="al-botao" data-a="exportar">${ICONE_AL.planilha}Exportar planilha</button>
-        <label class="al-ordenar"><span>Ordenar por</span>
-          <select class="campo" data-ordem aria-label="Ordenar alunas">
-            ${[["recentes", "Mais recentes primeiro"], ["antigas", "Mais antigas primeiro"], ["nome", "Nome (A–Z)"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
-          </select>
-        </label>
+    <section class="tela ativa al al2">
+      <div class="vgx-cab al2-cab">
+        <div><span class="vgx-sobre">Relacionamento</span><h1>Alunas e acessos</h1><p>Cada jornada tem um ritmo. Tenha clareza sobre quem precisa de você.</p></div>
+        <div class="vgx-dir"><button type="button" class="vgx-bt" data-a="exportar">${IC_BAIXAR}Exportar CSV</button><span class="vgx-criar"><button type="button" class="al-botao-ouro" data-a="aluna-nova">${IC_MAIS}Adicionar aluna</button></span></div>
       </div>
       <div class="al-mods" role="tablist" aria-label="Modalidade">
         ${([["todas", "Todas"], ["mentoria", "Mentoria"], ["geral", "Geral"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="al-grupo" data-v="${k}" aria-selected="${ui.grupoAl === k}">${t}</button>`).join("")}
-        ${dicaCampo(`Alunos mentoria: quem tem acesso à mentoria (o curso, um módulo ou uma aula dela). Elas veem a versão mentoria do app. Alunos gerais: quem só tem outros produtos; veem a versão geral. Liberar a mentoria para uma aluna geral muda ela de lista (e o app dela) na hora.`, "al.grupos")}
       </div>
-      <div class="al-filtros">
-        ${FILTROS_AL.map(([id, nome, fn]) => `<button class="al-filtro" data-a="al-filtro" data-v="${id}" aria-pressed="${ui.filtroAl === id}">${nome} (${S.alunas.filter((a) => fn(a) && doGrupo(a)).length})</button>`).join("")}
+      <div class="al2-barra">
+        <label class="al2-busca"><span class="sr">Buscar alunas</span><input id="busca" type="search" placeholder="Buscar nome, login ou telefone" value="${h(ui.busca)}" data-i="busca" aria-label="Buscar alunas" /></label>
+        <select class="al2-sel" data-filtro-al aria-label="Filtrar por status do acesso">${FILTROS_AL.map(([id, nome]) => `<option value="${id}" ${ui.filtroAl === id ? "selected" : ""}>${id === "todas" ? "Todos os status" : nome}</option>`).join("")}</select>
+        <span class="al2-esp"></span>
+        <button type="button" class="vgx-bt pequeno" data-a="al-lote" ${ui.sel.length ? "" : "disabled"} title="${ui.sel.length ? "" : "Selecione alunas na tabela"}">Ação em lote${ui.sel.length ? " (" + ui.sel.length + ")" : ""}</button>
+        <select class="al2-sel" data-ordem aria-label="Ordenar alunas">
+          ${[["recentes", "Mais recentes"], ["nome", "Nome A–Z"], ["progresso", "Menor progresso"], ["antigas", "Mais antigas"], ["vence", "Acesso que vence primeiro"], ["acesso", "Último acesso"]].map(([v, n]) => `<option value="${v}" ${ui.ordemAl === v ? "selected" : ""}>${n}</option>`).join("")}
+        </select>
       </div>
       ${ui.sel.length ? barraLote() : ""}
-      ${lista.length ? `
-      <div class="al-tabela" role="table" aria-label="Alunas">
-        <div class="al-linha al-cab" role="row">
-          <span role="columnheader"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></span>
-          <span role="columnheader">Aluna</span><span role="columnheader">Modalidade</span><span role="columnheader">Status do acesso</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
+      <div class="al2-painel"><div class="al2-rola">
+        <table class="al2-tab">
+          <thead><tr>
+            <th scope="col" class="al2-ck"><input type="checkbox" class="selec" data-sel-todas="${lista.map((a) => a.id).join(",")}" ${todas ? "checked" : ""} ${algumas ? "data-parcial" : ""} aria-label="Selecionar ${lista.length === 1 ? "esta aluna" : "as " + lista.length + " da lista"}" /></th>
+            <th scope="col">Aluna</th><th scope="col">Modalidade</th><th scope="col">Status do acesso</th><th scope="col">Último acesso</th><th scope="col">Progresso</th><th scope="col"><span class="sr">Ações</span></th>
+          </tr></thead>
+          <tbody>${pagina.map(linhaAluna).join("") || `<tr><td colspan="7" class="al2-vazio">${S.alunas.length ? "Nenhuma aluna corresponde a estes filtros." : "Nenhuma aluna cadastrada ainda."}</td></tr>`}</tbody>
+        </table></div>
+        <div class="al2-pe">
+          <span>${lista.length ? p(lista.length, "aluna", "alunas").replace(/^(\d+)/, "$1 de " + total) + "." : "Nenhuma aluna encontrada."}</span>
+          ${paginas > 1 ? `<span class="al2-pags"><button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${numsPag(pg, paginas).map((n) => n === "…" ? `<span>…</span>` : `<button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${n}" aria-current="${n === pg ? "page" : "false"}">${n}</button>`).join("")}<button type="button" class="vgx-bt pequeno" data-a="al-pag" data-v="${pg + 1}" ${pg >= paginas ? "disabled" : ""} aria-label="Próxima página">›</button></span>` : `<span>Página 1 de 1 · ${POR_PAGINA} por página</span>`}
         </div>
-        ${pagina.map(linhaAluna).join("")}
-        <div class="cs-pags al-pag2">
-          ${paginas > 1 ? `<span class="cs-pag-nums"><button type="button" data-a="al-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${numsPag(pg, paginas).map((n) => n === "…" ? `<span>…</span>` : `<button type="button" data-a="al-pag" data-v="${n}" aria-current="${n === pg ? "page" : "false"}">${n}</button>`).join("")}<button type="button" data-a="al-pag" data-v="${pg + 1}" ${pg >= paginas ? "disabled" : ""} aria-label="Próxima página">›</button></span>` : ""}
-          <span style="flex:1"></span>
-          <span class="cs-nota">${ini + 1}–${Math.min(ini + POR_PAGINA, lista.length)} de ${lista.length}</span>
-        </div>
-      </div>` : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
+      </div>
+      <footer class="vgx-rodape"><span>AIŌN · Administração</span></footer>
       ${ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
     </section>`;
   }
   function linhaAluna(a: Aluna) {
     const sit = situacao(a); const [rot] = sitInfo(sit);
-    const cor = sit === "ativa" ? "verde" : sit === "vencendo" ? "ouro" : "vermelho";
+    const d = a.validade ? diasEntre(hoje(), a.validade) : 0;
+    const txt = sit === "vencendo" ? (d <= 0 ? "Vence hoje" : "Vence em " + p(d, "dia", "dias")) : rot;
+    const cor = sit === "ativa" ? (a.ultimoAcesso ? "verde" : "cinza") : sit === "vencendo" ? "ouro" : "vermelho";
     const marc = ui.sel.includes(a.id);
     const pct = progressoDe(a);
     return `
-    <div class="al-linha${marc ? " marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}" role="row">
-      <span role="cell"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></span>
-      <button type="button" class="al-quem" role="cell" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button>
-      <span role="cell" class="al-cel" data-rot="Modalidade">${daMentoria(a) ? "Mentoria" : "Geral"}</span>
-      <span role="cell" class="al-cel" data-rot="Status"><span class="al-status ${cor}">${h(rot)}</span></span>
-      <span role="cell" class="al-cel" data-rot="Último acesso">${ultimoAcessoTxt(a)}</span>
-      <span role="cell" class="al-cel al-prog" data-rot="Progresso"><span class="al-prog-n">${pct}%</span><span class="al-barra-p"><i style="width:${pct}%"></i></span></span>
-      <span role="cell" class="al-acoes">
-        <button class="al-botao pequeno quadrado" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}" title="Abrir ficha">${IC_CAT.olho}</button>
-        <button class="al-botao pequeno quadrado" data-a="editar-aluna" data-id="${a.id}" aria-label="Editar dados de ${h(a.nome)}" title="Editar dados">${IC_CAT.lapis}</button>
-        <span class="menu-acoes">
-          <button class="al-botao pequeno quadrado" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>
-          ${ui.menu === a.id ? menuAluna(a) : ""}
-        </span>
-      </span>
-    </div>`;
+    <tr class="${marc ? "marcada" : ""}${ui.acessoAluna === a.id ? " aberta" : ""}">
+      <td class="al2-ck"><input type="checkbox" class="selec" data-sel="${a.id}" ${marc ? "checked" : ""} aria-label="Selecionar ${h(a.nome)}" /></td>
+      <td><button type="button" class="al2-quem" data-a="aa-aluna" data-id="${a.id}" aria-label="Abrir a ficha de ${h(a.nome)}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><span>Cadastrada em ${br(cadastroDe(a))}</span></span></button></td>
+      <td>${daMentoria(a) ? "Mentoria" : "Geral"}</td>
+      <td><span class="al2-st ${cor}">${h(txt)}</span></td>
+      <td>${ultimoAcessoTxt(a)}</td>
+      <td class="al2-prog"><span>${pct}%</span><span class="al2-barra"><i style="width:${pct}%"></i></span></td>
+      <td class="al2-acoes"><button type="button" class="vgx-bt pequeno" data-a="aa-aluna" data-id="${a.id}">Ver detalhes</button><span class="menu-acoes"><button type="button" class="vgx-bt pequeno al2-mais" data-a="menu" data-id="${a.id}" aria-label="Mais ações para ${h(a.nome)}" aria-haspopup="menu" aria-expanded="${ui.menu === a.id}">⋮</button>${ui.menu === a.id ? menuAluna(a) : ""}</span></td>
+    </tr>`;
   }
-
 
   /* ---------- CATEGORIAS ---------- */
   /*
@@ -7031,6 +7031,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
+      case "al-lote": document.querySelector(".lote")?.scrollIntoView({ block: "center", behavior: "smooth" }); (document.querySelector(".lote select") as HTMLElement | null)?.focus(); return;
       case "criar-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.estMenu = ""; break;
       case "vgx-grupo": ui.vgxGrupo = d.v; break;
       case "vgx-total-ver": ui.tab = "alunas"; ui.grupoAl = (ui.vgxGrupo || "mentoria") as "mentoria" | "geral"; window.scrollTo(0, 0); break;
@@ -9041,6 +9042,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (t.hasAttribute("data-com-data")) { ui.comData = t.value; ui.comPag = 1; render(); return; }
     if (t.hasAttribute("data-eng-dias")) { ui.engDias = Number(t.value) || 7; render(); return; }
     if (t.hasAttribute("data-ordem")) { ui.ordemAl = t.value; ui.paginaAl = 1; render(); return; }
+    if (t.hasAttribute("data-filtro-al")) { ui.filtroAl = t.value; ui.paginaAl = 1; render(); return; }
     if (t.dataset.sel) { ui.sel = t.checked ? [...new Set(ui.sel.concat(t.dataset.sel))] : ui.sel.filter((x) => x !== t.dataset.sel); render(); return; }
     if (t.dataset.selTodas !== undefined) { const ids = t.dataset.selTodas.split(",").filter(Boolean); ui.sel = t.checked ? [...new Set(ui.sel.concat(ids))] : ui.sel.filter((x) => !ids.includes(x)); render(); return; }
     if (t.matches("input[type=checkbox]")) {
