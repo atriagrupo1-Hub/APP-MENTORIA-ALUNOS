@@ -5686,3 +5686,4 @@ html[data-tema="claro"] .cn-modal { color: var(--texto); background: var(--aa-ca
 html[data-tema="claro"] .cn-opcoes button { color: var(--texto); background: var(--aa-cinza); border-color: var(--linha-suave); }
 html[data-tema="claro"] .cn-opcoes svg { stroke: var(--texto); }
 html[data-tema="claro"] .cn-cab { border-bottom-color: var(--linha-suave); }
+.casca2 .vgx-abas button { font-size: 15px; }
