@@ -1037,7 +1037,7 @@ export function montar(app: HTMLElement) {
           </span>` : ""}</span>
         </div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || (ui.tab === "inicio" && INI_EXTRA) ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1161,7 +1161,11 @@ export function montar(app: HTMLElement) {
   const badge = (n: number) => (n ? `<span class="badge-alerta" aria-label="${n} para fazer">${n > 99 ? "99+" : n}</span>` : "");
   function tarefasInicio() { return paraResponder().length + listasAcessos().reduce((t, l) => t + l.lista.length, 0); }
   /** Atalhos do Início (Cadastrar aluna, Liberar conteúdo, Criar produto, Enviar acesso): guardados, fora da tela por enquanto. */
-  const ATALHOS_INI = true as boolean;
+  const ATALHOS_INI = false as boolean;
+  /** Boas-vindas, "Para fazer agora" e a coluna lateral do Início: apagados da tela (código guardado). */
+  const INI_EXTRA = false as boolean;
+  /** "O que aconteceu" (linha do tempo) do Início: apagado da tela (código guardado). */
+  const INI_TEMPO = false as boolean;
   function telaInicio() {
     const { de, ate, chave } = periodoIni();
     carregarAtividades(); carregarResumoEng();
@@ -1275,14 +1279,14 @@ export function montar(app: HTMLElement) {
     const atalho = (ic: string, txt: string, acao: string, v = "") => `<button type="button" class="ini-atalho" data-a="${acao}"${v ? ` data-v="${v}"` : ""}><span class="ini-atalho-ic">${ic}</span>${txt}</button>`;
     return `
     <section class="tela ativa ini ini2">
-      <div class="ini-boas">
+      ${INI_EXTRA ? `<div class="ini-boas">
         <div class="ini-boas-txt">
           <span class="ini-boas-data">${h(dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))}</span>
           <h1>${saud}, ${h(primeiroNome(eu?.nome || ""))}</h1>
           <p>${nTarefas ? `Você tem <b>${p(nTarefas, "tarefa", "tarefas")}</b> esperando por você.` : "Tudo em dia por aqui. ✓"}</p>
         </div>
         <div class="ini-boas-dir">${seletorPeriodo()}</div>
-      </div>
+      </div>` : ""}
       ${ATALHOS_INI ? `<div class="ini-atalhos">
         ${atalho(IC_INI.pessoa, "Cadastrar aluna", "aluna-nova")}
         ${atalho(IC_CAL_AG, "Liberar conteúdo", "aba", "cursos")}
@@ -1290,17 +1294,17 @@ export function montar(app: HTMLElement) {
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
       </div>` : ""}
       <div class="ini-mets">${metricas}</div>
-      <div class="ini-corpo">
+      <div class="ini-corpo${INI_EXTRA ? "" : " so"}">
         <div class="ini-principal">
-          <div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
-          ${fila}
-          <section class="ini-cartao ini-tempo">
+          ${INI_EXTRA ? `<div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
+          ${fila}` : ""}
+          ${INI_TEMPO ? `<section class="ini-cartao ini-tempo">
             <header><span class="ini-cab-ic">${IC_INI.onda}</span><h3>O que aconteceu</h3><button class="al-botao pequeno" data-a="ini-ativ-todas">Ver todas ${IC_INI.seta}</button></header>
             <div class="ini-chips">${chipsTipo}</div>
             <div class="ini-lista">${corpoTempo}</div>
-          </section>
+          </section>` : ""}
         </div>
-        <aside class="ini-lado">${lado}</aside>
+        ${INI_EXTRA ? `<aside class="ini-lado">${lado}</aside>` : ""}
       </div>
       ${painelListaIni()}
       ${ui.ativTodas ? `
