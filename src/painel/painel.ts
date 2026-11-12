@@ -1280,7 +1280,7 @@ export function montar(app: HTMLElement) {
       </div>
       ${ATALHOS_INI ? `<div class="ini-atalhos">
         ${atalho(IC_INI.pessoa, "Cadastrar aluna", "aluna-nova")}
-        ${atalho(IC_CAL_AG, "Liberar conteúdo", "aba", "alunas")}
+        ${atalho(IC_CAL_AG, "Liberar conteúdo", "aba", "cursos")}
         ${atalho(ICONE_MENU.layout, "Criar produto", "curso-novo")}
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
       </div>` : ""}
