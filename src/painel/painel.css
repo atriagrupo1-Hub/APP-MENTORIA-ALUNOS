@@ -5082,3 +5082,22 @@ html:not([data-tema="claro"]) .mpub-pil.on { background: rgba(90,120,230,.18) !i
 html:not([data-tema="claro"]) .est3-pil.azul { color: #b3c0ff; background: rgba(90,120,230,.18); }
 .mp-aula-acoes .kg-menu { position: relative; }
 html:not([data-tema="claro"]) .cs-mods .cs-mod.ms-on { background: rgba(217,184,116,.08) !important; border-color: rgba(217,184,116,.55) !important; }
+.cs-mod-acoes .kg-menu { position: relative; }
+/* Menus ⋮ do módulo e da aula: itens em linha, padrão dos outros menus */
+.cs-mod-acoes .est3-menu, .mp-aula-acoes .est3-menu { min-width: 170px; padding: 6px; display: flex; flex-direction: column; gap: 2px; }
+.cs-mods .cs-mod-acoes .est3-menu button, .mp-aula-acoes .est3-menu button { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-start !important; gap: 10px !important; width: 100% !important; height: auto !important; min-height: 36px; padding: 8px 12px !important; border: 0 !important; border-radius: 8px !important; background: none !important; color: var(--texto) !important; font: inherit; font-size: 13.5px !important; font-weight: 600; text-align: left; white-space: nowrap; cursor: pointer; }
+.cs-mods .cs-mod-acoes .est3-menu button:hover, .mp-aula-acoes .est3-menu button:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)) !important; }
+.cs-mods .cs-mod-acoes .est3-menu button svg, .mp-aula-acoes .est3-menu button svg { width: 16px !important; height: 16px !important; flex-shrink: 0; margin: 0 !important; }
+.cs-mods .cs-mod-acoes .est3-menu button.perigo, .mp-aula-acoes .est3-menu button.perigo { color: #e5675a !important; }
+/* Publicação e Liberação em colunas fixas, com a data embaixo (módulo e aula alinhados) */
+.mp-aula-linha { grid-template-columns: auto 150px minmax(0, 1fr) auto auto !important; }
+.cs-mod-linha .mest, .mp-aula-linha .mest { width: 300px !important; flex: none; display: grid !important; grid-template-columns: 140px 150px; gap: 10px; justify-content: start; align-items: start; }
+.mest .est3.com-sub { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.mest .est3.com-sub > em { font-style: normal; font-size: 12px; color: var(--texto-3); font-variant-numeric: tabular-nums; padding-left: 2px; white-space: nowrap; }
+.mest .est3.com-sub > em.dt-ag { color: #b3c0ff; }
+html[data-tema="claro"] .mest .est3.com-sub > em.dt-ag { color: #2f4ea3; }
+.cs-mod-acoes, .mp-aula-acoes { width: 140px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex: none; }
+@media (max-width: 900px) { .cs-mod-linha .mest, .mp-aula-linha .mest { width: auto !important; } }
+.cs-mods .cs-mod-linha .cs-mod-acoes { margin-right: 15px; }
+.cs-mod-acoes > .kg-menu, .mp-aula-acoes > .kg-menu { flex: none !important; width: auto !important; min-width: 0 !important; display: inline-flex !important; } .cs-mod-acoes > button { flex: none !important; }
+.mp-aula-acoes .mp-ic { border: 0 !important; background: none !important; box-shadow: none !important; } .mp-aula-acoes .mp-ic:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)) !important; }
