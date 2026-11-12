@@ -5873,3 +5873,27 @@ html:not([data-tema="claro"]) .casca2 .al2-painel { background: #191A1E; border-
 html:not([data-tema="claro"]) .al2-tab td, html:not([data-tema="claro"]) .al2-quem b { color: #EEEEF0; }
 html:not([data-tema="claro"]) .al2-quem > span > span, html:not([data-tema="claro"]) .al2-pe, html:not([data-tema="claro"]) .al2-nada { color: #94979E; }
 .al2-st.verde { color: #9AC7AB; } .al2-st.ouro { color: #DFC089; }
+
+/* ===== Ficha da aluna (painel lateral): tipografia e cores do guia ===== */
+.casca2 .aa-painel.largo { font-family: "Manrope", sans-serif; font-size: 12px; }
+.casca2 .aa-painel.largo .aa-cab h2 { font-family: "Manrope", sans-serif; font-size: 20px; font-weight: 650; letter-spacing: -.4px; }
+.casca2 .aa-painel.largo .aa-cab p, .casca2 .aa-painel.largo .aa-foto-acoes .link { font-size: 11px; font-weight: 400; }
+.casca2 .aa-painel.largo .aa-foto-acoes .link { font-weight: 600; }
+.casca2 .aa-painel.largo h3, .casca2 .aa-painel.largo .aa-secao { font-family: "Manrope", sans-serif; font-size: 14px; font-weight: 650; letter-spacing: -.2px; }
+.casca2 .aa-painel.largo .aa-dado > span, .casca2 .aa-painel.largo .aa-resumo > span > span, .casca2 .aa-painel.largo .aa-vazio, .casca2 .aa-painel.largo .nome > span, .casca2 .aa-painel.largo .quando { font-size: 11px; font-weight: 400; }
+.casca2 .aa-painel.largo .aa-dado > b, .casca2 .aa-painel.largo .aa-resumo b, .casca2 .aa-painel.largo .aa-obs, .casca2 .aa-painel.largo .aa-corpo p, .casca2 .aa-painel.largo td { font-size: 12px; font-weight: 400; }
+.casca2 .aa-painel.largo .aa-resumo b, .casca2 .aa-painel.largo .nome > b { font-size: 13px; font-weight: 600; }
+.casca2 .aa-painel.largo .aa-pilula { font-family: "Manrope", sans-serif; font-size: 11px; font-weight: 550; }
+.casca2 .aa-painel.largo button:not(.aa-aba):not(.aa-fechar), .casca2 .aa-painel.largo .aa-editar { font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo { color: #EEEEF0; background: #101113; border-left-color: #2B2D32; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-cartao, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-produto, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-obs { background: #191A1E; border: 1px solid #2B2D32; box-shadow: none; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-abas { border-bottom-color: #2B2D32; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-dado > span, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-resumo > span > span, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-cab p, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-vazio, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .nome > span { color: #94979E; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-dado > b, html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-resumo b, html:not([data-tema="claro"]) .casca2 .aa-painel.largo h2, html:not([data-tema="claro"]) .casca2 .aa-painel.largo h3 { color: #EEEEF0; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-foto-acoes .link { color: #E2C68C; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-pilula.ouro { color: #DFC089; background: #342D22; border: 1px solid #4B402B; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-pilula.verde { color: #9AC7AB; background: #23322B; border: 1px solid #314239; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-pilula.vermelho { color: #DFA19F; background: #342528; border: 1px solid #4A3036; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-editar { color: #E2C68C; background: #342D22; border: 1px solid #4B402B; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .aa-icone { color: #E2C68C; background: #342D22; }
+html:not([data-tema="claro"]) .casca2 .aa-painel.largo .al-mods > * { background: #191A1E; border-color: #2B2D32; }
