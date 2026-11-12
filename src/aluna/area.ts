@@ -22,6 +22,8 @@ export function montar(raiz: HTMLElement) {
   // O painel manda o que está sendo editado (ainda sem salvar) e a tela redesenha.
   const PREVIA = new URLSearchParams(location.search).has("previa");
   const PREVIA_PAINEL = PREVIA && window.parent !== window;
+  /** Cadastro de demonstração (profiles.ver_tudo, 0132): tudo aberto, sem cadeado e sem ordem. */
+  let VER_TUDO = false;
   if (PREVIA) {
     document.documentElement.classList.add("modo-previa");
     // Um erro na prévia nunca pode deixar o app de dentro travado: redesenha e segue.
@@ -167,6 +169,7 @@ export function montar(raiz: HTMLElement) {
     const pProd = pCat.then((c) => api.produtosLiberados(c.produtos.filter((x) => x.id !== c.produtoJornada && !x.modulos.length).map((x) => x.id))).catch(() => new Set());
     const [perfil, cat, libs, abert, prodLib, inicio] = await Promise.all([api.meuPerfil(), pCat, api.minhasAulas(), api.minhasAberturas().catch(() => new Map()), pProd, pVersao.then((v) => api.dadosDoInicio(v === "geral")).catch(() => null)]);
     GERAL = (await pVersao) === "geral";
+    if (perfil?.id) { try { const r = await supabase.rpc("ver_tudo", { p_aluna: perfil.id }); VER_TUDO = r.data === true; } catch { VER_TUDO = false; } }
     // A versão geral pode ter a sua própria aparência (Configurações → Versão geral → Aparência).
     if (GERAL && inicio && inicio.aparencia) { APAR_GERAL = true; APAR = inicio.aparencia; aplicarAparencia(APAR, (c) => api.urlDaCapa(c) || ""); }
     const prog = new Map(libs.map((l) => [l.aulaId, l]));
@@ -213,6 +216,10 @@ export function montar(raiz: HTMLElement) {
     for (const m of cat.modulos.concat(cat.produtos.flatMap((x) => x.modulos || []))) for (const a of m.aulas) MIDIA.set(a.id, { tipo: a.tipo || "video", arquivo: a.arquivoPath || "" });
     // Abas do menu (0075): cada categoria publicada, menos a da mentoria (Início e Módulos).
     const abas = cat.categorias.filter((c) => c.publicado !== false && (!prodJ || c.id !== prodJ.categoriaId)).map((c) => ({ id: c.id, titulo: c.titulo, icone: c.icone || "presentes" }));
+    if (VER_TUDO) {
+      for (const md of mods) for (const x of md.aulas) x.bloq = false;
+      for (const c of cats) { c.bloqueada = false; for (const k of c.cursos) { k.liberadoDireto = true; k.bloq = false; for (const it of k.itens || []) it.bloq = false; } }
+    }
     D = { perfil, mods, cats, prog, abert, user: perfil?.id, inicio, abas, jornada: { rotulo: pj?.rotuloInicio || "", nome: pj?.nomeCurto || "" } };
     S.nome = perfil?.nome || "";
     // A foto vem do banco (a equipe pode ter colocado pelo painel). Uma
@@ -263,7 +270,7 @@ export function montar(raiz: HTMLElement) {
   const lA = (md, i) => ((md && md.aulas[i] && md.aulas[i].rot) || "Aula") + " " + nA(md, i);
   const agora = () => Date.now();
   // Na prévia do painel (conta da equipe, que o banco já deixa ver tudo) o app aparece como para a aluna com as aulas liberadas.
-  const aulaAdmin = (id) => { if (PREVIA_PAINEL && D) return true; if (!D || !D.prog.has(id)) return false; const ab = D.abert.get(id); return !ab || new Date(ab).getTime() <= agora(); };
+  const aulaAdmin = (id) => { if ((PREVIA_PAINEL || VER_TUDO) && D) return true; if (!D || !D.prog.has(id)) return false; const ab = D.abert.get(id); return !ab || new Date(ab).getTime() <= agora(); };
   const aberturaDe = (id) => { const ab = D && D.abert.get(id); return ab && new Date(ab).getTime() > agora() ? ab : null; };
   const feitaId = (id) => !!(D && D.prog.get(id)?.concluida);
   const feita = (m, a) => feitaId(MODS()[m].aulas[a].id);
@@ -271,7 +278,7 @@ export function montar(raiz: HTMLElement) {
   const posicao = (m, a) => posicaoId(MODS()[m].aulas[a].id);
   // Dentro do módulo, a aula abre quando a anterior foi concluída (0054).
   // Em sequência: a anterior que conta é a última não bloqueada pela equipe (igual ao banco, 0069).
-  const seqOk = (m, a) => { const as = MODS()[m].aulas; for (let k = a - 1; k >= 0; k--) if (!as[k].bloq) return feita(m, k); return true; };
+  const seqOk = (m, a) => { if (VER_TUDO) return true; const as = MODS()[m].aulas; for (let k = a - 1; k >= 0; k--) if (!as[k].bloq) return feita(m, k); return true; };
   const feitasMod = (m) => MODS()[m].aulas.filter((_, a) => feita(m, a)).length;
   const moduloAdmin = (m) => { const md = MODS()[m]; return !md.aulas.length || md.aulas.some((x) => aulaAdmin(x.id)); };
   const modConcluido = (m) => { const md = MODS()[m]; return !md.aulas.length || feitasMod(m) === md.aulas.length; };
@@ -1261,7 +1268,7 @@ export function montar(raiz: HTMLElement) {
     const modFimAqui = !!S.modFim[m] && ultimaDoMod && feita(m, a);
     const pm = m + 1 < MODS().length ? m + 1 : null;
     // A próxima aula só abre quando esta foi concluída (o banco confere o mesmo).
-    const botaoProx = !feita(m, a)
+    const botaoProx = !feita(m, a) && !VER_TUDO
       ? `<button class="nav-prox trancado" disabled aria-label="Próxima aula, bloqueada até você concluir esta">${ICONES.cadeado}Próxima aula</button>`
       : ultimaDoMod
         ? (!modFimAqui ? `<button class="nav-prox livre" data-a="finalizar-mod">${ICONES.check}Finalizar módulo</button>`
@@ -1443,7 +1450,7 @@ export function montar(raiz: HTMLElement) {
     const tipo = (TIPO_CAT[cat] || "conteúdo").toLowerCase();
     const plural = ebook ? "Leitura" : freq ? p(curso.itens.length, "frequência", "frequências") : curso.itens.length ? p(curso.itens.length, tipo, tipo + "s") : "Será adicionado em breve";
     const meta = `<p class="mc-meta"><span>${ebook ? ICONES.livro : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>`}${h(plural)}</span></p>`;
-    if (!cursoLiberado(curso) && !(curso.ehCurso && PREVIA_PAINEL)) {
+    if (!cursoLiberado(curso) && !(curso.ehCurso && PREVIA_PAINEL) && !VER_TUDO) {
       // Igual ao print: imagem embaçada com o cadeado nítido e "Em breve, só para você"; não abre.
       const tp = tipoDoCurso({ nome: cat }, curso);
       const cls = { mestres: "mestres", freq: "pres", video: "doc" }[tp];
@@ -1641,7 +1648,7 @@ export function montar(raiz: HTMLElement) {
     const t = curso.itens[j];
     if (!aulaAdmin(t.id)) return { fech: true, txt: "Libera em breve" };
     let k = j - 1; while (k >= 0 && curso.itens[k].mod === t.mod && curso.itens[k].bloq) k--;
-    if (k >= 0 && curso.itens[k].mod === t.mod && !feitaId(curso.itens[k].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + (k + 1) + " para liberar" };
+    if (!VER_TUDO && k >= 0 && curso.itens[k].mod === t.mod && !feitaId(curso.itens[k].id)) return { fech: true, seq: true, txt: "Conclua " + R.item + " " + (k + 1) + " para liberar" };
     return { fech: false, txt: feitaId(t.id) ? "Concluído" : "Disponível" };
   }
   function telaPresente() {
@@ -1666,7 +1673,7 @@ export function montar(raiz: HTMLElement) {
     const feito = feitaId(t.id);
     const botaoProx = ultimo
       ? `<button class="nav-prox trancado" disabled>Último deste curso</button>`
-      : !feito
+      : !feito && !VER_TUDO
         ? `<button class="nav-prox trancado" disabled aria-label="${h(R.prox)}, bloqueado até você concluir este">${ICONES.cadeado}${h(R.prox)}</button>`
         : `<button class="nav-prox livre" data-a="seguinte">${h(R.prox)}${ICONES.chev_dir}</button>`;
     const pdf = pdfDe(t.conteudos);
