@@ -1050,11 +1050,17 @@ export function montar(app: HTMLElement) {
             <button type="button" role="menuitem" class="pf-sair" data-a="sair">${ICONE_MENU.sair}Sair</button>
           </span>` : ""}</span>
         </div>
-        ${(() => { const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab))); const ids = g ? g.abas.filter((id) => abas.some(([x]) => x === id)) : []; if (ids.length < 2) return ""; return `<nav class="tp-sub" aria-label="${g!.nome}">${ids.map((id) => { const nome = abas.find(([x]) => x === id)![1]; const on = abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab) === id; const nb = id === "comentarios" ? paraResponder().length : 0; return abaBloq(id) ? `<button type="button" class="tp-sub-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true">${ICONE_MENU[id] || ""}${nome}</button>` : `<button type="button" class="tp-sub-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}${nome}${badge(nb)}</button>`; }).join("")}</nav>`; })()}
       </header>
+      <aside class="lado" aria-label="Menu do painel">
+        <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
+        <nav class="lado-menu">
+          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" title="${nome}" aria-label="${nome}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+        </nav>
+      </aside>
       <div class="principal">
+        <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || (ui.tab === "inicio" && INI_EXTRA) ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1214,11 +1220,10 @@ export function montar(app: HTMLElement) {
     const novasAnt = S.alunas.filter((a) => entre(a.criadaEm, antDe, antAte)).length;
     const diaR = new Map((r?.dias || []).map((x) => [x.dia, x]));
     const metrica = (ic: string, rot: string, val: string, sub: string, vari: string, graf: string, acao: string, v = "") => `
-      <button type="button" class="ini-met" data-a="${acao}"${v ? ` data-v="${v}"` : ""}>
-        <span class="ini-met-cab"><span class="ini-met-ic">${ic}</span><span class="ini-met-rot">${rot}</span>${vari}</span>
-        <span class="ini-met-val">${val}</span>
-        <span class="ini-met-sub">${sub}</span>
-        ${graf}
+      <button type="button" class="ini-met m2" data-a="${acao}"${v ? ` data-v="${v}"` : ""}>
+        <span class="m2-topo"><span class="m2-rot">${rot}</span><span class="m2-ic">${ic}</span></span>
+        <span class="m2-meio"><span class="ini-met-val">${val}</span>${graf}</span>
+        <span class="m2-sub">${sub}${vari}</span>
       </button>`;
     const carregando = `<span class="ini-met-car">…</span>`;
     const metricas = [
@@ -1296,6 +1301,16 @@ export function montar(app: HTMLElement) {
     const atalho = (ic: string, txt: string, acao: string, v = "") => `<button type="button" class="ini-atalho" data-a="${acao}"${v ? ` data-v="${v}"` : ""}><span class="ini-atalho-ic">${ic}</span>${txt}</button>`;
     return `
     <section class="tela ativa ini ini2">
+      <div class="vgx-cab">
+        <div><span class="vgx-sobre">Painel de controle</span><h1>Visão geral</h1><p>Tudo o que você precisa acompanhar, em um só lugar.</p></div>
+        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="pf-pop" role="menu">
+          <button type="button" role="menuitem" data-a="aluna-nova">${IC_INI.pessoa}Cadastrar aluna</button>
+          <button type="button" role="menuitem" data-a="curso-novo">${ICONE_MENU.layout}Criar produto</button>
+          <button type="button" role="menuitem" data-a="aba" data-v="cursos">${IC_CAL_AG}Liberar conteúdo</button>
+          <button type="button" role="menuitem" data-a="ini-lista" data-v="comecar">${IC_INI.balao}Enviar acesso</button>
+        </span>` : ""}</span></div>
+      </div>
+      <button type="button" class="vgx-atencao${nTarefas ? "" : " ok"}" data-a="estado-menu" data-v="sino"><i aria-hidden="true"></i><span>${nTarefas ? `<b>${p(nTarefas, "ponto de atenção", "pontos de atenção")} na operação.</b> Priorize comentários pendentes e acessos próximos do vencimento.` : "<b>Tudo em dia na operação.</b> Nenhum comentário ou acesso pedindo atenção."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>
       ${INI_EXTRA ? `<div class="ini-boas">
         <div class="ini-boas-txt">
           <span class="ini-boas-data">${h(dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))}</span>
