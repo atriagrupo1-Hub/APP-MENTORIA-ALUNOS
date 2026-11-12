@@ -89,6 +89,8 @@ type BotaoMenu = { id: string; rotulo: string; icone?: string; cor?: string; url
 type MenuCfg = { botoes: BotaoMenu[] | null; estilo: string; cores: Record<string, string> | null; tamanho: string };
 /** Botão da tela Perfil da aluna (Configurações → Perfil, 0086). */
 type BotaoPerfil = { id: string; rotulo: string; desc?: string; url?: string; cor?: string; corTexto?: string; visivel: boolean };
+/** Nome do produto conforme a aba de tipo em Todos os produtos. */
+const NOME_TIPO: Record<string, [string, string]> = { todos: ["produto", "produtos"], cursos: ["curso", "cursos"], ebooks: ["e-book", "e-books"], audios: ["áudio", "áudios"] };
 /** Como chamar os itens de um produto: curso = aulas, áudio = áudios, e-book = conteúdos. */
 const nomeItens = (c: { tipo: string }, n: number) => c.tipo === "audio" ? (n === 1 ? "Áudio" : "Áudios") : c.tipo === "ebook" ? (n === 1 ? "Conteúdo" : "Conteúdos") : (n === 1 ? "Aula" : "Aulas");
 type CatAba = { id: string; aba: string; nome: string; descricao: string; capa: string; pub: boolean; bloq: boolean; criado: string; icone: string; cor: string; estilo: Estilo | null; botao: string; rascunho: boolean; libera: string; liberaModo: string; liberaDias: number | null; publicadoEm: string; cardRotulo: string };
@@ -818,6 +820,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.layout = `<button class="al-botao cl-ver" data-a="cs-ver-aluna">Ver como aluna <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"/></svg></button><button class="al-botao-ouro" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova categoria</button>`;
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
   ACAO_ABA.config = `<button type="button" class="al-botao-ouro cfg-salvar-topo" data-a="cfg-salvar">Salvar alterações</button>`;
+  ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
   const ABAS = [["inicio", "Início"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
@@ -828,6 +831,7 @@ export function montar(app: HTMLElement) {
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
       case "inicio": return ["Início", "o que pede atenção hoje"];
+      case "reduzir": return ["Reduzir PDF", ""];
       case "lixeira": return ["Lixeira", lixo ? p(lixo.length, "item", "itens") : ""];
       case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
       case "engajamento": return ["Engajamento", "quem está avançando e quem precisa de um empurrão"];
@@ -1011,7 +1015,7 @@ export function montar(app: HTMLElement) {
       <aside class="lado" aria-label="Menu do painel">
         <div class="lado-marca"><span class="lado-selo">AION</span><span class="lado-sub">Mentoria</span><span class="lado-rot">Painel administrativo</span></div>
         <nav class="lado-menu">
-          ${abas.map(([id, nome]) => { const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
+          ${(() => { const G: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const ordem = ["Acompanhamento", "Conteúdo", "Administração", "Utilitários"]; return abas.slice().sort((x, y) => ordem.indexOf(G[x[0]] || "Utilitários") - ordem.indexOf(G[y[0]] || "Utilitários")); })().map(([id, nome], i, arr) => { const GR: Record<string, string> = { inicio: "Acompanhamento", alunas: "Acompanhamento", engajamento: "Acompanhamento", comentarios: "Acompanhamento", cursos: "Conteúdo", layout: "Conteúdo", equipe: "Administração", registro: "Administração", config: "Administração", lixeira: "Utilitários", reduzir: "Utilitários" }; const grupo = GR[id] || "Utilitários"; const tituloGrupo = i === 0 || (GR[arr[i - 1][0]] || "Utilitários") !== grupo ? `<span class="lado-grupo">${grupo}</span>` : ""; const on = ui.tab === id || (id === "cursos" && (ui.tab === "curso" || ui.tab === "aula" || ui.tab === "cursoNovo")) || (id === "alunas" && ui.tab === "ficha") || (id === "layout" && ui.tab === "catAba"); const nb = id === "comentarios" ? paraResponder().length : id === "inicio" ? tarefasInicio() : 0; if (abaBloq(id)) return `${tituloGrupo}<button class="lado-item lado-bloq" data-a="aba-bloqueada" aria-disabled="true" title="Acesso bloqueado">${ICONE_MENU[id] || ""}<span>${nome}</span><i class="lado-cad">${IC_EQ.cad}</i></button>`; return `${tituloGrupo}<button class="lado-item" data-a="aba" data-v="${id}" ${on ? 'aria-current="page"' : ""}>${ICONE_MENU[id] || ""}<span>${nome}</span>${badge(nb)}</button>`; }).join("")}
         </nav>
       </aside>
       <div class="principal">
@@ -2290,15 +2294,10 @@ export function montar(app: HTMLElement) {
           <span role="columnheader">Aluna</span><span role="columnheader">Login</span><span role="columnheader">Telefone</span><span role="columnheader">Botão do app</span><span role="columnheader">Status</span><span role="columnheader">Último acesso</span><span role="columnheader">Progresso</span><span role="columnheader" class="al-acoes-cab">Ações</span>
         </div>
         ${pagina.map(linhaAluna).join("")}
-        <div class="al-pag">
-          <span>Mostrando ${ini + 1} a ${Math.min(ini + POR_PAGINA, lista.length)} de ${p(lista.length, "aluna", "alunas")}</span>
-          ${paginas > 1 ? `<span class="al-pag-bts">
-            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="1" ${pg === 1 ? "disabled" : ""} aria-label="Primeira página">«</button>
-            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${pg - 1}" ${pg === 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>
-            ${Array.from({ length: paginas }, (_, i) => i + 1).map((n) => `<button class="al-botao pequeno quadrado${n === pg ? " atual" : ""}" data-a="al-pag" data-v="${n}" ${n === pg ? 'aria-current="page"' : ""}>${n}</button>`).join("")}
-            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${pg + 1}" ${pg === paginas ? "disabled" : ""} aria-label="Próxima página">›</button>
-            <button class="al-botao pequeno quadrado" data-a="al-pag" data-v="${paginas}" ${pg === paginas ? "disabled" : ""} aria-label="Última página">»</button>
-          </span>` : ""}
+        <div class="cs-pags al-pag2">
+          ${paginas > 1 ? `<span class="cs-pag-nums"><button type="button" data-a="al-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""} aria-label="Página anterior">‹</button>${numsPag(pg, paginas).map((n) => n === "…" ? `<span>…</span>` : `<button type="button" data-a="al-pag" data-v="${n}" aria-current="${n === pg ? "page" : "false"}">${n}</button>`).join("")}<button type="button" data-a="al-pag" data-v="${pg + 1}" ${pg >= paginas ? "disabled" : ""} aria-label="Próxima página">›</button></span>` : ""}
+          <span style="flex:1"></span>
+          <span class="cs-nota">${ini + 1}–${Math.min(ini + POR_PAGINA, lista.length)} de ${lista.length}</span>
         </div>
       </div>` : `<div class="vazio">${S.alunas.length ? "Nenhuma aluna neste filtro." : "Nenhuma aluna cadastrada ainda."}</div>`}
       ${ui.acessoAluna ? cadastroAluna(anima === "aluna") : ""}
@@ -3297,7 +3296,7 @@ export function montar(app: HTMLElement) {
     return `
       <div class="aa-fundo dois" data-a="catx-fechar"></div>
       <aside class="aa-painel largo cat-painel cat-painel-full" role="dialog" aria-modal="true" aria-label="Editar categoria">
-        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Botão do app: <b>${h(cat(x.aba)?.nome || "—")}</b></p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div>${x.rascunho ? "" : `<button type="button" data-a="catx-pub-toggle" data-id="${x.id}">Despublicar</button>`}<button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
+        <header class="kx-cab"><span class="kx-cab-ic">${IC_CFG.versiculos}</span><div><h2>Editar categoria</h2><p>Botão do app: <b>${h(cat(x.aba)?.nome || "—")}</b></p></div><div class="kx-cab-acoes"><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div>${x.rascunho ? "" : `<button type="button" data-a="catx-pub-toggle" data-id="${x.id}">Despublicar</button>`}<button type="button" class="perigo" data-a="catx-remover" data-id="${x.id}">${IC_CAT.lixo}Excluir categoria</button></div></details><button type="button" class="al-botao kx-x" data-a="catx-fechar" aria-label="Fechar">${xis}</button></div></header>
         <div class="aa-corpo cat-grade ce ce-cat" data-rolagem="catx-${x.id}">
           <ol class="ce-passos" aria-label="Passos da categoria">${ps.map((p2, i) => `<li data-ce-passo="${i + 1}" class="${p2.ok ? "ok" : ""}"><i>${p2.ok ? "✓" : i + 1}</i>${h(p2.nome)}</li>`).join("")}<span class="ce-prog"><b>${ps.filter((p2) => p2.ok).length} de ${ps.length}</b> prontos</span></ol>
           <div class="cat-esq">
@@ -3501,7 +3500,7 @@ export function montar(app: HTMLElement) {
         <div><h2>Cursos e conteúdos da categoria: ${h(prod.nome)} ${ajuda("o-que-e-curso", "Cursos e conteúdos", `<span>O que a aluna abre dentro da categoria: os módulos e as aulas.</span>${niveis}`)}</h2><p>Gerencie os cursos e conteúdos que aparecem nesta categoria.</p></div>
         <label class="cur-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
         <select class="campo cur-ordem" data-curso-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["categorias", "Ordem da área de membros"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em grade">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        <span class="cur-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
       <div class="vazio ac-sem-cursos">Nenhum curso nesta categoria ainda. Os cursos e conteúdos de ${h(prod.nome)} vão aparecer aqui.</div>
         </div>
@@ -3603,17 +3602,16 @@ export function montar(app: HTMLElement) {
     return `
     <section class="tela ativa cur cc2">
       <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
-      <div class="cc2-criar"><button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo curso</button></div>
       <div class="kg-barra">
-        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
+        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar ${NOME_TIPO[ui.prodTipo][0]}..." aria-label="Buscar ${NOME_TIPO[ui.prodTipo][0]}" /></label>
         ${sel("data-curso-cat", fCat, [["", "Todas as categorias"], ...S.catsAba.map((x) => [x.id, x.nome])], "Categoria")}
         ${sel("data-curso-st", fSt, [["", "Todos os status"], ["ativo", "Ativo"], ["bloqueado", "Bloqueado"]], "Status")}
         ${sel("data-curso-pub", fPub, [["", "Toda publicação"], ["pub", "Publicado"], ["rasc", "Rascunho"]], "Publicação")}
         ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunas"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordem")}
         <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
       </div>
-      <p class="kg-conta">${lista2.length === 1 ? "1 curso encontrado" : lista2.length + " cursos encontrados"}</p>
-      ${!lista2.length ? `<div class="vazio">${q || fCat || fSt || fPub ? "Nenhum curso encontrado." : "Nenhum curso ainda. Crie o primeiro."}</div>`
+      <p class="kg-conta">${lista2.length} ${lista2.length === 1 ? NOME_TIPO[ui.prodTipo][0] : NOME_TIPO[ui.prodTipo][1]} ${lista2.length === 1 ? "encontrado" : "encontrados"}</p>
+      ${!lista2.length ? `<div class="vazio">${q || fCat || fSt || fPub ? "Nada encontrado com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda."}</div>`
         : vista === "lista" ? `<div class="ka-lista">${lista2.map(linha2).join("")}</div>` : `<div class="cc2-grade">${lista2.map(card2).join("")}</div>`}
     </section>`;
   }
@@ -3724,7 +3722,6 @@ export function montar(app: HTMLElement) {
     const r = ui.rp || (ui.rp = { rodando: false, etapa: "", erro: "", res: null });
     return `
       <section class="cn-card rp">
-        <h2>Reduzir PDF</h2>
         <p class="cn-sub">Escolha o PDF. Texto, fontes e layout ficam exatamente como no original; só as imagens de dentro do PDF são comprimidas. Fica mais leve para abrir e baixar no celular.</p>
         <button type="button" class="cn-doc-vazio" data-a="rp-escolher" ${r.rodando ? "disabled" : ""}>${IC_ARQ_CN}<b>${r.rodando ? "Reduzindo…" : "Escolher PDF"}</b><em>Até 500 MB. O arquivo não sai do seu computador enquanto é reduzido.</em></button>
         <p class="cn-nota" data-rp-prog>${h(r.etapa)}</p>
@@ -4075,7 +4072,7 @@ export function montar(app: HTMLElement) {
           <button type="button" class="al-botao" data-a="mod-pagina-voltar">${IC_CURSO.voltar}Voltar para o curso</button>
           <button type="button" class="al-botao" data-a="cs-ver-aluna">${IC_OLHO_C}Ver na área da aluna</button>
           <button type="button" class="al-botao" data-a="mod-duplicar" data-id="${m.id}">${IC_MOD.copiar}Duplicar módulo</button>
-          <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}" data-mod="${m.id}">${IC_EXP_M}Exportar conteúdo</button><button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Apagar módulo</button></div></details>
+          <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}" data-mod="${m.id}">${IC_EXP_M}Exportar conteúdo</button><button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Apagar módulo</button></div></details>
         </span>
       </div>
       <div class="mp-tit"><h2>${ident}</h2></div>
@@ -4371,7 +4368,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const abertasMod = aulasAbertas();
     return `
       ${(() => { const aus = c.modulos.flatMap((m) => m.aulas), pubs = aus.filter((a) => a.pub && !a.rascunho).length, bloq = aus.filter((a) => a.acesso === "bloqueada").length, pct = aus.length ? Math.round((pubs / aus.length) * 100) : 0;
-        return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2></div>
+        return `<div class="ma2-topo"><span></span>
         <div class="ma2-kpis"><span><b>${c.modulos.length}</b>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</span><span><b>${aus.length}</b>${nomeItens(c, aus.length)}</span><span><b>${pubs}</b>${pubs === 1 ? "Publicada" : "Publicadas"}</span><span><b>${bloq}</b>${bloq === 1 ? "Bloqueada" : "Bloqueadas"}</span><span class="ma2-pct"><b>${pct}%</b>Publicado<i><em style="width:${pct}%"></em></i></span></div></div>`; })()}
       <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
@@ -4383,7 +4380,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <form data-f="mod-add" data-id="${c.id}" class="cs-cartao cs-add-mod">
         <label class="cs-add-num"><span>Número</span>${campoNumero(proxNumModulo(c), "Número do módulo")}</label>
         <input id="novoModulo" class="campo" name="nome" placeholder="Nome do novo módulo" required />
-        <button class="al-botao-ouro">Adicionar</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
+        <button class="al-botao-ouro">Criar módulo</button><button type="button" class="al-botao" data-a="cs-add-mod">Cancelar</button>
       </form>` : ""}
       ${(() => { const sel = c.modulos.filter((m) => ui.modSel.has(m.id)), tudo = !!c.modulos.length && sel.length === c.modulos.length; return `
       <label class="ms-todos"><input type="checkbox" data-mod-sel-todos="${c.id}" ${tudo ? "checked" : ""} ${c.modulos.length ? "" : "disabled"} />Selecionar todos os módulos</label>
@@ -4507,9 +4504,9 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
       <div class="cf-lista">
         ${sec("1", "Capa", capa ? `<img class="cf-capa" src="${h(capa)}" alt="" />` : `<em class="cf-falta">Sem capa</em>`)}
         ${sec("2", "Textos do card", `<small>Em cima do nome</small>${h(c.cardRotulo || "—")}<small>Nome</small>${h(c.nome)}<small>Descrição</small>${h(c.descricao || "—")}<small>Botão</small>${h(c.cardBotao || "—")}`)}
-        ${sec("3", "Onde aparece", (abas.map((x) => tag(x)).join("") + cats.map((x) => tag(x.nome)).join("")) || `<em class="cf-falta">Em nenhum lugar do app</em>`)}
+        ${sec("3", "Botão e categoria", abas.length || cats.length ? `<small>Botão do app</small>${abas.map((x) => tag(x)).join("") || "—"}<small>Categoria</small>${cats.map((x) => tag(x.nome)).join("") || `<em class="cf-falta">Sem categoria</em>`}` : `<em class="cf-falta">Em nenhum lugar do app</em>`)}
         ${sec("4", "Visual", pers ? "Personalizado" : "Padrão do app")}
-        ${sec("5", "Publicação", `${tag(!c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
+        ${sec("5", "Publicação", `${tag(c.rascunho ? "Rascunho · não publicado" : !c.visivel ? "Oculto" : est === "bloqueado" ? "Bloqueado" : "Publicado · Liberado", c.visivel && !c.rascunho && est !== "bloqueado" ? "ok" : "")}<small>${c.criado ? "Criado em " + br(diaDe(c.criado)) : ""}${c.libera ? " · libera em " + br(diaDe(c.libera)) : ""}</small>`)}
       </div>
       <div class="cf-cel"><div class="cf-im">${capa ? `<img src="${h(capa)}" alt="" />` : ""}</div><div class="cf-tx"><p class="cf-rot">${h(c.cardRotulo)}</p><p class="cf-nome">${h(c.nome)}</p>${c.descricao ? `<p class="cf-desc">${h(c.descricao)}</p>` : ""}<div class="cf-bar"><i></i></div><span class="cf-bt">${h(c.cardBotao || "Ver")} ›</span></div></div>
     </div>`;
@@ -4728,7 +4725,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const cv = (() => {
       const titAba = ({ visao: ["Visão geral", "Acompanhe a estrutura, as alunas e as atividades."], config: ["Sobre o curso", "Capa, textos, onde aparece e publicação."], modulos: ["Módulos e aulas", "Organize os módulos e as aulas."], alunas: ["Alunas", "Quem tem acesso a este curso."], comentarios: ["Comentários", "Responda e modere os comentários das alunas."], relatorios: ["Relatórios", "Como o curso está indo."] } as Record<string, [string, string]>)[aba] || ["Visão geral", ""];
       const im = capaSite(c.capa), cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
-      const st = !c.visivel ? ["Oculto", "cz"] : c.bloq ? ["Bloqueado", "am"] : ["Ativo", "vd"];
+      const pubC = c.visivel && !c.rascunho, st = c.rascunho ? ["Não publicado", "vm"] : !pubC ? ["Oculto", "cz"] : c.bloq ? ["Bloqueado", "am"] : ["Ativo", "vd"];
       const kS = "cvst:" + c.id, kP = "cvpub:" + c.id;
       const it = (v: string, t: string, on: boolean) => `<button type="button" role="menuitemradio" aria-checked="${on}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
       return `
@@ -4743,9 +4740,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <p class="cv-cat">Categoria: <b>${h(cats)}</b></p>
           <div class="cv-selos">
             <span class="est3 kg-menu"><button type="button" class="cc2-selo ${st[1]} cv-pil" data-a="estado-menu" data-v="${kS}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kS}">${st[0]}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kS ? `<span class="est3-menu kb-menu" role="menu">${it("ativo", "Ativar", c.visivel && !c.bloq)}${it("bloqueado", "Bloquear", c.visivel && c.bloq)}${it("desativado", "Ocultar", !c.visivel)}</span>` : ""}</span>
-            <span class="est3 kg-menu"><button type="button" class="cc2-selo ${c.visivel ? "az" : "cz"} cv-pil" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${c.visivel ? "Publicado" : "Rascunho (não publicado)"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu">${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:desativado">Despublicar</button>` : `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "bloqueado" : "ativo"}">Publicar</button>`}</span>` : ""}</span>
+            <span class="est3 kg-menu"><button type="button" class="cc2-selo ${pubC ? "az" : "cz"} cv-pil" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${pubC ? "Publicado" : "Rascunho (não publicado)"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu">${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:desativado">Despublicar</button>` : `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "bloqueado" : "ativo"}">Publicar</button>`}</span>` : ""}</span>
           </div>
-          <div class="cv-bts"><button type="button" class="al-botao" data-a="cs-ver-aluna">Visualizar como aluna ${IC_EXTERNO}</button><button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button><button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar</button><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details></div>
+          <div class="cv-bts"><button type="button" class="al-botao" data-a="cs-ver-aluna">Visualizar como aluna ${IC_EXTERNO}</button><button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button><button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar</button><details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details></div>
         </div>
       </div>`;
     })();
@@ -4757,7 +4754,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         <span style="flex:1"></span>
         <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna ${IC_EXTERNO}</button>
         <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
-        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">⋯ Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
+        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
         <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
       </div>`}
       <nav class="cs-abas" aria-label="Partes do curso">${ABAS_C.map(([v, t]) => `<button type="button" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${t}</button>`).join("")}</nav>
@@ -4905,7 +4902,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
                     <div class="ea-op-caixa">
                       <span class="rotulo-ajuda mp-rot ea-op-caixa-tit">${IC_LIVRO_BT}Conteúdo extra ${dicaCampo(AJ.extras)}</span>
                       ${op.id ? `
-                      ${op.extras.length ? `<div class="ea-extras" style="margin:0;padding:0;border:0">${op.extras.map((e) => `<div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="op-extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
+                      ${op.extras.length ? `<div class="ea-extras" style="margin:0;padding:0;border:0">${op.extras.map((e) => `<div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(nomeArquivo(e.arquivo)) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="op-extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
                       <div class="ea-chips">${TIPOS.map((x) => x.tela).map((x) => `<button type="button" data-a="op-extra-tipo" data-v="${x}" aria-pressed="${x === tipoEx}">${x}</button>`).join("")}</div>
                       <input class="campo" data-op-extra-nome placeholder="Nome do conteúdo" />
                       <span class="ea-arq"><input class="campo" data-op-extra-arq placeholder="Nenhum arquivo selecionado" /><button type="button" class="al-botao" data-a="op-extra-arquivo" data-op-extra-bt>Escolher arquivo</button></span>
@@ -4977,23 +4974,24 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <button type="button" data-a="aba" data-v="cursos">Cursos e conteúdos</button><i>›</i>
           <button type="button" data-a="abrir-curso" data-id="${c.id}">${h(c.nome)}</button><i>›</i>
           <button type="button" data-a="aula-voltar-modulo" data-id="${m.id}">${ident}</button><i>›</i>
-          <b>Editar aula</b>
+          <b>${ui.novaAula === a.id ? "Nova aula" : "Editar aula"}</b>
         </nav>
         <button type="button" class="al-botao" data-a="aula-voltar-modulo" data-id="${m.id}">${IC_CURSO.voltar}Voltar para o módulo</button>
       </div>
       <div class="ea-tit">
         <div><h2 class="mp-h2">${ui.novaAula === a.id ? "Nova aula" : "Editar aula"}</h2><p class="ea-sub">${ident} — ${h(m.nome)}</p></div>
-        <button type="button" class="al-botao perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir aula</button>
+        ${ui.novaAula === a.id ? "" : `<button type="button" class="al-botao perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir aula</button>`}
       </div>
 
       <div class="ea-grade">
         <form id="formAula" data-f="aula" data-id="${a.id}" class="cs-cartao ea-info">
-          <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>Informações da aula</h3><p>Edite o conteúdo e as configurações da aula.</p></div></div>
+          <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>1. Identificação</h3><p>Número e nome da aula.</p></div></div>
           <div class="ea-linha3">
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome antes do número ${dicaCampo(AJ.rotAula)}</span><input class="campo" name="rotulo" value="${h(a.rot)}" maxlength="40" required /></label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Número da aula ${dicaCampo(AJ.numAula)}</span>${campoNumero(a.semNum ? "" : a.num, "Número da aula")}</label>
             <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome da aula ${dicaCampo(AJ.nomeAula)}</span><input id="nomeAula" class="campo" name="nome" value="${ui.novaAula === a.id ? "" : h(a.nome)}" placeholder="Nome da nova aula" required /></label>
           </div>
+          <div class="mp-cab ea-bloco"><span class="mp-cab-ic">${IC_DOC}</span><div><h3>2. Conteúdo principal</h3><p>Tipo, vídeo ou arquivo e descrição.</p></div></div>
           <label class="grupo"><span class="rotulo-ajuda mp-rot">Tipo de conteúdo ${dicaCampo(AJ.tipoAula)}</span>
             <select class="campo" name="tipo" data-aula-tipo>${([["video", "Vídeo"], ["audio", "Áudio"], ["pdf", "PDF (e-book)"]] as const).map(([v, t]) => `<option value="${v}"${tipoA === v ? " selected" : ""}>${t}</option>`).join("")}</select></label>
           <label class="grupo" data-campo-video${tipoA === "video" ? "" : " hidden"}><span class="rotulo-ajuda mp-rot">Link do vídeo (URL ou ID do Cloudflare Stream) ${dicaCampo(AJ.video)}</span>
@@ -5008,7 +5006,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <label class="grupo ea-ia-campo"><textarea class="campo" name="texto" rows="5" aria-label="Descrição da aula" placeholder="Uma linha em branco separa parágrafo. Para destacar, use *asteriscos*.">${h(iaDa(a.id)?.sobre ?? a.texto)}</textarea></label>
           <div id="iaPdf">${iaPdfBloco(a.id)}</div>
           <div class="ea-extra ea-extra-dentro" data-extra-aula${tipoA === "pdf" ? " hidden" : ""}>
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">Conteúdo extra da aula ${dicaCampo(AJ.extras)}</h3></div></div>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_DOC}</span><div><h3 class="rotulo-ajuda">3. Materiais complementares ${dicaCampo(AJ.extras)}</h3></div></div>
             <div class="ea-chips">${TIPOS.map((t) => t.tela).map((t) => `<button type="button" data-a="extra-tipo" data-v="${t}" aria-pressed="${t === tipo}">${t}</button>`).join("")}</div>
             <div class="ea-extra-form">
               <label class="grupo"><span class="rotulo-ajuda mp-rot">Nome do conteúdo ${dicaCampo(AJ.extraNome)}</span><input class="campo" name="nome" form="formExtra" placeholder="Ex: Material da aula" required /></label>
@@ -5017,7 +5015,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
               <div><button class="al-botao-ouro" form="formExtra">Adicionar</button></div>
             </div>
             ${a.extras.length ? `<div class="ea-extras">${a.extras.map((e) => `
-              <div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(e.arquivo) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}" title="Remover">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
+              <div class="ea-extra-linha"><span><b>${h(e.nome)}</b><em>${h(e.tipo)}${e.arquivo ? " · " + h(nomeArquivo(e.arquivo)) : ""}</em></span><button type="button" class="mp-ic perigo" data-a="extra-remover" data-id="${e.id}" aria-label="Remover ${h(e.nome)}" title="Remover">${IC_MOD.lixo}</button></div>`).join("")}</div>` : ""}
           </div>
           <input type="hidden" id="campoCapa" name="capa" value="${h(a.capa)}" />
           <div class="ea-bts"><button class="al-botao-ouro">${IC_SALVAR}Salvar aula</button><button type="button" class="al-botao" data-a="voltar-sem-salvar">Voltar sem salvar</button></div>
@@ -5025,7 +5023,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
         <div class="ea-lado">
           <section class="cs-cartao ea-capa${tipoA === "pdf" ? " em-pe" : ""}" data-capa-aula>
-            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
+            <div class="mp-cab"><span class="mp-cab-ic">${IC_IMG}</span><div><h3 class="rotulo-ajuda"><span data-capa-tit>4. ${tipoA === "pdf" ? "Capa do e-book" : "Capa da aula"}</span> ${dicaCampo(AJ.capa)}</h3></div></div>
             <div id="previaCapa" data-a="escolher-capa" title="Escolher a capa" class="ea-capa-img${previa ? "" : " sem"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" style="background:${previa ? `url('${h(previa)}') center/cover no-repeat, ` : ""}linear-gradient(160deg,#2a2116,#0c0a07 65%)">${previa ? `<img hidden alt="" src="${h(previa)}" onerror="this.parentElement.classList.add('sem')" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}</div>
             <span class="mp-capa-bts"><button type="button" class="al-botao" data-a="escolher-capa">${IC_IMG}Alterar</button><button type="button" class="al-botao" data-a="capa-editar" data-v="aula" data-id="">${IC_CURSO.lapis}Editar</button><button type="button" class="al-botao perigo" data-a="aula-capa-tirar">${IC_MOD.lixo}Remover</button></span>
             <span class="mp-dica-aj">${dicaCampo(`Formato: 1920 × 1080 px (16:9). Se for PDF, capa em pé: 1024 × 1536 px (2:3).`, "fmt.aula")}</span>
@@ -5139,7 +5137,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ${abas.map(([v, t, q, ic]) => `<button type="button" class="cm-aba${v === "moderar" ? " alerta" : ""}" data-a="com-filtro" data-v="${v}" aria-pressed="${ui.filtroCom === v}">${ic}${t}<span>${q}</span></button>`).join("")}
         <span class="cm-dir">
           ${sel("data-com-ordem", ui.comOrdem || "recentes", [["recentes", "Mais recentes"], ["antigos", "Mais antigos"]], "Ordem")}
-          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="com-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cartões">${IC_CUR.grade}</button><button type="button" data-a="com-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="com-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="com-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
         </span>
       </div>
       <div class="cm-filtros">
@@ -5195,7 +5193,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         <span class="cm-dir">
           <label class="cur-busca eq-busca">${IC_CUR.lupa}<input class="campo" type="search" id="eqBusca" data-eq-busca value="${h(ui.eqBusca || "")}" placeholder="Buscar membro..." aria-label="Buscar membro" /></label>
           <span class="eq-ordem">${IC_EQ.ordem}<select class="campo cm-sel" data-eq-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["acesso", "Último acesso"]].map(([v, t]) => `<option value="${v}" ${v === o ? "selected" : ""}>${t}</option>`).join("")}</select></span>
-          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="eq-vista" data-v="grade" aria-pressed="${grade}" aria-label="Em cartões">${IC_CUR.grade}</button><button type="button" data-a="eq-vista" data-v="lista" aria-pressed="${!grade}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="eq-vista" data-v="grade" aria-pressed="${grade}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="eq-vista" data-v="lista" aria-pressed="${!grade}" aria-label="Em lista">${IC_CUR.lista}</button></span>
         </span>
       </div>
       <div class="eq-lista${grade ? " grade" : ""}">${lista.map((e) => {
@@ -5853,6 +5851,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     pv.innerHTML = previaInicio(v);
   }
 
+  /** Nome legível de um arquivo guardado ("<pasta>/<número>-nome.pdf" vira "nome.pdf"). */
+  const nomeArquivo = (c: string) => (c.split("/").pop() || c).replace(/^\d{10,}-/, "");
+  /** Números da paginação: 1 … 4 5 6 … 20 (mesmo padrão em todas as listas). */
+  const numsPag = (pg: number, total: number): (number | "…")[] => { const out: (number | "…")[] = []; for (let n = 1; n <= total; n++) { if (n === 1 || n === total || Math.abs(n - pg) <= 1) out.push(n); else if (out[out.length - 1] !== "…") out.push("…"); } return out; };
   /* ---------- JANELAS ---------- */
   /** Cadastrar/editar aluna em abas: as abas só mostram e escondem partes do mesmo formulário (nada se perde ao trocar). */
   function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
@@ -6310,7 +6312,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "aba-bloqueada": toast("Acesso bloqueado."); return;
       case "aba":
         if (abaBloq(abaDaTela(d.v))) { toast("Acesso bloqueado."); return; }
-        ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null;
+        ui.inicioVista = ""; ui.acessoLista = ""; ui.acessoAluna = null; ui.periodoAberto = false; ui.estMenu = "";
         ui.tab = d.v; ui.editando = null; ui.addAula = null; ui.respondendo = null;
         if (ui.cfgAba === "acesso") ui.cfgAba = ui.cfgAntes || "menu";
         if (d.v === "curso" && !curso(ui.curso)) ui.curso = S.cursos[0] ? S.cursos[0].id : null;
@@ -6634,16 +6636,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
       case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
-      case "cs-add-mod": {
-        // Cria o módulo (ainda desativado) e abre a página completa; salvar ativa, cancelar descarta.
-        const c = curso(ui.curso); if (!c) return; const ult = c.modulos[c.modulos.length - 1];
-        void executar(async () => {
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: c.id, numero: proxNumModulo(c), titulo: "NOVO MÓDULO", rotulo: ult?.rot || "Módulo", publicado: false }).select("id").single());
-          ui.novoMod = r.data!.id; ui.modPagina = r.data!.id; ui.focar = "editarCampo"; window.scrollTo(0, 0);
-          return "Preencha o módulo e clique em Salvar módulo.";
-        });
-        return;
-      }
+      case "cs-add-mod": ui.csAddMod = !ui.csAddMod; if (ui.csAddMod) ui.focar = "novoModulo"; break;
       case "cs-sit": ui.csSit = d.v; ui.csPag = 1; break;
       case "cs-com-filtro": ui.csComFiltro = d.v; break;
       case "cs-com-per": ui.csComPer = d.v; break;
@@ -7253,16 +7246,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "mod-abrir-fechar": if (ui.abertos.has(d.id)) ui.abertos.delete(d.id); else ui.abertos.add(d.id); break;
-      case "aula-add-abrir": {
-        // Cria a aula (ainda desativada) e abre Editar aula completo; salvar ativa, voltar sem salvar descarta.
-        const x = acharModulo(d.id); if (!x) return; const ult = x.m.aulas[x.m.aulas.length - 1];
-        void executar(async () => {
-          const r = falhou(await supabase.from("aulas").insert({ modulo_id: x.m.id, numero: proxNumAula(x.m), titulo: "Nova aula", rotulo: ult?.rot || "Aula", publicado: false }).select("id").single());
-          ui.novaAula = r.data!.id; ui.aula = r.data!.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.focar = "nomeAula"; window.scrollTo(0, 0);
-          return "Preencha a aula e clique em Salvar aula.";
-        });
-        return;
-      }
+      case "aula-add-abrir": ui.addAula = d.id; ui.focar = "novaAula"; break;
       case "aula-add-cancelar": ui.addAula = null; break;
       case "aula-sobe": case "aula-desce": {
         const x = acharAula(d.id)!; const nova = trocado(x.m.aulas, x.ai, a === "aula-sobe" ? -1 : 1);
@@ -8281,9 +8265,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const ult = c.modulos[c.modulos.length - 1];
         void executar(async () => {
           // A ordem segue o número (gatilho da 0063).
-          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, numero: num, titulo: v("nome").toUpperCase(), rotulo: ult?.rot || "Módulo" }).select("id").single());
-          ui.abertos.add(r.data!.id);
-          return { msg: "Módulo adicionado.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
+          const r = falhou(await supabase.from("modulos").insert({ produto_id: id, numero: num, titulo: v("nome").toUpperCase(), rotulo: ult?.rot || "Módulo", publicado: false }).select("id").single());
+          ui.abertos.add(r.data!.id); ui.csAddMod = false; ui.modPagina = r.data!.id; window.scrollTo(0, 0);
+          return { msg: "Módulo criado como rascunho. Complete e salve.", texto: "novo módulo " + v("nome").toUpperCase(), desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -8311,9 +8295,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const x = acharModulo(id)!; const num = Number(v("numero"));
         const erro = erroNumero(num, x.m.aulas.map((a) => a.num), "aula"); if (erro) { toast(erro); return; }
         void executar(async () => {
-          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, numero: num, titulo: v("nome"), rotulo: x.m.aulas[x.m.aulas.length - 1]?.rot || "Aula" }).select("id").single());
-          ui.addAula = null;
-          return { msg: "Aula adicionada.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
+          const r = falhou(await supabase.from("aulas").insert({ modulo_id: id, numero: num, titulo: v("nome"), rotulo: x.m.aulas[x.m.aulas.length - 1]?.rot || "Aula", publicado: false }).select("id").single());
+          ui.addAula = null; ui.aula = r.data!.id; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; window.scrollTo(0, 0);
+          return { msg: "Aula criada como rascunho. Complete e salve.", texto: "nova aula " + v("nome"), desfazer: async () => { falhou(await supabase.from("aulas").delete().eq("id", r.data!.id).select("id").single()); } };
         });
         return;
       }
@@ -8734,7 +8718,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       document.querySelectorAll<HTMLElement>("[data-campo-pdf]").forEach((gp) => { gp.hidden = t.value !== "pdf"; });
       const pdf = t.value === "pdf";
       document.querySelector("[data-capa-aula]")?.classList.toggle("em-pe", pdf);
-      const ct = document.querySelector("[data-capa-tit]"); if (ct) ct.textContent = pdf ? "Capa do e-book" : "Capa da aula";
+      const ct = document.querySelector("[data-capa-tit]"); if (ct) ct.textContent = pdf ? "4. Capa do e-book" : "4. Capa da aula";
       const cd = document.querySelector("[data-capa-dica]"); if (cd) cd.textContent = pdf ? "Capa em pé. Tamanho recomendado: 1024 × 1536 px (2:3)" : "Tamanho recomendado: 1920 × 1080 px (16:9)";
       const ex = document.querySelector<HTMLElement>("[data-extra-aula]"); if (ex) ex.hidden = pdf;
       const rd = document.querySelector<HTMLElement>("[data-rot-desc]"); if (rd) rd.textContent = t.value === "pdf" ? "Resumo do e-book (aparece embaixo do título)" : "Descrição da aula (o que a aluna verá)";
@@ -9024,6 +9008,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const av = document.getElementById("avisoSujo"); if (av) { av.remove(); return; }
     if (ui.buscaAberta) { ui.buscaAberta = false; atualizarBusca(); return; }
     if (ui.menu || ui.ajuda) { ui.menu = null; ui.ajuda = null; render(); return; }
+    if (ui.periodoAberto || ui.estMenu) { ui.periodoAberto = false; ui.estMenu = ""; render(); return; }
     if (ui.modal) { guardado("fechar-esc", {}, null, null); return; }
     if (ui.acessoAluna || ui.acessoLista) {
       if (ui.acessoAluna) ui.acessoAluna = null; else ui.acessoLista = "";

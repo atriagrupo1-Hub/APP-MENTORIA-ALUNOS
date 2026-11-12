@@ -1022,7 +1022,7 @@ html[data-tema="claro"] { --al-ouro: #a5732a; --al-ouro-txt: #ffffff; --al-ouro-
 @media (max-width: 1100px) { .eng-topo, .eng-meio, .eng-listas { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 700px) { .eng-inds { grid-template-columns: repeat(2, minmax(0, 1fr)); } .eng-geral { flex-direction: column; align-items: flex-start; } }
 @media (max-width: 420px) { .eng-inds { grid-template-columns: minmax(0, 1fr); } }
-.eng-geral-txt > b { white-space: nowrap; }
+.eng-geral-txt > b { white-space: normal; }
 .eng-anel { width: 112px; height: 112px; }
 .eng-anel b { width: 88px; height: 88px; font-size: 30px; }
 
@@ -1958,12 +1958,12 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ac-aba[aria-pressed="true"] { color: #1a140a; background: linear-gradient(180deg, #e3bd6e, #c9a04e); border-color: #b8913f; }
 .ac-aba[aria-pressed="true"] span { background: rgba(255, 255, 255, .55); }
 .ac-painel { margin-bottom: 26px; overflow: visible; background: var(--aa-cartao); border: 1px solid #c9a25c; border-radius: 12px; box-shadow: var(--aa-sombra); }
-.ac-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; padding: 20px 28px; color: #fff; background: radial-gradient(120% 160% at 0% 0%, #2a2114 0%, #14110c 55%, #0b0a08 100%); border-radius: 11px 11px 0 0; }
-.ac-topo-ic { display: grid; place-items: center; width: 60px; height: 60px; color: #e3bd6e; }
-.ac-topo-ic svg { width: 54px; height: 54px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
-.ac-topo-txt { flex: 1 1 300px; min-width: 0; }
-.ac-topo-txt h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; color: #f6efe0; }
-.ac-topo-txt p { margin: 0; font-size: 16px; color: rgba(255, 255, 255, .82); }
+.ac-painel .ac-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 18px; padding: 20px 28px; color: #fff; background: radial-gradient(120% 160% at 0% 0%, #2a2114 0%, #14110c 55%, #0b0a08 100%); border-radius: 11px 11px 0 0; }
+.ac-painel .ac-topo-ic { display: grid; place-items: center; width: 60px; height: 60px; color: #e3bd6e; }
+.ac-painel .ac-topo-ic svg { width: 54px; height: 54px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+.ac-painel .ac-topo-txt { flex: 1 1 300px; min-width: 0; }
+.ac-painel .ac-topo-txt h2 { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; color: #f6efe0; }
+.ac-painel .ac-topo-txt p { margin: 0; font-size: 16px; color: rgba(255, 255, 255, .82); }
 .ac-lapis { display: grid; place-items: center; width: 32px; height: 32px; padding: 0; color: #fff; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .25); border-radius: 6px; cursor: pointer; }
 .ac-lapis svg, .ac-cat-ed svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .ac-ren { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
@@ -1976,8 +1976,8 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ac-ic svg { width: 20px; height: 20px; fill: currentColor; }
 .ac .kb-menu { color: var(--texto); }
 .ac .kb-menu .perigo { color: var(--perigo); }
-.ac-topo .al-botao-ouro { min-height: 50px; gap: 10px; padding: 0 22px; font-size: 16px; }
-.ac-topo .al-botao-ouro svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.ac-painel .ac-topo .al-botao-ouro { min-height: 50px; gap: 10px; padding: 0 22px; font-size: 16px; }
+.ac-painel .ac-topo .al-botao-ouro svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .ac-cats { padding: 18px 28px 24px; }
 .ac-cats h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 16px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 24px; font-weight: 600; }
 .ac-cats-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(205px, 1fr)); gap: 14px; }
@@ -2000,7 +2000,7 @@ button.est3-pil:hover { filter: brightness(.97); border-color: currentColor; }
 .ac-cursos-cab h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 4px; font-family: "Cormorant Garamond", Georgia, serif; font-size: 30px; font-weight: 600; }
 .ac-cursos-cab p { margin: 0; font-size: 16px; color: var(--texto-2); }
 .cur-ponto { margin: 0 4px; color: var(--texto-2); }
-@media (max-width: 640px) { .ac-topo, .ac-cats { padding-left: 16px; padding-right: 16px; } .ac-aba { min-height: 44px; font-size: 15px; } }
+@media (max-width: 640px) { .ac-painel .ac-topo, .ac-cats { padding-left: 16px; padding-right: 16px; } .ac-aba { min-height: 44px; font-size: 15px; } }
 .ac-cat-nome { font-size: 15.5px; overflow-wrap: normal; word-break: normal; hyphens: none; }
 .ac-cat-img { width: 54px; height: 54px; }
 .ac-cat { gap: 4px; padding-right: 6px; }
@@ -5101,3 +5101,87 @@ html[data-tema="claro"] .mest .est3.com-sub > em.dt-ag { color: #2f4ea3; }
 .cs-mods .cs-mod-linha .cs-mod-acoes { margin-right: 15px; }
 .cs-mod-acoes > .kg-menu, .mp-aula-acoes > .kg-menu { flex: none !important; width: auto !important; min-width: 0 !important; display: inline-flex !important; } .cs-mod-acoes > button { flex: none !important; }
 .mp-aula-acoes .mp-ic { border: 0 !important; background: none !important; box-shadow: none !important; } .mp-aula-acoes .mp-ic:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)) !important; }
+
+/* =====================================================================
+   DESIGN SYSTEM AIŌN — camada 1 (auditoria 12/11/2026)
+   Tokens únicos e regras base por cima do que já existe. Vale nos dois
+   temas: o tema claro só redefine tokens. Variantes intencionais ficam:
+   barra lateral escura, card de prévia do app, Cormorant nos títulos.
+   ===================================================================== */
+:root {
+  --ds-ouro: #d6b36a; --ds-ouro-texto: #d6b36a; --ds-sobre-ouro: #211a0d; --ds-ouro-fundo: rgba(214, 179, 106, .14);
+  --ds-ok: #8fd3a8; --ds-ok-fundo: rgba(47, 138, 85, .18);
+  --ds-atencao: #e8b45a; --ds-atencao-fundo: rgba(217, 160, 60, .16);
+  --ds-perigo: #f08a7a; --ds-perigo-fundo: rgba(192, 67, 47, .18);
+  --ds-info: #b3c0ff; --ds-info-fundo: rgba(90, 120, 230, .18);
+  --ds-neutro: #b5b7bd; --ds-neutro-fundo: rgba(255, 255, 255, .07);
+  --ds-campo: 44px; --ds-campo-topo: 40px; --ds-botao: 36px; --ds-botao-compacto: 32px;
+  --ds-raio: 8px; --ds-raio-card: 12px; --botao-raio: 8px; --botao-alto: 36px;
+  /* textos secundários sólidos (contraste 9:1 e 6:1 sobre a superfície) */
+  --texto-2: #b5b7bd; --texto-3: #8d9097;
+  /* um dourado só no tema escuro */
+  --aa-ouro: var(--ds-ouro); --al-ouro: var(--ds-ouro); --al-ouro-txt: var(--ds-sobre-ouro); --eq-ouro: var(--ds-ouro);
+}
+html[data-tema="claro"] {
+  --ds-ouro: #a5732a; --ds-ouro-texto: #8a6424; --ds-sobre-ouro: #ffffff; --ds-ouro-fundo: #f6ebdb;
+  --ds-ok: #1f6b3a; --ds-ok-fundo: #e3f1e5;
+  --ds-atencao: #8a5a00; --ds-atencao-fundo: #fbefcf;
+  --ds-perigo: #b3261e; --ds-perigo-fundo: #fbe4e2;
+  --ds-info: #2f4ea3; --ds-info-fundo: #e6ecfb;
+  --ds-neutro: #5c6068; --ds-neutro-fundo: #efece6;
+  --texto-2: #5c6068; --texto-3: #6e727a;
+  --aa-ouro: var(--ds-ouro); --al-ouro: var(--ds-ouro); --al-ouro-txt: var(--ds-sobre-ouro); --eq-ouro: var(--ds-ouro);
+}
+
+/* Botões: 36px padrão, 32px compacto, raio 8px (A14) */
+.al-botao, .al-botao-ouro, .botao, .botao-neutro, .botao-neutro.grande { min-height: var(--ds-botao) !important; border-radius: var(--ds-raio) !important; font-size: 13.5px !important; }
+.al-botao.pequeno, .botao-neutro:not(.grande), .al-botao-ouro.pequeno { min-height: var(--ds-botao-compacto) !important; font-size: 13px !important; }
+.al-botao.quadrado { width: var(--ds-botao-compacto) !important; }
+.cfg-versao-dir .cfg-salvar-topo, .ac-painel .ac-topo .al-botao-ouro { min-height: var(--ds-botao) !important; padding: 0 16px !important; font-size: 13.5px !important; }
+
+/* Campos: 44px; busca do topo 40px (A19) */
+input.campo:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]), select.campo { height: var(--ds-campo) !important; min-height: var(--ds-campo) !important; border-radius: var(--ds-raio) !important; font-size: 14px !important; }
+#buscaGeral { height: var(--ds-campo-topo) !important; min-height: var(--ds-campo-topo) !important; }
+textarea.campo { border-radius: var(--ds-raio) !important; font-size: 14px !important; }
+
+/* Status: 5 tons iguais em todas as telas (A15, A17) */
+.est3-pil.verde, .cc2-selo.vd, .aa-pilula.verde, .cf-tag.ok, .ds-ok { color: var(--ds-ok) !important; background: var(--ds-ok-fundo) !important; }
+.est3-pil.amarelo, .cc2-selo.am, .aa-pilula.ouro, .ds-atencao { color: var(--ds-atencao) !important; background: var(--ds-atencao-fundo) !important; }
+.est3-pil.vermelho, .cc2-selo.vm, .aa-pilula.vermelho, .mpub-pil.off, .ds-perigo { color: var(--ds-perigo) !important; background: var(--ds-perigo-fundo) !important; }
+.est3-pil.azul, .cc2-selo.az, .mpub-pil.on, .ds-info { color: var(--ds-info) !important; background: var(--ds-info-fundo) !important; border-color: transparent !important; }
+.cc2-selo.cz, .aa-pilula.neutro, .ds-neutro { color: var(--ds-neutro) !important; background: var(--ds-neutro-fundo) !important; }
+.est3-pil, .cc2-selo, .aa-pilula, .mpub-pil, .cf-tag { border-radius: 999px !important; font-size: 12.5px !important; font-weight: 800 !important; }
+
+/* Abas de página: um padrão só, sublinhado dourado (A13) */
+.cs-abas, .prod-abas, .aa-abas, .reg-abas, .cad-abas { display: flex; gap: 4px; border-bottom: 1px solid var(--linha-suave); overflow-x: auto; scrollbar-width: none; }
+.cs-abas > button, .prod-abas > button, .aa-abas > button, .reg-abas > button, .cad-abas > button { flex: none !important; min-height: 40px !important; padding: 0 14px !important; margin-bottom: -1px; border: 0 !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important; background: none !important; color: var(--texto-2) !important; font: inherit; font-size: 14px !important; font-weight: 700 !important; box-shadow: none !important; }
+.cs-abas > button[aria-current="page"], .prod-abas > button[aria-selected="true"], .aa-abas > button[aria-selected="true"], .reg-abas > button[aria-selected="true"], .cad-abas > button[aria-selected="true"] { color: var(--texto) !important; border-bottom-color: var(--ds-ouro) !important; }
+.aa-abas { padding: 4px 26px 0 !important; }
+
+/* Cards: raio 12px */
+.cs-cartao, .aa-cartao, .ini-cartao, .eng-geral, .cc2-card, .vg-painel, .cf-lista, .cfg-painel { border-radius: var(--ds-raio-card) !important; }
+
+/* Início: nomes de pessoas em Lato (A18); 4 cards em 2 colunas abaixo de 1500px (A11) */
+.ini-item b, .ini-aluna b, .ac-lista b, .ac-quem b { font-family: Lato, "Helvetica Neue", Arial, sans-serif !important; font-size: 14px; }
+@media (max-width: 1500px) { .ct-grade { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } }
+
+/* Editar aula: nome da aula na linha inteira (A05) */
+.ea-linha3 { grid-template-columns: minmax(0, 1fr) 140px !important; }
+.ea-linha3 > label:nth-child(3) { grid-column: 1 / -1; }
+
+/* Botão Aa dos editores de texto legível nos dois temas (A04) */
+.kx-aa { background: var(--superficie-alta) !important; border-color: var(--linha) !important; color: var(--texto) !important; }
+.kx-aa b { color: var(--texto) !important; }
+
+/* Menus: "Mais" com o ícone vertical (A21) */
+.ce-mais > summary svg { width: 16px; height: 16px; fill: currentColor; margin-right: 4px; }
+/* Paginação de Alunas no mesmo padrão das listas do curso (A10) */
+.al-pag2 { margin-top: 12px; }
+/* Pendência pede atenção (âmbar), não erro (A17) */
+.ini-tarefa.tem { border-color: color-mix(in srgb, var(--ds-atencao) 50%, transparent) !important; background: var(--ds-atencao-fundo) !important; }
+.ini-tarefa.tem .badge-alerta { background: var(--ds-atencao) !important; color: var(--ds-sobre-ouro) !important; }
+/* Menu lateral agrupado */
+.lado-grupo { display: block; padding: 16px 24px 6px; font-size: 10.5px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: #8d877c; }
+.lado-menu > .lado-grupo:first-child { padding-top: 4px; }
+/* Editor de aula em blocos */
+.ea-info .ea-bloco { margin-top: 10px; padding-top: 18px; border-top: 1px solid var(--linha-suave); }
