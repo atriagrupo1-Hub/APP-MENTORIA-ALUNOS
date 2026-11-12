@@ -1342,7 +1342,7 @@ export function montar(app: HTMLElement) {
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
       </div>` : ""}
       <div class="ini-mets">${metricas}</div>
-      ${vgxResto(atv)}
+      ${vgxResto()}
       <div class="ini-corpo${INI_EXTRA ? "" : " so"}">
         <div class="ini-principal">
           ${INI_EXTRA ? `<div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
@@ -1373,7 +1373,7 @@ export function montar(app: HTMLElement) {
     </section>`;
   }
   /** Visão geral: central de atenção, ritmo da comunidade, atividade recente, vencimentos e rascunhos. */
-  function vgxResto(atv: Atividade[] | null) {
+  function vgxResto() {
     const ls = listasAcessos(), coms = paraResponder();
     const n2 = (n: number) => String(n).padStart(2, "0");
     const IC_REL = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`;
@@ -1410,15 +1410,25 @@ export function montar(app: HTMLElement) {
           <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
         </div>
       </section>`;
-    // Sem repetir: uma linha por aluna e tipo; quatro linhas, para fechar reto com a Central.
-    const vistos = new Set<string>();
-    const recentes = (atv || []).filter((x) => { const k = x.aluna + "|" + GRUPO_ATV[x.tipo]; if (vistos.has(k)) return false; vistos.add(k); return true; }).slice(0, 4);
-    const hora = (iso: string) => new Date(iso).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
-    const fraseAtv = (x: Atividade) => x.tipo === "acessou" ? "acessou a plataforma" : x.tipo === "comentou" ? "deixou um comentário" : x.tipo === "respondeu" ? "respondeu um comentário" : x.tipo === "concluiu" ? "concluiu uma aula" : x.tipo === "abriu_ebook" ? "abriu um e-book" : x.tipo === "curtiu" || x.tipo === "curtiu_comentario" ? "curtiu" : "assistiu uma aula";
+    // Conteúdo agendado: o que tem data de liberação no futuro (curso, módulo, aula ou liberação marcada para alunas).
+    const agoraIso = new Date().toISOString();
+    const futuro = (d: string) => !!d && (d.includes("T") ? d > agoraIso : d > hoje());
+    const ag = new Map<string, { titulo: string; curso: string; quando: string }>();
+    const poe = (id: string, titulo: string, curso: string, quando: string) => { const x = ag.get(id); if (!x || quando < x.quando) ag.set(id, { titulo, curso, quando }); };
+    for (const c of S.cursos) {
+      if (futuro(c.libera)) poe(c.id, c.nome, c.nome, c.libera);
+      for (const m of c.modulos) {
+        if (futuro(m.libera)) poe(m.id, m.nome, c.nome, m.libera);
+        for (const x of m.aulas) if (futuro(x.libera)) poe(x.id, x.nome, c.nome, x.libera);
+      }
+    }
+    for (const al of S.alunas) for (const k of al.concessoes) if (k.abre && k.abre > agoraIso) { const x = acharAula(k.alvo); if (x) poe(x.a.id, x.a.nome, x.c.nome, k.abre); }
+    const agendados = [...ag.values()].sort((x, y) => x.quando.localeCompare(y.quando)).slice(0, 4);
+    const quandoLib = (d: string) => { const dia = br(diaDe(d.includes("T") ? d : d + "T12:00:00")); return d.includes("T") ? dia + " às " + new Date(d).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" }) : dia; };
     const recente = `
       <section class="vgx-card vgx-recente">
-        <header class="vgx-scab"><h3>Atividade recente</h3><button type="button" class="vgx-link" data-a="ini-ativ-abrir">${IC_INI.seta}Ver todas</button></header>
-        <ol class="vgx-tl">${recentes.map((x) => `<li><b>${h(primeiroNome(x.nome))} ${fraseAtv(x)}</b><span>${diaDe(x.quando) === hoje() ? hora(x.quando) : br(diaDe(x.quando))}${x.aula ? " · " + h(x.aula) : ""}</span></li>`).join("") || `<li class="vazio">${atv ? "Nenhuma atividade no período." : "Carregando…"}</li>`}</ol>
+        <header class="vgx-scab"><h3>Conteúdo agendado</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></header>
+        <ol class="vgx-tl">${agendados.map((x) => `<li><b>${h(x.curso)}</b><span>${x.titulo !== x.curso ? h(x.titulo) + " · " : ""}Libera em ${quandoLib(x.quando)}</span></li>`).join("") || `<li class="vazio">Nenhum conteúdo agendado para liberação.</li>`}</ol>
       </section>`;
     const venc = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje()).sort((x, y) => x.validade.localeCompare(y.validade)).slice(0, 5);
     const tabela = `
