@@ -5931,3 +5931,17 @@ html:not([data-tema="claro"]) .cad-al .cad-pe { border-top-color: #2B2D32; }
 html:not([data-tema="claro"]) .aa-prod-l { border-top-color: #2B2D32; }
 html:not([data-tema="claro"]) .aa-prod-l .nome > span, html:not([data-tema="claro"]) .aa-prod-d > span { color: #94979E; }
 @media (min-width: 761px) { .casca2 .aa-painel.largo { width: min(700px, calc(100vw - 12px)); } }
+.aa-sim { margin: 0 0 10px; padding: 8px 12px; font-size: 11px; color: #DFC089; background: #342D22; border: 1px solid #4B402B; border-radius: 6px; }
+html[data-tema="claro"] .aa-sim { color: #8a6420; background: #f7efe1; border-color: #e6d3ad; }
+.aa-pp { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding: 16px; }
+.aa-pp-cab { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.aa-pp-cab b { font-size: 13px; font-weight: 600; }
+.aa-pp-pct { font-size: 13px; font-weight: 700; color: #E2C68C; }
+html[data-tema="claro"] .aa-pp-pct { color: #8a6420; }
+.aa-pp-barra { display: flex; align-items: center; gap: 12px; }
+.aa-pp-barra .al-barra-p { flex: 1 1 auto; }
+.aa-pp-qt { font-size: 11px; color: var(--texto-3); white-space: nowrap; }
+.aa-pp .al-mods { margin-top: 4px; }
+.aa-pp .al-mod { grid-template-columns: minmax(0, 1fr) 120px 40px 80px; }
+.aa-pp .al-mod-nome, .aa-pp .al-mod-qt { font-size: 11px; }
+.aa-pp .al-mod-pct { font-size: 11px; font-weight: 600; }

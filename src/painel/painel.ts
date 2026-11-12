@@ -1801,11 +1801,28 @@ export function montar(app: HTMLElement) {
       corpo = `
         <h3 class="aa-secao" style="margin-top:4px">Progresso geral</h3>
         <div class="al-prog-geral"><span class="al-pct">${pctG}%</span><span class="al-barra-p"><i style="width:${pctG}%"></i></span><span class="al-prog-txt">${feitasLib} de ${libs.size} ${libs.size === 1 ? "aula concluída" : "aulas concluídas"}</span></div>
-        <h3 class="aa-secao">Progresso por módulo</h3>
-        ${mods.length ? `<div class="al-mods">${mods.map(({ c, m, i, lib }) => {
-          const n = lib.filter((k) => a.feitas.has(k.id)).length; const pct = Math.round(n / lib.length * 100);
-          return `<div class="al-mod"><span class="al-mod-nome">Módulo ${numModulo(c, i)} - ${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pct}%"></i></span><span class="al-mod-pct">${pct}%</span><span class="al-mod-qt">${n} de ${p(lib.length, "aula", "aulas")}</span>${seta}</div>`;
-        }).join("")}</div>` : `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`}
+        <h3 class="aa-secao">Progresso por produto</h3>
+        ${(() => {
+          type ModP = { nome: string; feitas: number; total: number };
+          type ProdP = { nome: string; mods: ModP[]; sim?: boolean };
+          const reais: ProdP[] = S.cursos.map((c) => ({ nome: c.nome, mods: mods.filter((x) => x.c === c).map(({ c: cc, m, i, lib }) => ({ nome: "Módulo " + numModulo(cc, i) + " - " + m.nome, feitas: lib.filter((k) => a.feitas.has(k.id)).length, total: lib.length })) })).filter((x) => x.mods.length);
+          // Só na prévia: três produtos de exemplo, para ver o desenho. Nada disso existe no banco.
+          const sim: ProdP[] = new URLSearchParams(location.search).has("previa") && !reais.length ? [
+            { nome: "Bênçãos Ilimitadas", sim: true, mods: [{ nome: "Módulo 0 - Boas-vindas e diagnóstico", feitas: 2, total: 2 }, { nome: "Módulo 1 - Descobrindo o verdadeiro", feitas: 2, total: 3 }, { nome: "Módulo 2 - A prosperidade", feitas: 0, total: 4 }] },
+            { nome: "Manuscrito Sagrado", sim: true, mods: [{ nome: "Parte 1 - Origem", feitas: 1, total: 1 }, { nome: "Parte 2 - O código", feitas: 0, total: 2 }] },
+            { nome: "Ritual da manhã", sim: true, mods: [{ nome: "Semana 1", feitas: 7, total: 7 }, { nome: "Semana 2", feitas: 4, total: 7 }] },
+          ] : [];
+          const lista = reais.length ? reais : sim;
+          if (!lista.length) return `<div class="aa-obs">Nenhum conteúdo liberado ainda.</div>`;
+          return (sim.length ? `<p class="aa-sim">Simulação com 3 produtos de exemplo (só na prévia; não existe no banco).</p>` : "") + lista.map((pr) => {
+            const f = pr.mods.reduce((t, m) => t + m.feitas, 0), tt = pr.mods.reduce((t, m) => t + m.total, 0), pc = tt ? Math.round((f / tt) * 100) : 0;
+            return `<div class="aa-cartao aa-pp">
+              <div class="aa-pp-cab"><b>${h(pr.nome)}</b><span class="aa-pp-pct">${pc}%</span></div>
+              <div class="aa-pp-barra"><span class="al-barra-p"><i style="width:${pc}%"></i></span><span class="aa-pp-qt">${f} de ${p(tt, "aula", "aulas")}</span></div>
+              <div class="al-mods">${pr.mods.map((m) => { const pm = m.total ? Math.round((m.feitas / m.total) * 100) : 0; return `<div class="al-mod"><span class="al-mod-nome">${h(m.nome)}</span><span class="al-barra-p"><i style="width:${pm}%"></i></span><span class="al-mod-pct">${pm}%</span><span class="al-mod-qt">${m.feitas} de ${p(m.total, "aula", "aulas")}</span></div>`; }).join("")}</div>
+            </div>`;
+          }).join("");
+        })()}
         ${coms.length ? `<h3 class="aa-secao">Comentários dela</h3><div class="aa-cartao">${coms.map((k) => `<div class="mini"><span class="nome"><b class="leve">${h(k.texto)}</b><span>${localAula(k.aula)} · ${h(k.quando)} · ${estCom[k.estado]}</span></span></div>`).join("")}</div>` : ""}`;
     }
     else if (aba === "produtos") {
