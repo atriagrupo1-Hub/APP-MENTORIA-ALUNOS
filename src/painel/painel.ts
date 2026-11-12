@@ -6212,8 +6212,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <label class="cad-c cad-full"><span>Nome completo <b>*</b></span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" autocomplete="off" /></label>
           <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
           <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
-          ${a ? "" : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>
-          <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${fotoNova && fotoPara === "aln" ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>`}
+          ${a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluna da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
+          <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : a && S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : a ? h(iniciais(a.nome)) : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${(fotoNova && fotoPara === "aln") || (a && S.fotos[a.id]) ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
           <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
@@ -6623,7 +6623,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
-      case "editar-aluna": cadHist = []; cadAntes = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
+      case "editar-aluna": cadHist = []; cadAntes = null; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
       case "desfazer-confirmar": {
         const x = pilha.shift(); ui.modal = null;
@@ -8240,11 +8240,23 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             const o = { ...aluna(id) };
             await rpc("salvar_ficha_aluna", { p_aluna: id, p_nome: nome, p_login: loginNovo, p_codigo: cod, p_entrada: v("entrada"), p_validade: v("validade"), p_celular: celular, p_email: email });
             if (linkAl !== (LINKS.aluna.get(id) ?? "") || (aparelho && aparelho !== APARELHO.get(id))) { const r = await supabase.from("aluna_link").upsert({ aluna_id: id, link: linkAl || null, ...(aparelho ? { aparelho } : {}), atualizado_em: new Date().toISOString() }); if (r.error) throw r.error; }
+            // Tipo de aluna: mentoria ⇄ geral muda a liberação da mentoria.
+            const jorC = curso(S.config.jornada), tipoNovo = form.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value || "";
+            const acAntes = { ...o.acesso };
+            if (jorC && tipoNovo && (tipoNovo === "mentoria") !== daMentoria(o)) {
+              const modsJ = new Set(jorC.modulos.map((m) => m.id)), aulasJ = new Set(jorC.modulos.flatMap((m) => m.aulas.map((x) => x.id)));
+              const ac = tipoNovo === "mentoria"
+                ? { c: [...new Set([...o.acesso.cursos, jorC.id])], m: o.acesso.modulos, a: o.acesso.aulas }
+                : { c: o.acesso.cursos.filter((x) => x !== jorC.id), m: o.acesso.modulos.filter((x) => !modsJ.has(x)), a: o.acesso.aulas.filter((x) => !aulasJ.has(x)) };
+              await rpc("salvar_liberacao", { p_aluna: id, p_produtos: ac.c, p_modulos: ac.m, p_aulas: ac.a });
+              await registrar(id, tipoNovo === "mentoria" ? "Passou a aluna da mentoria" : "Passou a aluna geral (mentoria retirada)");
+            }
+            if (fotoAl) { await rpc("salvar_foto_aluna", { p_aluna: id, p_foto: fotoAl.foto, p_original: fotoAl.original, p_ajuste: fotoAl.ajuste }); fotosCache[id] = fotoAl.foto; fotoNova = null; fotoPara = null; }
             await registrar(id, o.codigo !== cod ? "Dados atualizados · código trocado" : "Dados atualizados");
             ui.modal = null;
             return {
               msg: "Dados de " + nome + " salvos.", texto: "edição dos dados de " + nome,
-              desfazer: async () => { await rpc("restaurar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_acesso_ate: fimDoDia(o.validade), p_celular: o.celular, p_email: o.email }); },
+              desfazer: async () => { await rpc("salvar_liberacao", { p_aluna: id, p_produtos: acAntes.cursos, p_modulos: acAntes.modulos, p_aulas: acAntes.aulas }); await rpc("restaurar_ficha_aluna", { p_aluna: id, p_nome: o.nome, p_login: o.login, p_codigo: o.codigo, p_entrada: o.entrada, p_acesso_ate: fimDoDia(o.validade), p_celular: o.celular, p_email: o.email }); },
             };
           }
           const r = await chamarFuncao("cadastrar-aluna", { nome, login: loginNovo, codigo: cod, celular, email, entrada: v("entrada"), validade: v("validade") });
