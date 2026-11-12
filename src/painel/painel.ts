@@ -1317,11 +1317,13 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa ini ini2">
       <div class="vgx-cab">
         <div><span class="vgx-sobre">Painel de controle</span><h1>Visão geral</h1><p>Tudo o que você precisa acompanhar, em um só lugar.</p></div>
-        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="pf-pop" role="menu">
-          <button type="button" role="menuitem" data-a="aluna-nova">${IC_INI.pessoa}Cadastrar aluna</button>
-          <button type="button" role="menuitem" data-a="curso-novo">${ICONE_MENU.layout}Criar produto</button>
-          <button type="button" role="menuitem" data-a="aba" data-v="cursos">${IC_CAL_AG}Liberar conteúdo</button>
-          <button type="button" role="menuitem" data-a="ini-lista" data-v="comecar">${IC_INI.balao}Enviar acesso</button>
+        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cn-fundo" data-a="criar-fechar"></span><span class="cn-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
+          <span class="cn-cab"><b>O que deseja criar?</b><button type="button" class="cn-x" data-a="criar-fechar" aria-label="Fechar">${xis}</button></span>
+          <span class="cn-opcoes">
+            <button type="button" data-a="curso-novo">${ICONE_MENU.cursos || IC_INI.play}<b>Produto</b><span>Curso, e-book ou áudio</span></button>
+            <button type="button" data-a="aluna-nova">${IC_INI.pessoas}<b>Aluna</b><span>Dados, acesso e conteúdo</span></button>
+            <button type="button" data-a="aba" data-v="layout">${ICONE_MENU.layout}<b>Categoria</b><span>Organize sua biblioteca</span></button>
+          </span>
         </span>` : ""}</span></div>
       </div>
       <button type="button" class="vgx-atencao${nTarefas ? "" : " ok"}" data-a="estado-menu" data-v="sino"><i aria-hidden="true"></i><span>${nTarefas ? `<b>${p(nTarefas, "ponto de atenção", "pontos de atenção")} na operação.</b> Priorize comentários pendentes e acessos próximos do vencimento.` : "<b>Tudo em dia na operação.</b> Nenhum comentário ou acesso pedindo atenção."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>
@@ -6986,6 +6988,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
+      case "criar-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.estMenu = ""; break;
       case "vgx-grupo": ui.vgxGrupo = d.v; break;
       case "vgx-total-ver": ui.tab = "alunas"; ui.grupoAl = (ui.vgxGrupo || "mentoria") as "mentoria" | "geral"; window.scrollTo(0, 0); break;
       case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
