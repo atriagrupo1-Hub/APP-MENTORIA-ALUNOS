@@ -1396,9 +1396,9 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa ini ini2">
       <div class="vgx-cab">
         <div><span class="vgx-sobre">Painel de controle</span><h1>Visão geral</h1><p>Tudo o que você precisa acompanhar, em um só lugar.</p></div>
-        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cn-fundo" data-a="criar-fechar"></span><span class="cn-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
-          <span class="cn-cab"><b>O que deseja criar?</b><button type="button" class="cn-x" data-a="criar-fechar" aria-label="Fechar">${xis}</button></span>
-          <span class="cn-opcoes">
+        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cri-fundo" data-a="criar-fechar"></span><span class="cri-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
+          <span class="cri-cab"><b>O que deseja criar?</b><button type="button" class="cri-x" data-a="criar-fechar" aria-label="Fechar">${xis}</button></span>
+          <span class="cri-opcoes">
             <button type="button" data-a="curso-novo">${ICONE_MENU.cursos || IC_INI.play}<b>Produto</b><span>Curso, e-book ou áudio</span></button>
             <button type="button" data-a="aluna-nova">${IC_INI.pessoas}<b>Aluna</b><span>Dados, acesso e conteúdo</span></button>
             <button type="button" data-a="aba" data-v="layout">${ICONE_MENU.layout}<b>Categoria</b><span>Organize sua biblioteca</span></button>
@@ -1462,9 +1462,9 @@ export function montar(app: HTMLElement) {
     const libTxt = a.rascunho ? "Não liberado" : !a.libera ? "Liberado imediatamente" : futura ? "Libera em " + dt(a.libera) : "Liberado em " + dt(a.libera);
     const k = cat(x.c.cat);
     const linha = (r: string, v: string) => `<span class="lq-l"><span>${r}</span><b>${v}</b></span>`;
-    return `<span class="cn-fundo" data-a="lib-fechar"></span>
-      <div class="cn-modal lq" role="dialog" aria-modal="true" aria-label="Publicação e liberação">
-        <div class="cn-cab"><b>Publicação e liberação</b><button type="button" class="cn-x" data-a="lib-fechar" aria-label="Fechar">${xis}</button></div>
+    return `<span class="cri-fundo" data-a="lib-fechar"></span>
+      <div class="cri-modal lq" role="dialog" aria-modal="true" aria-label="Publicação e liberação">
+        <div class="cri-cab"><b>Publicação e liberação</b><button type="button" class="cri-x" data-a="lib-fechar" aria-label="Fechar">${xis}</button></div>
         <div class="lq-corpo">
                     <div class="lq-info">
             <span><i>Curso</i><b>${h(x.c.nome)}</b></span>
@@ -6305,7 +6305,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cn-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cri-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
@@ -7199,7 +7199,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "vgx-aba": ui.vgxAba = d.v; break;
       case "copiar-cel": { const n = fone(al!.celular); const ok = () => toast("WhatsApp de " + primeiroNome(al!.nome) + " copiado: " + n); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(n).then(ok, () => toast(n)); else toast(n); return; }
       case "al-lote": document.querySelector(".lote")?.scrollIntoView({ block: "center", behavior: "smooth" }); (document.querySelector(".lote select") as HTMLElement | null)?.focus(); return;
-      case "criar-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.estMenu = ""; break;
+      case "criar-fechar": if (alvo !== el && el.classList.contains("cri-fundo")) return; ui.estMenu = ""; break;
       case "vgx-grupo": ui.vgxGrupo = d.v; break;
       case "vgx-total-ver": ui.tab = "alunas"; ui.grupoAl = (ui.vgxGrupo || "mentoria") as "mentoria" | "geral"; window.scrollTo(0, 0); break;
       case "ini-ativ-abrir": ui.iniTipo = ""; ui.ativTodas = true; break;
@@ -7670,7 +7670,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "lib-ver": ui.libVer = d.id; break;
-      case "lib-fechar": if (alvo !== el && el.classList.contains("cn-fundo")) return; ui.libVer = ""; break;
+      case "lib-fechar": if (alvo !== el && el.classList.contains("cri-fundo")) return; ui.libVer = ""; break;
       case "abrir-aula-lib": {
         ui.libVer = "";
         // Abre a aula já na parte "Publicação e liberação".
