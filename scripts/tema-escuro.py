@@ -14,7 +14,7 @@ def rgb(c):
     if m and (m.group(4) is None or float(m.group(4))>=0.9): return tuple(int(m.group(i))/255 for i in (1,2,3))
     return None
 def lum(r,g,b): return 0.2126*r+0.7152*g+0.0722*b
-EXC=re.compile(r'chave|::after|::before|knob|\bsw\b|ej-sw|cc-|\.cf-|pv-|\bcel\b|ce-cel|toast|ouro|al-botao-ouro|\.botao\b|kx-aa|cfg-pic|selo3|ka-capa|cur-capa|capa|modal-fundo|::selection|cc2-tipo|eng-rosca|aa-av|avatar|\.pf-|lado|atu-|vg-chip\[aria-pressed|chip\[aria-pressed|\[aria-pressed="true"\]|\[aria-current|\[aria-selected="true"\]|ms-on|:checked|mbe-|pvn-|\.on\b')
+EXC=re.compile(r'chave|::after|::before|knob|\bsw\b|ej-sw|cc-|\.cf-|pv-|\bcel\b|ce-cel|toast|ouro|al-botao-ouro|\.botao\b|kx-aa|cfg-pic|selo3|ka-capa|cur-capa|capa|modal-fundo|::selection|cc2-tipo|eng-rosca|aa-av|avatar|\.pf-|lado|atu-|vg-chip\[aria-pressed|chip\[aria-pressed|\[aria-pressed="true"\]|\[aria-current|\[aria-selected="true"\]|:checked|mbe-|pvn-|\.on\b')
 out=[]
 def proc(block, prefixo_media=None):
     for m in re.finditer(r'([^{}@]+)\{([^{}]*)\}', block):
