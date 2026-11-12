@@ -6125,7 +6125,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   /** Cadastrar/editar aluna em abas: as abas só mostram e escondem partes do mesmo formulário (nada se perde ao trocar). */
   function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
   function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
-  function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || nome.split(/\s+/)[0] || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
+  /** Login automático: primeiro nome + ponto + inicial do sobrenome (ex.: atria.g). */
+  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/); return (p2[0] || "") + (p2[1] ? "." + p2[1][0] : ""); };
+  function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || loginAuto(nome)).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
   /* Desfazer dentro do cadastro (editar): guarda o formulário antes de cada alteração, até 5. Nada vai ao banco. */
   let cadHist: Record<string, string>[] = []; let cadAntes: Record<string, string> | null = null;
   const fotoCad = (f: HTMLFormElement) => { const o: Record<string, string> = {}; for (const el of Array.from(f.elements) as HTMLInputElement[]) { if (!el.name || el.type === "button" || el.type === "submit") continue; if (el.type === "radio") { if (el.checked) o[el.name] = el.value; else if (!(el.name in o)) o[el.name] = ""; } else if (el.type === "checkbox") o[el.name + ":" + el.value] = el.checked ? "1" : ""; else o[el.name] = el.value; } return o; };
@@ -6140,6 +6142,17 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     }
     cadAntes = fotoCad(f); atualizarCad(); cadBotaoDesfazer();
   }
+  // Nome + sobrenome → campo "nome" (o que é salvo) e, no cadastro novo, o login automático.
+  document.addEventListener("input", (e) => {
+    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al") as HTMLFormElement | null; if (!f) return;
+    const lg = f.elements.namedItem("login") as HTMLInputElement | null;
+    if (t.name === "login") { t.dataset.auto = t.value ? "0" : "1"; return; }
+    if (!t.hasAttribute("data-nome-parte")) return;
+    const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim();
+    (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim();
+    if (lg && !f.dataset.id && lg.dataset.auto !== "0") { lg.value = loginAuto(pn + " " + sn).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); lg.dataset.auto = "1"; }
+    atualizarCad();
+  });
   document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
   document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
   function atualizarCad() {
@@ -6159,7 +6172,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   /** Confere a aba; devolve a mensagem do que falta (vazio se está tudo certo). */
   function cadConferir(k: string): string {
     if (k === "dados") {
-      if (!cadValor("nome")) return "Escreva o nome completo.";
+      if (!cadValor("pnome") || !cadValor("snome")) return "Preencha o nome e o sobrenome.";
       if (cadValor("celular").replace(/\D/g, "").length !== 11) return "Preencha o celular com DDD: (11) 98765-4321.";
       const em = cadValor("email"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return "Confira o e-mail.";
     }
@@ -6209,14 +6222,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
-          <label class="cad-c cad-full"><span>Nome completo <b>*</b></span><input id="alunaNome" class="campo" name="nome" value="${h(a ? a.nome : "")}" autocomplete="off" /></label>
+          <label class="cad-c"><span>Nome <b>*</b></span><input id="alunaNome" class="campo" name="pnome" value="${h(a ? a.nome.trim().split(/\s+/)[0] : "")}" autocomplete="off" data-nome-parte /></label>
+          <label class="cad-c"><span>Sobrenome <b>*</b></span><input class="campo" name="snome" value="${h(a ? a.nome.trim().split(/\s+/).slice(1).join(" ") : "")}" autocomplete="off" data-nome-parte /><input type="hidden" name="nome" value="${h(a ? a.nome : "")}" /></label>
           <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
           <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
           ${a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluna da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
           <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : a && S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : a ? h(iniciais(a.nome)) : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${(fotoNova && fotoPara === "aln") || (a && S.fotos[a.id]) ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
-          <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Gerado pelo primeiro nome. Pode editar.</small></label>
+          <label class="cad-c"><span>Login</span><input class="campo" name="login" value="${h(a ? a.login : "")}" placeholder="gerado pelo nome" autocomplete="off" /><small>Automático: nome + inicial do sobrenome (ex.: maria.s). Pode editar.</small></label>
           <label class="cad-c"><span>Código de acesso <b>*</b></span><span class="cad-linha"><span class="campo cad-cod"><input name="codigo" type="${a ? "password" : "text"}" inputmode="numeric" maxlength="4" value="${h(cod)}" autocomplete="off" aria-label="Código de acesso" /><button type="button" class="cad-cod-gerar" data-a="gerar-codigo" aria-label="Gerar um código novo" title="Gerar um código novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15"/></svg></button></span><button type="button" class="botao-neutro grande" data-a="cad-mostrar-cod">${a ? "Mostrar" : "Esconder"}</button></span></label>
           <label class="cad-c"><span>Cadastro <b>*</b></span><input class="campo" type="date" name="entrada" value="${ent}" /></label>
           <label class="cad-c"><span>Link do aplicativo</span><input class="campo" name="link" type="url" inputmode="url" maxlength="500" value="${h((a && LINKS.aluna.get(a.id)) || LINKS.geral || enderecoDaMentoria())}" /><small>Vem do link geral. Pode trocar só para esta aluna.</small></label>
@@ -8229,7 +8243,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const cod = v("codigo");
         if (!/^\d{4}$/.test(cod)) { toast("O código precisa ter 4 números."); return; }
         const nome = v("nome");
-        const loginNovo = (v("login") || nome.split(/\s+/)[0]).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
+        const loginNovo = (v("login") || loginAuto(nome)).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9.]/g, "");
         if (S.alunas.some((x) => x.login === loginNovo && x.id !== id)) { toast("Já existe uma aluna com o login " + loginNovo + "."); return; }
         const celular = v("celular").replace(/\D/g, "");
         if (celular.length !== 11) { toast("Preencha o celular com DDD: (11) 98765-4321."); return; }
