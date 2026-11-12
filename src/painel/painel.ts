@@ -4406,10 +4406,8 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
               ${(() => { const lb = m.aulas.filter((a) => a.acesso === "liberada" || abertasMod.has(a.id)).length, n = m.aulas.length, pc = n ? Math.round((lb / n) * 100) : 0; return `<span class="ma2-lib" title="Aulas já liberadas para as alunas"><em>${lb}/${n} liberadas</em><i><b style="width:${pc}%"></b></i></span>`; })()}
               <span class="mest">${ehModTeste(m) ? seletorPub(m) + seletorAcesso(m) : seletorEstado("mod", m.id, estado3(m.pub, !m.ativo), true)}</span>
               <span class="cs-mod-acoes">
-                <button type="button" data-a="mod-editar" data-id="${m.id}" aria-label="Editar o módulo" title="Editar">${IC_CURSO.lapis}</button>
-                <button type="button" data-a="mod-duplicar" data-id="${m.id}" aria-label="Duplicar o módulo" title="Duplicar">${IC_MOD.copiar}</button>
-                <button type="button" class="perigo" data-a="mod-remover" data-id="${m.id}" aria-label="Remover o módulo" title="Remover">${IC_MOD.lixo}</button>
                 <button type="button" class="cs-mod-abre" data-a="mod-abrir-fechar" data-id="${m.id}" aria-label="${aberto ? "Esconder as aulas" : "Mostrar as aulas"}" aria-expanded="${aberto}">${IC_MOD.seta}</button>
+                <span class="est3 kg-menu"><button type="button" data-a="estado-menu" data-v="mdm:${m.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "mdm:" + m.id}" aria-label="Mais ações do módulo" title="Mais ações">${IC_ABAC.pontos}</button>${ui.estMenu === "mdm:" + m.id ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="mod-editar" data-id="${m.id}">${IC_CURSO.lapis}Editar</button><button type="button" role="menuitem" data-a="mod-duplicar" data-id="${m.id}">${IC_MOD.copiar}Duplicar</button><button type="button" role="menuitem" class="perigo" data-a="mod-remover" data-id="${m.id}">${IC_MOD.lixo}Excluir</button></span>` : ""}</span>
               </span>
             </div>
             ${aberto ? `<div class="cs-mod-aulas">
