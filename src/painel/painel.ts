@@ -1154,6 +1154,8 @@ export function montar(app: HTMLElement) {
   const paraResponder = () => S.comentarios.filter((k) => k.estado === "moderar" && !k.resposta).sort((x, y) => y.criado.localeCompare(x.criado));
   const badge = (n: number) => (n ? `<span class="badge-alerta" aria-label="${n} para fazer">${n > 99 ? "99+" : n}</span>` : "");
   function tarefasInicio() { return paraResponder().length + listasAcessos().reduce((t, l) => t + l.lista.length, 0); }
+  /** Atalhos do Início (Cadastrar aluna, Liberar conteúdo, Criar produto, Enviar acesso): guardados, fora da tela por enquanto. */
+  const ATALHOS_INI = false as boolean;
   function telaInicio() {
     const { de, ate, chave } = periodoIni();
     carregarAtividades(); carregarResumoEng();
@@ -1277,12 +1279,12 @@ export function montar(app: HTMLElement) {
         <div class="ini-boas-dir">${seletorPeriodo()}</div>
       </div>
       <div class="ini-mets">${metricas}</div>
-      <div class="ini-atalhos">
+      ${ATALHOS_INI ? `<div class="ini-atalhos">
         ${atalho(IC_INI.pessoa, "Cadastrar aluna", "aluna-nova")}
         ${atalho(IC_CAL_AG, "Liberar conteúdo", "aba", "alunas")}
         ${atalho(ICONE_MENU.layout, "Criar produto", "curso-novo")}
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
-      </div>
+      </div>` : ""}
       <div class="ini-corpo">
         <div class="ini-principal">
           <section class="ini-cartao ini-fila" aria-label="Para fazer agora">
