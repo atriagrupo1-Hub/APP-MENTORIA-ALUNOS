@@ -28,3 +28,4 @@ previa/*
 *.zip
 dist-previa
 src/.previa-rapida.ts
+dist-app-previa

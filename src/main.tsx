@@ -34,6 +34,30 @@ const abrirPainel = () => void import("./index.css").then(() => import("./painel
 if (porta.ehPainel) {
   // /admin?previa=1: a versão em edição, que se atualiza sozinha (ver previa.ts).
   void import("./previa").then((p) => (p.previaLigada() ? p.iniciar(raiz, abrirPainel) : abrirPainel()));
+} else if (demoLigada()) {
+  // /?demo=1 (página de apresentação): o app em edição, guardado no depósito `previa` do Supabase.
+  // Muda em segundos, sem publicar o site; as alunas continuam no app publicado.
+  void abrirDemo();
 } else {
   void import("./aluna/area").then((m) => m.montar(raiz));
+}
+
+function demoLigada() {
+  const q = new URLSearchParams(location.search);
+  try {
+    if (q.get("demo") === "0") sessionStorage.removeItem("aion-demo");
+    else if (q.has("demo")) sessionStorage.setItem("aion-demo", "1");
+    return sessionStorage.getItem("aion-demo") === "1";
+  } catch { return q.has("demo") && q.get("demo") !== "0"; }
+}
+async function abrirDemo() {
+  const BASE = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/previa/`;
+  const ler = async () => { try { const r = await fetch(`${BASE}app.json?t=${Date.now()}`, { cache: "no-store" }); return r.ok ? ((await r.json()) as { id: string; entrada: string; css: string[] }) : null; } catch { return null; } };
+  const v = await ler();
+  if (!v) { void import("./aluna/area").then((m) => m.montar(raiz)); return; }
+  for (const c of v.css) { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = BASE + c; document.head.appendChild(l); }
+  const m = await import(/* @vite-ignore */ BASE + v.entrada);
+  m.montar(raiz);
+  // Saiu versão nova: recarrega sozinha (a sessão da aluna continua).
+  setInterval(async () => { const n = await ler(); if (n && n.id !== v.id) location.reload(); }, 2000);
 }
