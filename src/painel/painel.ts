@@ -1330,7 +1330,7 @@ export function montar(app: HTMLElement) {
         ${atalho(IC_INI.balao, "Enviar acesso", "ini-lista", "comecar")}
       </div>` : ""}
       <div class="ini-mets">${metricas}</div>
-      ${vgxResto(atv, de, ate)}
+      ${vgxResto(atv)}
       <div class="ini-corpo${INI_EXTRA ? "" : " so"}">
         <div class="ini-principal">
           ${INI_EXTRA ? `<div class="ini-fila-tit"><h2>Para fazer agora</h2>${nTarefas ? badge(nTarefas) : emDia()}</div>
@@ -1361,7 +1361,7 @@ export function montar(app: HTMLElement) {
     </section>`;
   }
   /** Visão geral: central de atenção, ritmo da comunidade, atividade recente, vencimentos e rascunhos. */
-  function vgxResto(atv: Atividade[] | null, de: string, ate: string) {
+  function vgxResto(atv: Atividade[] | null) {
     const ls = listasAcessos(), coms = paraResponder();
     const n2 = (n: number) => String(n).padStart(2, "0");
     const IC_REL = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>`;
