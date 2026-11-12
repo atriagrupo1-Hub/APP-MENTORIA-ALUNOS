@@ -5666,3 +5666,6 @@ html[data-tema="claro"] .casca2 .vgx-tab tbody tr:hover td { background: var(--a
 .casca2 .vgx-novo { justify-content: center; gap: 0; padding: 20px; border-style: dashed; }
 .casca2 .vgx-novo h3 { margin: 13px 0 10px; font-family: "Manrope", sans-serif; font-size: 14px; font-weight: 650; }
 .casca2 .vgx-rodape { margin-top: 28px; padding-top: 17px; font-size: 9px; color: #737780; border-top: 1px solid #25262B; }
+.ini-grupo-tit { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 18px 0 4px; padding-bottom: 8px; font-size: 15px; font-weight: 700; color: var(--al-ouro); border-bottom: 1px solid var(--linha-suave); }
+.ini-grupo-tit:first-child { margin-top: 4px; }
+.ini-grupo-tit span { font-size: 12px; font-weight: 500; color: var(--texto-3); }
