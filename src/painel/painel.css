@@ -5100,3 +5100,4 @@ html[data-tema="claro"] .mest .est3.com-sub > em.dt-ag { color: #2f4ea3; }
 @media (max-width: 900px) { .cs-mod-linha .mest, .mp-aula-linha .mest { width: auto !important; } }
 .cs-mods .cs-mod-linha .cs-mod-acoes { margin-right: 15px; }
 .cs-mod-acoes > .kg-menu, .mp-aula-acoes > .kg-menu { flex: none !important; width: auto !important; min-width: 0 !important; display: inline-flex !important; } .cs-mod-acoes > button { flex: none !important; }
+.mp-aula-acoes .mp-ic { border: 0 !important; background: none !important; box-shadow: none !important; } .mp-aula-acoes .mp-ic:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)) !important; }
