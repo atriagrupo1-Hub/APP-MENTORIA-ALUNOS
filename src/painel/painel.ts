@@ -4371,7 +4371,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     const abertasMod = aulasAbertas();
     return `
       ${(() => { const aus = c.modulos.flatMap((m) => m.aulas), pubs = aus.filter((a) => a.pub && !a.rascunho).length, bloq = aus.filter((a) => a.acesso === "bloqueada").length, pct = aus.length ? Math.round((pubs / aus.length) * 100) : 0;
-        return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2><p>Organize, publique e libere os conteúdos do curso. Arraste pela alça para mudar a ordem.</p></div>
+        return `<div class="ma2-topo"><div class="ma2-tit"><h2>Módulos e aulas ${dicaCampo(AJ.listaMods)}</h2></div>
         <div class="ma2-kpis"><span><b>${c.modulos.length}</b>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</span><span><b>${aus.length}</b>${nomeItens(c, aus.length)}</span><span><b>${pubs}</b>${pubs === 1 ? "Publicada" : "Publicadas"}</span><span><b>${bloq}</b>${bloq === 1 ? "Bloqueada" : "Bloqueadas"}</span><span class="ma2-pct"><b>${pct}%</b>Publicado<i><em style="width:${pct}%"></em></i></span></div></div>`; })()}
       <div class="cs-mods-barra ma-barra">
         <label class="cs-mods-busca">${IC_CUR.lupa}<input class="campo" type="search" id="modBusca" data-mod-busca value="${h(ui.modBusca || "")}" placeholder="Buscar módulo ou aula..." aria-label="Buscar módulo ou aula" /></label>
