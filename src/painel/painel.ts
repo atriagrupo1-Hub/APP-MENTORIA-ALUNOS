@@ -6126,8 +6126,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   function cadForm() { return document.querySelector<HTMLFormElement>('form[data-f="aluna"]'); }
   function cadValor(n: string) { return ((cadForm()?.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "").trim(); }
   /** Login automático: primeiro nome + ponto + inicial do sobrenome (ex.: atria.g). */
-  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/); return (p2[0] || "") + (p2[1] ? "." + p2[1][0] : ""); };
-  function cadLogin() { const nome = cadValor("nome"); return (cadValor("login") || loginAuto(nome)).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); }
+  // O banco guarda o login em minúsculas e compara sem diferença de maiúscula; aqui ele aparece como Maria.S
+  const semAcento = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9.]/g, "");
+  const loginAuto = (nome: string) => { const p2 = nome.trim().split(/\s+/).map(semAcento).filter(Boolean); const pn = p2[0] || ""; return pn ? pn[0].toUpperCase() + pn.slice(1).toLowerCase() + (p2[1] ? "." + p2[1][0].toUpperCase() : "") : ""; };
+  function cadLogin() { const nome = cadValor("nome"); return semAcento(cadValor("login") || loginAuto(nome)); }
   /* Desfazer dentro do cadastro (editar): guarda o formulário antes de cada alteração, até 5. Nada vai ao banco. */
   let cadHist: Record<string, string>[] = []; let cadAntes: Record<string, string> | null = null;
   const fotoCad = (f: HTMLFormElement) => { const o: Record<string, string> = {}; for (const el of Array.from(f.elements) as HTMLInputElement[]) { if (!el.name || el.type === "button" || el.type === "submit") continue; if (el.type === "radio") { if (el.checked) o[el.name] = el.value; else if (!(el.name in o)) o[el.name] = ""; } else if (el.type === "checkbox") o[el.name + ":" + el.value] = el.checked ? "1" : ""; else o[el.name] = el.value; } return o; };
@@ -6148,9 +6150,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const lg = f.elements.namedItem("login") as HTMLInputElement | null;
     if (t.name === "login") { t.dataset.auto = t.value ? "0" : "1"; return; }
     if (!t.hasAttribute("data-nome-parte")) return;
+    const nomeEl = f.elements.namedItem("nome") as HTMLInputElement;
+    // Login ainda "automático"? Vazio, ou igual ao que o nome de antes geraria (regra nova ou a antiga, só o primeiro nome).
+    if (lg && lg.dataset.auto === undefined) { const v0 = lg.value.toLowerCase(), n0 = nomeEl.value; lg.dataset.auto = !v0 || v0 === loginAuto(n0).toLowerCase() || v0 === semAcento(n0.trim().split(/\s+/)[0] || "").toLowerCase() ? "1" : "0"; }
     const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim();
-    (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim();
-    if (lg && !f.dataset.id && lg.dataset.auto !== "0") { lg.value = loginAuto(pn + " " + sn).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9.]/g, ""); lg.dataset.auto = "1"; }
+    nomeEl.value = (pn + " " + sn).trim();
+    if (lg && lg.dataset.auto === "1") lg.value = loginAuto(pn + " " + sn);
     atualizarCad();
   });
   document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
