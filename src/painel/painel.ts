@@ -6214,7 +6214,6 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         <div class="rodape-modal cad-pe">
           <button type="button" class="botao-neutro grande" data-a="cad-voltar" hidden>← Voltar</button>
           <button type="button" class="botao-neutro grande" data-a="fechar" data-cad-cancelar>Cancelar</button>
-          ${a ? `<button type="button" class="botao-neutro grande botao-remover" data-a="remover-aluna" data-id="${a.id}">Remover aluna</button>` : ""}
           <span style="flex:1"></span>
           <button type="button" class="botao-neutro grande" data-a="cad-prox">Próximo: ${abas[1][1]} →</button>
           <button class="botao" data-cad-salvar ${a ? "" : "hidden"}>${a ? "Salvar" : "Cadastrar"}</button>
