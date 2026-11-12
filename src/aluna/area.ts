@@ -2213,7 +2213,10 @@ export function montar(raiz: HTMLElement) {
       case "ig-busca": abrirBuscaIg(); return;
       case "ig-slide": { const tr = app.querySelector("[data-ig-trilho]"); if (tr) tr.scrollTo({ left: +d.v * tr.clientWidth, behavior: "smooth" }); return; }
       case "cat-fechada": { const c = CATS()[+d.v]; aviso((c ? c.nome : "Este conteúdo") + " ainda não foi liberado para você. Em breve!"); return; }
-      case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v; S.tela = "categoria"; topo(); break;
+      case "categoria": pararVideo(); S.perfilDe = null; S.cat = +d.v;
+        // Categoria de Presentes abre a própria aba Presentes (cards inteiros); só a lista de E-books usa a tela de categoria.
+        if (!CATS()[S.cat]?.sub) { if (CATS()[S.cat]?.id) S.aba = CATS()[S.cat].id; S.tela = "presentes"; topo(); break; }
+        S.tela = "categoria"; topo(); break;
       case "ir-cat": {
         const pr = PRESENTES().find((x) => x.curso.nome.toLowerCase() === String(d.v).toLowerCase());
         if (pr) { acao(ehEbook(pr.curso) && cursoLiberado(pr.curso) ? "ebook" : "curso-pres", { v: pr.ci + "-" + pr.i }); return; }
