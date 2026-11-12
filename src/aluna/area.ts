@@ -1610,7 +1610,7 @@ export function montar(raiz: HTMLElement) {
     const pct = curso.itens.length ? Math.round((feitos / curso.itens.length) * 100) : 0;
     const totalC = c.cursos.length;
     return `
-    ${cabMp(`data-a="categoria" data-v="${ci}"`, cat)}
+    ${cabMp(CATS()[ci]?.sub ? `data-a="categoria" data-v="${ci}"` : `data-a="ir" data-v="presentes"`, cat)}
     <div class="mp mv" style="--mc:${COR}">
       <section class="mv-topo" aria-labelledby="h-cpt">
         <span class="mv-capa-mod">${img(curso.capa, "").replace("<img ", `<img onload="if(this.naturalWidth>this.naturalHeight)this.closest('.mv-topo').classList.add('deitada')" `)}</span>
