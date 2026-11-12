@@ -5964,3 +5964,6 @@ html[data-tema="claro"] .cad-cod-gerar:hover { color: #8a6420; background: var(-
 .cad-desfazer:hover:not(:disabled) { background: #303237; border-color: #5A5B60; }
 .cad-desfazer:disabled { opacity: .45; cursor: default; }
 html[data-tema="claro"] .cad-desfazer { color: var(--texto); background: var(--aa-cartao); border-color: var(--linha-suave); }
+.al2-sel[data-filtro-al] { min-height: 46px; padding: 0 40px 0 16px; font-weight: 600; color: #EEEEF0; background-color: #151619; border: 1.5px solid #E2C68C; border-radius: 8px; }
+.al2-sel[data-filtro-al]:focus { outline: none; box-shadow: 0 0 0 3px rgba(226, 198, 140, .15); }
+html[data-tema="claro"] .al2-sel[data-filtro-al] { color: var(--texto); background-color: var(--aa-cartao); border-color: #b08a3e; }
