@@ -4030,18 +4030,15 @@ export function montar(app: HTMLElement) {
   function linhaAulaNova(m: Modulo, a: Aula, j: number) {
       if (editando("aula", a.id)) return `<div class="mp-aula editando">${linhaAula(m, a, j)}</div>`;
       const capa = capaSite(a.capa), mais = ui.aulaMais === a.id;
-      const quando = a.criado ? dataHoraCurta(a.criado).split(" ") : ["—", ""];
       return `
         <div class="mp-aula${mais ? " aberta" : ""}${a.pub ? "" : " desativada"}${cls3(estado3(a.pub, a.acesso === "bloqueada"))}" draggable="true" data-arrasta="${a.id}">
           <div class="mp-aula-linha">
             <span class="cs-alca" title="Arraste para mudar a ordem">${IC_MOD.alca}</span>
             <button type="button" class="mp-aula-capa" data-a="abrir-aula" data-id="${a.id}" aria-label="Abrir ${h(a.nome)}">${capa ? `<img src="${h(capa)}" alt="" loading="lazy" onerror="this.remove()" />` : ""}${selo3(estado3(a.pub, a.acesso === "bloqueada"), true)}<i>${IC_PLAY_C}</i></button>
             <span class="mp-aula-txt"><b>${h(a.rot)} ${a.num} — ${h(a.nome)}</b><span>${a.tipo === "audio" ? (a.arquivo ? "Áudio" : "Sem áudio") : a.tipo === "pdf" ? (a.arquivo ? "PDF (e-book)" : "Sem PDF") : a.video ? "Vídeo" : "Sem vídeo"}${a.duracao ? ` <i>·</i> ${Math.max(1, Math.round(a.duracao / 60))} min` : ""}</span></span>
-            <span class="mp-aula-data">${IC_CUR.cal}<span>${quando[0]}<br />${quando[1] || ""}</span></span>
             ${ehModTeste(m) ? `<span class="mest mest-aula">${seletorPubAula(a)}${seletorAcessoAula(m, a)}</span>` : seletorEstado("aula", a.id, estado3(a.pub, a.acesso === "bloqueada"), false, true)}
             <span class="mp-aula-acoes">
-              <button type="button" class="al-botao" data-a="abrir-aula" data-id="${a.id}">${IC_CURSO.lapis}Editar</button>
-              <span class="est3 kg-menu"><button type="button" class="mp-ic" data-a="estado-menu" data-v="aum:${a.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "aum:" + a.id}" aria-label="Mais ações da aula" title="Mais ações">${IC_ABAC.pontos}</button>${ui.estMenu === "aum:" + a.id ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="aula-duplicar" data-id="${a.id}">${IC_MOD.copiar}Duplicar</button><button type="button" role="menuitem" class="perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir</button></span>` : ""}</span>
+              <span class="est3 kg-menu"><button type="button" class="mp-ic" data-a="estado-menu" data-v="aum:${a.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "aum:" + a.id}" aria-label="Mais ações da aula" title="Mais ações">${IC_ABAC.pontos}</button>${ui.estMenu === "aum:" + a.id ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="abrir-aula" data-id="${a.id}">${IC_CURSO.lapis}Editar</button><button type="button" role="menuitem" data-a="aula-duplicar" data-id="${a.id}">${IC_MOD.copiar}Duplicar</button><button type="button" role="menuitem" class="perigo" data-a="aula-remover" data-id="${a.id}">${IC_MOD.lixo}Excluir</button></span>` : ""}</span>
             </span>
           </div>
           ${mais ? `<div class="mp-aula-mais">
@@ -4287,9 +4284,20 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     return "Imediatamente";
   }
   /** Publicado (azul) ou Não publicado (vermelho). Não publicado = rascunho (0115): a aluna não vê nem acessa. */
+  /** Datas que aparecem embaixo dos status (Publicação e Liberação). */
+  let libMinCache: { em: number; m: Map<string, string> } | null = null;
+  function libMin() {
+    if (libMinCache && Date.now() - libMinCache.em < 1500) return libMinCache.m;
+    const ag = new Date().toISOString(), m = new Map<string, string>();
+    for (const al of S.alunas) for (const k of al.concessoes) if (k.escopo === "aula") { const q = k.abre || k.em; if (q && q <= ag && (!m.has(k.alvo) || q < m.get(k.alvo)!)) m.set(k.alvo, q); }
+    libMinCache = { em: Date.now(), m }; return m;
+  }
+  const dtCurta = (x: string) => (x ? br(diaDe(x)) : "—");
+  const dataLibAula = (a: Aula) => { const ag = new Date().toISOString(); return a.liberadaEm || libMin().get(a.id) || (a.libera && a.libera <= ag ? a.libera : ""); };
+  const dataLibMod = (m: Modulo) => { const ag = new Date().toISOString(); if (m.libera && m.libera <= ag) return m.libera; const ds = m.aulas.map(dataLibAula).filter(Boolean).sort(); return ds[0] || ""; };
   function seletorPub(m: Modulo) {
     const k = "mpub:" + m.id, pub = !m.rascunho;
-    return `<span class="est3 mpub"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${pub ? "Publicado" : "Não publicado"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+    return `<span class="est3 mpub com-sub dt-col"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${pub ? "Publicado" : "Não publicado"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><em>${pub ? dtCurta(m.publicadoEm || m.criado) : "—"}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
       <button type="button" role="menuitemradio" aria-checked="${pub}" data-a="mod-pub" data-id="${m.id}" data-v="1"><span class="mpub-pil on">Publicado</span></button>
       <button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="mod-pub" data-id="${m.id}" data-v="0"><span class="mpub-pil off">Não publicado</span></button>
     </span>` : ""}</span>`;
@@ -4323,20 +4331,21 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   /** Na aula (lista do módulo): Publicada / Não publicada, e o acesso — mesmo padrão do Módulo 0. */
   function seletorPubAula(a: Aula) {
     const k = "apub:" + a.id, pub = !a.rascunho;
-    return `<span class="est3 mpub"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${pub ? "Publicada" : "Não publicada"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+    return `<span class="est3 mpub com-sub dt-col"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar a publicação">${pub ? "Publicada" : "Não publicada"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><em>${pub ? dtCurta(a.publicadoEm || a.criado) : "—"}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
       <button type="button" role="menuitemradio" aria-checked="${pub}" data-a="aula-pub" data-id="${a.id}" data-v="1"><span class="mpub-pil on">Publicada</span></button>
       <button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="aula-pub" data-id="${a.id}" data-v="0"><span class="mpub-pil off">Não publicada</span></button>
     </span>` : ""}</span>`;
   }
   const IC_CAL_AG = `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>`;
   function seletorAcessoAula(m: Modulo, a: Aula) {
-    if (a.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc">Rascunho</span><em>Não publicada: as alunas não veem</em></span>`;
+    if (a.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc" title="Não publicada: as alunas não veem">Rascunho</span><em>—</em></span>`;
     const e = estado3(a.pub, a.acesso === "bloqueada"), k = "aacc:" + a.id, d = a.liberaDias ?? 0;
     const i = m.aulas.indexOf(a), ant = i > 0 ? m.aulas[i - 1] : null;
     const lib = a.liberaModo === "cadastro" ? p(d, "dia", "dias") + " após o cadastro" : a.liberaModo === "prazo" ? p(d, "dia", "dias") + " após a " + (ant ? h(ant.rot) + " " + ant.num : "aula anterior") : a.libera ? "Em " + dataHoraCurta(a.libera) : "Imediatamente";
     const agend = e === "ativo" && a.liberaModo !== "cadastro" && a.liberaModo !== "prazo" && !!a.libera && a.libera > new Date().toISOString();
-    const [rot, cor, sub] = agend ? ["Agendada", "azul", "Para " + dataHoraCurta(a.libera)] : e === "ativo" ? ["Liberada", "verde", lib] : e === "bloqueado" ? ["Bloqueada", "amarelo", "A aluna vê, mas não acessa"] : ["Oculta", "vermelho", "A aluna não vê nem acessa"];
-    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar o acesso">${agend ? IC_CAL_AG : e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+    const [rot, cor, sub] = agend ? ["Agendada", "azul", dataHoraCurta(a.libera).replace(" ", " · ")] : e === "ativo" ? ["Liberada", "verde", dtCurta(dataLibAula(a))] : e === "bloqueado" ? ["Bloqueada", "amarelo", "—"] : ["Oculta", "vermelho", "—"];
+    const dica = agend ? "Agendada" : e === "ativo" ? lib : e === "bloqueado" ? "A aluna vê, mas não acessa" : "A aluna não vê nem acessa";
+    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="${h(dica)} · clique para mudar">${agend ? IC_CAL_AG : e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em class="${agend ? "dt-ag" : ""}">${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
       <button type="button" role="menuitemradio" aria-checked="${e === "ativo" && !agend}" data-a="aula-lib-abrir" data-id="${a.id}"><span class="est3-pil verde">${IC_OLHO}Liberada…</span></button>
       <button type="button" role="menuitemradio" aria-checked="${agend}" data-a="aula-agendar" data-id="${a.id}"><span class="est3-pil azul">${IC_CAL_AG}Agendada…</span></button>
       <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="aula:${a.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueada</span></button>
@@ -4345,10 +4354,11 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   }
   /** Acesso: Rascunho (automático, sem escolha) ou, publicado, Liberado / Bloqueado / Oculto. */
   function seletorAcesso(m: Modulo) {
-    if (m.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc">Rascunho</span><em>Não publicado: as alunas não veem</em></span>`;
+    if (m.rascunho) return `<span class="est3 com-sub"><span class="est3-pil macc-rasc" title="Não publicado: as alunas não veem">Rascunho</span><em>—</em></span>`;
     const e = estado3(m.pub, !m.ativo), k = "macc:" + m.id;
-    const [rot, cor, sub] = e === "ativo" ? ["Liberado", "verde", resumoLib(m)] : e === "bloqueado" ? ["Bloqueado", "amarelo", "A aluna vê, mas não acessa"] : ["Oculto", "vermelho", "A aluna não vê nem acessa"];
-    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="Mudar o acesso">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
+    const [rot, cor, sub] = e === "ativo" ? ["Liberado", "verde", dtCurta(dataLibMod(m))] : e === "bloqueado" ? ["Bloqueado", "amarelo", "—"] : ["Oculto", "vermelho", "—"];
+    const dica = e === "ativo" ? resumoLib(m) : e === "bloqueado" ? "A aluna vê, mas não acessa" : "A aluna não vê nem acessa";
+    return `<span class="est3 com-sub"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" title="${h(dica)} · clique para mudar">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button><em>${sub}</em>${ui.estMenu === k ? `<span class="est3-menu" role="menu">
       <button type="button" role="menuitemradio" aria-checked="${e === "ativo"}" data-a="mod-lib-abrir" data-id="${m.id}"><span class="est3-pil verde">${IC_OLHO}Liberado…</span></button>
       <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="mod:${m.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueado</span></button>
       <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="mod:${m.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculto</span></button>

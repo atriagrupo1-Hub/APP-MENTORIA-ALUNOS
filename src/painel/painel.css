@@ -5089,3 +5089,14 @@ html:not([data-tema="claro"]) .cs-mods .cs-mod.ms-on { background: rgba(217,184,
 .cs-mods .cs-mod-acoes .est3-menu button:hover, .mp-aula-acoes .est3-menu button:hover { background: var(--al-ouro-fundo, rgba(217,184,116,.12)) !important; }
 .cs-mods .cs-mod-acoes .est3-menu button svg, .mp-aula-acoes .est3-menu button svg { width: 16px !important; height: 16px !important; flex-shrink: 0; margin: 0 !important; }
 .cs-mods .cs-mod-acoes .est3-menu button.perigo, .mp-aula-acoes .est3-menu button.perigo { color: #e5675a !important; }
+/* Publicação e Liberação em colunas fixas, com a data embaixo (módulo e aula alinhados) */
+.mp-aula-linha { grid-template-columns: auto 150px minmax(0, 1fr) auto auto !important; }
+.cs-mod-linha .mest, .mp-aula-linha .mest { width: 300px !important; flex: none; display: grid !important; grid-template-columns: 140px 150px; gap: 10px; justify-content: start; align-items: start; }
+.mest .est3.com-sub { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.mest .est3.com-sub > em { font-style: normal; font-size: 12px; color: var(--texto-3); font-variant-numeric: tabular-nums; padding-left: 2px; white-space: nowrap; }
+.mest .est3.com-sub > em.dt-ag { color: #b3c0ff; }
+html[data-tema="claro"] .mest .est3.com-sub > em.dt-ag { color: #2f4ea3; }
+.cs-mod-acoes, .mp-aula-acoes { width: 140px; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex: none; }
+@media (max-width: 900px) { .cs-mod-linha .mest, .mp-aula-linha .mest { width: auto !important; } }
+.cs-mods .cs-mod-linha .cs-mod-acoes { margin-right: 15px; }
+.cs-mod-acoes > .kg-menu, .mp-aula-acoes > .kg-menu { flex: none !important; width: auto !important; min-width: 0 !important; display: inline-flex !important; } .cs-mod-acoes > button { flex: none !important; }
