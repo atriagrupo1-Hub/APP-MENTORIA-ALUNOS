@@ -6520,7 +6520,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     } else if (m.tipo === "confirmar") {
       corpo = `
       <form data-f="confirmar">
-        <h2 class="titulo">${h(m.titulo)}</h2>
+        <h2 class="titulo" id="confTit">${h(m.titulo)}</h2>
         <p class="explica">${h(m.texto)}</p>
         ${m.palavra ? `<label class="grupo"><span class="rotulo">Para confirmar, escreva ${h(m.palavra)}</span><input id="confirmaPalavra" class="campo" autocomplete="off" data-palavra="${h(m.palavra)}" /></label>` : ""}
         <div class="rodape-modal">
@@ -6696,7 +6696,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ${m.destaque ? `<p style="margin:0 0 6px;font-size:40px;font-weight:700;letter-spacing:.3em">${h(m.destaque)}</p>` : ""}
         <div class="rodape-modal"><button type="button" class="botao" data-a="fechar">Fechar</button></div>`;
     }
-    return `<div class="modal-fundo" data-a="fechar-fundo"><div class="modal" role="dialog" aria-modal="true">${corpo}</div></div>`;
+    return `<div class="modal-fundo${m.cls ? " " + h(m.cls) + "-fundo" : ""}" data-a="fechar-fundo"><div class="modal${m.cls ? " " + h(m.cls) : ""}" role="dialog" aria-modal="true"${m.tipo === "confirmar" ? ' aria-labelledby="confTit"' : ""}>${corpo}</div></div>`;
   }
 
   /* ---------- AÇÕES ---------- */
@@ -7908,8 +7908,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const antes = k.estado === "moderar" ? "pendente" : k.estado;
         const trecho = k.texto.length > 120 ? k.texto.slice(0, 120) + "…" : k.texto;
         confirmar(novo === "publicado"
-          ? { titulo: "Aprovar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele passa a aparecer para todas as alunas e vai para a aba Publicados. Dá para ocultar depois.", rotulo: "Aprovar comentário" }
-          : { titulo: "Ocultar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele deixa de aparecer para as alunas e vai para a aba Ocultos. Lá dá para aprovar de novo ou responder.", rotulo: "Ocultar comentário" }, async () => {
+          ? { titulo: "Aprovar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele passa a aparecer para todas as alunas e vai para a aba Publicados. Dá para ocultar depois.", rotulo: "Aprovar comentário", cls: "cm-conf" }
+          : { titulo: "Ocultar o comentário de " + k.autora + "?", texto: "“" + trecho + "” — Ele deixa de aparecer para as alunas e vai para a aba Ocultos. Lá dá para aprovar de novo ou responder.", rotulo: "Ocultar comentário", cls: "cm-conf" }, async () => {
           await rpc("moderar_comentario", { p_comentario: k.id, p_status: novo });
           await registrar(k.autoraId || null, (novo === "publicado" ? "Publicou" : "Ocultou") + " um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]);
           return { msg: novo === "publicado" ? "Comentário aprovado. Está na aba Publicados." : "Comentário ocultado. Está na aba Ocultos.", texto: "moderação de um comentário de " + k.autora, desfazer: async () => { await rpc("moderar_comentario", { p_comentario: k.id, p_status: antes }); } };
@@ -7920,7 +7920,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "com-restaurar": ui.modal = { tipo: "restaurar", id: d.id }; break;
       case "com-responder-cancelar": ui.respondendo = null; break;
       case "com-remover":
-        confirmar({ titulo: "Apagar este comentário?", texto: "Ele some para todas as alunas, junto com as respostas da equipe, e vai para a aba Apagados. De lá dá para restaurar.", palavra: "APAGAR", rotulo: "Apagar comentário" }, async () => {
+        confirmar({ titulo: "Apagar este comentário?", texto: "Ele some para todas as alunas, junto com as respostas da equipe, e vai para a aba Apagados. De lá dá para restaurar.", palavra: "APAGAR", rotulo: "Apagar comentário", cls: "cm-conf" }, async () => {
           const k = S.comentarios.find((x) => x.id === d.id);
           await rpc("moderar_comentario", { p_comentario: d.id, p_status: "removido" });
           for (const rid of k?.respIds ?? []) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });

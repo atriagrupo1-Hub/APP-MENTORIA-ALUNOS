@@ -6201,3 +6201,27 @@ html[data-tema="claro"] .casca2 .cm-bt.perigo { color: #b3261e; background: #fbe
 html[data-tema="claro"] .casca2 .cm-pag-bts button[aria-current="true"] { color: var(--ds-ouro-texto); background: var(--ds-ouro-fundo); border-color: var(--ds-ouro-fundo); }
 @media (max-width: 1249px) { .casca2 .cm-topo h1 { font-size: 28px; } .casca2 .cm-dir { margin-left: 0; } }
 @media (prefers-reduced-motion: reduce) { .casca2 .cm-aba, .casca2 .cm-bt, .casca2 .cm-pag-bts button { transition: none; } }
+
+/* Confirmações da moderação de comentários: centro da tela, padrão AIŌN */
+.casca2 .cm-conf-fundo, .cm-conf-fundo { align-items: center; padding: 32px; background: rgba(5,6,8,.80) !important; }
+.cm-conf { --ds-raio: 6px; --ds-botao: 36px; width: 440px; max-width: calc(100vw - 64px); max-height: calc(100vh - 64px); padding: 0; overflow: hidden auto; font-family: "Manrope", sans-serif; background: #1B1D21; border: 1px solid #3D4048; border-radius: 12px; box-shadow: 0 24px 60px rgba(0,0,0,.45); }
+.cm-conf .titulo { margin: 0; padding: 24px 24px 16px; font-family: "Manrope", sans-serif; font-size: 20px; font-weight: 650; line-height: 1.35; letter-spacing: -.3px; color: #EEEEF0; }
+.cm-conf .explica { margin: 0; padding: 0 24px 24px; font-size: 13px; line-height: 1.7; color: #94979E; overflow-wrap: break-word; }
+.cm-conf .grupo { display: block; margin: 0; padding: 0 24px 24px; }
+.cm-conf .grupo .rotulo { font-size: 12px; font-weight: 600; color: #EEEEF0; }
+.cm-conf .rodape-modal { flex-direction: row-reverse; justify-content: flex-start; gap: 8px; margin: 0; padding: 16px 24px; background: #17181B; border-top: 1px solid #2B2D32; }
+.cm-conf .rodape-modal .botao, .cm-conf .rodape-modal .botao-neutro { min-height: 36px; padding: 0 16px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; border-radius: 6px; box-shadow: none; background-image: none; transition: background-color .15s, border-color .15s; }
+/* .botao usa as variáveis do dourado com !important (regra geral): aqui só trocamos as variáveis */
+.cm-conf .rodape-modal .botao { --ouro-botao: #E2C68C; --ouro-botao-borda: #E2C68C; --ouro-botao-txt: #202018; }
+.cm-conf .rodape-modal .botao:hover:not(:disabled) { --ouro-botao: #EED9AD; --ouro-botao-borda: #EED9AD; }
+.cm-conf .rodape-modal .botao.perigo { --ouro-botao: #342528; --ouro-botao-borda: #4A3036; --ouro-botao-txt: #DFA19F; --contra: #DFA19F; color: #DFA19F !important; }
+.cm-conf .rodape-modal .botao.perigo:hover:not(:disabled) { --ouro-botao: #3F2C30; --ouro-botao-borda: #5E3D44; }
+.cm-conf .rodape-modal .botao:disabled { opacity: .5; }
+.cm-conf .rodape-modal .botao-neutro { color: #EEEEF0; background: #222429; border: 1px solid #35373D; }
+.cm-conf .rodape-modal .botao-neutro:hover { background: #303237; border-color: #5A5B60; }
+.cm-conf button:focus-visible { outline: 2px solid #E2C68C; outline-offset: 3px; }
+html[data-tema="claro"] .cm-conf { background: var(--superficie-alta); border-color: var(--linha-suave); }
+html[data-tema="claro"] .cm-conf .titulo, html[data-tema="claro"] .cm-conf .grupo .rotulo { color: var(--texto); }
+html[data-tema="claro"] .cm-conf .explica { color: var(--texto-2); }
+html[data-tema="claro"] .cm-conf .rodape-modal { background: var(--fundo); border-color: var(--linha-suave); }
+html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--texto); background: transparent; border-color: var(--linha-suave); }
