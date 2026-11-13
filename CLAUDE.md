@@ -71,8 +71,15 @@ configuração evita a próxima interrupção.
 
 ## Prévia
 
-- Painel: `bash scripts/previa.sh painel` (código + CSS, sempre completo).
-- App da aluna (apresentação): `bash scripts/previa.sh app`.
+- **Regra obrigatória de velocidade:** mudou só CSS → modo só CSS
+  (~3 s, sem build). Mexeu em `.ts` → build completo (~8–12 s).
+  - Painel: `bash scripts/previa.sh css` (só `painel.css`) ou
+    `bash scripts/previa.sh painel` (código + CSS).
+  - App da aluna: `bash scripts/previa.sh app-css` (só `area.css`) ou
+    `bash scripts/previa.sh app`.
+  - O modo só CSS precisa de um build completo antes na sessão (o script avisa).
+- Tarefa pequena (cor, tamanho, texto): `grep` → Edit → prévia → resposta.
+  Sem leitura extra, sem medição, sem prévia repetida.
 - Só dizer "feito" depois de o script imprimir `PRÉVIA OK`.
 - **SEM PRINT — regra obrigatória.** Não tirar print/captura de tela, a
   não ser que o dono peça. Nem para conferir.

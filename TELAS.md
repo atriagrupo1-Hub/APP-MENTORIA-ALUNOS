@@ -42,8 +42,8 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 
 ## Prévia × produção × banco
 
-- Prévia do painel: `bash scripts/previa.sh painel` → https://souaion.com/admin?previa=1
-- Prévia do app: `bash scripts/previa.sh app` → https://souaion.com/apresentacao (`/?demo=1`)
+- Prévia do painel: `bash scripts/previa.sh css` (só CSS, ~3 s) ou `painel` (código, ~12 s) → https://souaion.com/admin?previa=1
+- Prévia do app: `bash scripts/previa.sh app-css` (só CSS) ou `app` → https://souaion.com/apresentacao (`/?demo=1`)
 - O script só termina com `PRÉVIA OK` depois de conferir a versão e os arquivos.
 - **Produção:** push no branch `claude/new-session-3krqjt` publica o site (Cloudflare, 1,5 a 6+ min). Só com autorização.
 - **Banco:** prévia e produção usam o **mesmo** Supabase. No painel em prévia, salvar é "de teste" (só no navegador). Qualquer SQL, função ou upload vale para todos na hora.
