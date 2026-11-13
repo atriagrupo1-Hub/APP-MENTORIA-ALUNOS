@@ -1145,7 +1145,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -2256,6 +2256,10 @@ export function montar(app: HTMLElement) {
     };
     return `
     <section class="tela ativa aa eng">
+      <div class="vgx-cab eng-cab">
+        <div><span class="vgx-sobre">Acompanhamento</span><h1>Engajamento</h1><p>Acompanhe a atividade das alunas e identifique quem precisa de atenção.</p></div>
+        <div class="vgx-dir">${seletorPeriodo()}</div>
+      </div>
       <div class="eng-topo">
         <div class="eng-geral">
           <span class="eng-anel" style="--p:${geral ?? 0}"><b>${geral == null ? "–" : geral + "%"}</b></span>
@@ -2279,7 +2283,7 @@ export function montar(app: HTMLElement) {
           <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Evolução do engajamento</h3>
             <select class="campo eng-sel" data-eng-dias aria-label="Quantos dias mostrar">${[[7, "Últimos 7 dias"], [14, "Últimos 14 dias"], [30, "Últimos 30 dias"]].map(([v, n]) => `<option value="${v}" ${nDias === v ? "selected" : ""}>${n}</option>`).join("")}</select>
           </header>
-          ${r ? `<div class="eng-graf"><span class="eng-eixo"><em>100%</em><em>75%</em><em>50%</em><em>25%</em><em>0%</em></span><div class="eng-barras">${barras}</div></div>` : `<p class="ini-vazio">Carregando…</p>`}
+          ${r && !dias.some((d) => d.total) ? `<p class="eng-vazio"><b>Sem dados</b>Ainda não há dados suficientes para este período.</p>` : r ? `<div class="eng-graf"><span class="eng-eixo"><em>100%</em><em>75%</em><em>50%</em><em>25%</em><em>0%</em></span><div class="eng-barras">${barras}</div></div>` : `<p class="ini-vazio">Carregando…</p>`}
         </section>
         <section class="eng-cartao eng-dist">
           <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Distribuição das alunas</h3></header>
@@ -2290,9 +2294,9 @@ export function montar(app: HTMLElement) {
         </section>
       </div>
       <div class="eng-listas">
-        ${lista("empurrao", ICONE_ENG.empurrao, "Alunas que precisam de um empurrão", "Sem atividade nos últimos 7 dias.", "Sem atividade", "rosa")}
-        ${lista("ritmo", ICONE_ENG.recem, "Alunas no ritmo", "Acessando regularmente.", "No ritmo", "verde")}
-        ${lista("avancando", ICONE_ENG.avancando, "Alunas avançando", "Alta participação e progresso.", "Avançando", "azul")}
+        ${lista("empurrao", ICONE_ENG.empurrao, "Alunas que precisam de um empurrão", "Sem atividade nos últimos 7 dias.", "Sem atividade", "atencao")}
+        ${lista("ritmo", ICONE_ENG.recem, "Alunas no ritmo", "Acessando regularmente.", "No ritmo", "neutro")}
+        ${lista("avancando", ICONE_ENG.avancando, "Alunas avançando", "Alta participação e progresso.", "Avançando", "positivo")}
       </div>
       ${quadrosComLista(Q, [], true)}
     </section>`;
