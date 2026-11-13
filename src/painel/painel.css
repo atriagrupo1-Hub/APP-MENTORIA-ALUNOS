@@ -6001,3 +6001,6 @@ html[data-tema="claro"] .cad-prod-est:has(option[value="off"]:checked) { color: 
 html[data-tema="claro"] .cad-prod-est option { color: var(--texto); background: #fff; }
 .aa-cel { display: inline-flex; align-items: center; gap: 8px; }
 .cad-topo-dir { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+/* Painel lateral: topo e abas nunca encolhem; só o corpo rola (as abas ficavam cobertas com muito conteúdo). */
+.aa-painel > .aa-cab, .aa-painel > .aa-abas { flex-shrink: 0; }
+.aa-painel > .aa-corpo { min-height: 0; }
