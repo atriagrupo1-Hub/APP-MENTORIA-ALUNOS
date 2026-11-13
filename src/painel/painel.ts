@@ -667,7 +667,7 @@ export function montar(app: HTMLElement) {
     rp: null as null | { rodando: boolean; etapa: string; erro: string; res: null | { url: string; nome: string; antes: number; depois: number; paginas: number } },
     cn: null as null | { tipo: string; cat: string; rotulo: string; nome: string; desc: string; doc: null | DocIA; capa: null | CapaCn; capaPe: null | CapaCn; ia: null | { slot: SlotCn; texto: string; refs: { nome: string; url: string }[]; doc: null | { nome: string; texto: string }; gerando: boolean; pronta: string; lendo: boolean }; capaTexto: string; ebook: null | DocIA; passo: number; extr: null | { lendo: boolean; etapa: string; achou: null | ExtraidoEb; aba?: string; modo?: string; ver?: string }; itens: ItemEb[]; mods: { nome: string; aulas: { nome: string }[] }[]; partes: { nome: string }[]; hist: string[]; gerando: boolean; reduzindo: boolean; etapa: string; novaCat: boolean; novaCatNome: string; erro: string },
     tab: "inicio", curso: null as string | null, aula: null as string | null, busca: "",
-    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "recentes", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
+    filtroCom: "moderar" as string, filtroEq: "todos", aparCfg: null as null | Aparencia, aparAlvo: "", menuCfg: null as null | { botoes: BotaoMenu[]; estilo: string; cores: Record<string, string>; tamanho: string }, cfgAba: "inicio", cfgPrevia: "celular", pvNotif: false, opEdit: "", capaIa: null as null | { alvo: "aula" | "modh" | "modv"; id: string; aberto: boolean; gerando: boolean; descricao: string; guia: string; retrato: boolean; pronta: string }, ia: null as null | { aula: string; doc?: DocIA; gerando: string; extra: string; sobre?: string; instrucoes?: string; editando: boolean; pdf: null | { path: string; url: string; titulo: string; conteudo: { titulo: string; subtitulo: string; secoes: { titulo: string; paragrafos: string[]; itens: string[] }[]; fechamento: string }; salvo: boolean } }, perfCor: "", perfCod: "", perfVerCod: false, eqBusca: "", eqOrdem: "recentes", eqVista: "lista", regFiltro: "todos", regOrdem: "recentes", regData: "todas", regDe: "", regAte: "", regSel: "", regAba: "hist", regHistOrdem: "recentes", regMais: {} as Record<string, number>, regDias: new Set<string>(), comAberto: new Set<string>(), comBusca: "", comCurso: "", comMod: "", comAula: "", comData: "", comOrdem: "antigos", comVista: "grade", comPag: 1, modal: null as null | Record<string, string>,
     linkEdit: null as string | null,
     cfgAntes: "",
     acSel: "android" as "android" | "iphone",
@@ -1145,7 +1145,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -5429,26 +5429,27 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       <article class="cm-card ${cls}${ui.comAlvo === k.id ? " com-alvo" : ""}" id="com-${k.id}">
         <header class="cm-cab">
           ${avatarDe(k.autoraId, k.autora)}
-          <div class="cm-quem"><div class="cm-l1"><b>${h(k.autora)}</b><span class="cm-est">${rot}</span>${k.resposta ? `<span class="cm-est c-resp">Respondido</span>` : ""}</div><span class="cm-onde">${h(localAula(k.aula))}${cursoDaAula(k.aula) ? " · " + h(cursoDaAula(k.aula)) : ""}</span></div>
-          <span class="cm-data">${h(k.quando)}</span>${kb}
+          <div class="cm-quem"><b class="cm-nome">${h(k.autora)}</b>${k.quando ? `<span class="cm-data">${h(k.quando)}</span>` : ""}</div>
+          <div class="cm-l1"><span class="cm-est">${rot}</span>${k.resposta ? `<span class="cm-est c-resp">Respondido</span>` : ""}</div>${kb}
         </header>
         <p class="cm-texto">${h(texto)}</p>
-        ${longo ? `<button type="button" class="cm-ver" data-a="com-ver" data-id="${k.id}">${abrir ? "Ver menos" : "Ver completo"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${abrir ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}"/></svg></button>` : ""}
-        ${k.resposta && !respondendo ? `<div class="cm-resp"><div class="cm-resp-cab">${avatarDe("", k.respAutor || "Equipe")}<b>${h(k.respAutor || "Equipe")}</b><span>respondeu · ${h(k.respQuando)}</span>${k.respPendente ? `<span class="cm-est c-mod">Aparece quando o comentário for aprovado</span>` : ""}</div><p>${h(k.resposta)}</p></div>` : ""}
-        ${k.estado === "removido" ? `<div class="cm-acoes"><button type="button" class="al-botao" data-a="com-restaurar" data-id="${k.id}">${IC_COM.voltar}Restaurar…</button></div>` : `
+        ${longo ? `<button type="button" class="cm-ver" data-a="com-ver" data-id="${k.id}" aria-expanded="${abrir}">${abrir ? "Ver menos" : "Ver completo"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${abrir ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}"/></svg></button>` : ""}
+        <span class="cm-onde"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h10.5L19 8v11.5H5z"/><path d="M8.5 11h7M8.5 14.5h5"/></svg><span>${[cursoDaAula(k.aula), localAula(k.aula)].filter(Boolean).map(h).join(" / ")}</span></span>
+        ${k.resposta && !respondendo ? `<div class="cm-resp"><div class="cm-resp-cab"><b>Resposta da equipe</b>${k.respAutor ? `<span class="cm-resp-autor">${h(k.respAutor)}</span>` : ""}${k.respQuando ? `<span>${h(k.respQuando)}</span>` : ""}${k.respPendente ? `<span class="cm-est c-mod">Aparece quando o comentário for aprovado</span>` : ""}</div><p>${h(k.resposta)}</p></div>` : ""}
+        ${k.estado === "removido" ? `<div class="cm-acoes"><button type="button" class="cm-bt" data-a="com-restaurar" data-id="${k.id}">${IC_COM.voltar}Restaurar…</button></div>` : `
         <div class="cm-acoes">
-          ${k.estado !== "publicado" ? `<button type="button" class="al-botao-ouro" data-a="com-publicar" data-id="${k.id}">${IC_COM.ok}Aprovar</button>` : ""}
-          <button type="button" class="al-botao" data-a="com-responder" data-id="${k.id}">${IC_COM.balao}${k.resposta ? "Editar resposta" : "Responder"}</button>
-          ${k.estado !== "oculto" ? `<button type="button" class="al-botao" data-a="com-ocultar" data-id="${k.id}">${IC_COM.olhoX}Ocultar</button>` : ""}
-          <button type="button" class="al-botao cm-apagar" data-a="com-remover" data-id="${k.id}">${IC_COM.lixo}Apagar</button>
+          ${k.estado !== "publicado" ? `<button type="button" class="cm-bt ouro" data-a="com-publicar" data-id="${k.id}">${IC_COM.ok}Aprovar</button>` : ""}
+          <button type="button" class="cm-bt" data-a="com-responder" data-id="${k.id}">${IC_COM.balao}${k.resposta ? "Editar resposta" : "Responder"}</button>
+          ${k.estado !== "oculto" ? `<button type="button" class="cm-bt" data-a="com-ocultar" data-id="${k.id}">${IC_COM.olhoX}Ocultar</button>` : ""}
+          <button type="button" class="cm-bt perigo" data-a="com-remover" data-id="${k.id}">${IC_COM.lixo}Apagar</button>
         </div>`}
         ${respondendo ? `
         <form data-f="com-resposta" data-id="${k.id}" class="cm-editor">
-          <div class="cm-editor-cab"><span class="av av-c pq" aria-hidden="true">${h(iniciais(eu!.nome))}</span><b>Sua resposta</b></div>
-          <textarea id="respostaCampo" class="campo" name="resposta" rows="4" maxlength="600" placeholder="Digite sua resposta para a aluna..." required>${h(k.resposta)}</textarea>
+          <label class="cm-editor-cab" for="respostaCampo">Sua resposta</label>
+          <textarea id="respostaCampo" class="campo cm-resposta" name="resposta" rows="4" maxlength="600" placeholder="Digite sua resposta para a aluna..." required>${h(k.resposta)}</textarea>
           <div class="cm-editor-pe">
             ${k.estado !== "publicado" ? `<label class="cm-aprovar"><input type="checkbox" name="aprovar" checked /><span>Aprovar o comentário e publicar a resposta<em>Desmarcado: a resposta fica guardada e só aparece para a aluna quando o comentário for aprovado.</em></span></label>` : `<span class="cm-aprovar-info">A resposta aparece para a aluna assim que for enviada.</span>`}
-            <span class="cm-editor-bts"><button type="button" class="al-botao" data-a="com-responder-cancelar">Cancelar</button><button class="al-botao-ouro">${IC_COM.enviar}Enviar resposta</button></span>
+            <span class="cm-editor-bts"><button type="button" class="cm-bt" data-a="com-responder-cancelar">Cancelar</button><button class="cm-bt ouro">${IC_COM.enviar}Enviar resposta</button></span>
           </div>
         </form>` : ""}
       </article>`;
@@ -5465,14 +5466,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (ui.comMod) l = l.filter((k) => acharAula(k.aula)?.m.id === ui.comMod);
     if (ui.comAula) l = l.filter((k) => k.aula === ui.comAula);
     if (ui.comData) { const dias = Number(ui.comData), lim = Date.now() - dias * 864e5; l = l.filter((k) => new Date(k.criado).getTime() >= (dias === 0 ? new Date(new Date().toDateString()).getTime() : lim)); }
-    l.sort((a, b) => ui.comOrdem === "antigos" ? a.criado.localeCompare(b.criado) : b.criado.localeCompare(a.criado));
+    l.sort((a, b) => ui.comOrdem === "recentes" ? b.criado.localeCompare(a.criado) : a.criado.localeCompare(b.criado));
     return l;
   }
   function telaComentarios() {
     const n = (e: Estado) => S.comentarios.filter((k) => k.estado === e).length;
     const todos = listaComentarios(), POR = 6, pags = Math.max(1, Math.ceil(todos.length / POR));
     const pag = Math.min(Math.max(1, ui.comPag || 1), pags), lista = todos.slice((pag - 1) * POR, pag * POR);
-    const vazio = { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", respondidos: "Nenhum comentário respondido.", oculto: "Nenhum comentário oculto.", removido: "Nenhum comentário apagado." }[ui.filtroCom] || "Nenhum comentário.";
+    const filtrado = !!(ui.comBusca || "").trim() || !!ui.comCurso || !!ui.comMod || !!ui.comAula || !!ui.comData;
+    const vazio = filtrado ? "Nenhum comentário corresponde aos filtros selecionados." : { moderar: "Nada esperando moderação.", publicado: "Nenhum comentário publicado.", respondidos: "Nenhum comentário respondido.", oculto: "Nenhum comentário oculto.", removido: "Nenhum comentário apagado." }[ui.filtroCom] || "Nenhum comentário.";
     const abas: [string, string, number, string][] = [
       ["moderar", "Para moderar", n("moderar"), IC_COM.balao], ["publicado", "Publicados", n("publicado"), IC_COM.ok],
       ["respondidos", "Respondidos", S.comentarios.filter((k) => !!k.resposta).length, IC_COM.voltar],
@@ -5484,12 +5486,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const vista = ui.comVista === "lista" ? "lista" : "grade";
     return `
     <section class="tela ativa cm">
+      <div class="vgx-cab cm-topo">
+        <div><span class="vgx-sobre">Comunidade</span><h1>Comentários</h1><p>Acompanhe as conversas, responda às alunas e organize a moderação.</p></div>
+        <div class="vgx-dir">${pilha.length ? `<button class="cm-bt" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ACAO_ABA.comentarios || ""}</div>
+      </div>
       <div class="cm-abas" role="group" aria-label="Comentários">
         ${abas.map(([v, t, q, ic]) => `<button type="button" class="cm-aba${v === "moderar" ? " alerta" : ""}" data-a="com-filtro" data-v="${v}" aria-pressed="${ui.filtroCom === v}">${ic}${t}<span>${q}</span></button>`).join("")}
-        <span class="cm-dir">
-          ${sel("data-com-ordem", ui.comOrdem || "recentes", [["recentes", "Mais recentes"], ["antigos", "Mais antigos"]], "Ordem")}
-          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="com-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="com-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
-        </span>
       </div>
       <div class="cm-filtros">
         <label class="cur-busca cm-busca">${IC_CUR.lupa}<input class="campo" type="search" id="comBusca" data-com-busca value="${h(ui.comBusca || "")}" placeholder="Buscar aluna ou comentário..." aria-label="Buscar aluna ou comentário" /></label>
@@ -5497,8 +5499,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ${sel("data-com-mod", ui.comMod, [["", "Todos os módulos"], ...(cSel ? cSel.modulos.map((m) => [m.id, m.rot + " " + m.num + " — " + m.nome] as [string, string]) : [])], "Módulo")}
         ${sel("data-com-aula", ui.comAula, [["", "Todas as aulas"], ...(mSel ? mSel.aulas.map((a) => [a.id, a.rot + " " + a.num + " — " + a.nome] as [string, string]) : [])], "Aula")}
         ${sel("data-com-data", ui.comData, [["", "Todas as datas"], ["0", "Hoje"], ["7", "Últimos 7 dias"], ["30", "Últimos 30 dias"]], "Data")}
+        <span class="cm-dir">
+          ${todos.length ? `<span class="cm-total" aria-live="polite">${p(todos.length, "comentário", "comentários")}</span>` : ""}
+          ${sel("data-com-ordem", ui.comOrdem || "antigos", [["antigos", "Mais antigos"], ["recentes", "Mais recentes"]], "Ordem")}
+          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="com-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="com-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        </span>
       </div>
-      ${lista.length ? `<div class="cm-grade${vista === "lista" ? " lista" : ""}">${lista.map(cartaoComentario).join("")}</div>` : `<div class="vazio">${vazio}</div>`}
+      ${lista.length ? `<div class="cm-grade${vista === "lista" ? " lista" : ""}">${lista.map(cartaoComentario).join("")}</div>` : `<div class="vazio cm-vazio">${vazio}</div>`}
       ${todos.length ? `<div class="cm-pags"><span class="cm-pag-bts">${pags > 1 ? `<button type="button" data-a="com-pag" data-v="${pag - 1}" ${pag === 1 ? "disabled" : ""} aria-label="Anterior">‹</button>${Array.from({ length: pags }, (_, i) => `<button type="button" data-a="com-pag" data-v="${i + 1}" aria-current="${i + 1 === pag}">${i + 1}</button>`).join("")}<button type="button" data-a="com-pag" data-v="${pag + 1}" ${pag === pags ? "disabled" : ""} aria-label="Próxima">›</button>` : ""}</span><span>Mostrando ${(pag - 1) * POR + 1}–${(pag - 1) * POR + lista.length} de ${p(todos.length, "comentário", "comentários")}</span></div>` : ""}
     </section>`;
   }
