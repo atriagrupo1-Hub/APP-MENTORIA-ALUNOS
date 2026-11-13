@@ -47,3 +47,10 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 - O script só termina com `PRÉVIA OK` depois de conferir a versão e os arquivos.
 - **Produção:** push no branch `claude/new-session-3krqjt` publica o site (Cloudflare, 1,5 a 6+ min). Só com autorização.
 - **Banco:** prévia e produção usam o **mesmo** Supabase. No painel em prévia, salvar é "de teste" (só no navegador). Qualquer SQL, função ou upload vale para todos na hora.
+
+## Novo fluxo "Criar produto" (em desenho, modelo ilustrativo)
+
+- Modelo: https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N (arquivo no scratchpad da sessão `novo-produto.html`). Ajustar só no modelo até o dono aprovar; depois prévia.
+- Ordem: desenhar primeiro **Vídeo-aula**; depois **E-book**; depois **Áudio**.
+- Etapas (vídeo-aula): 1 Formato (cards, nada pré-selecionado) → 2 Categoria (cards; nova categoria só existe ao salvar) → 3 Informações (texto em cima do nome, nome do curso, descrição; todos obrigatórios, sem exemplo) → 4 Capa (deitada 16:9 obrigatória + em pé 2:3 opcional) → 5 Conteúdo (vazio com "Criar módulo" centralizado) → 6 Apresentação → 7 Acesso e publicação.
+- Não avança sem preencher; avisa no rodapé. Fechar/abrir de novo zera tudo (até existir "salvar rascunho").
