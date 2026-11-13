@@ -982,7 +982,14 @@ export function montar(raiz: HTMLElement) {
     if (!agoraJa && Math.abs(t - ultimaGravacao) < 15) return;
     ultimaGravacao = t;
     const l = D.prog.get(VID_ID); if (l) { l.posicaoSegundos = t; l.duracaoSegundos = l.duracaoSegundos || VID.duration; l.atualizadaEm = new Date().toISOString(); }
-    void api.salvarPosicao(VID_ID, t).catch(() => {});
+    // Reta final (faltando até 3 min; metade da aula se ela for curta): conclui e libera a próxima. O banco confere a mesma regra (0134).
+    const d = VID.duration, id = VID_ID;
+    if (l && !l.concluida && t >= d - Math.min(180, d / 2)) {
+      l.concluida = true;
+      ultimaConclusao = api.salvarPosicao(id, t).then(() => api.marcarConcluida(id, true)).catch(() => {});
+      render(); return;
+    }
+    void api.salvarPosicao(id, t).catch(() => {});
   }
   async function pedirVideo(aulaId) {
     if (S.videos[aulaId] !== undefined) return S.videos[aulaId];
@@ -1064,7 +1071,8 @@ export function montar(raiz: HTMLElement) {
     if (!comecar) VID.style.visibility = "hidden";
     const l = D.prog.get(aulaId);
     VID.addEventListener("loadedmetadata", () => {
-      if (l && !l.duracaoSegundos && Number.isFinite(VID.duration)) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
+      // Duração lida do próprio vídeo: grava se faltar ou se a cadastrada estiver errada (0134).
+      if (l && Number.isFinite(VID.duration) && (!l.duracaoSegundos || Math.abs(l.duracaoSegundos - VID.duration) > Math.max(10, l.duracaoSegundos * 0.05))) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
       const ini = inicioDe(aulaId);
       if (ini > 0 && ini < VID.duration - 15 && VID.currentTime < 1) VID.currentTime = ini;
       VID.playbackRate = VELS[S.velocidade] || 1;
