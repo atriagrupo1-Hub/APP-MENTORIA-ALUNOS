@@ -73,7 +73,9 @@ configuração evita a próxima interrupção.
 
 - Painel: `bash scripts/previa.sh painel` (código + CSS, sempre completo).
 - App da aluna (apresentação): `bash scripts/previa.sh app`.
-- Só dizer "feito" depois de o script imprimir `PRÉVIA OK` e do print.
+- Só dizer "feito" depois de o script imprimir `PRÉVIA OK`.
+- **SEM PRINT — regra obrigatória.** Não tirar print/captura de tela, a
+  não ser que o dono peça. Nem para conferir.
 - O script só envia ao depósito `previa` do Supabase: não publica o site
   nem mexe em branch.
 
@@ -101,12 +103,8 @@ nunca justifica pular segurança, teste necessário ou validação.
   negócio pede teste funcional e de regressão. Sem build repetido à toa.
 - **Prévia uma vez por tarefa** (validar antes para não soltar várias
   versões — cada versão recarrega a tela aberta).
-- **Print:** esperar `domcontentloaded` + o elemento da tela, nunca
-  `networkidle` (a prévia consulta versão a cada 1 s). Só a área mexida;
-  tema claro só se mexeu em cor; peça compartilhada → conferir os outros
-  usos. `PRÉVIA OK` não é validação visual.
-- **Checar mudança visual:** nada cortado, sobreposto, desalinhado ou
-  saindo do quadro; abas inteiras; contraste ok.
+- **Sem print** (só se o dono pedir). Se pedir: esperar
+  `domcontentloaded` + o elemento, nunca `networkidle`; só a área mexida.
 - **Tarefa complexa** (fluxo, dados, liberação, permissões, autenticação,
   componente compartilhado): mapear dependências → executar no escopo →
   testar como equipe e como aluna → regressões → prévia.
