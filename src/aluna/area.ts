@@ -1071,12 +1071,18 @@ export function montar(raiz: HTMLElement) {
     if (!comecar) VID.style.visibility = "hidden";
     const l = D.prog.get(aulaId);
     VID.addEventListener("loadedmetadata", () => {
-      // Duração lida do próprio vídeo: grava se faltar ou se a cadastrada estiver errada (0134).
-      if (l && Number.isFinite(VID.duration) && (!l.duracaoSegundos || Math.abs(l.duracaoSegundos - VID.duration) > Math.max(10, l.duracaoSegundos * 0.05))) { l.duracaoSegundos = VID.duration; void api.registrarDuracao(aulaId, VID.duration).catch(() => {}); }
       const ini = inicioDe(aulaId);
       if (ini > 0 && ini < VID.duration - 15 && VID.currentTime < 1) VID.currentTime = ini;
       VID.playbackRate = VELS[S.velocidade] || 1;
     }, { once: true });
+    // Duração lida do próprio vídeo (no streaming ela chega depois do início): grava se faltar ou se a cadastrada estiver errada (0134).
+    const lerDuracao = () => {
+      const d = VID && VID_ID === aulaId ? VID.duration : NaN;
+      if (!l || !Number.isFinite(d) || d < 30) return;
+      if (!l.duracaoSegundos || Math.abs(l.duracaoSegundos - d) > Math.max(10, l.duracaoSegundos * 0.05)) { l.duracaoSegundos = d; void api.registrarDuracao(aulaId, d).catch(() => {}); }
+    };
+    VID.addEventListener("loadedmetadata", lerDuracao);
+    VID.addEventListener("durationchange", lerDuracao);
     VID.addEventListener("play", () => { VID.style.visibility = ""; S.tocando = true; atualizarControles(); });
     VID.addEventListener("pause", () => { S.tocando = false; gravarPosicao(true); atualizarControles(); });
     VID.addEventListener("timeupdate", () => { gravarPosicao(false); atualizarControles(); });
