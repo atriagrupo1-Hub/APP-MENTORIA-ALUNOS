@@ -54,3 +54,7 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 - Ordem: desenhar primeiro **Vídeo-aula**; depois **E-book**; depois **Áudio**.
 - Etapas (vídeo-aula): 1 Formato (cards, nada pré-selecionado) → 2 Categoria (cards; nova categoria só existe ao salvar) → 3 Informações (texto em cima do nome, nome do curso, descrição; todos obrigatórios, sem exemplo) → 4 Capa (deitada 16:9 obrigatória + em pé 2:3 opcional) → 5 Conteúdo (vazio com "Criar módulo" centralizado) → 6 Apresentação → 7 Acesso e publicação.
 - Não avança sem preencher; avisa no rodapé. Fechar/abrir de novo zera tudo (até existir "salvar rascunho").
+- Capa: enviar (JPG/PNG/WebP até 15 MB, clicar ou arrastar), janela "Ajustar capa" (arrastar livre, zoom 0,4–3×, Centralizar, Cancelar, Salvar capa; recorta em 1920×1080 ou 1000×1500). Na migração: salvar no depósito do Supabase (no modelo fica só no navegador).
+- Etapas em 2 fases: Fase 1 Criação (1 Formato, 2 Categoria, 3 Informações [texto em cima do nome, nome, descrição, texto do botão], 4 Capa do curso) → botão "Próximo". Fase 2 Montagem (5 Aparência do curso = cria o curso; 6 Conteúdo; 7 Acesso e publicação). "Salvar rascunho" a partir da etapa 3.
+- Aparência: esquerda Informações com "Aa Estilo" (fonte, normal/negrito/itálico, alinhamento, tamanho); direita prévia do card (Celular/Computador).
+- Lista de produtos: filtros funcionais (tipo, busca, categoria, status), ordenar (recentes padrão, antigos, preço, alunas, A–Z), cards/lista.
