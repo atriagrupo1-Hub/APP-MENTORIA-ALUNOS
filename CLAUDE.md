@@ -18,30 +18,14 @@ resposta para demonstrar trabalho.
 **Resposta final — apenas este formato:**
 
 ```
-FEITO:
-- item
-
-NÃO FEITO:
-- item
-
-POR QUÊ:
-- motivo exato
-
-COMO FAZER:
-- ação exata
+FEITO: uma frase.
+PRÉVIA: atualizada e verificada (ou motivo de não ter sido).
+VALIDADO: o que foi conferido.
+TEMPO: duração total, se medida.
+PENDENTE: só se houver (o quê, por quê, como resolver).
 ```
 
-Se tudo foi concluído:
-
-```
-FEITO:
-- item
-
-NÃO FEITO:
-- Nada.
-```
-
-Não inventar conteúdo para preencher seções.
+Não inventar conteúdo nem medição para preencher seções.
 
 **Nunca esconder falha. Nunca dizer que fez algo que não fez.** Bloqueio
 real: informar curto e objetivo.
@@ -89,32 +73,48 @@ configuração evita a próxima interrupção.
 
 - Painel: `bash scripts/previa.sh painel` (código + CSS, sempre completo).
 - App da aluna (apresentação): `bash scripts/previa.sh app`.
-- Só dizer "feito" depois de o script imprimir `PRÉVIA OK`.
+- Só dizer "feito" depois de o script imprimir `PRÉVIA OK` e do print.
+- O script só envia ao depósito `previa` do Supabase: não publica o site
+  nem mexe em branch.
 
-## Como trabalhar (velocidade com qualidade)
+## MODO TURBO — como trabalhar (permanente)
 
-- **Localizar:** consultar `TELAS.md`; `grep -n` pela função/classe; ler só
-  o trecho. Nada de ler arquivo inteiro.
-- **CSS:** antes de criar ou usar uma classe, `grep` do nome em
-  `painel.css`/`area.css`. Já existe em outra tela → outro nome, com o
-  prefixo da tela. Sem `!important` como atalho.
-- **Editar:** ferramenta Edit com o trecho exato. Script de troca só com
-  `assert` de 1 ocorrência.
-- **Tarefa pequena** (texto, espaçamento, ícone, botão): achar → mudar o
-  mínimo → `npx tsc --noEmit -p tsconfig.app.json` se mexeu em .ts →
-  prévia → 1 print da área mexida (escuro; claro se mexeu em cor) →
-  resposta curta.
-- **Tarefa complexa** (fluxo de aluna, liberação, permissões, publicação,
-  dados, componente compartilhado): mapear onde é usado → planejar →
-  prévia → testar como equipe e como aluna → telas vizinhas que usam a
-  mesma peça.
-- **Checar antes de entregar mudança visual:** nada cortado, sobreposto,
-  desalinhado ou saindo do quadro; abas inteiras; contraste ok; mesma
-  peça em outra tela não quebrou.
-- Não repetir comando que falhou sem entender o motivo. Não corrigir
-  sintoma sem achar a causa.
-- **Resposta:** FEITO / NÃO FEITO / POR QUÊ / COMO FAZER (acima), dizendo
-  o que foi conferido e o que ficou sem conferir.
+Pedido → execução → prévia → resultado. Metas (não garantias): visual
+pequeno 30–60 s; intermediário 1–3 min; complexo o necessário. Velocidade
+nunca justifica pular segurança, teste necessário ou validação.
+
+- **Executar direto:** sem plano longo, auditoria prévia, relatório
+  intermediário ou nova autorização para detalhe dentro do escopo. Perguntar
+  só se a dúvida puder causar dano.
+- **Localizar:** `TELAS.md` → `grep -n` pela função/classe → ler só o
+  trecho. Se o mapa estiver errado, vale o código (e corrigir o mapa).
+- **CSS:** antes de mexer, `grep` do seletor em `painel.css`/`area.css`:
+  onde é usado, regras concorrentes, especificidade, `!important`, peça
+  compartilhada. Classe nova com prefixo da tela; sem `!important` como
+  atalho; sem reescrever bloco grande por detalhe. Conflito local dentro do
+  escopo: resolver sem perguntar. Refatoração estrutural: não fazer.
+- **Editar:** Edit com o trecho exato; script de troca só com `assert` de 1
+  ocorrência; conferir o diff. Comando que falhou não se repete sem saber a
+  causa.
+- **Verificar proporcional:** `npx tsc --noEmit -p tsconfig.app.json` se
+  mexeu em .ts; CSS/texto isolado não pede bateria completa; regra de
+  negócio pede teste funcional e de regressão. Sem build repetido à toa.
+- **Prévia uma vez por tarefa** (validar antes para não soltar várias
+  versões — cada versão recarrega a tela aberta).
+- **Print:** esperar `domcontentloaded` + o elemento da tela, nunca
+  `networkidle` (a prévia consulta versão a cada 1 s). Só a área mexida;
+  tema claro só se mexeu em cor; peça compartilhada → conferir os outros
+  usos. `PRÉVIA OK` não é validação visual.
+- **Checar mudança visual:** nada cortado, sobreposto, desalinhado ou
+  saindo do quadro; abas inteiras; contraste ok.
+- **Tarefa complexa** (fluxo, dados, liberação, permissões, autenticação,
+  componente compartilhado): mapear dependências → executar no escopo →
+  testar como equipe e como aluna → regressões → prévia.
+- **Sessões curtas:** conversa longa gera compactação lenta (1 min 24 s
+  medido). Guardar o que importa em `CLAUDE.md`/`TELAS.md`; recomendar
+  conversa nova antes de tarefa grande quando a sessão estiver longa.
+- **Modelo/esforço:** não trocar sozinho. Latência menor é escolha do dono
+  (`/model`, `/fast`, esforço).
 
 ## Git
 
