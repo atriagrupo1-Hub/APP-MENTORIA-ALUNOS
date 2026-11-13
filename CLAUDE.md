@@ -76,6 +76,48 @@ configuração evita a próxima interrupção.
 - A Edge Function `entrar` é a única com `verify_jwt: false`, e precisa
   continuar assim.
 
+## Publicação — regra permanente
+
+- **Push em `claude/new-session-3krqjt` = PRODUÇÃO** (Cloudflare publica o
+  site). Só com pedido explícito ("publique"). Nunca para testar.
+- Trabalho do dia a dia: só na **prévia**. Commit e push no branch de
+  desenvolvimento da sessão (não publica o site).
+- **Banco é um só** (prévia e produção). SQL, funções, uploads e dados de
+  alunos valem na hora para todos: só com pedido específico.
+
+## Prévia
+
+- Painel: `bash scripts/previa.sh painel` (código + CSS, sempre completo).
+- App da aluna (apresentação): `bash scripts/previa.sh app`.
+- Só dizer "feito" depois de o script imprimir `PRÉVIA OK`.
+
+## Como trabalhar (velocidade com qualidade)
+
+- **Localizar:** consultar `TELAS.md`; `grep -n` pela função/classe; ler só
+  o trecho. Nada de ler arquivo inteiro.
+- **CSS:** antes de criar ou usar uma classe, `grep` do nome em
+  `painel.css`/`area.css`. Já existe em outra tela → outro nome, com o
+  prefixo da tela. Sem `!important` como atalho.
+- **Editar:** ferramenta Edit com o trecho exato. Script de troca só com
+  `assert` de 1 ocorrência.
+- **Tarefa pequena** (texto, espaçamento, ícone, botão): achar → mudar o
+  mínimo → `npx tsc --noEmit -p tsconfig.app.json` se mexeu em .ts →
+  prévia → 1 print da área mexida (escuro; claro se mexeu em cor) →
+  resposta curta.
+- **Tarefa complexa** (fluxo de aluna, liberação, permissões, publicação,
+  dados, componente compartilhado): mapear onde é usado → planejar →
+  prévia → testar como equipe e como aluna → telas vizinhas que usam a
+  mesma peça.
+- **Checar antes de entregar mudança visual:** nada cortado, sobreposto,
+  desalinhado ou saindo do quadro; abas inteiras; contraste ok; mesma
+  peça em outra tela não quebrou.
+- Não repetir comando que falhou sem entender o motivo. Não corrigir
+  sintoma sem achar a causa.
+- **Resposta:** FEITO / NÃO FEITO / POR QUÊ / COMO FAZER (acima), dizendo
+  o que foi conferido e o que ficou sem conferir.
+
 ## Git
 
-Desenvolver, commitar e enviar em `claude/new-session-3krqjt`.
+Desenvolver e commitar no branch de desenvolvimento da sessão.
+`claude/new-session-3krqjt` só recebe envio quando o dono pede para
+publicar (ver Publicação).
