@@ -18,30 +18,14 @@ resposta para demonstrar trabalho.
 **Resposta final — apenas este formato:**
 
 ```
-FEITO:
-- item
-
-NÃO FEITO:
-- item
-
-POR QUÊ:
-- motivo exato
-
-COMO FAZER:
-- ação exata
+FEITO: uma frase.
+PRÉVIA: atualizada e verificada (ou motivo de não ter sido).
+VALIDADO: o que foi conferido.
+TEMPO: duração total, se medida.
+PENDENTE: só se houver (o quê, por quê, como resolver).
 ```
 
-Se tudo foi concluído:
-
-```
-FEITO:
-- item
-
-NÃO FEITO:
-- Nada.
-```
-
-Não inventar conteúdo para preencher seções.
+Não inventar conteúdo nem medição para preencher seções.
 
 **Nunca esconder falha. Nunca dizer que fez algo que não fez.** Bloqueio
 real: informar curto e objetivo.
@@ -76,6 +60,69 @@ configuração evita a próxima interrupção.
 - A Edge Function `entrar` é a única com `verify_jwt: false`, e precisa
   continuar assim.
 
+## Publicação — regra permanente
+
+- **Push em `claude/new-session-3krqjt` = PRODUÇÃO** (Cloudflare publica o
+  site). Só com pedido explícito ("publique"). Nunca para testar.
+- Trabalho do dia a dia: só na **prévia**. Commit e push no branch de
+  desenvolvimento da sessão (não publica o site).
+- **Banco é um só** (prévia e produção). SQL, funções, uploads e dados de
+  alunos valem na hora para todos: só com pedido específico.
+
+## Prévia
+
+- **Regra obrigatória de velocidade:** mudou só CSS → modo só CSS
+  (~3 s, sem build). Mexeu em `.ts` → build completo (~8–12 s).
+  - Painel: `bash scripts/previa.sh css` (só `painel.css`) ou
+    `bash scripts/previa.sh painel` (código + CSS).
+  - App da aluna: `bash scripts/previa.sh app-css` (só `area.css`) ou
+    `bash scripts/previa.sh app`.
+  - O modo só CSS precisa de um build completo antes na sessão (o script avisa).
+- Tarefa pequena (cor, tamanho, texto): `grep` → Edit → prévia → resposta.
+  Sem leitura extra, sem medição, sem prévia repetida.
+- Só dizer "feito" depois de o script imprimir `PRÉVIA OK`.
+- **SEM PRINT — regra obrigatória.** Não tirar print/captura de tela, a
+  não ser que o dono peça. Nem para conferir.
+- O script só envia ao depósito `previa` do Supabase: não publica o site
+  nem mexe em branch.
+
+## MODO TURBO — como trabalhar (permanente)
+
+Pedido → execução → prévia → resultado. Metas (não garantias): visual
+pequeno 30–60 s; intermediário 1–3 min; complexo o necessário. Velocidade
+nunca justifica pular segurança, teste necessário ou validação.
+
+- **Executar direto:** sem plano longo, auditoria prévia, relatório
+  intermediário ou nova autorização para detalhe dentro do escopo. Perguntar
+  só se a dúvida puder causar dano.
+- **Localizar:** `TELAS.md` → `grep -n` pela função/classe → ler só o
+  trecho. Se o mapa estiver errado, vale o código (e corrigir o mapa).
+- **CSS:** antes de mexer, `grep` do seletor em `painel.css`/`area.css`:
+  onde é usado, regras concorrentes, especificidade, `!important`, peça
+  compartilhada. Classe nova com prefixo da tela; sem `!important` como
+  atalho; sem reescrever bloco grande por detalhe. Conflito local dentro do
+  escopo: resolver sem perguntar. Refatoração estrutural: não fazer.
+- **Editar:** Edit com o trecho exato; script de troca só com `assert` de 1
+  ocorrência; conferir o diff. Comando que falhou não se repete sem saber a
+  causa.
+- **Verificar proporcional:** `npx tsc --noEmit -p tsconfig.app.json` se
+  mexeu em .ts; CSS/texto isolado não pede bateria completa; regra de
+  negócio pede teste funcional e de regressão. Sem build repetido à toa.
+- **Prévia uma vez por tarefa** (validar antes para não soltar várias
+  versões — cada versão recarrega a tela aberta).
+- **Sem print** (só se o dono pedir). Se pedir: esperar
+  `domcontentloaded` + o elemento, nunca `networkidle`; só a área mexida.
+- **Tarefa complexa** (fluxo, dados, liberação, permissões, autenticação,
+  componente compartilhado): mapear dependências → executar no escopo →
+  testar como equipe e como aluna → regressões → prévia.
+- **Sessões curtas:** conversa longa gera compactação lenta (1 min 24 s
+  medido). Guardar o que importa em `CLAUDE.md`/`TELAS.md`; recomendar
+  conversa nova antes de tarefa grande quando a sessão estiver longa.
+- **Modelo/esforço:** não trocar sozinho. Latência menor é escolha do dono
+  (`/model`, `/fast`, esforço).
+
 ## Git
 
-Desenvolver, commitar e enviar em `claude/new-session-3krqjt`.
+Desenvolver e commitar no branch de desenvolvimento da sessão.
+`claude/new-session-3krqjt` só recebe envio quando o dono pede para
+publicar (ver Publicação).
