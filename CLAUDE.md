@@ -53,6 +53,7 @@ configuração evita a próxima interrupção.
   aplicativo não concede acesso. No navegador, apenas sessão e posição
   recente do vídeo, como cache descartável.
 - `localStorage` não é fonte oficial de dado.
+- Texto na tela: sempre "aluno/alunos" (há homens e mulheres), nunca "aluna/alunas" — decisão do dono (17/11/2026).
 - Vídeo de aula: aceitar link do YouTube (inclusive não listado) e do Cloudflare Stream — decisão do dono (14/11/2026).
 - O código de acesso do painel nunca entra no repositório.
 - A chave de serviço do Supabase nunca chega ao navegador — vive apenas
