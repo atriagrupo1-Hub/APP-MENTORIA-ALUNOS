@@ -1,0 +1,76 @@
+<title>Onde abre o novo módulo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:dark;--fundo:#101113;--sup:#191A1E;--resp:#17181B;--borda:#2B2D32;--div:#292A2F;--t1:#EEEEF0;--t2:#94979E;--t3:#7F8791;--ouro:#E2C68C;--souro:#202018;--mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--t1);font:400 13px/1.5 Manrope,system-ui,sans-serif;padding:28px 16px}
+main{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+@media(max-width:1000px){main{grid-template-columns:1fr}}
+.rot b{display:block;font:500 11px var(--mono);letter-spacing:1.4px;color:var(--ouro)}.rot span{display:block;margin:4px 0 12px;font-size:12px;color:var(--t2);min-height:36px}
+.tela{position:relative;height:640px;overflow:hidden;background:var(--sup);border:1px solid var(--borda);border-radius:12px;padding:14px}
+.cab{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.cab h3{margin:0;font-size:15px;font-weight:650}
+.add{height:28px;padding:0 12px;border:0;border-radius:7px;background:var(--ouro);color:var(--souro);font:650 11px Manrope}
+.mod{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;background:#141518;border:1px solid var(--borda);border-radius:8px}
+.capa{flex:0 0 46px;height:26px;border-radius:4px;background:radial-gradient(circle at 50% 40%,#5a4526,#1d1a14 75%);display:grid;place-items:center;font:650 10px Manrope;color:#F4E6C5}
+.mod b{flex:1;font-size:11px;font-weight:650;text-transform:uppercase}.mod em{font-style:normal;font-size:10px;color:var(--t3)}
+.st{font-size:9px;padding:2px 7px;border-radius:999px;background:#222429;color:#A5ADB8;border:1px solid #35373D}
+.form{background:#141518;border:1px solid #6d5a38;border-radius:10px;padding:12px;box-shadow:0 0 0 1px rgba(226,198,140,.15),0 0 20px rgba(226,198,140,.08)}
+.form h4{margin:0 0 4px;font-size:12px;font-weight:650}.bar{height:3px;border-radius:2px;background:#2E3036;margin:6px 0 8px}.bar i{display:block;width:33%;height:100%;background:var(--ouro)}
+.chips{display:flex;gap:4px;margin-bottom:10px}.chips span{font-size:9px;padding:3px 7px;border:1px solid var(--borda);border-radius:999px;color:var(--t2)}.chips span:first-child{background:var(--ouro);color:var(--souro);border-color:var(--ouro)}
+.campo{height:20px;border:1px solid var(--borda);border-radius:4px;background:var(--resp);margin:4px 0 8px}.lb{font-size:9px;color:var(--t2)}
+.pe{display:flex;justify-content:flex-end;gap:6px;margin-top:6px}.pe span{font-size:9px;padding:4px 8px;border:1px solid #35373D;border-radius:5px}.pe span.o{background:var(--ouro);color:var(--souro);border-color:var(--ouro)}
+.fora{opacity:.35}
+.olho{position:absolute;left:14px;right:14px;font:500 9px var(--mono);letter-spacing:1px;color:#DFA19F;text-align:center;border-top:1px dashed #DFA19F;padding-top:4px}
+.compacto .mod{padding:5px 10px;margin-bottom:4px}.compacto .capa{height:18px;flex-basis:32px;font-size:8px}
+.veu{position:absolute;inset:0;background:rgba(5,6,8,.7)}
+.gaveta{position:absolute;top:0;right:0;bottom:0;width:72%;background:#1B1D21;border-left:1px solid #3D4048;padding:14px;box-shadow:-18px 0 40px rgba(0,0,0,.5)}
+.x{float:right;font-size:13px;color:var(--t2)}
+.nota{margin-top:10px;font-size:12px;color:var(--t2)}.nota b{color:var(--t1)}
+</style>
+<main>
+<section>
+  <div class="rot"><b>HOJE (COMO ESTÁ)</b><span>O formulário abre embaixo de todos os módulos. Com 5 módulos, você precisa rolar até o fim.</span></div>
+  <div class="tela">
+    <div class="cab"><h3>Conteúdo do curso</h3><button class="add">+ Adicionar</button></div>
+    <div class="mod"><span class="capa">01</span><b>Módulo 1 · Atria teste</b><span class="st">Publicado</span></div>
+    <div class="mod"><span class="capa">02</span><b>Módulo 2 · Diagnóstico</b><span class="st">Publicado</span></div>
+    <div class="mod"><span class="capa">03</span><b>Módulo 3 · Fundamentos</b><span class="st">Rascunho</span></div>
+    <div class="mod"><span class="capa">04</span><b>Módulo 4 · Prática</b><span class="st">Rascunho</span></div>
+    <div class="mod"><span class="capa">05</span><b>Módulo 5 · Encerramento</b><span class="st">Rascunho</span></div>
+    <div class="form" style="margin-top:12px"><h4>Novo módulo · 1 de 3</h4><div class="bar"><i></i></div><div class="chips"><span>Informações</span><span>Capa</span><span>Aparência</span></div><div class="lb">Identificação · Número 6</div><div class="campo"></div><div class="lb">Nome do módulo</div><div class="campo"></div><div class="lb">Descrição</div><div class="campo" style="height:40px"></div><div class="pe"><span>Voltar</span><span>Salvar rascunho</span><span class="o">Próximo</span></div></div>
+    <div class="olho" style="top:600px">COM MAIS MÓDULOS, O FORMULÁRIO FICA AINDA MAIS LONGE</div>
+  </div>
+  <p class="nota"><b>Problema:</b> cresce com o curso; com 10 módulos o formulário vai parar bem lá embaixo.</p>
+</section>
+
+<section>
+  <div class="rot"><b>OPÇÃO A — NO TOPO DA LISTA</b><span>O formulário abre logo abaixo de "Conteúdo do curso". Os módulos ficam compactos embaixo dele.</span></div>
+  <div class="tela">
+    <div class="cab"><h3>Conteúdo do curso</h3><button class="add">+ Adicionar</button></div>
+    <div class="form"><h4>Novo módulo · 1 de 3</h4><div class="bar"><i></i></div><div class="chips"><span>Informações</span><span>Capa</span><span>Aparência</span></div><div class="lb">Identificação · Número 6</div><div class="campo"></div><div class="lb">Nome do módulo</div><div class="campo"></div><div class="lb">Descrição</div><div class="campo" style="height:40px"></div><div class="pe"><span>Cancelar</span><span>Salvar rascunho</span><span class="o">Próximo</span></div></div>
+    <div class="compacto fora" style="margin-top:12px">
+      <div class="mod"><span class="capa">01</span><b>Módulo 1 · Atria teste</b></div>
+      <div class="mod"><span class="capa">02</span><b>Módulo 2 · Diagnóstico</b></div>
+      <div class="mod"><span class="capa">03</span><b>Módulo 3 · Fundamentos</b></div>
+      <div class="mod"><span class="capa">04</span><b>Módulo 4 · Prática</b></div>
+      <div class="mod"><span class="capa">05</span><b>Módulo 5 · Encerramento</b></div>
+    </div>
+  </div>
+  <p class="nota"><b>Vantagem:</b> sempre no mesmo lugar, sem rolar, e você ainda vê os módulos que já existem.</p>
+</section>
+
+<section>
+  <div class="rot"><b>OPÇÃO B — PAINEL LATERAL</b><span>O formulário abre num painel por cima, do lado direito. A lista de módulos fica atrás, escurecida.</span></div>
+  <div class="tela">
+    <div class="cab"><h3>Conteúdo do curso</h3><button class="add">+ Adicionar</button></div>
+    <div class="mod"><span class="capa">01</span><b>Módulo 1 · Atria teste</b></div>
+    <div class="mod"><span class="capa">02</span><b>Módulo 2 · Diagnóstico</b></div>
+    <div class="mod"><span class="capa">03</span><b>Módulo 3 · Fundamentos</b></div>
+    <div class="mod"><span class="capa">04</span><b>Módulo 4 · Prática</b></div>
+    <div class="mod"><span class="capa">05</span><b>Módulo 5 · Encerramento</b></div>
+    <div class="veu"></div>
+    <div class="gaveta"><span class="x">✕</span><h4 style="margin:0 0 4px;font-size:13px">Novo módulo</h4><div class="lb">1 DE 3 · 33%</div><div class="bar"><i></i></div><div class="chips"><span>Informações</span><span>Capa</span><span>Aparência</span></div><div class="lb">Identificação · Número 6</div><div class="campo"></div><div class="lb">Nome do módulo</div><div class="campo"></div><div class="lb">Descrição</div><div class="campo" style="height:60px"></div><div class="lb">Texto do botão</div><div class="campo"></div><div class="pe" style="position:absolute;left:14px;right:14px;bottom:14px"><span>Cancelar</span><span>Salvar rascunho</span><span class="o">Próximo</span></div></div>
+  </div>
+  <p class="nota"><b>Vantagem:</b> a tela não se mexe; fechou o painel, você está exatamente onde estava.</p>
+</section>
+</main>

@@ -122,6 +122,10 @@ nunca justifica pular segurança, teste necessário ou validação.
 - **Modelo/esforço:** não trocar sozinho. Latência menor é escolha do dono
   (`/model`, `/fast`, esforço).
 
+## Modelo "Novo produto" — regra permanente
+
+Toda mudança aprovada no modelo ilustrativo é salva no repositório: copiar o HTML para `docs/novo-produto/modelo-novo-produto.html`, atualizar `docs/novo-produto/ESPECIFICACAO.md` e commitar no branch da sessão. Isso é a base para implementar de verdade (painel + app do aluno + Supabase).
+
 ## Git
 
 Desenvolver e commitar no branch de desenvolvimento da sessão.

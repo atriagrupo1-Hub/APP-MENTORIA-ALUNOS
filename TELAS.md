@@ -50,6 +50,8 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 
 ## Novo fluxo "Criar produto" (em desenho, modelo ilustrativo)
 
+> **Estado atual completo e atualizado: `docs/novo-produto/ESPECIFICACAO.md`** (+ `docs/novo-produto/modelo-novo-produto.html`). Ao mudar o modelo, copiar o HTML para lá e atualizar a especificação. As notas abaixo são o histórico.
+
 - Modelo: https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N (arquivo no scratchpad da sessão `novo-produto.html`). Ajustar só no modelo até o dono aprovar; depois prévia.
 - Ordem: desenhar primeiro **Vídeo-aula**; depois **E-book**; depois **Áudio**.
 - Etapas (vídeo-aula): 1 Formato (cards, nada pré-selecionado) → 2 Categoria (cards; nova categoria só existe ao salvar) → 3 Informações (texto em cima do nome, nome do curso, descrição; todos obrigatórios, sem exemplo) → 4 Capa (deitada 16:9 obrigatória + em pé 2:3 opcional) → 5 Conteúdo (vazio com "Criar módulo" centralizado) → 6 Apresentação → 7 Acesso e publicação.
