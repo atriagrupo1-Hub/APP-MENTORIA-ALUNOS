@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 239,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 240,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -34,14 +34,9 @@ Regras gerais
 - Card: capa, tipo, NOME, categoria, Módulos/Aulas/Alunos, Criado em, Liberado em, status, botão ("Abrir produto →" ou "Continuar edição →" no produto em montagem).
 - Modo lista: capa 200 px, nome 13 px; "Aulas" embaixo de "Módulos" e "Alunos" ao lado (grade 2 colunas).
 
-### Adicionar aluno (card do produto)
+### Adicionar aluno
 
-- "Adicionar aluno" fica no próprio quadrinho "N ALUNOS +" do card (clicável, borda dourada ao passar o mouse). Rodapé do card intacto (status + Abrir produto/Continuar edição); sem botão grande nem ícone extra.
-- Abre janela com o nome do produto e 2 abas:
-  - **Um aluno**: Nome (opcional), E-mail (obrigatório, validado; avisa se já é aluno), "Enviar e-mail de boas-vindas com o acesso" (marcado).
-  - **Em massa (planilha)**: enviar CSV (nome; e-mail), "Baixar modelo de planilha", ou colar a lista (um por linha: nome; e-mail ou só e-mail) → "Conferir lista" mostra cada linha como Pronto / E-mail inválido / Repetido / Já é aluno, com total de prontos e com problema → "Adicionar N alunos" (só os prontos).
-- O número de Alunos do card atualiza na hora.
-- No real: cadastro e liberação de acesso no Supabase (Edge Function), envio do e-mail de boas-vindas pelo sistema, aceitar também .xlsx.
+- **Não fica no card da lista de produtos** (testado e recusado pelo dono: botão grande, ícone no rodapé e quadrinho clicável). Lugar ainda a definir. A janela já desenhada no modelo (Um aluno / Em massa com planilha CSV, colar lista, conferência Pronto/Inválido/Repetido/Já é aluno, e-mail de boas-vindas) continua no código do modelo (`abrirAlunos`) para reaproveitar.
 
 ## 2. Criar curso (vídeo-aula)
 
