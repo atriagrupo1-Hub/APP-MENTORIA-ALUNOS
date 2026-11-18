@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 224,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 225,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -94,6 +94,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - **Sem botões "Liberação" e "Editar" no card**: ficam só dentro do ⋮.
 - ⋮ do módulo: Editar módulo · Liberação · Excluir módulo. ⋮ da aula: Editar aula · Liberação · Excluir aula.
 - Saíram do ⋮ os atalhos de status (Liberar, Agendar, Não publicar, Ocultar, Bloquear): status vem da Liberação; Oculto/Bloqueado/Não publicado ficam na ação em massa "Status".
+- **Sem "Visualizações"** no módulo e na aula: as linhas mostram só Criado em e Liberado em (alinhados entre módulo e aula).
 - (Itens desta seção substituem o que estiver diferente nas seções abaixo.)
 
 ### Tipo da liberação na lista
