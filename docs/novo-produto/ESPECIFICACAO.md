@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 240,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 241,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -65,6 +65,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "Continuar" valida (escolher tipo, dias ≥ 0, data) → "Confirmar liberação": resumo com Curso, Tipo de liberação, Liberado em, Status depois de confirmar → Voltar / Confirmar liberação.
 - Ao confirmar: "Liberado em" do quadro mostra a data (ou "N dias após o cadastro" / "dd/mm/aaaa às hh:mm") e embaixo o tipo (Imediata / Dias após o cadastro / Data específica). Status: Imediata e Dias → Publicado; Data futura → Agendado. O status do curso segue a liberação automaticamente: escolher Publicado ou Agendado no seletor abre a Liberação (não dá para marcar à mão); Agendado vira Publicado sozinho quando chega a data/hora. Não publicado, Bloqueado e Oculto continuam manuais.
 - No real: regra de liberação no Supabase (a liberação por aluno conta da data de cadastro dele).
+
+### Depois de salvar um módulo novo
+
+- "Salvar módulo" (na etapa Liberação) mostra o carregamento com o logo AIŌN; ao terminar, abre o card "Módulo salvo": capa, "Módulo X — Nome", descrição, status, liberação (data · tipo), "0 aulas" e a pergunta "Quer adicionar uma aula neste módulo agora?".
+- **Adicionar aula agora** → abre a janela de nova aula já nesse módulo. **Adicionar depois** (ou ✕/Esc) → fecha e fica na tela do curso, com o módulo na lista.
+- Ao editar um módulo existente não aparece esse card (só "Módulo salvo.").
 
 ### Liberação do módulo
 
