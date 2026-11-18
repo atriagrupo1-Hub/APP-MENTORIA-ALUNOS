@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 295,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 296,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -327,3 +327,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Sem cursos: faixa igual à do conteúdo vazio (ilustração à esquerda), "Esta categoria ainda não tem cursos", "Adicione um curso novo ou um curso que já existe para organizar esta categoria." e "+ Adicionar curso" centralizado.
 - "+ Adicionar curso" abre a janela: **Curso novo** (abre criar curso já com esta categoria) ou **Curso que já existe** (lista com caixas de seleção, mostra a categoria atual de cada um) → "Adicionar selecionados".
 - Com cursos: os cards dos cursos (cartões ou lista), com busca. A categoria de cada curso fica guardada ao atualizar.
+- (v296) Modelo: com o modelo aberto em mais de uma janela/aba, a janela antiga sobrescrevia o que foi salvo na outra (categorias "sumiam"). Agora cada salvamento tem horário, ao abrir vale sempre o mais novo e as outras janelas se atualizam sozinhas. (Na implementação real isso não existe: os dados ficam no Supabase.)
