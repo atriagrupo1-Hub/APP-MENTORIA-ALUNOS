@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 201,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 202,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -64,7 +64,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 - "Adicionar → Módulo" e "Editar" abrem painel à direita com fundo escurecido; topo fixo "Novo módulo/Editar módulo", progresso "N DE 3", etapas, ✕. Fechar (✕, clique fora, Esc) pergunta antes. Ao salvar fecha e o módulo aparece na lista.
 - Etapas: 1 Informações (Identificação "?", Número "?", Nome "?", Descrição com IA/Corrigir, Texto do botão com IA e "?": "É o botão do card do módulo. Ao tocar, abre a lista de aulas do módulo para o aluno escolher qual quer assistir, mesmo que só uma esteja liberada.") → 2 Capa do módulo (só 16:9, opcional, mesmo ajuste/IA) → 3 Aparência do módulo (igual à do curso + "Copiar aparência do curso") → "Salvar módulo".
-- Número: obrigatório; já vem sugerido o próximo (maior + 1); repetido → "Já tem um módulo com esse número." e não avança.
+- Número: obrigatório; flechinhas ▲▼ dentro do campo (e setas do teclado) sobem/descem 1, mínimo 0; já vem sugerido o próximo (maior + 1); repetido → "Já tem um módulo com esse número." e não avança.
 - Cada módulo guarda sua aparência (estilos e visual) e ela volta ao editar.
 - Prévia do card do módulo: o botão abre a lista de aulas (miniatura, "MÓDULO 1 · AULA 1", nome, "Disponível", "▶ Assistir") e vira "Esconder aulas" — igual ao app do aluno.
 - "Salvar e sair" no Cancelar guarda o módulo como Não publicado.
