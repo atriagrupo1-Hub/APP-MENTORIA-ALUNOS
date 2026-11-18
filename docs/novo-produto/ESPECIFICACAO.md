@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 225,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 226,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -89,12 +89,13 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), título "Aula 2 — Nome da aula" (branco, quebra linha se não couber) e embaixo "Vídeo · 49 min" (tipo + duração em minutos), Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
 
-### Menu ⋮ do módulo e da aula (decisão final)
+### Linha do módulo e da aula (decisão final)
 
-- **Sem botões "Liberação" e "Editar" no card**: ficam só dentro do ⋮.
-- ⋮ do módulo: Editar módulo · Liberação · Excluir módulo. ⋮ da aula: Editar aula · Liberação · Excluir aula.
-- Saíram do ⋮ os atalhos de status (Liberar, Agendar, Não publicar, Ocultar, Bloquear): status vem da Liberação; Oculto/Bloqueado/Não publicado ficam na ação em massa "Status".
-- **Sem "Visualizações"** no módulo e na aula: as linhas mostram só Criado em e Liberado em (alinhados entre módulo e aula).
+- Ordem (igual no módulo e na aula, colunas alinhadas): caixinha · ⋮⋮ · capa/miniatura · nome · **Status** · **Liberado em** (data + tipo) · botão **Liberação** · botão **Editar** · botão **Ver** · ⋮.
+- Sem "Criado em" e sem "Visualizações" na linha.
+- ⋮ tem só Excluir (módulo/aula), com "digite EXCLUIR".
+- **Ver** = "Como o aluno vê": módulo mostra o card do módulo (capa, nome, descrição, botão) com a lista de aulas e a situação de cada uma (Disponível + Assistir, Em breve, Trancada, Ainda não liberada); aula mostra o player (vídeo/áudio enviado) ou "Abrir vídeo ↗" (YouTube/Cloudflare), nome, situação, descrição e materiais.
+- Status por atalho (Oculto/Bloqueado/Não publicado) fica na ação em massa "Status"; Liberado/Agendado vêm da Liberação.
 - (Itens desta seção substituem o que estiver diferente nas seções abaixo.)
 
 ### Tipo da liberação na lista
