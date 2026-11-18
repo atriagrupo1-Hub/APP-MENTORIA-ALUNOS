@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 275,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 276,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -266,3 +266,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Conteúdos: lista dos módulos do curso (capa, "Módulo N — Nome", nº de aulas e duração, status, data de liberação); clicar abre/fecha as aulas do módulo (nº, nome, tipo e duração, status, data). Link "Editar conteúdo →" leva à edição.
 - A escolha fica guardada ao atualizar a página.
 - (v275) Ordem dos botões: "Conteúdos" primeiro (abre por padrão), depois "Estatísticas". O botão dourado "Editar conteúdo" saiu do topo da aba e fica dentro do card de Conteúdos.
+- (v276) "Conteúdos" na página do produto agora é o MESMO card "Conteúdo do curso" da edição (totais, busca, Por módulos/Por aulas, filtro, cartões/lista, módulos com status, Liberado em, Liberação/Editar/Ver/⋮, aulas, Adicionar aula). Ao lado de "+ Adicionar conteúdo" fica "Editar conteúdo".
+  - Abrir/fechar aulas, buscar, filtrar, trocar visão e cartões/lista funcionam ali mesmo.
+  - Qualquer ação de mudança (Editar, Liberação, status, ⋮, Adicionar…) entra na edição do conteúdo e já executa a ação.
+  - O que é mudado na edição volta para a página do produto ao fechar e fica guardado ao atualizar. Os 4 números do topo da aba saem desse conteúdo.
