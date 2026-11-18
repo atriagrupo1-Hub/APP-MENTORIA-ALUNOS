@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tela de Categorias</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:dark;--fundo:#0E0F11;--lado:#121316;--sup:#17181B;--card:#141518;--borda:#2B2D32;--div:#26272c;--t1:#EEEEF0;--t2:#94979E;--t3:#7F8791;--ouro:#E2C68C;--souro:#202018;--mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--t1);font:400 14px/1.5 Manrope,system-ui,sans-serif;padding:28px 16px 40px}
+h1{max-width:1240px;margin:0 auto 6px;font-size:20px;font-weight:650}
+.intro{max-width:1240px;margin:0 auto 26px;color:var(--t2)}
+section{max-width:1240px;margin:0 auto 40px}
+.rot b{display:block;font:500 12px var(--mono);letter-spacing:1.4px;color:var(--ouro)}.rot span{display:block;margin:4px 0 12px;color:var(--t2);font-size:13px}
+.tela{position:relative;display:grid;grid-template-columns:190px minmax(0,1fr);min-height:520px;border:1px solid var(--borda);border-radius:14px;overflow:hidden;background:var(--sup)}
+.lado{background:var(--lado);border-right:1px solid var(--borda);padding:18px 12px;display:flex;flex-direction:column;gap:4px}
+.logo{font:700 15px Manrope;letter-spacing:2px;color:var(--ouro);padding:0 8px 14px}
+.it{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--t2);font-size:13px;font-weight:600}
+.it svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.it.on{background:#2a2518;color:var(--ouro);box-shadow:inset 0 0 0 1px #6d5a38}
+.area{padding:22px 24px;min-width:0}
+.trilha{font-size:12px;color:var(--t3);margin-bottom:6px}
+.cab{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.cab h2{margin:0;font-size:22px;font-weight:700}.cab p{margin:4px 0 0;color:var(--t2);font-size:13px}
+.bt{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border:1px solid #3a3c42;border-radius:9px;background:var(--card);color:var(--t1);font:650 13px Manrope;white-space:nowrap}
+.bt.ouro{background:var(--ouro);border-color:var(--ouro);color:var(--souro)}
+.bt svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.ic{display:grid;place-items:center;width:44px;height:44px;border-radius:11px;background:#2a2518;color:var(--ouro);flex:none}.ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.nota{margin-top:12px;color:var(--t2);font-size:13px}.nota b{color:var(--t1)}
+/* A */
+.vazio{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 20px 24px;border:1px solid #4B402B;border-radius:14px;background:radial-gradient(80% 120% at 50% 0%,rgba(226,198,140,.12),transparent 60%),var(--card)}
+.vazio .ic{width:60px;height:60px;border-radius:16px;margin-bottom:12px}.vazio .ic svg{width:30px;height:30px}
+.vazio h3{margin:0 0 6px;font-size:19px}.vazio p{margin:0 0 18px;max-width:520px;color:var(--t2)}
+.passos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.passo{padding:14px;border:1px solid var(--borda);border-radius:12px;background:var(--card)}.passo i{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:7px;background:#2a2518;color:var(--ouro);font:700 12px Manrope;font-style:normal;margin-bottom:8px}.passo b{display:block;font-size:14px}.passo span{font-size:12.5px;color:var(--t2)}
+/* B */
+.duas{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.cat{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--borda);border-radius:12px;background:var(--card)}
+.cat .lin{display:flex;align-items:center;gap:10px}.cat .ic{width:38px;height:38px;border-radius:10px}.cat .ic svg{width:19px;height:19px}
+.cat b{font-size:14px}.cat em{font-style:normal;font-size:12px;color:var(--t2)}.cat .pe{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--t2);border-top:1px solid var(--div);padding-top:9px}
+.sel{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;background:#15291d;color:#7FD49B}.sel.em{background:#211e33;color:#B9A8F0}
+.nova{display:grid;place-items:center;gap:6px;min-height:132px;border:1px dashed #6d5a38;border-radius:12px;color:var(--ouro);font-weight:650;font-size:13px;text-align:center}
+.expl{padding:18px;border:1px solid #4B402B;border-radius:14px;background:radial-gradient(100% 80% at 100% 0%,rgba(226,198,140,.12),transparent 60%),var(--card)}
+.expl h3{margin:12px 0 6px;font-size:16px}.expl p{margin:0 0 12px;color:var(--t2);font-size:13px}.expl ul{margin:0 0 16px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:13px}.expl li{display:flex;gap:8px}.expl li:before{content:"✓";color:var(--ouro);font-weight:700}
+.expl .bt{width:100%;justify-content:center}
+/* C */
+.veu{position:absolute;inset:0;background:rgba(5,6,8,.62)}
+.gav{position:absolute;top:0;right:0;bottom:0;width:min(430px,92%);background:#1B1D21;border-left:1px solid #3D4048;box-shadow:-20px 0 40px rgba(0,0,0,.5);display:flex;flex-direction:column}
+.gav-cab{display:flex;align-items:flex-start;gap:12px;padding:18px;border-bottom:1px solid var(--div)}.gav-cab h3{margin:0;font-size:17px}.gav-cab p{margin:2px 0 0;font-size:12.5px;color:var(--t2)}.x{margin-left:auto;width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--borda);border-radius:8px;color:var(--t2)}
+.gav-corpo{padding:16px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto;flex:1}
+.dica{padding:12px;border-radius:10px;background:#1d1a14;border:1px solid #4B402B;font-size:12.5px;color:var(--t2)}.dica b{color:var(--ouro)}
+.lb{font-size:12px;font-weight:600;color:var(--t2);margin-bottom:6px;display:block}
+.campo{height:40px;border:1px solid var(--borda);border-radius:8px;background:var(--card);padding:0 12px;display:flex;align-items:center;color:var(--t3);font-size:13px}
+.campo.alto{height:70px;align-items:flex-start;padding-top:10px}
+.icones{display:flex;gap:8px;flex-wrap:wrap}.icones span{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--borda);border-radius:9px;color:var(--t2)}.icones span.on{border-color:var(--ouro);color:var(--ouro);background:#2a2518}.icones svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7}
+.prev{display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed var(--borda);border-radius:10px}
+.gav-pe{display:flex;justify-content:flex-end;gap:10px;padding:14px 18px;border-top:1px solid var(--div)}
+.fundo-lista{opacity:.5}
+@media(max-width:900px){.tela{grid-template-columns:1fr}.lado{display:none}.duas{grid-template-columns:1fr}.passos{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Tela de Categorias — 3 modelos</h1>
+<p class="intro">Ao clicar em <b>Categorias</b> no menu lateral, abre esta tela à direita: explica para que serve e tem o botão <b>Criar categoria</b>.</p>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-prod" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M3.5 9h17"/></symbol>
+<symbol id="i-cat" viewBox="0 0 24 24"><path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.4"/></symbol>
+<symbol id="i-al" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/></symbol>
+<symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-men" viewBox="0 0 24 24"><path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/></symbol>
+<symbol id="i-liv" viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13"/></symbol>
+<symbol id="i-pres" viewBox="0 0 24 24"><rect x="3.5" y="8" width="17" height="12" rx="1.5"/><path d="M3.5 12h17M12 8v12M12 8c-2-4-6-4-6-1.5S9 8 12 8c3 0 6 1 6-1.5S14 4 12 8"/></symbol>
+<symbol id="i-est" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</defs></svg>
+
+<!-- A -->
+<section>
+  <div class="rot"><b>MODELO A — EXPLICAÇÃO NO CENTRO</b><span>Tela limpa: ícone, explicação curta, botão grande e "como funciona" em 3 passos. Quando já houver categorias, elas aparecem abaixo.</span></div>
+  <div class="tela">
+    <nav class="lado"><div class="logo">AIŌN</div><span class="it"><svg><use href="#i-prod"/></svg>Produtos</span><span class="it on"><svg><use href="#i-cat"/></svg>Categorias</span><span class="it"><svg><use href="#i-al"/></svg>Alunos</span></nav>
+    <div class="area">
+      <div class="trilha">Conteúdo / Categorias</div>
+      <div class="cab"><div><h2>Categorias</h2><p>Organize seus produtos em grupos.</p></div></div>
+      <div class="vazio"><span class="ic"><svg><use href="#i-cat"/></svg></span><h3>Agrupe seus produtos por categoria</h3><p>A categoria é a "prateleira" onde o produto aparece no aplicativo do aluno — por exemplo Mentoria, E-books ou Presentes. Cada produto fica em uma categoria.</p><span class="bt ouro"><svg><use href="#i-mais"/></svg>Criar categoria</span></div>
+      <div class="passos"><div class="passo"><i>1</i><b>Crie a categoria</b><span>Dê um nome, uma descrição e escolha um ícone.</span></div><div class="passo"><i>2</i><b>Coloque os produtos</b><span>Ao criar ou editar um produto, escolha a categoria dele.</span></div><div class="passo"><i>3</i><b>O aluno vê organizado</b><span>No aplicativo, os produtos aparecem agrupados.</span></div></div>
+    </div>
+  </div>
+  <p class="nota"><b>Bom para:</b> primeira vez, quando ainda não existem categorias. Fica bem claro o que fazer.</p>
+</section>
+
+<!-- B -->
+<section>
+  <div class="rot"><b>MODELO B — LISTA + EXPLICAÇÃO AO LADO</b><span>À esquerda, as categorias que já existem em cartões. À direita, um quadro fixo explicando, com o botão Criar categoria.</span></div>
+  <div class="tela">
+    <nav class="lado"><div class="logo">AIŌN</div><span class="it"><svg><use href="#i-prod"/></svg>Produtos</span><span class="it on"><svg><use href="#i-cat"/></svg>Categorias</span><span class="it"><svg><use href="#i-al"/></svg>Alunos</span></nav>
+    <div class="area">
+      <div class="trilha">Conteúdo / Categorias</div>
+      <div class="cab"><div><h2>Categorias</h2><p>4 categorias · 11 produtos</p></div><span class="bt ouro"><svg><use href="#i-mais"/></svg>Criar categoria</span></div>
+      <div class="duas">
+        <div class="grade">
+          <div class="cat"><div class="lin"><span class="ic"><svg><use href="#i-men"/></svg></span><div><b>Mentoria</b><br><em>Acompanhamento e aulas ao vivo</em></div></div><div class="pe"><span>1 produto</span><span class="sel">Ativa</span></div></div>
+          <div class="cat"><div class="lin"><span class="ic"><svg><use href="#i-liv"/></svg></span><div><b>E-books</b><br><em>Leituras digitais</em></div></div><div class="pe"><span>9 produtos</span><span class="sel">Ativa</span></div></div>
+          <div class="cat"><div class="lin"><span class="ic"><svg><use href="#i-pres"/></svg></span><div><b>Presentes</b><br><em>Conteúdos gratuitos</em></div></div><div class="pe"><span>1 produto</span><span class="sel">Ativa</span></div></div>
+          <div class="cat"><div class="lin"><span class="ic"><svg><use href="#i-est"/></svg></span><div><b>Mestres espirituais</b><br><em>Em breve</em></div></div><div class="pe"><span>0 produtos</span><span class="sel em">Em breve</span></div></div>
+          <div class="nova"><span><svg width="22" height="22" style="fill:none;stroke:currentColor;stroke-width:2"><use href="#i-mais"/></svg><br>Nova categoria</span></div>
+        </div>
+        <aside class="expl"><span class="ic"><svg><use href="#i-cat"/></svg></span><h3>O que é uma categoria?</h3><p>É o grupo onde o produto aparece no aplicativo do aluno.</p><ul><li>Cada produto fica em uma categoria</li><li>Você pode mudar a ordem no aplicativo</li><li>Categoria "Em breve" aparece com cadeado</li></ul><span class="bt ouro"><svg><use href="#i-mais"/></svg>Criar categoria</span></aside>
+      </div>
+    </div>
+  </div>
+  <p class="nota"><b>Bom para:</b> o dia a dia. Você vê tudo que existe e a explicação fica sempre à mão.</p>
+</section>
+
+<!-- C -->
+<section>
+  <div class="rot"><b>MODELO C — PAINEL LATERAL COM O FORMULÁRIO</b><span>Ao clicar em Categorias, abre um painel por cima, do lado direito: explicação curta no topo e o formulário para criar já ali, com prévia.</span></div>
+  <div class="tela">
+    <nav class="lado"><div class="logo">AIŌN</div><span class="it"><svg><use href="#i-prod"/></svg>Produtos</span><span class="it on"><svg><use href="#i-cat"/></svg>Categorias</span><span class="it"><svg><use href="#i-al"/></svg>Alunos</span></nav>
+    <div class="area fundo-lista">
+      <div class="trilha">Conteúdo / Produtos</div>
+      <div class="cab"><div><h2>Produtos</h2><p>11 produtos</p></div></div>
+      <div class="grade"><div class="cat" style="height:150px"></div><div class="cat" style="height:150px"></div><div class="cat" style="height:150px"></div></div>
+    </div>
+    <div class="veu"></div>
+    <aside class="gav">
+      <div class="gav-cab"><span class="ic"><svg><use href="#i-cat"/></svg></span><div><h3>Nova categoria</h3><p>Agrupe os produtos no aplicativo do aluno.</p></div><span class="x"><svg width="16" height="16" style="fill:none;stroke:currentColor;stroke-width:2"><use href="#i-x"/></svg></span></div>
+      <div class="gav-corpo">
+        <div class="dica"><b>Para que serve?</b> A categoria é a "prateleira" do aplicativo. Ex.: Mentoria, E-books, Presentes.</div>
+        <div><span class="lb">Nome da categoria *</span><div class="campo">Ex.: Meditações</div></div>
+        <div><span class="lb">Descrição curta</span><div class="campo alto">Aparece embaixo do nome</div></div>
+        <div><span class="lb">Ícone</span><div class="icones"><span class="on"><svg><use href="#i-men"/></svg></span><span><svg><use href="#i-liv"/></svg></span><span><svg><use href="#i-pres"/></svg></span><span><svg><use href="#i-est"/></svg></span></div></div>
+        <div><span class="lb">Prévia</span><div class="prev"><span class="ic"><svg><use href="#i-men"/></svg></span><div><b>Meditações</b><br><em style="font-style:normal;font-size:12px;color:var(--t2)">0 produtos</em></div></div></div>
+      </div>
+      <div class="gav-pe"><span class="bt">Cancelar</span><span class="bt ouro">Criar categoria</span></div>
+    </aside>
+  </div>
+  <p class="nota"><b>Bom para:</b> criar rápido sem sair da tela onde você está. A lista de categorias fica dentro do próprio painel, abaixo.</p>
+</section>
+</body></html>
