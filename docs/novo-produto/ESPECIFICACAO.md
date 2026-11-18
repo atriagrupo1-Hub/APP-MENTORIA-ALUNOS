@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 276,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 277,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -270,3 +270,13 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
   - Abrir/fechar aulas, buscar, filtrar, trocar visão e cartões/lista funcionam ali mesmo.
   - Qualquer ação de mudança (Editar, Liberação, status, ⋮, Adicionar…) entra na edição do conteúdo e já executa a ação.
   - O que é mudado na edição volta para a página do produto ao fechar e fica guardado ao atualizar. Os 4 números do topo da aba saem desse conteúdo.
+
+### Tela Categorias — modelo A (v277)
+- Menu lateral "Categorias" abre a tela (fica marcado no menu; trilha "Categorias").
+- Topo: "Categorias — Organize seus produtos em grupos." + botão "Criar categoria".
+- Quadro central: ícone, "Agrupe seus produtos por categoria", explicação (a categoria é a prateleira do app do aluno) e botão "Criar categoria".
+- "Como funciona" em 3 passos: Crie a categoria · Coloque os produtos · O aluno vê organizado.
+- "Suas categorias (N)": cartões com ícone, nome, descrição, nº de produtos e selo Ativa / Em breve.
+- Janela "Nova categoria": Nome* (até 40), Descrição curta (até 80), Ícone (6 opções), Prévia. Bloqueia nome vazio e nome repetido (sem diferenciar acento/maiúscula).
+- Categoria criada já aparece na criação de produto (etapa Categoria) e no filtro "Todas as categorias" da lista.
+- Supabase (real): tabela de categorias (nome único, descrição, ícone, status, ordem).
