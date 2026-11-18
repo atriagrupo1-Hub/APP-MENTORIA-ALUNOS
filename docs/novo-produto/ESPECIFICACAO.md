@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 271,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 272,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -253,7 +253,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 ### Janela "Módulo salvo" — layout novo (v271)
 - Topo: capa do curso, "CURSO", nome do curso e "Categoria: X"; ✕ à direita.
-- Selo verde grande "✓ Módulo salvo" com riscos de destaque + "Seu módulo foi salvo com sucesso!".
+- Confirmação: ícone ✓ verde com brilho + "Módulo salvo" grande em branco (sem caixa, sem riscos) e "O módulo foi criado e salvo com sucesso." (v272)
 - Card do módulo: capa grande, "MÓDULO", "Módulo N — Nome", descrição e chips (status, data · tipo de liberação, N aulas).
 - Pergunta com ícone: "Quer adicionar uma aula neste módulo agora?" / "Você pode adicionar a primeira aula agora ou fazer isso mais tarde."
 - Dois botões do mesmo tamanho: "🕒 Adicionar depois" e "▶ Adicionar aula agora" (dourado).
