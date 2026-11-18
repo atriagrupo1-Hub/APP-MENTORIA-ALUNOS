@@ -684,7 +684,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -1145,7 +1145,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3576,25 +3576,45 @@ export function montar(app: HTMLElement) {
    */
   /** Só cursos de verdade: os antigos produtos com o mesmo nome de uma categoria (Descobertas, E-books…) são a própria categoria, não um curso. */
   const cursosDeVerdade = () => S.cursos.filter((c) => ehCursoReal(c.id));
+  /* ---------- Layout novo (modelo "Novo produto"): cards de produto e de categoria ---------- */
+  const NP_SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  const NP_IC = {
+    img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>`,
+    ok: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+    ponto: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/></svg>`,
+    aberto: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>`,
+    cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>`,
+    olhoX: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.5 7.6C4.6 8.9 3.2 10.8 2.5 12c1 1.5 4.5 6 9.5 6 1.5 0 2.9-.4 4.1-1"/></svg>`,
+    grade: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>`,
+    lista: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.5" cy="6.5" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="17.5" r="1.2"/></svg>`,
+  };
+  /** Publicação ▾ e Liberação ▾ lado a lado (card do produto/categoria). */
+  function npStatus(k: string, pub: boolean, vis: boolean, bloq: boolean, libera: string, pubAcao: (v: boolean) => string, estPref: string, abrirAgenda: string) {
+    const agend = vis && !bloq && !!libera && new Date(libera).getTime() > Date.now();
+    const lib: [string, string, string] = !vis ? ["Oculto", "np-ocu", NP_IC.olhoX] : bloq ? ["Bloqueado", "np-blo", NP_IC.cad] : agend ? ["Agendado", "np-age", NP_IC.cal] : ["Liberado", "np-lib", NP_IC.aberto];
+    const kP = "np-p:" + k, kL = "np-l:" + k, e = !vis ? "desativado" : bloq ? "bloqueado" : "ativo";
+    const it = (v: string, t: string, ic: string, cls: string) => `<button type="button" role="menuitemradio" aria-checked="${e === v && !(v === "ativo" && agend)}" data-a="estado-set" data-v="${estPref}:${v}"><span class="np-op ${cls}">${ic}${t}</span></button>`;
+    return `<div class="np-st">
+      <div><span class="np-lb">Publicação <i title="Publicado: aparece no aplicativo. Não publicado: ninguém vê.">i</i></span><span class="est3 kg-menu np-menu"><button type="button" class="np-dd ${pub ? "np-pub" : "np-npub"}" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${pub ? NP_IC.ok : NP_IC.ponto}<span>${pub ? "Publicado" : "Não publicado"}</span>${NP_SETA}</button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu">${pubAcao(true)}${pubAcao(false)}</span>` : ""}</span></div>
+      <div><span class="np-lb">Liberação <i title="Liberado: o aluno abre. Bloqueado: aparece com cadeado. Agendado: abre na data marcada. Oculto: não aparece.">i</i></span><span class="est3 kg-menu np-menu"><button type="button" class="np-dd ${lib[1]}" data-a="estado-menu" data-v="${kL}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kL}">${lib[2]}<span>${lib[0]}</span>${NP_SETA}</button>${ui.estMenu === kL ? `<span class="est3-menu kb-menu" role="menu">${it("ativo", "Liberado", NP_IC.aberto, "np-lib")}${it("bloqueado", "Bloqueado", NP_IC.cad, "np-blo")}${it("desativado", "Oculto", NP_IC.olhoX, "np-ocu")}${abrirAgenda}</span>` : ""}</span></div>
+    </div>`;
+  }
+  const npVista = (acao: string, lista: boolean, vGrade = "grade") => `<span class="np-vista" role="group" aria-label="Forma de ver"><button type="button" class="np-vt${lista ? "" : " on"}" data-a="${acao}" data-v="${vGrade}" aria-pressed="${!lista}" aria-label="Em cards">${NP_IC.grade}</button><button type="button" class="np-vt${lista ? " on" : ""}" data-a="${acao}" data-v="lista" aria-pressed="${lista}" aria-label="Em lista">${NP_IC.lista}</button></span>`;
+  const npFiltro = (f: string, pub: boolean, vis: boolean, bloq: boolean, libera: string) => { const ag = vis && !bloq && !!libera && new Date(libera).getTime() > Date.now();
+    return f === "pub" ? pub : f === "nao" ? !pub : f === "oculto" ? !vis : f === "bloqueado" ? vis && bloq : f === "agendado" ? ag : f === "liberado" ? vis && !bloq && !ag : true; };
+  const npTipo = (t: string) => t === "ebook" ? "E-BOOK" : t === "audio" ? "ÁUDIO" : "VÍDEO";
+
   function telaCategorias() {
     const q = norm(ui.catBusca || "").trim(), ordem = ui.catxOrdem || "recentes", vista = ui.catVista === "lista" ? "lista" : "grade", vis = ui.catVis || "";
     const nCursos = (x: CatAba) => itensReais(x.id).filter((i) => i.tipo === "curso").length;
+    const cursosDa = (x: CatAba) => itensReais(x.id).filter((i) => i.tipo === "curso").map((i) => curso(i.item)).filter((c): c is Curso => !!c);
+    const fmtCat = (x: CatAba) => { const n: Record<string, number> = {}; cursosDa(x).forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; n[t] = (n[t] || 0) + 1; }); return Object.keys(n).sort((a, b) => n[b] - n[a])[0] || "video"; };
     const lista = S.catsAba
-      .filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || (vis === "rascunho" ? x.rascunho : estado3(x.pub, x.bloq) === vis)))
+      .filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || npFiltro(vis, !x.rascunho, x.pub, x.bloq, x.libera)) && (!ui.catTipo || fmtCat(x) === ui.catTipo))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "recentes" ? (b.criado || "").localeCompare(a.criado || "") : ordem === "cursos" ? nCursos(b) - nCursos(a) || a.nome.localeCompare(b.nome) : S.catsAba.indexOf(a) - S.catsAba.indexOf(b));
     const arrastar = ordem === "posicao";
-    const IC_SETA_D = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
-    const info = (x: CatAba) => `${p(nCursos(x), "curso", "cursos")}${x.criado ? " · Criada " + br(diaDe(x.criado)) : ""}`;
     // Mesmo padrão do Módulo 0: Publicada / Não publicada e o acesso (Liberada, Bloqueada, Oculta; Rascunho quando não publicada).
-    const vis3 = (x: CatAba) => { const kp = "kpub2:" + x.id, ka = "kacc:" + x.id, e = estado3(x.pub, x.bloq), pub = !x.rascunho;
-      const pubPil = `<span class="est3 mpub"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${kp}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kp}">${pub ? "Publicada" : "Não publicada"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kp ? `<span class="est3-menu" role="menu">${pub ? `<button type="button" role="menuitem" data-a="catx-pub-toggle" data-id="${x.id}"><span class="mpub-pil off">Não publicada</span></button>` : `<button type="button" role="menuitem" data-a="catx-pub-toggle" data-id="${x.id}"><span class="mpub-pil on">Publicada</span></button>`}</span>` : ""}</span>`;
-      const [rot, cor] = e === "ativo" ? ["Liberada", "verde"] : e === "bloqueado" ? ["Bloqueada", "amarelo"] : ["Oculta", "vermelho"];
-      const accPil = !pub ? `<span class="est3"><span class="est3-pil macc-rasc">Rascunho</span></span>` : `<span class="est3"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${ka}" aria-haspopup="menu" aria-expanded="${ui.estMenu === ka}">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button>${ui.estMenu === ka ? `<span class="est3-menu" role="menu">
-        <button type="button" role="menuitemradio" aria-checked="${e === "ativo"}" data-a="estado-set" data-v="catx:${x.id}:ativo"><span class="est3-pil verde">${IC_OLHO}Liberada</span></button>
-        <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="catx:${x.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueada</span></button>
-        <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="catx:${x.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculta</span></button>
-      </span>` : ""}</span>`;
-      return `<span class="kg-vis">${pubPil}${accPil}</span>`; };
     // Editar, Duplicar, Ocultar/Mostrar, Publicar e Excluir ficam juntos no ⋮.
     const menu = (x: CatAba) => { const k = "kg:" + x.id, e = estado3(x.pub, x.bloq); return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(x.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}">Editar</button>
@@ -3604,33 +3624,41 @@ export function montar(app: HTMLElement) {
         <span class="kb-sep"></span>
         <button type="button" role="menuitem" class="perigo" data-a="catx-remover" data-id="${x.id}">Excluir</button>
       </span>` : ""}</span>`; };
-    const capa = (x: CatAba, cls: string) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq); return `<button type="button" class="${cls}" data-a="catx-entrar" data-id="${x.id}" aria-label="Abrir ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(e, true)}</button>`; };
     const alca = arrastar ? `<span class="kc-alca kg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>` : "";
-    const cartao = (x: CatAba) => `
-      <article class="kg-card${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
-        <div class="kg-capa-box">${capa(x, "kg-capa")}${alca}</div>
-        <button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button>
-        <p class="kg-info">${info(x)}</p>
-        <div class="kg-pe">${vis3(x)}<span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span></div>
+    const minsDa = (x: CatAba) => Math.round(cursosDa(x).reduce((t, c) => t + c.modulos.reduce((u, m) => u + m.aulas.reduce((v, a) => v + (a.duracao || 0), 0), 0), 0) / 60);
+    const npCat = (x: CatAba) => {
+      const im = capaSite(x.capa), nc = nCursos(x), mi = minsDa(x);
+      const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !x.rascunho}" data-a="${v === !x.rascunho ? "estado-menu" : "catx-pub-toggle"}" data-id="${x.id}"${v === !x.rascunho ? ` data-v="np-p:k${x.id}"` : ""}><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+      return `<article class="np-card${arrastar ? " np-arrasta" : ""}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
+        <button type="button" class="np-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Abrir ${h(x.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DA CATEGORIA</span></span>`}<span class="np-tipo">${npTipo(fmtCat(x))}</span>${alca}</button>
+        <div class="np-cc">
+          <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}</button><span class="np-l np-lin"><span class="np-lb">Descrição</span><span class="np-cat">${h(x.descricao || "—")}</span></span></span>
+          <div class="np-nums"><div><b>${nc}</b><span>${nc === 1 ? "CURSO" : "CURSOS"}</span></div><div><b>${Math.floor(mi / 60)}h${String(mi % 60).padStart(2, "0")}</b><span>HORAS AULA</span></div></div>
+          ${npStatus("k" + x.id, !x.rascunho, x.pub, x.bloq, x.libera, pubBt, "catx:" + x.id, `<button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
+          <div class="np-pe">${menu(x)}<button type="button" class="np-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir categoria <span aria-hidden="true">→</span></button></div>
+        </div>
       </article>`;
-    const linha = (x: CatAba) => `
-      <article class="kg-linha${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
-        ${alca}${capa(x, "kg-mini")}
-        <div class="kg-ltxt"><button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button><p class="kg-info">${info(x)}</p></div>
-        ${vis3(x)}
-        <span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span>
-      </article>`;
+    };
+    const tot = (t: string) => S.catsAba.filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || npFiltro(vis, !x.rascunho, x.pub, x.bloq, x.libera)) && (!t || fmtCat(x) === t)).length;
+    if (!S.catsAba.length) return `
+    <section class="tela ativa np">
+      <div class="np-v0"><h2>Ainda não há categorias</h2><p>Crie categorias para agrupar e organizar seus cursos <br>(como Vídeos, Áudios, E-books, Mentorias, etc.).</p>
+        <button type="button" class="al-botao-ouro np-criar" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar categoria</button>
+        <div class="np-ben"><div>${IC_CUR.pasta}<span>Organize<br>seus cursos</span></div><div>${IC_CUR.camadas}<span>Facilite a navegação<br>dos alunos</span></div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg><span>Ganhe agilidade<br>na gestão</span></div></div></div>
+      ${ui.catxEditar ? editarCatAba() : ""}
+    </section>`;
     return `
-    <section class="tela ativa ax kc kg">
-      <div class="kg-barra">
-        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></label>
-        <select class="campo kg-sel" data-cat-vis aria-label="Visibilidade">${[["", "Todas as visibilidades"], ["ativo", "Visíveis"], ["bloqueado", "Bloqueadas"], ["desativado", "Ocultas"], ["rascunho", "Não publicadas"]].map(([v, t]) => `<option value="${v}" ${vis === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <select class="campo kg-sel" data-catx-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"], ["cursos", "Mais cursos"], ["posicao", "Ordem do app (arrastar)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cat-vista" data-v="cards" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cat-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+    <section class="tela ativa np kg">
+      <nav class="np-abas" role="tablist" aria-label="Formato">${[["", "Todos"], ["video", "Vídeo"], ["ebook", "E-book"], ["audio", "Áudio"]].map(([k, t]) => `<button type="button" role="tab" class="np-aba${(ui.catTipo || "") === k ? " on" : ""}" data-a="cat-tipo" data-v="${k}" aria-selected="${(ui.catTipo || "") === k}">${t}<i>${tot(k)}</i></button>`).join("")}</nav>
+      <div class="np-filtros">
+        <label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria" aria-label="Buscar categoria" /></label>
+        <select class="campo np-sel" data-cat-vis aria-label="Status">${[["", "Todos os status"], ["pub", "Publicado"], ["nao", "Não publicado"], ["liberado", "Liberado"], ["bloqueado", "Bloqueado"], ["agendado", "Agendado"], ["oculto", "Oculto"]].map(([v, t]) => `<option value="${v}" ${vis === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <span class="np-total">${p(lista.length, "categoria", "categorias")}</span>
+        <span class="np-flex"></span>
+        <select class="campo np-sel" data-catx-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"], ["cursos", "Mais cursos"], ["posicao", "Ordem do app (arrastar)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        ${npVista("cat-vista", vista === "lista", "cards")}
       </div>
-      <p class="kg-conta">${p(lista.length, "categoria", "categorias")}${q || vis ? ` de ${S.catsAba.length}` : ""}</p>
-      ${!lista.length ? `<div class="vazio">${S.catsAba.length ? "Nenhuma categoria encontrada." : "Nenhuma categoria ainda. Clique em Nova categoria."}</div>`
-        : vista === "lista" ? `<div class="kg-lista">${lista.map(linha).join("")}</div>` : `<div class="kg-grade">${lista.map(cartao).join("")}</div>`}
+      ${!lista.length ? `<div class="np-vazio">Nenhuma categoria com esses filtros.</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista.map(npCat).join("")}</div>`}
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;
   }
@@ -3905,74 +3933,48 @@ export function montar(app: HTMLElement) {
     // Cursos e conteúdos: busca, filtros (categoria, status, publicação), ordem e cards/lista.
     // Status = bloqueado_geral (Ativo / Bloqueado); Publicação = publicado (Publicado / Rascunho, oculto para as alunas).
     const catsDo = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
-    const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
+    const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "";
     const nAl = (c: Curso) => numerosCurso(c).alunas;
     const tipoDe = (c: Curso) => (c.tipo === "ebook" ? "ebooks" : c.tipo === "audio" ? "audios" : "cursos");
     const nTipo = (t: string) => t === "todos" ? S.cursos.length : S.cursos.filter((c) => tipoDe(c) === t).length;
     const lista2 = S.cursos.filter((c) => (ui.prodTipo === "todos" || tipoDe(c) === ui.prodTipo) && (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
-        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
+        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || npFiltro(fSt, !c.rascunho, c.visivel, c.bloq, c.libera)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
-    // Dois status, independentes e lado a lado: Publicação (rascunho) e Liberação (publicado/bloqueado_geral/libera_em).
-    const seta = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
-    const selos = (c: Curso) => {
-      const kP = "ccpub:" + c.id, kL = "cclib:" + c.id, pub = !c.rascunho;
-      const agend = c.visivel && !c.bloq && !!c.libera && new Date(c.libera).getTime() > Date.now();
-      const lib = !c.visivel ? ["Oculto", "cz", "desativado"] : c.bloq ? ["Bloqueado", "am", "bloqueado"] : agend ? ["Agendado", "az", "ativo"] : ["Liberado", "vd", "ativo"];
-      const itL = (v: string, t: string) => `<button type="button" role="menuitemradio" aria-checked="${lib[2] === v && !(v === "ativo" && agend)}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
-      return `<div class="cc2-st2">
-        <span class="cc2-st2-c"><em>Publicação</em><span class="est3 kg-menu"><button type="button" class="cc2-selo ${pub ? "vd" : "cz"} cv-pil" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${pub ? "Publicado" : "Não publicado"}${seta}</button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitemradio" aria-checked="${pub}" data-a="curso-pub" data-id="${c.id}" data-v="1">Publicado</button><button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="curso-pub" data-id="${c.id}" data-v="0">Não publicado</button></span>` : ""}</span></span>
-        <span class="cc2-st2-c"><em>Liberação</em><span class="est3 kg-menu"><button type="button" class="cc2-selo ${lib[1]} cv-pil" data-a="estado-menu" data-v="${kL}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kL}">${lib[0]}${seta}</button>${ui.estMenu === kL ? `<span class="est3-menu kb-menu" role="menu">${itL("ativo", "Liberado")}${itL("bloqueado", "Bloqueado")}${itL("desativado", "Oculto")}<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config">Agendar data…</button></span>` : ""}</span></span>
-      </div>`;
-    };
-    const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
-    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
     // Ações secundárias no ⋮ (todas já existiam no painel).
     const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
-        <button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.visivel ? "desativado" : c.bloq ? "bloqueado" : "ativo"}">${c.visivel ? "Despublicar (Rascunho)" : "Publicar"}</button>
-        ${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "ativo" : "bloqueado"}">${c.bloq ? "Desbloquear (Ativo)" : "Bloquear"}</button>` : ""}
         <span class="kb-sep"></span>
         <button type="button" role="menuitem" class="perigo" data-a="curso-remover" data-id="${c.id}">Excluir curso</button>
       </span>` : ""}</span>`; };
-    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>`; };
-    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
-    // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
-    const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
-    const statsTxt = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<p class="cc2-info"><b>${n}</b> ${n === 1 ? "aluna ativa" : "alunas ativas"} · <b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"} · <b>${au}</b> ${nomeItens(c, au).toLowerCase()}</p>`; };
-    const ultLib = (c: Curso) => { const u = ULT_LIB.get(c.id); if (!u) return ""; const d = new Date(u.quando); const dt = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
-      return `<div class="cc2-ult"><h5>Última liberação</h5><p title="${h(u.titulo)}">${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</p><span>${dt} · ${p(u.alunas, "aluna", "alunas")} · ${u.avisadas} ${u.avisadas === 1 ? "avisada" : "avisadas"} no celular</span></div>`; };
-    const card2 = (c: Curso) => `
-      <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
-        ${capaC(c, "ka-capa")}
-        <div class="cc2-corpo">
-          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}
-          <div class="cc2-bts">${bts(c)}</div>
+    const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo np-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    const npCard = (c: Curso) => {
+      const im = capaSite(c.capa), xs = catsDo(c), au = totalAulas(c), al = nAl(c);
+      const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !c.rascunho}" data-a="curso-pub" data-id="${c.id}" data-v="${v ? 1 : 0}"><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+      return `<article class="np-card">
+        <button type="button" class="np-capa" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DO PRODUTO</span></span>`}<span class="np-tipo">${npTipo(c.tipo)}</span></button>
+        <div class="np-cc">
+          <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button><span class="np-l np-lin"><span class="np-lb">Categoria</span><span class="np-cat">${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</span></span></span>
+          <div class="np-nums"><div><b>${c.modulos.length}</b><span>${c.modulos.length === 1 ? "MÓDULO" : "MÓDULOS"}</span></div><div><b>${au}</b><span>${au === 1 ? "AULA" : "AULAS"}</span></div><div><b>${al}</b><span>${al === 1 ? "ALUNO" : "ALUNOS"}</span></div></div>
+          ${npStatus("c" + c.id, !c.rascunho, c.visivel, c.bloq, c.libera, pubBt, "curso:" + c.id, `<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
+          <div class="np-pe">${menu(c)}<button type="button" class="np-abrir" data-a="abrir-curso" data-id="${c.id}" data-v="${c.rascunho ? "config" : "visao"}">${c.rascunho ? "Continuar edição" : "Abrir produto"} <span aria-hidden="true">→</span></button></div>
         </div>
       </article>`;
-    const linha2 = (c: Curso) => `
-      <article class="cc2-linha${c.visivel ? "" : " cc2-rasc"}">
-        ${capaC(c, "ka-mini")}
-        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${cats(c)}${selos(c)}</div>
-        ${stats(c)}
-        <div class="cc2-bts">${bts(c)}${menu(c)}</div>
-      </article>`;
-    const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo kg-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    };
+    const vazioTxt = q || fCat || fSt ? "Nenhum produto com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro em “Criar novo produto”." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda.";
     return `
-    <section class="tela ativa cur cc2">
-      <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
-      <div class="kg-barra">
-        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar ${NOME_TIPO[ui.prodTipo][0]}..." aria-label="Buscar ${NOME_TIPO[ui.prodTipo][0]}" /></label>
+    <section class="tela ativa np">
+      <nav class="np-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Vídeo"], ["ebooks", "E-book"], ["audios", "Áudio"]] as const).map(([k, t]) => `<button type="button" role="tab" class="np-aba${ui.prodTipo === k ? " on" : ""}" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<i>${nTipo(k)}</i></button>`).join("")}</nav>
+      <div class="np-filtros">
+        <label class="np-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar produto" aria-label="Buscar produto" /></label>
         ${sel("data-curso-cat", fCat, [["", "Todas as categorias"], ...S.catsAba.map((x) => [x.id, x.nome])], "Categoria")}
-        ${sel("data-curso-st", fSt, [["", "Todos os status"], ["ativo", "Ativo"], ["bloqueado", "Bloqueado"]], "Status")}
-        ${sel("data-curso-pub", fPub, [["", "Toda publicação"], ["pub", "Publicado"], ["rasc", "Rascunho"]], "Publicação")}
-        ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunas"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordem")}
-        <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        ${sel("data-curso-st", fSt, [["", "Todos os status"], ["pub", "Publicado"], ["nao", "Não publicado"], ["liberado", "Liberado"], ["bloqueado", "Bloqueado"], ["agendado", "Agendado"], ["oculto", "Oculto"]], "Status")}
+        <span class="np-total">${lista2.length} ${lista2.length === 1 ? "produto" : "produtos"}</span>
+        <span class="np-flex"></span>
+        ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunos"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordenar")}
+        ${npVista("cur-vista", vista === "lista")}
       </div>
-      <p class="kg-conta">${lista2.length} ${lista2.length === 1 ? NOME_TIPO[ui.prodTipo][0] : NOME_TIPO[ui.prodTipo][1]} ${lista2.length === 1 ? "encontrado" : "encontrados"}</p>
-      ${!lista2.length ? `<div class="vazio">${q || fCat || fSt || fPub ? "Nada encontrado com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda."}</div>`
-        : vista === "lista" ? `<div class="ka-lista">${lista2.map(linha2).join("")}</div>` : `<div class="cc2-grade">${lista2.map(card2).join("")}</div>`}
+      ${!lista2.length ? `<div class="np-vazio">${vazioTxt}</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista2.map(npCard).join("")}</div>`}
     </section>`;
   }
 
@@ -8043,6 +8045,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ce-ver": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.ceEd = ""; render(); }); return; } ui.ceEd = ""; break;
       case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
       case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
+      case "cat-tipo": ui.catTipo = d.v || ""; break;
       case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
