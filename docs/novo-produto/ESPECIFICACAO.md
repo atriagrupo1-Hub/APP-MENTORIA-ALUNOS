@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 260,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 261,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -207,3 +207,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Botão dourado "Editar conteúdo" no topo à direita da aba Conteúdo.
 - Abre a tela de conteúdo do curso (card do curso + lista de módulos e aulas) já com os módulos e aulas do produto, para adicionar, editar, liberar, duplicar ou excluir.
 - "Fechar" volta para a página do produto, na aba Conteúdo.
+
+### Aba Ranking de alunos (v261)
+- Cabeçalho com período (7/30/90 dias), igual ao Engajamento.
+- 4 números: Alunos matriculados, Concluíram aulas, Aulas assistidas, Engajamento médio.
+- Linha 1: Top 3 do curso (pódio com 1º ao centro, coroa), Evolução do engajamento (gráfico + variação), Conquistas mais obtidas (Assíduo, Concluiu módulo, Participativo, Top engajamento).
+- Ranking geral (só alunos ativos): #, Aluno, Pontos, Aulas assistidas, Módulos concluídos (x / total), Tempo de estudo, Conquistas (3 ícones + "+N"), ⋮ (ver aluno). Busca por nome, botão Filtros (ordenar por pontos/aulas/módulos/tempo; só quem concluiu o curso), 10 por página.
+- Coluna direita: Engajamento por nível (Avançado ≥80%, Intermediário 40–79%, Básico <40%) e Conquistas e metas (% de alunos que atingiram a meta).
+- Regra de pontos a definir na implementação real (progresso, aulas, módulos, assiduidade).
