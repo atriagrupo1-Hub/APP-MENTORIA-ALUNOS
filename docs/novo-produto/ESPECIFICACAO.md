@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 266,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 267,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -240,3 +240,10 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "Adicionar depois" / ✕ → fecha e fica no card do curso, com aviso "Curso salvo. Você pode adicionar o conteúdo quando quiser."
 - Salvar de novo um curso que já existe não abre a janela (só "Curso salvo.").
 - Janelas no celular: margem de 16 px dos dois lados.
+
+### Conteúdo do curso — topo novo e estado vazio (v267)
+- Topo: ícone + "Conteúdo do curso ?" e, abaixo, totais: N Módulos · N Aulas · N Materiais · tempo total (soma da duração das aulas). À direita, botão dourado "+ Adicionar conteúdo ▾" (Módulo / Aula / Material).
+- Barra: Pesquisar conteúdo… | Por módulos / Por aulas | Filtrar: (ordem e status) + inverter ordem | alternar Cartões / Lista.
+- Saiu da barra o seletor de módulo.
+- Modo Cartões (por módulos): cada módulo vira um cartão com capa, nome, status (seletor), data de liberação, Liberação / Editar / Ver / ⋮ e "Aulas do módulo (N)", que volta para a lista com o módulo aberto.
+- Sem conteúdo: faixa com ilustração, "Seu curso ainda não tem conteúdo", "Adicione módulos, aulas e materiais para organizar o aprendizado." e botão "+ Adicionar conteúdo ▾" (no tema dourado do painel).
