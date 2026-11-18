@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 214,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 215,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -85,6 +85,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "▶ Aulas do módulo (N) ⌄" sempre visível embaixo do card: clicar abre/fecha as aulas (fechadas por padrão).
 - Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), título "Aula 2 — Nome da aula" (branco, quebra linha se não couber) e embaixo "Vídeo · 49 min" (tipo + duração em minutos), Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
+
+### Tipo da liberação na lista
+
+- Em módulo e aula, embaixo da data de "Liberado em" aparece o tipo: Imediata, Às 09:00 (data específica), Após o cadastro, Junto com o módulo ou Trancado.
+- "Liberar" no menu ⋮ = liberação Imediata (grava a configuração); "Agendar" no menu ⋮ abre a janela de liberação para escolher a data.
 
 ### Seleção em massa
 
