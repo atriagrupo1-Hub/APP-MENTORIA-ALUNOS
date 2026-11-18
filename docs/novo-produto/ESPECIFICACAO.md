@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 262,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 263,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -219,3 +219,14 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 ### Página do produto — ordem das abas e atualização (v262)
 - Ordem: Sobre o produto, Conteúdo, Engajamento, Comentários, Alunos, Ranking de alunos.
 - Ao atualizar a página, o painel volta para o mesmo produto, na mesma aba, no mesmo período e na mesma posição da tela (cache descartável do navegador; não é dado oficial).
+
+### Dois status: Publicação e Liberação (v263) — decisão do dono
+- **Publicação** (só 2): Publicado / Não publicado. Diz se o produto existe para o aluno.
+- **Liberação** (4): Liberado / Bloqueado / Agendado / Oculto. Diz se o aluno consegue abrir.
+- São independentes (ex.: publicado e bloqueado; não publicado e liberado).
+- Card do produto (opção B): faixa com "Publicação ⓘ" e "Liberação ⓘ", cada um com seletor (seta ▾) que troca o status ali mesmo. Cores: Publicado/Liberado verde, Não publicado/Oculto cinza, Bloqueado vermelho, Agendado roxo.
+- Saíram do card: "Criado em" e "Liberado em" (ficam dentro do produto).
+- Card em criação ("Continuar edição"): seletores avisam "Termine de criar o curso para publicar e liberar".
+- Filtro "Todos os status" da lista: acha por qualquer um dos dois (inclui "Liberado").
+- Supabase (implementação real): dois campos separados no produto (publicação e liberação), em vez de um só.
+- Ainda falta: levar os dois status para módulos e aulas (lista de conteúdo) e para a janela de Liberação.
