@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 291,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 292,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -318,3 +318,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - (v289) Card da categoria igual ao card do curso: mesma peça (capa, texto em cima, nome grande em serifa, descrição, barra de progresso com %, botão com ícone, texto centralizado e seta), mesma largura e tamanhos. Categoria antiga usa o card padrão do curso com os textos dela.
 - (v290) Página da categoria alinhada: Publicação ▾, Liberação ▾ e "Editar categoria" com a mesma altura (44 px) e alinhados pela base; descrição longa quebra normal ao lado do ícone; em tela média o resumo ocupa a largura toda e o card vai para baixo.
 - (v291) Card da categoria SEM barra de progresso (na Aparência da categoria some a barra e o ajuste "Barra de progresso"; na página da categoria também). O card do curso continua com a barra.
+- (v292) Página da categoria, ordem no resumo: selo "Categoria" → nome → "Formato: Vídeos/E-books/Áudios" → "Descrição: …".
