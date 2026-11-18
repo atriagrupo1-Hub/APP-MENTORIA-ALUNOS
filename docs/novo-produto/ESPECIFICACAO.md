@@ -170,4 +170,5 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 - `modelo-novo-produto.html` — o modelo completo e interativo.
 - `opcoes-lista-modulos.html` — 3 modelos de lista de módulos (base do desenho final da seção 4).
+- `opcoes-pagina-produto.html` — 3 modelos da página "Abrir produto" (abas Sobre, Conteúdo, Alunos, Aulas, Engajamento, Ranking, Comentários, com filtros). Aguardando o dono escolher A, B ou C.
 - `opcoes-onde-abre-modulo.html` — onde abre o novo módulo (aprovada a opção B, painel lateral).
