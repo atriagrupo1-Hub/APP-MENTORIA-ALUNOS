@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 256,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 257,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -186,3 +186,9 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - `opcoes-lista-modulos.html` — 3 modelos de lista de módulos (base do desenho final da seção 4).
 - `opcoes-pagina-produto.html` — 3 modelos da página "Abrir produto" (abas Sobre, Conteúdo, Alunos, Aulas, Engajamento, Ranking, Comentários, com filtros). Aguardando o dono escolher A, B ou C.
 - `opcoes-onde-abre-modulo.html` — onde abre o novo módulo (aprovada a opção B, painel lateral).
+
+### Aba Alunos — botão "+ Aluno" (v257)
+- Botão dourado "+ Aluno" no topo à direita da aba Alunos.
+- Abre a janela "Adicionar alunos" (Um aluno / Em massa por planilha).
+- Aluno novo entra como Ativo, progresso 0%, aparece em "Adicionados recentes" e soma nos totais.
+- E-mail que já é aluno do produto é recusado ("Esse e-mail já é aluno deste produto.").
