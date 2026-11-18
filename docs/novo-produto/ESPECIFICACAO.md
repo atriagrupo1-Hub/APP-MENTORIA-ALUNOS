@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 198,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 199,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -13,6 +13,8 @@ painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
 > no Cloudflare Stream ou link do YouTube. `localStorage` nunca é fonte.
 
 Regras gerais
+
+- **Rascunho não existe.** Status: Não publicado (padrão ao salvar), Publicado, Bloqueado, Oculto. Nada de "Salvar rascunho" nem selo "Rascunho" em curso, módulo, aula ou lista.
 
 - Texto na tela: sempre "aluno/alunos", nunca "aluna/alunas".
 - Vídeo de aula: arquivo (Cloudflare Stream) ou link YouTube (inclusive não listado) / Cloudflare Stream.
@@ -43,7 +45,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 ## 3. Curso criado (resumo)
 
-- Esquerda: quadro de informações — selo "Curso" com ícone, status (Rascunho/Publicado/Bloqueado/Oculto, colorido, editável) + menu ⋮ (Ver como aluno, Duplicar, Excluir); NOME em serifada maiúscula; "Categoria: X"; quadros Módulos, Aulas, Alunos (Alunos por último); linha Data de criação | Liberado em | Progresso (barra); botão "Editar curso".
+- Esquerda: quadro de informações — selo "Curso" com ícone, status (Não publicado/Publicado/Bloqueado/Oculto, colorido, editável) + menu ⋮ (Ver como aluno, Duplicar, Excluir); NOME em serifada maiúscula; "Categoria: X"; quadros Módulos, Aulas, Alunos (Alunos por último); linha Data de criação | Liberado em | Progresso (barra); botão "Editar curso".
 - Direita: "Card do curso" com "?" ("Este é o card do curso do jeito que o aluno vê dentro do aplicativo") e a prévia do card (clicar edita o curso).
 
 ## 4. Conteúdo do curso
@@ -53,7 +55,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
   - Aula → janela "escolha o módulo" → criação da aula naquele módulo.
   - Material → escolhe módulo → escolhe aula → abre a aula na parte Material complementar.
 - Barra: escolha do módulo ("Módulo 1 – Nome (N aulas)"); ordem muda arrastando pelo ⋮⋮ (sem setas); campo "Pesquisar aula, módulo, material…" (busca sem acento em nome/descrição do módulo, nome/descrição/tipo da aula e título/tipo/arquivo dos materiais; em "Por módulos" mostra só os módulos com resultado, já abertos e só com as aulas encontradas; "Nada encontrado para “x”." quando vazio); à direita Visualização (Por módulos | Por aulas), Filtrar (Ordem do conteúdo [padrão], Nome A–Z, Últimos liberados, Últimos adicionados, Mais assistidos, Módulo com mais aulas) e a flechinha ⇅ que inverte a ordem escolhida (ex.: últimos liberados ↔ primeiros liberados; os ainda não liberados ficam sempre no fim). Filtro só muda a exibição.
-- Card do módulo (mesmas colunas da aula, alinhadas): caixinha de seleção, ⋮⋮ arrastar, capa (sem imagem: "MÓDULO" + "01"), "MÓDULO 1   NOME" (separados por espaço, fonte/cor/negrito/maiúsculas vindos da Aparência do módulo; tamanho da lista), Criado em, Liberado em, Visualizações, status (Publicado/Não publicado/Rascunho), Editar, ⋮ (Editar módulo, Publicar/Despublicar, Excluir com confirmação). Módulo selecionado com borda dourada. Clicar no card só seleciona.
+- Card do módulo (mesmas colunas da aula, alinhadas): caixinha de seleção, ⋮⋮ arrastar, capa (sem imagem: "MÓDULO" + "01"), "MÓDULO 1   NOME" (separados por espaço, fonte/cor/negrito/maiúsculas vindos da Aparência do módulo; tamanho da lista), Criado em, Liberado em, Visualizações, status (Publicado/Não publicado), Editar, ⋮ (Editar módulo, Publicar/Despublicar, Excluir com confirmação). Módulo selecionado com borda dourada. Clicar no card só seleciona.
 - "▶ Aulas do módulo (N) ⌄" sempre visível embaixo do card: clicar abre/fecha as aulas (fechadas por padrão).
 - Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), etiqueta VÍDEO/ÁUDIO/E-BOOK + NOME, Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Publicar/Despublicar, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
@@ -65,7 +67,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Número: obrigatório; já vem sugerido o próximo (maior + 1); repetido → "Já tem um módulo com esse número." e não avança.
 - Cada módulo guarda sua aparência (estilos e visual) e ela volta ao editar.
 - Prévia do card do módulo: o botão abre a lista de aulas (miniatura, "MÓDULO 1 · AULA 1", nome, "Disponível", "▶ Assistir") e vira "Esconder aulas" — igual ao app do aluno.
-- "Salvar e sair" no Cancelar guarda o módulo incompleto com selo Rascunho.
+- "Salvar e sair" no Cancelar guarda o módulo como Não publicado.
 
 ## 6. Aula (janela)
 
@@ -73,7 +75,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Capa do vídeo (opcional): botão "+ Adicionar capa do vídeo" abre o mesmo quadro de capa (enviar, ajustar, IA).
 - Nome da aula, Descrição da aula (✦ Gerar com IA usando documentos da aula, ✦ Corrigir texto, Desfazer).
 - Material complementar: +PDF/+Áudio/+Texto. PDF também tem "✦ Gerar PDF com IA": título, documentos da aula (os mesmos da descrição + novos), contexto ("retire do PDF o resumo de X"), mostra o PDF gerado para ler → Refazer / Salvar PDF.
-- Rodapé: Cancelar (pergunta) · Voltar (pergunta só se mudou algo) · Salvar aula. "Salvar e sair" guarda a aula incompleta com selo Rascunho.
+- Rodapé: Cancelar (pergunta) · Voltar (pergunta só se mudou algo) · Salvar aula. "Salvar e sair" guarda a aula como Não publicada.
 
 ## 7. IA (no real: Edge Functions)
 
