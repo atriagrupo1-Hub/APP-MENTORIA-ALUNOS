@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 243,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 244,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -14,6 +14,7 @@ painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
 
 Regras gerais
 
+- **Status iguais para curso, módulo e aula**, na mesma ordem, cor e visual de lista: Não publicado (cinza) · Publicado (verde) · Agendado (dourado) · Bloqueado (vermelho) · Oculto (azul), com bolinha colorida e ✓ no atual. Não existe "Liberado" como status: o nome é Publicado.
 - **Rascunho não existe.** Status: Não publicado (padrão ao salvar), Publicado, Bloqueado, Oculto. "Não publicado" é o que antes seria rascunho: salvar nunca publica sozinho; fica Não publicado até a liberação ser configurada. Nada de "Salvar rascunho" nem selo "Rascunho" em curso, módulo, aula ou lista.
 
 - Texto na tela: sempre "aluno/alunos", nunca "aluna/alunas".
