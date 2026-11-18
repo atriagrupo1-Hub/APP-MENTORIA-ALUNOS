@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 269,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 270,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -249,3 +249,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Sem conteúdo: faixa com ilustração, "Seu curso ainda não tem conteúdo", "Adicione módulos, aulas e materiais para organizar o aprendizado." e botão "+ Adicionar conteúdo ▾" (no tema dourado do painel).
 - (v268) "+ Adicionar conteúdo" sem setinha ▾ (topo e vazio); abre o menu Módulo / Aula / Material como antes. No vazio, título, texto e botão ficam centralizados.
 - (v269) "+ Adicionar conteúdo" (topo e vazio) abre uma janela no meio da tela: "O que você quer adicionar?" com 3 cartões grandes — Módulo, Aula, Material. Esc, ✕ ou clique fora fecham.
+- (v270) Curso vazio: título, texto e botão "Adicionar conteúdo" centralizados na faixa inteira; ilustração fixa à esquerda (em tela estreita vai para cima).
