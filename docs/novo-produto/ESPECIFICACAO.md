@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 259,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 260,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -202,3 +202,8 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Linha 1: Evolução de aulas (total + variação + gráfico), Distribuição do conteúdo (rosca por tipo com % ), Tipos de conteúdo (barras: Vídeo, Áudio, E-book, Material).
 - Linha 2: Aulas mais assistidas (top 3, capa + duração + visualizações, "Ver todas"), Aulas com mais comentários (top 3, "Ver todas"), Última aula/módulo liberado (selo Liberado) e O que tem agendado (selo Agendado, "Ver agenda").
 - Dados reais virão do Supabase (aulas, tipos, visualizações, comentários, liberações).
+
+### Aba Conteúdo — botão "Editar conteúdo" (v260)
+- Botão dourado "Editar conteúdo" no topo à direita da aba Conteúdo.
+- Abre a tela de conteúdo do curso (card do curso + lista de módulos e aulas) já com os módulos e aulas do produto, para adicionar, editar, liberar, duplicar ou excluir.
+- "Fechar" volta para a página do produto, na aba Conteúdo.
