@@ -29,3 +29,7 @@ Pedido do dono (18/11/2026): aplicar o modelo **100%** no painel e no app do alu
 
 ## Como começar (conversa nova)
 Mensagem sugerida: "Implementar o novo produto conforme docs/novo-produto/PLANO-IMPLEMENTACAO.md, começando pela Fase 1 (banco) e Fase 2. Pode aplicar as migrações aditivas."
+
+## Andamento
+- 18/11 — Fase 2 (parte 1) na prévia: card da lista de produtos com Publicação ▾ (rascunho) e Liberação ▾ (Liberado / Bloqueado / Oculto + Agendado quando há data futura), sem a data de criação. Nova ação `curso-pub` (permissão cur_estado). Sem mudança no banco: os campos já existem (`rascunho`, `publicado`, `bloqueado_geral`, `libera_em`).
+- Descoberta: o painel real é claro (tema do painel), o modelo é escuro/dourado — aplicar o layout do modelo, mantendo as cores do painel, salvo pedido contrário.
