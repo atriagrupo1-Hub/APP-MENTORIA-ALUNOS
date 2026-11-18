@@ -27,7 +27,7 @@ Regras gerais
 
 - Menu lateral: só "Produtos" (ícone play) e "Categorias" (ícone pasta), sem o título "Conteúdo".
 - Abas por tipo (Todos/Vídeo/E-book/Áudio com contagem), busca, filtros em lista suspensa (categoria, status), Ordenar (Mais recentes padrão, Mais antigos, preço, Mais alunos, Menos alunos, Nome A–Z por último), alternar Cards/Lista.
-- Card: capa, tipo, NOME, categoria, Módulos/Aulas/Alunos, Criado em, Liberado em, status, botão ("Abrir produto →" ou "Continuar edição →" no rascunho).
+- Card: capa, tipo, NOME, categoria, Módulos/Aulas/Alunos, Criado em, Liberado em, status, botão ("Abrir produto →" ou "Continuar edição →" no produto em montagem).
 - Modo lista: capa 200 px, nome 13 px; "Aulas" embaixo de "Módulos" e "Alunos" ao lado (grade 2 colunas).
 
 ## 2. Criar curso (vídeo-aula)
