@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 218,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 219,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -20,6 +20,7 @@ Regras gerais
 - Vídeo de aula: arquivo (Cloudflare Stream) ou link YouTube (inclusive não listado) / Cloudflare Stream.
 - Ordem de construção: vídeo-aula primeiro; depois e-book; depois áudio. Qualquer aula pode ser vídeo, áudio ou e-book.
 - "?" mostra explicação só com o mouse em cima (não fixa ao clicar).
+- **Excluir (curso, módulo, aula, em massa): sempre pede para digitar EXCLUIR** (exatamente, em maiúsculas) antes de liberar o botão Excluir; Enter confirma quando está certo. "Excluir curso" no ⋮ do curso apaga o curso com módulos e aulas e volta para a lista.
 - Menus (⋮, + Adicionar): abrem para cima quando não cabem embaixo (nunca ficam cortados); fecham ao clicar fora, ao clicar de novo no mesmo botão, com Esc ou ao rolar a página.
 - Nenhum clique pode fazer a tela pular: ao abrir algo, a tela vai até ele; ao fechar, fica onde está. Trocar visualização, filtro ou pesquisa mantém a barra no mesmo lugar da tela (se a lista encolher, guarda o espaço embaixo em vez de subir a página).
 - Avisos: toast pequeno (1,5 s) ou grande centralizado (1,8 s); carregamento com logo AIŌN.
