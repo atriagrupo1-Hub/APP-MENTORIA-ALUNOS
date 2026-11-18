@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 246,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 247,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -46,6 +46,7 @@ Regras gerais
 - **Sobre o produto** (igual à imagem do dono):
   - Esquerda: capa com selo do formato; Nome; Descrição; Formato (pílula); Categoria (pílula).
   - Direita: quadros Total de módulos · Total de aulas · Horas totais; caixa "Progresso de liberação" com barra e "18 de 28 aulas liberadas" (%); lista Data de criação · Data da primeira aula/módulo liberado · Última aula liberada (ex.: "Módulo 3 – Aula 6"); quadros Total de alunos · Engajamento médio (com "?": média de quanto os alunos assistem do conteúdo liberado); linha Status com a pílula do status (cor do status).
+- **Engajamento** (igual à imagem do dono, em dourado): título + "Acompanhe a participação e o desempenho dos alunos neste produto." + seletor de período (Últimos 7 / 30 / 90 dias). 4 números com variação (↑ +x%): Engajamento médio (destacado), Aulas assistidas, Tempo total assistido, Conclusão média. "Evolução do engajamento" (linha com área, 0–100%, datas embaixo, valor do último ponto em destaque; passar o mouse mostra o valor de cada ponto). "Principais indicadores": Taxa de início, Aulas por aluno (média), Tempo por aluno (média), Taxa de conclusão, Alunos ativos. "Engajamento por módulo": nome do módulo, % e barra. "Atividade dos alunos": rosca com o total no meio e legenda Ativos (últimos 7 dias) / Pouco ativos / Inativos com % e quantidade.
 - No real: todos os números vêm do Supabase (horas = soma das durações; progresso = aulas liberadas ÷ total; engajamento = média assistida do conteúdo liberado).
 
 ## 2. Criar curso (vídeo-aula)
