@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 236,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 237,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -33,6 +33,15 @@ Regras gerais
 - Abas por tipo (Todos/Vídeo/E-book/Áudio com contagem), busca, filtros em lista suspensa (categoria, status), Ordenar (Mais recentes padrão, Mais antigos, preço, Mais alunos, Menos alunos, Nome A–Z por último), alternar Cards/Lista.
 - Card: capa, tipo, NOME, categoria, Módulos/Aulas/Alunos, Criado em, Liberado em, status, botão ("Abrir produto →" ou "Continuar edição →" no produto em montagem).
 - Modo lista: capa 200 px, nome 13 px; "Aulas" embaixo de "Módulos" e "Alunos" ao lado (grade 2 colunas).
+
+### Adicionar aluno (card do produto)
+
+- Botão "Adicionar aluno" (tracejado dourado) em cada card da lista, acima do rodapé (o selo de status do rodapé volta ao tamanho normal).
+- Abre janela com o nome do produto e 2 abas:
+  - **Um aluno**: Nome (opcional), E-mail (obrigatório, validado; avisa se já é aluno), "Enviar e-mail de boas-vindas com o acesso" (marcado).
+  - **Em massa (planilha)**: enviar CSV (nome; e-mail), "Baixar modelo de planilha", ou colar a lista (um por linha: nome; e-mail ou só e-mail) → "Conferir lista" mostra cada linha como Pronto / E-mail inválido / Repetido / Já é aluno, com total de prontos e com problema → "Adicionar N alunos" (só os prontos).
+- O número de Alunos do card atualiza na hora.
+- No real: cadastro e liberação de acesso no Supabase (Edge Function), envio do e-mail de boas-vindas pelo sistema, aceitar também .xlsx.
 
 ## 2. Criar curso (vídeo-aula)
 
