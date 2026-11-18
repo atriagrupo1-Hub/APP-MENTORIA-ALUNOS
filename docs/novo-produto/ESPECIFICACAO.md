@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 257,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 258,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -192,3 +192,6 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Abre a janela "Adicionar alunos" (Um aluno / Em massa por planilha).
 - Aluno novo entra como Ativo, progresso 0%, aparece em "Adicionados recentes" e soma nos totais.
 - E-mail que já é aluno do produto é recusado ("Esse e-mail já é aluno deste produto.").
+
+### Abas da página do produto (v258)
+- Aba "Aulas" removida. Abas: Sobre o produto, Engajamento, Comentários, Alunos, Ranking de alunos, Conteúdo.
