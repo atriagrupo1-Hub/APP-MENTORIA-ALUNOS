@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 294,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 295,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -321,3 +321,9 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - (v292) Página da categoria, ordem no resumo: selo "Categoria" → nome → "Formato: Vídeos/E-books/Áudios" → "Descrição: …".
 - (v293) Sem barra de rolagem lateral: a dica "Card do curso / Card da categoria ?" abre para dentro (não passa da borda) e os números da aba Sobre diminuem para caber em telas menores. Regra: nenhuma tela pode precisar rolar para os lados.
 - (v294) Removida a limpeza única de categorias da simulação (v278). Categorias criadas nunca são apagadas pelo modelo; só saem com "Excluir categoria" (digitando EXCLUIR).
+
+### Página da categoria — "Cursos da categoria" (v295)
+- Mesmo modelo do card "Conteúdo do curso": título "Cursos da categoria ?", totais (N Cursos · N Aulas · tempo), botão dourado "+ Adicionar curso", barra com "Pesquisar curso…" e cartões/lista.
+- Sem cursos: faixa igual à do conteúdo vazio (ilustração à esquerda), "Esta categoria ainda não tem cursos", "Adicione um curso novo ou um curso que já existe para organizar esta categoria." e "+ Adicionar curso" centralizado.
+- "+ Adicionar curso" abre a janela: **Curso novo** (abre criar curso já com esta categoria) ou **Curso que já existe** (lista com caixas de seleção, mostra a categoria atual de cada um) → "Adicionar selecionados".
+- Com cursos: os cards dos cursos (cartões ou lista), com busca. A categoria de cada curso fica guardada ao atualizar.
