@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 222,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 223,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -91,7 +91,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 ### Tipo da liberação na lista
 
-- Em módulo e aula, embaixo da data de "Liberado em" aparece o tipo: Imediata, Às 09:00 (data específica), Após o cadastro, Junto com o módulo ou Trancado.
+- Em módulo e aula, embaixo da data de "Liberado em" aparece o tipo numa linha só (corta com "…" se não couber): Imediata, Às 09:00 (data específica), Após o cadastro, Com o módulo ou Trancado. Aula "junto com o módulo" ainda sem data mostra só "Com o módulo" no lugar da data.
 - "Liberar" no menu ⋮ = liberação Imediata (grava a configuração); "Agendar" no menu ⋮ abre a janela de liberação para escolher a data.
 
 ### Seleção em massa
