@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 272,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 273,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -258,3 +258,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Pergunta com ícone: "Quer adicionar uma aula neste módulo agora?" / "Você pode adicionar a primeira aula agora ou fazer isso mais tarde."
 - Dois botões do mesmo tamanho: "🕒 Adicionar depois" e "▶ Adicionar aula agora" (dourado).
 - Cores no tema dourado do painel (o modelo enviado era roxo).
+- (v273) Modelo guarda vários cursos em criação: "+ Novo produto" não apaga mais o curso que estava sendo feito; ele vira um card "Continuar edição" na lista e volta com tudo (módulos, aulas) ao clicar. Na implementação real cada curso é um registro no Supabase.
