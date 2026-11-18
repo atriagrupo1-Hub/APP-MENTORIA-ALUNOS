@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 199,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 200,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -54,10 +54,10 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
   - Módulo → criação do módulo.
   - Aula → janela "escolha o módulo" → criação da aula naquele módulo.
   - Material → escolhe módulo → escolhe aula → abre a aula na parte Material complementar.
-- Barra: escolha do módulo ("Módulo 1 – Nome (N aulas)"); ordem muda arrastando pelo ⋮⋮ (sem setas); campo "Pesquisar aula, módulo, material…" (busca sem acento em nome/descrição do módulo, nome/descrição/tipo da aula e título/tipo/arquivo dos materiais; em "Por módulos" mostra só os módulos com resultado, já abertos e só com as aulas encontradas; "Nada encontrado para “x”." quando vazio); à direita Visualização (Por módulos | Por aulas), Filtrar (Ordem do conteúdo [padrão], Nome A–Z, Últimos liberados, Últimos adicionados, Mais assistidos, Módulo com mais aulas) e a flechinha ⇅ que inverte a ordem escolhida (ex.: últimos liberados ↔ primeiros liberados; os ainda não liberados ficam sempre no fim). Filtro só muda a exibição.
-- Card do módulo (mesmas colunas da aula, alinhadas): caixinha de seleção, ⋮⋮ arrastar, capa (sem imagem: "MÓDULO" + "01"), "MÓDULO 1   NOME" (separados por espaço, fonte/cor/negrito/maiúsculas vindos da Aparência do módulo; tamanho da lista), Criado em, Liberado em, Visualizações, status (Publicado/Não publicado), Editar, ⋮ (Editar módulo, Publicar/Despublicar, Excluir com confirmação). Módulo selecionado com borda dourada. Clicar no card só seleciona.
+- Barra: escolha do módulo ("Módulo 1 – Nome (N aulas)"); ordem muda arrastando pelo ⋮⋮ (sem setas); campo "Pesquisar aula, módulo, material…" (busca sem acento em nome/descrição do módulo, nome/descrição/tipo da aula e título/tipo/arquivo dos materiais; em "Por módulos" mostra só os módulos com resultado, já abertos e só com as aulas encontradas; "Nada encontrado para “x”." quando vazio); à direita Visualização (Por módulos | Por aulas), Filtrar (Ordem do conteúdo [padrão], Nome A–Z, Últimos liberados, Últimos adicionados, Mais assistidos, Módulo com mais aulas) + grupo Status no mesmo seletor (Liberado, Agendado, Não publicado, Oculto, Bloqueado: mostra só módulos/aulas com esse status, abrindo o módulo nas aulas encontradas) e a flechinha ⇅ que inverte a ordem escolhida (ex.: últimos liberados ↔ primeiros liberados; os ainda não liberados ficam sempre no fim). Filtro só muda a exibição.
+- Card do módulo (mesmas colunas da aula, alinhadas): caixinha de seleção, ⋮⋮ arrastar, capa (sem imagem: "MÓDULO" + "01"), "MÓDULO 1   NOME" (separados por espaço, fonte/cor/negrito/maiúsculas vindos da Aparência do módulo; tamanho da lista), Criado em, Liberado em, Visualizações, status (Liberado/Agendado/Não publicado/Oculto/Bloqueado), Editar, ⋮ (Editar módulo, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir com confirmação). Módulo selecionado com borda dourada. Clicar no card só seleciona.
 - "▶ Aulas do módulo (N) ⌄" sempre visível embaixo do card: clicar abre/fecha as aulas (fechadas por padrão).
-- Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), etiqueta VÍDEO/ÁUDIO/E-BOOK + NOME, Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Publicar/Despublicar, Excluir). "+ Adicionar aula" embaixo da última aula.
+- Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), etiqueta VÍDEO/ÁUDIO/E-BOOK + NOME, Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
 
 ## 5. Módulo (painel lateral por cima — opção B aprovada)
