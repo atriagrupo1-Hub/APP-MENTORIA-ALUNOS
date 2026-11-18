@@ -1242,7 +1242,10 @@ function montarConteudo(){const d=document.createElement("div");d.className="cre
     ('<div class="mc-aulas"><button type="button" class="mc-ath mc-atog" data-mabre="'+i+'" aria-expanded="'+ab+'">'+IC.play+'Aulas do módulo ('+n+')'+IC.chev+'</button>'+(ab?(n?js.map(j=>linhaAula(m.aulas[j],i,j)).join(""):'<p class="mc-vazio">Este módulo ainda não tem aulas.</p>')+'<button type="button" class="mc-aadd" data-maula="'+i+'"><svg viewBox="0 0 24 24" class="mc-ic"><path d="M12 5v14M5 12h14"/></svg>Adicionar aula</button>':'')+'</div>')+'</div>'}).join("")};
   d.innerHTML=h;return d}
 // Redesenha sem mexer na tela: o módulo clicado fica no mesmo lugar; ao abrir, mostra as aulas abertas
-function redesenharConteudo(ai,abriu){const o=cursoResumo.querySelector(".mc");if(!o)return;const y=scrollY,ref=ai!=null?o.querySelectorAll(".mc-mod")[ai]:null,t0=ref?ref.getBoundingClientRect().top:0,h0=o.offsetHeight,n=montarConteudo();if(ai!=null&&!abriu)n.style.minHeight=h0+"px";o.replaceWith(n);scrollTo(0,y);
+function redesenharConteudo(ai,abriu){const o=cursoResumo.querySelector(".mc");if(!o)return;const y=scrollY,ref=ai!=null?o.querySelectorAll(".mc-mod")[ai]:null,ob=o.querySelector(".mc-barra"),t0=ref?ref.getBoundingClientRect().top:ob?ob.getBoundingClientRect().top:0,h0=o.offsetHeight,n=montarConteudo();if(ai!=null&&!abriu)n.style.minHeight=h0+"px";o.replaceWith(n);
+  // se a página encolheu, guarda o espaço para a tela não subir sozinha
+  const falta=y+innerHeight-document.documentElement.scrollHeight;if(falta>0)n.style.paddingBottom=falta+"px";scrollTo(0,y);
+  const nb=!ref&&n.querySelector(".mc-barra");if(nb&&ob){scrollBy(0,nb.getBoundingClientRect().top-t0);return}
   const r2=ref&&n.querySelectorAll(".mc-mod")[ai];if(!r2)return;scrollBy(0,r2.getBoundingClientRect().top-t0);if(abriu){const r=r2.getBoundingClientRect();if(r.bottom>innerHeight)scrollBy(0,Math.min(r.bottom-innerHeight+16,r.top-80))}}
 // Adicionar: módulo, aula (escolhe o módulo) ou material (escolhe módulo e aula)
 let addTipo="",addMod=-1;
