@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 281,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 282,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -294,3 +294,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Rodapé: Cancelar · aviso · Voltar · Próximo / "Salvar categoria". Não avança sem o obrigatório: campos ficam vermelhos e aparece o aviso; foco no primeiro campo que falta. Nome repetido é recusado.
 - Cancelar/Fechar com algo preenchido: "Sair sem salvar?" (Continuar editando / Salvar e sair / Sim, sair sem salvar).
 - Salvar → carregando "Salvando a categoria…" → janela "Categoria criada" (card com capa, nome, descrição, situação, 0 produtos) → "Criar depois" ou "Criar produto agora" (abre a criação de produto com a categoria já escolhida).
+- (v282) **Criar categoria agora tem 4 etapas, na mesma ordem do curso: 1 Formato · 2 Informações · 3 Capa · 4 Aparência da categoria** ("N DE 4"). Formato (obrigatório): Vídeos / E-books / Áudios, mesmos cards do curso — define o que a categoria apresenta. A janela "Categoria criada" mostra o formato.
