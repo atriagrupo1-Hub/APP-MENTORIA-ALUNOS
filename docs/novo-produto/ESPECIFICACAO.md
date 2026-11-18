@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 223,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 224,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -88,6 +88,13 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "▶ Aulas do módulo (N) ⌄" sempre visível embaixo do card: clicar abre/fecha as aulas (fechadas por padrão).
 - Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), título "Aula 2 — Nome da aula" (branco, quebra linha se não couber) e embaixo "Vídeo · 49 min" (tipo + duração em minutos), Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
+
+### Menu ⋮ do módulo e da aula (decisão final)
+
+- **Sem botões "Liberação" e "Editar" no card**: ficam só dentro do ⋮.
+- ⋮ do módulo: Editar módulo · Liberação · Excluir módulo. ⋮ da aula: Editar aula · Liberação · Excluir aula.
+- Saíram do ⋮ os atalhos de status (Liberar, Agendar, Não publicar, Ocultar, Bloquear): status vem da Liberação; Oculto/Bloqueado/Não publicado ficam na ação em massa "Status".
+- (Itens desta seção substituem o que estiver diferente nas seções abaixo.)
 
 ### Tipo da liberação na lista
 
