@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 287,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 288,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -314,3 +314,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Ao atualizar a página, continua na mesma categoria.
 - (v286) Página da categoria: o card da direita é o card REAL montado na Aparência (mesmas cores, fonte, botão, cantos e capa), guardado ao salvar. A capa é guardada reduzida (até 1280 px) para caber; antes, capas grandes faziam aparecer um card genérico.
 - (v287) Página da categoria: saiu "Cursos publicados"; ficam só Data de criação e Liberado em.
+- (v288) Categorias antigas (sem card guardado) mostram o card no mesmo modelo do card real (capa, texto em cima, nome, descrição e botão com ícone e seta), não mais um card genérico.
