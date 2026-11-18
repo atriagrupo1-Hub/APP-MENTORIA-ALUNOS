@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 264,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 265,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -231,3 +231,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Supabase (implementação real): dois campos separados no produto (publicação e liberação), em vez de um só.
 - Ainda falta: levar os dois status para módulos e aulas (lista de conteúdo) e para a janela de Liberação.
 - (v264) Seletores de status nunca cortam o texto: na lista a faixa tem 320 px; no card, "Publicação" ocupa a largura que precisa.
+- (v265) Card do curso na tela de conteúdo: o seletor de status saiu do topo e fica ao lado do botão "Liberação" (Status · Liberação · Editar curso). Em tela estreita os botões quebram de linha.
