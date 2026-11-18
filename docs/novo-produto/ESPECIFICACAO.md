@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 273,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 274,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -259,3 +259,9 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Dois botões do mesmo tamanho: "🕒 Adicionar depois" e "▶ Adicionar aula agora" (dourado).
 - Cores no tema dourado do painel (o modelo enviado era roxo).
 - (v273) Modelo guarda vários cursos em criação: "+ Novo produto" não apaga mais o curso que estava sendo feito; ele vira um card "Continuar edição" na lista e volta com tudo (módulos, aulas) ao clicar. Na implementação real cada curso é um registro no Supabase.
+
+### Aba Conteúdo — Estatísticas / Conteúdos (v274)
+- Abaixo dos 4 números (Módulos, Aulas, Tempo total, Horas aula), dois botões: "Estatísticas" e "Conteúdos".
+- Estatísticas: tudo o que já existia (evolução, distribuição, tipos, mais assistidas, mais comentadas, última liberada, agendado).
+- Conteúdos: lista dos módulos do curso (capa, "Módulo N — Nome", nº de aulas e duração, status, data de liberação); clicar abre/fecha as aulas do módulo (nº, nome, tipo e duração, status, data). Link "Editar conteúdo →" leva à edição.
+- A escolha fica guardada ao atualizar a página.
