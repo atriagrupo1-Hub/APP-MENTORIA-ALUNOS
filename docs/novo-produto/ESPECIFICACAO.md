@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 242,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 243,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -106,7 +106,8 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Ordem (igual no módulo e na aula, colunas alinhadas): caixinha · ⋮⋮ · capa/miniatura · nome · **Status** · **Liberado em** (data + tipo) · botão **Liberação** · botão **Editar** · botão **Ver** · ⋮.
 - Sem "Criado em" e sem "Visualizações" na linha.
 - **Status editável na própria linha** (módulo e aula): clicar no selo abre a lista Liberado · Agendado (escolher data) · Não publicado · Oculto · Bloqueado, com ✓ no atual. Liberado = libera agora (Imediata); Agendado abre a janela de liberação para escolher a data; os outros mudam na hora.
-- ⋮ tem só Excluir (módulo/aula), com "digite EXCLUIR".
+- ⋮ do módulo: **Duplicar módulo** e Excluir módulo; ⋮ da aula: Excluir aula (excluir sempre com "digite EXCLUIR").
+- **Duplicar módulo**: janela com "Com aulas" / "Sem aulas" (obrigatório escolher). Com aulas → lista das aulas para marcar, com "Marcar todas" (todas vêm marcadas; precisa ao menos uma). "Duplicar e editar" abre a edição completa como **módulo novo** (mesmas informações, capa e aparência, tudo editável), com o **próximo número** (não repete); aulas copiadas voltam para Não publicado, sem liberação; a liberação do módulo novo começa sem nada escolhido.
 - **Ver aula — prévia (direita) igual ao app do aluno**: player com a capa do vídeo e botão play (vídeo enviado toca; YouTube/Cloudflare abre o link), "Módulo X · Aula N" em dourado, botões "‹ Aula anterior" e "Próxima aula ›" (navegam entre as aulas do módulo; desativados nas pontas), e três botões: Sobre a aula (nome + descrição), Instruções (materiais de texto), PDF (PDFs/áudios). Cada um abre/fecha o seu conteúdo.
 - **Ver aula**: antes da caixa da aula aparece só o nome do módulo como foi escrito ("Módulo 1 — Atria teste"), sem rótulo extra, sem contagem e sem link. Depois tudo sobre a aula.
 - **Ver**: topo da janela mostra "CURSO", o nome do curso e "Categoria: X"; o rótulo "Como o aluno vê" fica em cima da prévia (direita). Mesmo modelo do quadro do curso: à esquerda a caixa de informações (selo Módulo/Aula + status; nome grande; "Curso: …" — na aula também o módulo; quadros Aulas · Tempo total · Visualizações no módulo, ou Duração · Materiais · Visualizações na aula; linha Data de criação · Liberado em (data + como: Imediata, Dias após o cadastro, Data específica, Junto com o módulo, Trancada) · Progresso). À direita a prévia: card do módulo com a lista de aulas e a situação de cada uma, ou o player da aula / "Abrir vídeo ↗", descrição e materiais. Em tela estreita, um embaixo do outro.
