@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 238,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 239,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -36,7 +36,7 @@ Regras gerais
 
 ### Adicionar aluno (card do produto)
 
-- Botão "Adicionar aluno" = ícone (pessoa com +) quadrado de 34 px no rodapé do card, à esquerda de "Abrir produto / Continuar edição" (aparece também no modo lista). Sem botão grande no corpo do card.
+- "Adicionar aluno" fica no próprio quadrinho "N ALUNOS +" do card (clicável, borda dourada ao passar o mouse). Rodapé do card intacto (status + Abrir produto/Continuar edição); sem botão grande nem ícone extra.
 - Abre janela com o nome do produto e 2 abas:
   - **Um aluno**: Nome (opcional), E-mail (obrigatório, validado; avisa se já é aluno), "Enviar e-mail de boas-vindas com o acesso" (marcado).
   - **Em massa (planilha)**: enviar CSV (nome; e-mail), "Baixar modelo de planilha", ou colar a lista (um por linha: nome; e-mail ou só e-mail) → "Conferir lista" mostra cada linha como Pronto / E-mail inválido / Repetido / Já é aluno, com total de prontos e com problema → "Adicionar N alunos" (só os prontos).
