@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 267,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 268,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -247,3 +247,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Saiu da barra o seletor de módulo.
 - Modo Cartões (por módulos): cada módulo vira um cartão com capa, nome, status (seletor), data de liberação, Liberação / Editar / Ver / ⋮ e "Aulas do módulo (N)", que volta para a lista com o módulo aberto.
 - Sem conteúdo: faixa com ilustração, "Seu curso ainda não tem conteúdo", "Adicione módulos, aulas e materiais para organizar o aprendizado." e botão "+ Adicionar conteúdo ▾" (no tema dourado do painel).
+- (v268) "+ Adicionar conteúdo" sem setinha ▾ (topo e vazio); abre o menu Módulo / Aula / Material como antes. No vazio, título, texto e botão ficam centralizados.
