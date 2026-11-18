@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 193,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 194,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -36,10 +36,10 @@ Cabeçalho "Curso, categoria e aparência" (texto simples, não botão) com "?",
 2. Categoria — cards + "+ Nova categoria" (só é criada ao salvar).
 3. Informações — texto em cima do nome, nome (rótulo muda pelo formato), descrição (✦ Gerar com IA, ✦ Corrigir texto, Desfazer), texto do botão (✦ Gerar com IA). Todos obrigatórios.
 4. Capa do curso — opcional; 16:9 e 2:3 (e-book só 2:3). Enviar/arrastar, Ajustar (mover, zoom 0,4–3 com desfazer, girar com barra/clique segurado/Shift+roda com desfazer, Centralizar, Salvar → 1920×1080 ou 1000×1500), Gerar com IA.
-5. Aparência — esquerda: textos com "Aa Estilo" (fonte, normal/negrito/itálico, alinhamento, tamanho, cor com seletor/hex/conta-gotas/recentes, sombra; ↻ padrão, ✕, Aplicar/Cancelar → "Salvo."); Visual: Card, Botão, Barra (cores, espessura, cantos, sombra X/Y, desfoque, opacidade, ↻). Direita: prévia Celular/Tablet/Computador. Botão "Criar curso" (ou "Salvar alterações").
+5. Aparência — esquerda: textos com "Aa Estilo" (fonte, normal/negrito/itálico, alinhamento, tamanho, cor com seletor/hex/conta-gotas/recentes, sombra; ↻ padrão, ✕, Aplicar/Cancelar → "Salvo."); Visual: Card, Botão, Barra (cores, espessura, cantos, sombra X/Y, desfoque, opacidade, ↻). Direita: prévia Celular/Tablet/Computador. Botão "Salvar curso".
 
-Rodapé em todas as etapas: Cancelar (esquerda) · Voltar · Salvar rascunho · Próximo/Criar.
-Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar em rascunho / Sim, sair sem salvar. Voltar na 1ª etapa faz a mesma pergunta.
+Rodapé: Cancelar (esquerda) · Voltar (a partir da 2ª etapa) · Próximo / Salvar. **Não existe "Salvar rascunho"**: tudo é "Salvar" (Salvar curso, Salvar módulo, Salvar aula) e salvar já guarda; publicar é uma etapa depois.
+Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e sair / Sim, sair sem salvar.
 
 ## 3. Curso criado (resumo)
 
@@ -60,12 +60,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar em 
 
 ## 5. Módulo (painel lateral por cima — opção B aprovada)
 
-- "Adicionar → Módulo" e "Editar" abrem painel à direita com fundo escurecido; topo fixo "Novo módulo/Editar módulo", progresso "N DE 3", etapas, ✕. Fechar (✕, clique fora, Esc) pergunta antes. Ao criar/salvar fecha e o módulo aparece na lista.
-- Etapas: 1 Informações (Identificação "?", Número "?", Nome "?", Descrição com IA/Corrigir, Texto do botão com IA e "?": "É o botão do card do módulo. Ao tocar, abre a lista de aulas do módulo para o aluno escolher qual quer assistir, mesmo que só uma esteja liberada.") → 2 Capa do módulo (só 16:9, opcional, mesmo ajuste/IA) → 3 Aparência do módulo (igual à do curso + "Copiar aparência do curso") → "Criar módulo"/"Salvar módulo".
+- "Adicionar → Módulo" e "Editar" abrem painel à direita com fundo escurecido; topo fixo "Novo módulo/Editar módulo", progresso "N DE 3", etapas, ✕. Fechar (✕, clique fora, Esc) pergunta antes. Ao salvar fecha e o módulo aparece na lista.
+- Etapas: 1 Informações (Identificação "?", Número "?", Nome "?", Descrição com IA/Corrigir, Texto do botão com IA e "?": "É o botão do card do módulo. Ao tocar, abre a lista de aulas do módulo para o aluno escolher qual quer assistir, mesmo que só uma esteja liberada.") → 2 Capa do módulo (só 16:9, opcional, mesmo ajuste/IA) → 3 Aparência do módulo (igual à do curso + "Copiar aparência do curso") → "Salvar módulo".
 - Número: obrigatório; já vem sugerido o próximo (maior + 1); repetido → "Já tem um módulo com esse número." e não avança.
 - Cada módulo guarda sua aparência (estilos e visual) e ela volta ao editar.
 - Prévia do card do módulo: o botão abre a lista de aulas (miniatura, "MÓDULO 1 · AULA 1", nome, "Disponível", "▶ Assistir") e vira "Esconder aulas" — igual ao app do aluno.
-- Salvar rascunho no módulo salva o módulo com selo Rascunho.
+- "Salvar e sair" no Cancelar guarda o módulo incompleto com selo Rascunho.
 
 ## 6. Aula (janela)
 
@@ -73,7 +73,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar em 
 - Capa do vídeo (opcional): botão "+ Adicionar capa do vídeo" abre o mesmo quadro de capa (enviar, ajustar, IA).
 - Nome da aula, Descrição da aula (✦ Gerar com IA usando documentos da aula, ✦ Corrigir texto, Desfazer).
 - Material complementar: +PDF/+Áudio/+Texto. PDF também tem "✦ Gerar PDF com IA": título, documentos da aula (os mesmos da descrição + novos), contexto ("retire do PDF o resumo de X"), mostra o PDF gerado para ler → Refazer / Salvar PDF.
-- Rodapé: Cancelar (pergunta) · Voltar (pergunta só se mudou algo) · Salvar aula. Salvar em rascunho marca "Rascunho".
+- Rodapé: Cancelar (pergunta) · Voltar (pergunta só se mudou algo) · Salvar aula. "Salvar e sair" guarda a aula incompleta com selo Rascunho.
 
 ## 7. IA (no real: Edge Functions)
 
