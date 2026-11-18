@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 261,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 262,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -215,3 +215,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Ranking geral (só alunos ativos): #, Aluno, Pontos, Aulas assistidas, Módulos concluídos (x / total), Tempo de estudo, Conquistas (3 ícones + "+N"), ⋮ (ver aluno). Busca por nome, botão Filtros (ordenar por pontos/aulas/módulos/tempo; só quem concluiu o curso), 10 por página.
 - Coluna direita: Engajamento por nível (Avançado ≥80%, Intermediário 40–79%, Básico <40%) e Conquistas e metas (% de alunos que atingiram a meta).
 - Regra de pontos a definir na implementação real (progresso, aulas, módulos, assiduidade).
+
+### Página do produto — ordem das abas e atualização (v262)
+- Ordem: Sobre o produto, Conteúdo, Engajamento, Comentários, Alunos, Ranking de alunos.
+- Ao atualizar a página, o painel volta para o mesmo produto, na mesma aba, no mesmo período e na mesma posição da tela (cache descartável do navegador; não é dado oficial).
