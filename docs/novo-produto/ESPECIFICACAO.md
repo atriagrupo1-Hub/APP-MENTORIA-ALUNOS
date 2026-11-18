@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 258,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 259,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -195,3 +195,10 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 ### Abas da página do produto (v258)
 - Aba "Aulas" removida. Abas: Sobre o produto, Engajamento, Comentários, Alunos, Ranking de alunos, Conteúdo.
+
+### Aba Conteúdo — topo (v259)
+- Cabeçalho: "Conteúdo — Gerencie módulos, aulas e todo o material do seu curso."
+- 4 números: Módulos, Aulas, Tempo total, Horas aula (decimal).
+- Linha 1: Evolução de aulas (total + variação + gráfico), Distribuição do conteúdo (rosca por tipo com % ), Tipos de conteúdo (barras: Vídeo, Áudio, E-book, Material).
+- Linha 2: Aulas mais assistidas (top 3, capa + duração + visualizações, "Ver todas"), Aulas com mais comentários (top 3, "Ver todas"), Última aula/módulo liberado (selo Liberado) e O que tem agendado (selo Agendado, "Ver agenda").
+- Dados reais virão do Supabase (aulas, tipos, visualizações, comentários, liberações).
