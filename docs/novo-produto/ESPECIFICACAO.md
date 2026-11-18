@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 245,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 246,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -38,6 +38,15 @@ Regras gerais
 ### Adicionar aluno
 
 - **Não fica no card da lista de produtos** (testado e recusado pelo dono: botão grande, ícone no rodapé e quadrinho clicável). Lugar ainda a definir. A janela já desenhada no modelo (Um aluno / Em massa com planilha CSV, colar lista, conferência Pronto/Inválido/Repetido/Já é aluno, e-mail de boas-vindas) continua no código do modelo (`abrirAlunos`) para reaproveitar.
+
+## 1b. Página do produto ("Abrir produto")
+
+- Topo: botão voltar + trilha "Produtos › Nome do produto › Aba atual".
+- Abas (botões, a ativa em dourado): Sobre o produto · Engajamento · Comentários · Alunos · Aulas · Ranking de alunos · Conteúdo. Só "Sobre o produto" está desenhada; as outras mostram "vai ser desenhada em seguida".
+- **Sobre o produto** (igual à imagem do dono):
+  - Esquerda: capa com selo do formato; Nome; Descrição; Formato (pílula); Categoria (pílula).
+  - Direita: quadros Total de módulos · Total de aulas · Horas totais; caixa "Progresso de liberação" com barra e "18 de 28 aulas liberadas" (%); lista Data de criação · Data da primeira aula/módulo liberado · Última aula liberada (ex.: "Módulo 3 – Aula 6"); quadros Total de alunos · Engajamento médio (com "?": média de quanto os alunos assistem do conteúdo liberado); linha Status com a pílula do status (cor do status).
+- No real: todos os números vêm do Supabase (horas = soma das durações; progresso = aulas liberadas ÷ total; engajamento = média assistida do conteúdo liberado).
 
 ## 2. Criar curso (vídeo-aula)
 
