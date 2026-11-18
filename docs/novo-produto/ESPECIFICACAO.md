@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 280,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 281,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -285,3 +285,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
   - A tela COM categorias será redesenhada depois.
 - (v279) **Categorias — estado vazio, layout final:** topo com ícone de pasta + "Categorias" + "Organize seus cursos por temas, formatos ou áreas de conhecimento." Quadro: ilustração (pasta com capelo e folhas de vídeo, e-book e áudio), "Ainda não há categorias", "Crie categorias para agrupar e organizar seus cursos (como Vídeos, Áudios, E-books, Mentorias, etc.).", botão grande "+ Criar categoria" e, abaixo de uma linha, 3 benefícios: Organize seus cursos · Facilite a navegação dos alunos · Ganhe agilidade na gestão. Sem botão no topo. Tema dourado do painel. (Substitui os "3 passos" no vazio.)
 - (v280) Categorias vazio: ilustração da pasta removida; o quadro começa direto em "Ainda não há categorias".
+
+### Criar categoria — fluxo em etapas, igual ao criar curso (v281)
+- "Criar categoria" abre a tela "Nova categoria / Criar categoria" (Fechar no topo), com barra de progresso "N DE 3 · %" e etapas: **1 Informações · 2 Capa · 3 Aparência** (✓ nas concluídas; dá para clicar e voltar).
+- 1 Informações: Nome* (até 40, contador) e Descrição* (até 160, contador).
+- 2 Capa: enviar imagem 16:9 (JPG/PNG/WebP até 15 MB, clicar ou arrastar), Trocar / Remover. Obrigatória.
+- 3 Aparência: Ícone* (6 opções) e Situação (Ativa / Em breve) + prévia "Como o aluno vê" (capa, ícone, nome, descrição, cadeado "Em breve").
+- Rodapé: Cancelar · aviso · Voltar · Próximo / "Salvar categoria". Não avança sem o obrigatório: campos ficam vermelhos e aparece o aviso; foco no primeiro campo que falta. Nome repetido é recusado.
+- Cancelar/Fechar com algo preenchido: "Sair sem salvar?" (Continuar editando / Salvar e sair / Sim, sair sem salvar).
+- Salvar → carregando "Salvando a categoria…" → janela "Categoria criada" (card com capa, nome, descrição, situação, 0 produtos) → "Criar depois" ou "Criar produto agora" (abre a criação de produto com a categoria já escolhida).
