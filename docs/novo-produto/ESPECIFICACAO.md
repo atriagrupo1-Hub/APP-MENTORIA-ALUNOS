@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 278,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 279,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -283,3 +283,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - (v278) **Categorias — estado vazio (aprovado):** quando não existe nenhuma categoria, a tela mostra só o título "Categorias / Organize seus produtos em grupos.", o quadro central (ícone, "Agrupe seus produtos por categoria", explicação, botão "Criar categoria") e os 3 passos. **Sem** botão "Criar categoria" no topo, fora do quadro.
   - Simulação no modelo: todas as categorias foram retiradas (Mentoria, E-books, Presentes, Mestres espirituais); produtos aparecem "Sem categoria"; filtro só com "Todas as categorias"; na criação de produto só existe "+ Nova categoria".
   - A tela COM categorias será redesenhada depois.
+- (v279) **Categorias — estado vazio, layout final:** topo com ícone de pasta + "Categorias" + "Organize seus cursos por temas, formatos ou áreas de conhecimento." Quadro: ilustração (pasta com capelo e folhas de vídeo, e-book e áudio), "Ainda não há categorias", "Crie categorias para agrupar e organizar seus cursos (como Vídeos, Áudios, E-books, Mentorias, etc.).", botão grande "+ Criar categoria" e, abaixo de uma linha, 3 benefícios: Organize seus cursos · Facilite a navegação dos alunos · Ganhe agilidade na gestão. Sem botão no topo. Tema dourado do painel. (Substitui os "3 passos" no vazio.)
