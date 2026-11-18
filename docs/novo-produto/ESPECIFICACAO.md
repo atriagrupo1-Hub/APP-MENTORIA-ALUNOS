@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 293,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 294,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -320,3 +320,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - (v291) Card da categoria SEM barra de progresso (na Aparência da categoria some a barra e o ajuste "Barra de progresso"; na página da categoria também). O card do curso continua com a barra.
 - (v292) Página da categoria, ordem no resumo: selo "Categoria" → nome → "Formato: Vídeos/E-books/Áudios" → "Descrição: …".
 - (v293) Sem barra de rolagem lateral: a dica "Card do curso / Card da categoria ?" abre para dentro (não passa da borda) e os números da aba Sobre diminuem para caber em telas menores. Regra: nenhuma tela pode precisar rolar para os lados.
+- (v294) Removida a limpeza única de categorias da simulação (v278). Categorias criadas nunca são apagadas pelo modelo; só saem com "Excluir categoria" (digitando EXCLUIR).
