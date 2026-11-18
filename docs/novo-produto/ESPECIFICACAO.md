@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 284,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 285,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -304,3 +304,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Card da categoria (igual ao do produto): capa + selo do formato; NOME; descrição; números **N CURSOS** e **HORAS AULA** (soma da duração das aulas dos cursos da categoria); Publicação ▾ e Liberação ▾ (trocam ali mesmo); "Abrir categoria →" (página da categoria a desenhar).
 - Categoria nova começa Não publicado / Bloqueado.
 - Seletores de status do card: quando o card fica estreito, o ícone da esquerda some para o texto não cortar (vale para produtos e categorias).
+
+### Página da categoria — "Abrir categoria" (v285)
+- Mesmo modelo do card do curso: barra "Categoria, formato e aparência ?" e "Card da categoria ?"; "← Categorias" para voltar.
+- Esquerda (resumo): selo do formato (Vídeos/E-books/Áudios) e ⋮ (Excluir categoria, digitando EXCLUIR; cursos ficam sem categoria); nome grande; Descrição; números Cursos · Horas aula · Alunos; Data de criação · Liberado em · Cursos publicados (N de total + barra); Publicação ▾ e Liberação ▾ ao lado; botão "Editar categoria".
+- Direita: o card da categoria como o aluno vê (o mesmo card montado na Aparência).
+- Abaixo: "Cursos desta categoria (N)" com os cards dos cursos (ou aviso se vazio).
+- "Editar categoria" abre o mesmo fluxo (Formato · Informações · Capa · Aparência) já preenchido; ao salvar volta para a página da categoria; renomear atualiza os cursos e o filtro.
+- Ao atualizar a página, continua na mesma categoria.
