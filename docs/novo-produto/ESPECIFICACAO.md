@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 244,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 245,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -56,6 +56,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 - Esquerda: quadro de informações — selo "Curso" com ícone, status (Não publicado/Publicado/Bloqueado/Oculto, colorido, editável) + menu ⋮ (Ver como aluno, Duplicar, Excluir); NOME em serifada maiúscula; "Categoria: X"; quadros Módulos, Aulas, Alunos (Alunos por último); linha Data de criação | Liberado em | Progresso (barra); botão "Editar curso".
 - Direita: "Card do curso" com "?" ("Este é o card do curso do jeito que o aluno vê dentro do aplicativo") e a prévia do card (clicar edita o curso).
+
+### Duplicar curso (⋮ do curso)
+
+- Mesmas condições do duplicar módulo: "Com módulos e aulas" / "Sem módulos" (obrigatório escolher). Com módulos → lista dos módulos (com nº de aulas) para marcar, "Marcar todos" (todos vêm marcados; precisa ao menos um); cada módulo vai com as suas aulas.
+- "Duplicar e editar": o original continua na lista de produtos; a cópia abre na edição completa do curso (etapa 1, tudo editável). Curso, módulos e aulas da cópia começam Não publicado e sem liberação.
 
 ### Liberação do curso
 
