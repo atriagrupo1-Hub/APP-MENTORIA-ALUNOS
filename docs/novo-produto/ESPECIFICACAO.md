@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 274,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 275,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -265,3 +265,4 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Estatísticas: tudo o que já existia (evolução, distribuição, tipos, mais assistidas, mais comentadas, última liberada, agendado).
 - Conteúdos: lista dos módulos do curso (capa, "Módulo N — Nome", nº de aulas e duração, status, data de liberação); clicar abre/fecha as aulas do módulo (nº, nome, tipo e duração, status, data). Link "Editar conteúdo →" leva à edição.
 - A escolha fica guardada ao atualizar a página.
+- (v275) Ordem dos botões: "Conteúdos" primeiro (abre por padrão), depois "Estatísticas". O botão dourado "Editar conteúdo" saiu do topo da aba e fica dentro do card de Conteúdos.
