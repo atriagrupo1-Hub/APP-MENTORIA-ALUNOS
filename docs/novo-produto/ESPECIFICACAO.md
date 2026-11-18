@@ -14,7 +14,7 @@ painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
 
 Regras gerais
 
-- **Rascunho não existe.** Status: Não publicado (padrão ao salvar), Publicado, Bloqueado, Oculto. Nada de "Salvar rascunho" nem selo "Rascunho" em curso, módulo, aula ou lista.
+- **Rascunho não existe.** Status: Não publicado (padrão ao salvar), Publicado, Bloqueado, Oculto. "Não publicado" é o que antes seria rascunho: salvar nunca publica sozinho; fica Não publicado até a liberação ser configurada. Nada de "Salvar rascunho" nem selo "Rascunho" em curso, módulo, aula ou lista.
 
 - Texto na tela: sempre "aluno/alunos", nunca "aluna/alunas".
 - Vídeo de aula: arquivo (Cloudflare Stream) ou link YouTube (inclusive não listado) / Cloudflare Stream.
