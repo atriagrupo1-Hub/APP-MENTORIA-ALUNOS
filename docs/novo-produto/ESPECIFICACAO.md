@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 205,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 206,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -58,6 +58,14 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "Continuar" valida (escolher tipo, dias ≥ 0, data) → "Confirmar liberação": resumo com Curso, Tipo de liberação, Liberado em, Status depois de confirmar → Voltar / Confirmar liberação.
 - Ao confirmar: "Liberado em" do quadro mostra a data (ou "N dias após o cadastro" / "dd/mm/aaaa às hh:mm") e embaixo o tipo (Imediata / Dias após o cadastro / Data específica). Status: Imediata e Dias → Publicado; Data futura → Agendado. O status do curso segue a liberação automaticamente: escolher Publicado ou Agendado no seletor abre a Liberação (não dá para marcar à mão); Agendado vira Publicado sozinho quando chega a data/hora. Não publicado, Bloqueado e Oculto continuam manuais.
 - No real: regra de liberação no Supabase (a liberação por aluno conta da data de cadastro dele).
+
+### Liberação do módulo
+
+- Separada da do curso e feita só no módulo. Botão "Liberação" na linha do módulo, entre o status e "Editar" (na aula fica um espaço do mesmo tamanho para manter as colunas alinhadas), e também no topo do painel do módulo ao criar/editar ("Liberação: 05/12/2026"): dá para configurar antes ou depois.
+- Mesma janela do curso: Imediata, Dias após o cadastro, Data específica → resumo (Módulo, tipo, liberado em, status) → Confirmar. Se o curso ainda não está liberado, o resumo avisa que o aluno só vê o módulo depois do curso.
+- Na lista: "Liberado em" mostra a data curta ("05/12/2026", "+10 dias") e embaixo o tipo ("Às 09:00", "Após o cadastro", "Imediata"); status vira Liberado (ou Agendado se a data é futura).
+- No painel ao criar: a escolha fica guardada e vale ao clicar "Salvar módulo".
+- Regra (para o real): curso → módulo → aula; o aluno só vê o que está liberado em toda a cadeia. Liberação de aula ainda não desenhada.
 
 ## 4. Conteúdo do curso
 
