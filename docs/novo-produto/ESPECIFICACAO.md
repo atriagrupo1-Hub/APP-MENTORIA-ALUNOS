@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 203,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 204,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -48,6 +48,16 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 - Esquerda: quadro de informações — selo "Curso" com ícone, status (Não publicado/Publicado/Bloqueado/Oculto, colorido, editável) + menu ⋮ (Ver como aluno, Duplicar, Excluir); NOME em serifada maiúscula; "Categoria: X"; quadros Módulos, Aulas, Alunos (Alunos por último); linha Data de criação | Liberado em | Progresso (barra); botão "Editar curso".
 - Direita: "Card do curso" com "?" ("Este é o card do curso do jeito que o aluno vê dentro do aplicativo") e a prévia do card (clicar edita o curso).
+
+### Liberação do curso
+
+- Botão "Liberação" ao lado de "Editar curso" abre a janela "Liberação do curso" com 3 opções (cards):
+  - Imediata — fica disponível assim que confirmar.
+  - Dias após o cadastro — campo "Liberar [N] dias após o cadastro do aluno" (conta para cada aluno).
+  - Data específica — data + hora.
+- "Continuar" valida (escolher tipo, dias ≥ 0, data) → "Confirmar liberação": resumo com Curso, Tipo de liberação, Liberado em, Status depois de confirmar → Voltar / Confirmar liberação.
+- Ao confirmar: "Liberado em" do quadro mostra a data (ou "N dias após o cadastro" / "dd/mm/aaaa às hh:mm") e embaixo o tipo (Imediata / Dias após o cadastro / Data específica). Status: Imediata e Dias → Publicado; Data futura → Agendado.
+- No real: regra de liberação no Supabase (a liberação por aluno conta da data de cadastro dele).
 
 ## 4. Conteúdo do curso
 
