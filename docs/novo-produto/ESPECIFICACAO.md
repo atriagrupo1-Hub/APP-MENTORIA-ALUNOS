@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 221,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 222,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -120,6 +120,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Nome da aula, Descrição da aula (✦ Gerar com IA usando documentos da aula, ✦ Corrigir texto, Desfazer).
 - Material complementar: +PDF/+Áudio/+Texto. PDF também tem "✦ Gerar PDF com IA": título, documentos da aula (os mesmos da descrição + novos), contexto ("retire do PDF o resumo de X"), mostra o PDF gerado para ler → Refazer / Salvar PDF.
 - Rodapé: Cancelar (pergunta) · Voltar (pergunta só se mudou algo) · Salvar aula. "Salvar e sair" guarda a aula como Não publicada.
+
+### Link do vídeo (validação)
+
+- Aceita só YouTube (youtu.be/ID, youtube.com/watch?v=ID, /shorts/, /embed/, /live/; ID de 11 caracteres; não listado funciona) e Cloudflare Stream (videodelivery.net/ID, *.cloudflarestream.com/ID/…, ou só o código de 32 caracteres).
+- Enquanto digita: "✓ Link do YouTube reconhecido" + botão "Abrir para testar ↗" (abre em nova aba), ou em vermelho "Esse link não é de vídeo do YouTube nem do Cloudflare Stream."
+- Link inválido bloqueia "Salvar aula" (card Conteúdo em vermelho). No real: validar também no Supabase/Edge Function e guardar o ID + provedor.
 
 ## 7. IA (no real: Edge Functions)
 
