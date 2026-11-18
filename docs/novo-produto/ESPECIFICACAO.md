@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 283,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 284,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -296,3 +296,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Salvar → carregando "Salvando a categoria…" → janela "Categoria criada" (card com capa, nome, descrição, situação, 0 produtos) → "Criar depois" ou "Criar produto agora" (abre a criação de produto com a categoria já escolhida).
 - (v282) **Criar categoria agora tem 4 etapas, na mesma ordem do curso: 1 Formato · 2 Informações · 3 Capa · 4 Aparência da categoria** ("N DE 4"). Formato (obrigatório): Vídeos / E-books / Áudios, mesmos cards do curso — define o que a categoria apresenta. A janela "Categoria criada" mostra o formato.
 - (v283) **Criar categoria = o MESMO fluxo de criar curso (duplicado, não refeito).** "Criar categoria" abre a tela de criação do curso em modo categoria: título "Nova categoria / Criar categoria", etapas **Formato · Informações · Capa da categoria · Aparência da categoria** ("N DE 4"; a etapa Categoria some). Tudo igual ao curso: cards de formato; Informações (texto em cima do nome, Nome da categoria, descrição, texto do botão, obrigatórios em vermelho); Capa deitada + em pé com enviar, **Ajustar capa** (zoom/arrastar), **IA** e remover; Aparência do card com Celular/Tablet/Computador e estilos. Rodapé Cancelar / Voltar / Próximo / **Salvar categoria**; Fechar e Cancelar perguntam antes de sair. Salvar → "Salvando a categoria…" → volta para Categorias e abre a janela "Categoria criada". Nada do curso/rascunho em andamento é perdido (volta exatamente como estava). Substitui o fluxo próprio da v281/v282.
+
+### Categorias — lista quando já existem categorias (v284)
+- Mesmo layout da lista de Produtos: "CONTEÚDO / Categorias / Organize seus cursos por temas, formatos ou áreas de conhecimento." + "+ Nova categoria".
+- Abas por formato com contagem: Todos · Vídeo · E-book · Áudio.
+- Filtros: Buscar categoria, Todos os status (Publicado, Não publicado, Liberado, Bloqueado, Agendado, Oculto), total, Ordenar (Mais recentes, Nome A–Z, Mais cursos), cards/lista.
+- Card da categoria (igual ao do produto): capa + selo do formato; NOME; descrição; números **N CURSOS** e **HORAS AULA** (soma da duração das aulas dos cursos da categoria); Publicação ▾ e Liberação ▾ (trocam ali mesmo); "Abrir categoria →" (página da categoria a desenhar).
+- Categoria nova começa Não publicado / Bloqueado.
+- Seletores de status do card: quando o card fica estreito, o ícone da esquerda some para o texto não cortar (vale para produtos e categorias).
