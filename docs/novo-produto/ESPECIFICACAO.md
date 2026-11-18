@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 213,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 214,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -85,6 +85,16 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - "▶ Aulas do módulo (N) ⌄" sempre visível embaixo do card: clicar abre/fecha as aulas (fechadas por padrão).
 - Linha da aula: caixinha, ⋮⋮, miniatura (capa do vídeo ou play), título "Aula 2 — Nome da aula" (branco, quebra linha se não couber) e embaixo "Vídeo · 49 min" (tipo + duração em minutos), Criado em, Liberado em, Visualizações, status, Editar, ⋮ (Editar, Liberar/Agendar/Não publicar/Ocultar/Bloquear, Excluir). "+ Adicionar aula" embaixo da última aula.
 - Telas estreitas: datas descem para uma 2ª linha; nada pode se sobrepor (itens escondidos guardam espaço).
+
+### Seleção em massa
+
+- Acima da lista: "Selecionar todos os módulos" e "Selecionar todas as aulas" (marca/desmarca tudo). As caixinhas de cada módulo e aula também selecionam.
+- Com algo selecionado aparece à direita "N módulos e M aulas selecionados" + ações:
+  - Liberação: Imediata / Dias após o cadastro / Data específica / Trancar (+ "Junto com o módulo" se só aulas) → resumo com a lista dos itens → Confirmar.
+  - Status: Não publicado / Oculto / Bloqueado (Liberado e Agendado vêm da Liberação).
+  - Mover aulas (só aulas, com mais de um módulo): escolhe o módulo de destino.
+  - Excluir (com confirmação) e Limpar.
+- Depois de cada ação a seleção é limpa. Marcar/desmarcar não redesenha a lista (a tela não mexe).
 
 ## 5. Módulo (painel lateral por cima — opção B aprovada)
 
