@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 212,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 213,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -67,6 +67,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Na lista: "Liberado em" mostra a data curta ("05/12/2026", "+10 dias") e embaixo o tipo ("Às 09:00", "Após o cadastro", "Imediata"); status vira Liberado (ou Agendado se a data é futura).
 - No painel ao criar: a escolha fica guardada e vale ao clicar "Salvar módulo".
 - Regra (para o real): curso → módulo → aula; o aluno só vê o que está liberado em toda a cadeia. A liberação das aulas é feita dentro da liberação do módulo (aba Aulas).
+
+### Liberação da aula
+
+- Botão "Liberação" na linha de cada aula (mesma coluna do botão do módulo) e na janela da aula, ao criar ou editar ("Liberação: trancada", "Liberação: 20/12/2026"…), valendo ao clicar "Salvar aula".
+- Opções: Junto com o módulo (padrão) / Dias após o cadastro / Data específica / Trancada → resumo (Aula, Módulo, Liberado em, Status) → Confirmar. Avisa se o módulo ainda não está liberado (o aluno só vê a aula depois do módulo).
+- Resultado: Junto com o módulo herda do módulo (sem liberação no módulo → Não publicado); Trancada → Bloqueado; dias/data → Liberado ou Agendado.
 
 ## 4. Conteúdo do curso
 
