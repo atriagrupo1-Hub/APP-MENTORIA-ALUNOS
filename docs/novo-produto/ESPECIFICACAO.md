@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 206,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 207,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -62,10 +62,11 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 ### Liberação do módulo
 
 - Separada da do curso e feita só no módulo. Botão "Liberação" na linha do módulo, entre o status e "Editar" (na aula fica um espaço do mesmo tamanho para manter as colunas alinhadas), e também no topo do painel do módulo ao criar/editar ("Liberação: 05/12/2026"): dá para configurar antes ou depois.
-- Mesma janela do curso: Imediata, Dias após o cadastro, Data específica → resumo (Módulo, tipo, liberado em, status) → Confirmar. Se o curso ainda não está liberado, o resumo avisa que o aluno só vê o módulo depois do curso.
+- Janela "Liberação" com 3 abas em sequência: **1 Módulo** (Imediata / Dias após o cadastro / Data específica → "Salvar e escolher as aulas") → **2 Aulas (N)** (cada aula do módulo: Junto com o módulo [padrão] / Dias após o cadastro / Data específica / Trancada, com os campos de dias ou data/hora → "Salvar e ver o resumo") → **3 Resumo** (módulo: liberado em, tipo, status; lista das aulas com a liberação de cada uma; avisos: curso ainda não liberado; todas as aulas trancadas) → "Confirmar liberação".
+- Ao confirmar: aula "Junto com o módulo" herda data/status do módulo; "Trancada" fica Bloqueado; dias/data viram Liberado ou Agendado.
 - Na lista: "Liberado em" mostra a data curta ("05/12/2026", "+10 dias") e embaixo o tipo ("Às 09:00", "Após o cadastro", "Imediata"); status vira Liberado (ou Agendado se a data é futura).
 - No painel ao criar: a escolha fica guardada e vale ao clicar "Salvar módulo".
-- Regra (para o real): curso → módulo → aula; o aluno só vê o que está liberado em toda a cadeia. Liberação de aula ainda não desenhada.
+- Regra (para o real): curso → módulo → aula; o aluno só vê o que está liberado em toda a cadeia. A liberação das aulas é feita dentro da liberação do módulo (aba Aulas).
 
 ## 4. Conteúdo do curso
 
