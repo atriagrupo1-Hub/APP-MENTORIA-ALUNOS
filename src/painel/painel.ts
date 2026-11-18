@@ -780,7 +780,7 @@ export function montar(app: HTMLElement) {
     "aula-bloquear": "cur_estado", "aula-liberar": "cur_estado", "mod-bloquear": "cur_estado",
     "curso-novo": "cur_editar", "curso-novo-cat": "cur_editar", "mod-add": "cur_editar", "aula-add-abrir": "cur_editar", "aula-editar": "cur_editar", "mod-editar": "cur_editar",
     "aula-duplicar": "cur_editar", "mod-duplicar": "cur_editar", "cs-duplicar": "cur_editar", "aula-renomear": "cur_editar", "mod-renomear": "cur_editar",
-    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mod-pub": "cur_estado", "aula-pub": "cur_estado", "aula-lib-abrir": "cur_estado", "mod-lib-abrir": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
+    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mod-pub": "cur_estado", "curso-pub": "cur_estado", "aula-pub": "cur_estado", "aula-lib-abrir": "cur_estado", "mod-lib-abrir": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar", "ka-add": "cat_editar", "ka-add-abrir": "cat_editar",
@@ -3912,11 +3912,20 @@ export function montar(app: HTMLElement) {
     const lista2 = S.cursos.filter((c) => (ui.prodTipo === "todos" || tipoDe(c) === ui.prodTipo) && (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
         && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
-    const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
-      : `<span class="cc2-selos"><span class="cc2-selo az">Publicado</span><span class="cc2-selo ${!c.visivel ? "vm" : c.bloq ? "am" : "vd"}">${!c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Liberado"}</span></span>`;
+    // Dois status, independentes e lado a lado: Publicação (rascunho) e Liberação (publicado/bloqueado_geral/libera_em).
+    const seta = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+    const selos = (c: Curso) => {
+      const kP = "ccpub:" + c.id, kL = "cclib:" + c.id, pub = !c.rascunho;
+      const agend = c.visivel && !c.bloq && !!c.libera && new Date(c.libera).getTime() > Date.now();
+      const lib = !c.visivel ? ["Oculto", "cz", "desativado"] : c.bloq ? ["Bloqueado", "am", "bloqueado"] : agend ? ["Agendado", "az", "ativo"] : ["Liberado", "vd", "ativo"];
+      const itL = (v: string, t: string) => `<button type="button" role="menuitemradio" aria-checked="${lib[2] === v && !(v === "ativo" && agend)}" data-a="estado-set" data-v="curso:${c.id}:${v}">${t}</button>`;
+      return `<div class="cc2-st2">
+        <span class="cc2-st2-c"><em>Publicação</em><span class="est3 kg-menu"><button type="button" class="cc2-selo ${pub ? "vd" : "cz"} cv-pil" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${pub ? "Publicado" : "Não publicado"}${seta}</button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitemradio" aria-checked="${pub}" data-a="curso-pub" data-id="${c.id}" data-v="1">Publicado</button><button type="button" role="menuitemradio" aria-checked="${!pub}" data-a="curso-pub" data-id="${c.id}" data-v="0">Não publicado</button></span>` : ""}</span></span>
+        <span class="cc2-st2-c"><em>Liberação</em><span class="est3 kg-menu"><button type="button" class="cc2-selo ${lib[1]} cv-pil" data-a="estado-menu" data-v="${kL}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kL}">${lib[0]}${seta}</button>${ui.estMenu === kL ? `<span class="est3-menu kb-menu" role="menu">${itL("ativo", "Liberado")}${itL("bloqueado", "Bloqueado")}${itL("desativado", "Oculto")}<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config">Agendar data…</button></span>` : ""}</span></span>
+      </div>`;
+    };
     const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
     const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
-    const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
     // Ações secundárias no ⋮ (todas já existiam no painel).
     const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
@@ -3938,7 +3947,7 @@ export function montar(app: HTMLElement) {
         ${capaC(c, "ka-capa")}
         <div class="cc2-corpo">
           <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}${quando(c)}
+          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}
           <div class="cc2-bts">${bts(c)}</div>
         </div>
       </article>`;
@@ -7629,6 +7638,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "aula-agendar": case "aula-lib-abrir": { if (a === "aula-agendar") ui.pmModoIni = "data"; const x = acharAula(d.id!); if (!x) return; ui.estMenu = ""; ui.aula = d.id!; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.pmEditar = true; window.scrollTo(0, 0); break; }
+      case "curso-pub": {
+        const c = curso(d.id!); if (!c) return; const rasc = d.v !== "1"; ui.estMenu = "";
+        if (c.rascunho === rasc) break;
+        void executar(async () => {
+          falhou(await supabase.from("produtos").update({ rascunho: rasc }).eq("id", c.id).select("id").single());
+          await registrar(null, (rasc ? "Despublicou o curso " : "Publicou o curso ") + c.nome);
+          return { msg: c.nome + (rasc ? ": não publicado. As alunas não veem." : ": publicado."), texto: "publicação do curso " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update({ rascunho: !rasc }).eq("id", c.id).select("id").single()); } };
+        });
+        return;
+      }
       case "mod-pub": {
         const x = acharModulo(d.id!); if (!x) return; const rasc = d.v !== "1"; ui.estMenu = "";
         if (x.m.rascunho === rasc) break;

@@ -4367,6 +4367,10 @@ html[data-tema="escuro"] .cfg-est-bt:hover, html[data-tema="escuro"] .cfg-est-bt
 .cc2-cat em { font-style: normal; }
 .cc2-cat b { color: var(--texto); font-weight: 600; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .cc2-selos { display: flex; gap: 6px; flex-wrap: wrap; }
+.cc2-st2 { display: grid; grid-template-columns: repeat(2, minmax(0, max-content)); gap: 6px 14px; align-items: end; }
+.cc2-st2-c { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cc2-st2-c > em { font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; opacity: .65; }
+.cc2-st2 .cv-pil { white-space: nowrap; }
 .cc2-selo { padding: 4px 11px; font-size: 12px; font-weight: 700; border-radius: 99px; }
 .cc2-selo.vd { color: #2f6b3a; background: #e7f3e9; }
 .cc2-selo.am { color: #8a6416; background: #fbf0d6; }
