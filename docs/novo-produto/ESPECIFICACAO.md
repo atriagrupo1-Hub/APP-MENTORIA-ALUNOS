@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 220,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 221,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -21,6 +21,7 @@ Regras gerais
 - Ordem de construção: vídeo-aula primeiro; depois e-book; depois áudio. Qualquer aula pode ser vídeo, áudio ou e-book.
 - "?" mostra explicação só com o mouse em cima (não fixa ao clicar).
 - **Descrição é obrigatória** no curso, no módulo e na aula (não avança/salva sem ela).
+- **Obrigatórios sem preencher (janela da aula):** ao clicar "Salvar aula", cada card que falta fica com borda vermelha e a mensagem embaixo (Tipo, Conteúdo, Nome, Descrição, Liberação — na ordem da tela); o rodapé mostra "Falta preencher: …" na mesma ordem e a tela vai até o primeiro. O vermelho some sozinho conforme preenche.
 - **Excluir (curso, módulo, aula, em massa): sempre pede para digitar EXCLUIR** (exatamente, em maiúsculas) antes de liberar o botão Excluir; Enter confirma quando está certo. "Excluir curso" no ⋮ do curso apaga o curso com módulos e aulas e volta para a lista.
 - Menus (⋮, + Adicionar): abrem para cima quando não cabem embaixo (nunca ficam cortados); fecham ao clicar fora, ao clicar de novo no mesmo botão, com Esc ou ao rolar a página.
 - Nenhum clique pode fazer a tela pular: ao abrir algo, a tela vai até ele; ao fechar, fica onde está. Trocar visualização, filtro ou pesquisa mantém a barra no mesmo lugar da tela (se a lista encolher, guarda o espaço embaixo em vez de subir a página).
