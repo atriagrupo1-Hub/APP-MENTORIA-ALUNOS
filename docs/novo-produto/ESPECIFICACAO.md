@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 215,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 216,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -70,7 +70,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 
 ### Liberação da aula
 
-- Botão "Liberação" na linha de cada aula (mesma coluna do botão do módulo) e na janela da aula, ao criar ou editar ("Liberação: trancada", "Liberação: 20/12/2026"…), valendo ao clicar "Salvar aula".
+- Botão "Liberação" na linha de cada aula (mesma coluna do botão do módulo). Na janela da aula (criar/editar), a liberação fica aberta como seção "Liberação da aula" logo depois de "Material complementar" (cards de opção já visíveis; vale ao clicar "Salvar aula"; valida dias/data).
 - Opções: Junto com o módulo (padrão) / Dias após o cadastro / Data específica / Trancada → resumo (Aula, Módulo, Liberado em, Status) → Confirmar. Avisa se o módulo ainda não está liberado (o aluno só vê a aula depois do módulo).
 - Resultado: Junto com o módulo herda do módulo (sem liberação no módulo → Não publicado); Trancada → Bloqueado; dias/data → Liberado ou Agendado.
 
