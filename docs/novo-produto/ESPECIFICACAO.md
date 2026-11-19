@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 298,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 299,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -330,3 +330,7 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - (v296) Modelo: com o modelo aberto em mais de uma janela/aba, a janela antiga sobrescrevia o que foi salvo na outra (categorias "sumiam"). Agora cada salvamento tem horário, ao abrir vale sempre o mais novo e as outras janelas se atualizam sozinhas. (Na implementação real isso não existe: os dados ficam no Supabase.)
 - (v297) **Janela "Adicionar curso à categoria" refeita:** botão pequeno "+ Curso novo" no topo (ao lado do ✕); abas por formato com contagem (Todos/Vídeo/E-book/Áudio); barra com busca, filtro de categoria atual (Todas / Sem categoria / Em outra categoria) e ordenar (Mais recentes / Nome A–Z / Mais alunos); "Selecionar todos (N)"; lista em cards: caixa de seleção, miniatura com o formato, nome, módulos · aulas · alunos · criado em, selo da categoria atual e situação de publicação. Rodapé: "N selecionados", Cancelar, "Adicionar N cursos" (desligado sem seleção).
 - (v298) Janela "Adicionar curso à categoria": busca com lupa pequena dentro do campo e busca + filtros na mesma linha e mesma altura (40 px).
+
+## v299 (19/11/2026) — IA da descrição
+- "Gerar descrição com IA": lê o material inteiro (todas as páginas do PDF, até 300 mil caracteres por arquivo; até 150 mil vão para a IA) e segue os critérios do dono: **promessa** principal tirada do material, **pontos** centrais do conteúdo, **curiosidade** e, quando o material/contexto falar de prazo ou vagas, **escassez/urgência**. Nada inventado; sem copiar trechos ("Introdução", páginas, capítulos); até 180 caracteres.
+- PDF de material da aula também recebe o documento inteiro (até 150 mil caracteres por arquivo).
