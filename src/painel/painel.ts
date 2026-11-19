@@ -1096,7 +1096,6 @@ export function montar(app: HTMLElement) {
     { nome: "Administração", abas: ["equipe", "registro", "config", "lixeira", "reduzir"] },
   ];
   const IC_SINO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>`;
-  const IC_ENGR = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.8l1.6 2.3 2.7-.7.6 2.7 2.6 1-.9 2.6 1.6 2.3-2.3 1.6.3 2.8-2.8.3-1.2 2.5-2.5-1.2-2.5 1.2-1.2-2.5-2.8-.3.3-2.8-2.3-1.6 1.6-2.3-.9-2.6 2.6-1 .6-2.7 2.7.7z"/></svg>`;
   function painel() {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
@@ -1122,7 +1121,6 @@ export function montar(app: HTMLElement) {
             <button type="button" role="menuitem" data-a="ir-comentarios">${IC_INI.balao}<span>Comentários para moderar</span>${badge(paraResponder().length) || `<em>em dia</em>`}</button>
             ${listasAcessos().map((l) => `<button type="button" role="menuitem" data-a="sino-lista" data-v="${l.id}">${l.icone}<span>${l.titulo}</span>${badge(l.lista.length) || `<em>em dia</em>`}</button>`).join("")}
           </span>` : ""}</span>
-          ${abas.some(([x]) => x === "config") ? `<button type="button" class="tp-bt" data-a="aba" data-v="config" aria-label="Configurações" title="Configurações" ${ui.tab === "config" ? 'aria-current="page"' : ""}>${IC_ENGR}</button>` : ""}
           <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
             <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
             <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
