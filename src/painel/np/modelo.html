@@ -2246,6 +2246,23 @@ filtrar();
 <style>
 /* ===== Alunos (aba lateral) e Adicionar/Cadastrar aluno ===== */
 .alx-pn .alx-barra{margin-top:16px}.alx-pn .alx-tab{background:#141518}.al-k[data-alxtab]{text-align:left;font:inherit;color:inherit;cursor:pointer}
+.a2-pn{margin-top:4px;border:1px solid var(--borda);border-radius:12px;background:#141518;overflow:hidden}.a2-rola{overflow-x:auto}
+.a2-tab{width:100%;border-collapse:collapse;font-size:13px;min-width:980px}
+.a2-tab th{padding:12px 14px;text-align:left;font:500 10.5px var(--mono);letter-spacing:.9px;text-transform:uppercase;color:#7F8690;background:#17181B;border-bottom:1px solid var(--div);white-space:nowrap}
+.a2-tab td{padding:12px 14px;border-top:1px solid var(--div);vertical-align:middle;color:var(--t1)}.a2-tab tbody tr:first-child td{border-top:0}
+.a2-tab tr.on td{background:#1d1a14}.a2-tab tbody tr:hover td{background:#18191d}
+.a2-ck{width:36px}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.a2-quem{display:flex;align-items:center;gap:12px;border:0;background:none;color:inherit;text-align:left;padding:0;font:inherit;cursor:pointer}
+.a2-quem b{display:block;font-size:14px;font-weight:650}.a2-quem span span{display:block;font-size:11.5px;color:var(--t2)}
+.a2-av{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;overflow:hidden;background:#2a2518;color:var(--ouro);font:650 12px Manrope}.a2-av img{width:100%;height:100%;object-fit:cover}
+.a2-prods{border-bottom:1px dotted var(--t3);cursor:help}.a2-nada{color:var(--t3)}
+.a2-eng{white-space:nowrap}.a2-st{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:6px;border:1px solid;font-size:11.5px;font-weight:650}.a2-st:before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor}
+.a2-st.verde{background:#15291d;border-color:#2c5a3c;color:#7FD49B}.a2-st.ouro{background:#2a2518;border-color:#6d5a38;color:#E2C68C}.a2-st.vermelho{background:#2c1919;border-color:#5a3030;color:#E39B98}.a2-st.cinza{background:#1f2024;border-color:#3a3c42;color:#A5ADB8}
+.a2-n{margin-left:8px;font-size:11.5px;color:var(--t2)}
+.a2-zap{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.a2-ic{display:inline-grid;place-items:center;width:28px;height:28px;border:1px solid var(--bcampo);border-radius:7px;background:var(--campo);color:var(--t2)}.a2-ic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.a2-ic.zap{color:#7FD49B}.a2-ic:hover{border-color:var(--ouro);color:var(--ouro)}
+.a2-acoes{text-align:right;white-space:nowrap}.a2-acoes .bt+.bt{margin-left:6px}
+.a2-vazio{padding:28px!important;text-align:center;color:var(--t2)}
+.a2-pe{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;border-top:1px solid var(--div);font-size:12.5px;color:var(--t2)}.a2-pags{display:inline-flex;gap:4px}.a2-pags .on{background:var(--ouro);color:#202018;border-color:var(--ouro)}
 .alx-fbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 14px}
 .alx-fq{position:relative;display:flex;align-items:center;flex:1 1 320px;min-width:240px;height:44px;padding:0 14px;gap:10px;border:1px solid #4B402B;border-radius:10px;background:#141518}
 .alx-fq .pp-ic{width:18px;height:18px;color:var(--ouro);flex:none}.alx-fq input{flex:1;min-width:0;height:100%;border:0;background:none;color:var(--t1);font:500 13px Manrope;outline:none}.alx-fq input::placeholder{color:var(--ph)}
@@ -2454,8 +2471,36 @@ function desenharAlx(){const el=document.getElementById("alxPag");if(!el)return;
     sel("alxFSt",'<circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',"Status de acesso",[["ativos","Ativos"],["bloq","Bloqueados"],["desat","Desativados"]],alxF.st)+
     sel("alxFEng",'<path d="M5 20v-5M10 20v-9M15 20V7M20 20V4"/>',"Engajamento",[["alto","Alto"],["medio","Médio"],["baixo","Baixo"]],alxF.eng)+
     (Object.values(alxF).some(Boolean)||alxQ?'<button type="button" class="alx-fl" data-alxlimpa="1">Limpar filtros</button>':'')+'</div>';
-  if(ini>=0&&fim>ini)h=h.slice(0,ini)+barra+tabelaAlunos(d);
+  if(ini>=0&&fim>ini)h=h.slice(0,ini)+barra+alxTabela2();
   el.innerHTML='<div class="pp-painel alx-pn">'+h+'</div>'}
+// Tabela da aba Alunos: as mesmas informações de antes (Aluno, Modalidade, Produtos, Último acesso, Engajamento, WhatsApp, Ver detalhes, ⋮)
+let alxPg=1,alxSel=new Set();const ALX_POR=50;
+function alxLinhaDados(a){const f=alxInfo(a),niv=a.niv||(f.eng>=67?"avancando":f.eng>=34?"ritmo":f.eng>0?"baixo":"recem"),prods=a.prods||a.cursos||[];
+  return {niv,nota:a.nota!=null?a.nota:f.eng,prods,ult:a.ultTxt||(f.ult?(f.ult===isoHoje()?"Hoje":dataBR(f.ult)):"Nunca acessou"),cad:a.cadBR||dataBR(a.ent),foto:a.foto||""}}
+function alxTabela2(){const L=ALX.filter(alxPassa).filter(a=>alTab==="todos"||!alTab?true:alTab==="rec"?alxDias(a.ent)<=7:a.st===alTab),pags=Math.max(1,Math.ceil(L.length/ALX_POR));if(alxPg>pags)alxPg=pags;
+  const V=L.slice((alxPg-1)*ALX_POR,alxPg*ALX_POR),todas=V.length&&V.every(a=>alxSel.has(a.id)),zap='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.6 18.6z"/><path d="M9 8.8c.2-.6.7-.7 1-.6l.6 1.5-.6.8c.5 1 1.3 1.8 2.4 2.4l.8-.6 1.5.6c.1.4 0 .9-.6 1.1-2.7.6-5.7-2.4-5.1-5.2z"/></svg>',cp='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/></svg>';
+  const eng=x=>{const [t,c]=x.niv==="recem"?["Novo","cinza"]:x.niv==="avancando"?["Alto","verde"]:x.niv==="ritmo"?["Médio","ouro"]:["Baixo","vermelho"];return '<span class="a2-st '+c+'">'+t+'</span><span class="a2-n">'+(x.niv==="recem"?"sem dados":x.nota+"/100")+'</span>'};
+  return (alxSel.size?'<div class="al-selb"><b>'+alxSel.size+(alxSel.size===1?" aluno selecionado":" alunos selecionados")+'</b><button type="button" class="bt pq" data-alxm="ativos">Ativar</button><button type="button" class="bt pq" data-alxm="bloq">Bloquear</button><button type="button" class="bt pq" data-alxm="desat">Desativar</button><button type="button" class="bt pq" data-alxm="limpar">Limpar</button></div>':'')+
+   '<div class="a2-pn"><div class="a2-rola"><table class="a2-tab"><thead><tr><th class="a2-ck"><button type="button" class="mc-chk" data-alxall="1" aria-pressed="'+!!todas+'" aria-label="Selecionar todos da página"></button></th><th>Aluno</th><th>Modalidade</th><th>Produtos</th><th>Último acesso</th><th>Engajamento</th><th>WhatsApp</th><th><span class="sr">Ações</span></th></tr></thead><tbody>'+
+   (V.map(a=>{const x=alxLinhaDados(a),f=alxInfo(a),cel=String(a.cel||"").replace(/\D/g,"");return '<tr'+(alxSel.has(a.id)?' class="on"':'')+'><td class="a2-ck"><button type="button" class="mc-chk" data-alxsel="'+a.id+'" aria-pressed="'+alxSel.has(a.id)+'" aria-label="Selecionar '+esc(a.nome)+'"></button></td>'+
+     '<td><button type="button" class="a2-quem" data-alxver="'+a.id+'"><span class="a2-av">'+(x.foto?'<img src="'+esc(x.foto)+'" alt="">':esc(iniAl(a.nome)))+'</span><span><b>'+esc(a.nome)+'</b><span>Cadastrado em '+esc(x.cad)+'</span></span></button></td>'+
+     '<td>'+(f.tipo==="mentoria"?"Mentoria":"Geral")+'</td><td>'+(x.prods.length?'<span class="a2-prods" title="'+esc(x.prods.join(", "))+'">'+x.prods.length+(x.prods.length===1?" produto":" produtos")+'</span>':'<span class="a2-nada">Nenhum</span>')+'</td>'+
+     '<td>'+esc(x.ult)+'</td><td class="a2-eng">'+eng(x)+'</td>'+
+     '<td>'+(cel?'<span class="a2-zap"><span>'+esc(celFmt(cel))+'</span><button type="button" class="a2-ic" data-alxcel="'+esc(cel)+'" title="Copiar número" aria-label="Copiar o WhatsApp de '+esc(a.nome)+'">'+cp+'</button><a class="a2-ic zap" href="https://wa.me/55'+cel+'" target="_blank" rel="noopener" title="Abrir conversa" aria-label="Abrir conversa com '+esc(a.nome)+' no WhatsApp">'+zap+'</a></span>':'<span class="a2-nada">—</span>')+'</td>'+
+     '<td class="a2-acoes"><button type="button" class="bt pq" data-alxver="'+a.id+'">Ver detalhes</button><button type="button" class="bt pq a2-mais" data-alxmenu="'+a.id+'" aria-label="Mais ações para '+esc(a.nome)+'">⋮</button></td></tr>'}).join("")||'<tr><td colspan="8" class="a2-vazio">'+(ALX.length?"Nenhum aluno corresponde a estes filtros.":"Nenhum aluno cadastrado ainda.")+'</td></tr>')+'</tbody></table></div>'+
+   '<div class="a2-pe"><span>'+(L.length?L.length+" de "+ALX.length+(ALX.length===1?" aluno.":" alunos."):"Nenhum aluno encontrado.")+'</span>'+(pags>1?'<span class="a2-pags"><button type="button" class="bt pq" data-alxpg="'+(alxPg-1)+'"'+(alxPg<=1?" disabled":"")+'>‹</button>'+Array.from({length:pags},(_,k)=>'<button type="button" class="bt pq'+(k+1===alxPg?" on":"")+'" data-alxpg="'+(k+1)+'">'+(k+1)+'</button>').join("")+'<button type="button" class="bt pq" data-alxpg="'+(alxPg+1)+'"'+(alxPg>=pags?" disabled":"")+'>›</button></span>':'<span>Página 1 de 1 · '+ALX_POR+' por página</span>')+'</div></div>'}
+function alxMudar(st,ids){const lista=ids.map(id=>ALX.find(a=>a.id===id)).filter(Boolean);if(!lista.length)return;
+  if(NPE)npAvisar({tipo:"alunos-st",prod:"",st,lista:lista.map(a=>({id:a.id,de:a.st}))});
+  lista.forEach(a=>{if(st==="reat"||st==="ativos")a.st="ativos";else a.st=st});salvarAlx();desenharAlx();toast(lista.length===1?lista[0].nome+": "+AX_ST[lista[0].st][0].toLowerCase()+".":lista.length+" alunos atualizados.")}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b||vista!=="alunos")return;
+  if(b.dataset.alxsel){const id=b.dataset.alxsel;alxSel.has(id)?alxSel.delete(id):alxSel.add(id);desenharAlx();return}
+  if(b.dataset.alxall){const L=ALX.filter(alxPassa).filter(a=>alTab==="todos"||!alTab?true:alTab==="rec"?alxDias(a.ent)<=7:a.st===alTab).slice((alxPg-1)*ALX_POR,alxPg*ALX_POR),todas=L.every(a=>alxSel.has(a.id));L.forEach(a=>todas?alxSel.delete(a.id):alxSel.add(a.id));desenharAlx();return}
+  if(b.dataset.alxm){const k=b.dataset.alxm;if(k!=="limpar")alxMudar(k,[...alxSel]);alxSel.clear();desenharAlx();return}
+  if(b.dataset.alxpg){alxPg=+b.dataset.alxpg;desenharAlx();scrollTo(0,0);return}
+  if(b.dataset.alxver){if(NPE)npAvisar({tipo:"ficha",id:b.dataset.alxver});else{const a=ALX.find(x=>x.id===b.dataset.alxver);if(a)toast(a.nome+" · login "+a.login+" · código "+a.cod+" · acesso até "+dataBR(a.val))}return}
+  if(b.dataset.alxcel){const t=b.dataset.alxcel;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Número copiado.")).catch(()=>toast(celFmt(t)));return}
+  if(b.dataset.alxmenu){const a=ALX.find(x=>x.id===b.dataset.alxmenu);if(!a)return;menuConteudo(b,[["Ver detalhes",'data-alxver="'+a.id+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alxst="'+(a.st==="bloq"?"ativos":"bloq")+':'+a.id+'"'],[a.st==="desat"?"Reativar (+1 ano)":"Desativar",'data-alxst="'+(a.st==="desat"?"reat":"desat")+':'+a.id+'"']]);return}
+  if(b.dataset.alxst){fecharMenuC();const[k,id]=b.dataset.alxst.split(":");alxMudar(k==="reat"?"ativos":k,[id]);return}});
 {const dp0=desenharProduto;desenharProduto=function(){if(vista==="alunos"){desenharAlx();return}return dp0.apply(this,arguments)}}
 function alxTabela(){const t=document.getElementById("alxTab");if(!t)return;const q=tiraAc(alxQ.trim().toLowerCase());
   let L=ALX.filter(a=>(!q||tiraAc([a.nome,a.login,a.email,a.cod].join(" ").toLowerCase()).includes(q))&&(alxTab==="todos"?true:alxTab==="rec"?alxRec(a):a.st===alxTab));

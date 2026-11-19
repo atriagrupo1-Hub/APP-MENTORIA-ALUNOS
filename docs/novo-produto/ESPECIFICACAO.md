@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 313,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 315,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -386,3 +386,4 @@ Levado ao painel real tudo de v301 a v312 (`src/painel/np/modelo.html` + `painel
 - Limites do banco hoje: "Ao concluir a anterior" libera só a primeira aula (o resto fica para liberar na ficha); a hora do "Dia fixo da semana" não é gravada (só o dia); aula nova criada depois no curso não entra sozinha para quem foi liberado aula a aula.
 Novo marco: o que mudar no ilustrativo daqui em diante volta a ser anotado abaixo.
 - v313 — Cards de Alunos menores (Total, Ativos, Bloqueados, Desativados, Adicionados recentes) e a tabela mostra 50 alunos por página (antes 10). Painel e ilustrativo.
+- v315 — Aba Alunos: tabela com as mesmas informações da lista antiga do painel — ☐, Aluno (foto, nome, "Cadastrado em"), Modalidade, Produtos, Último acesso, Engajamento (Novo/Baixo/Médio/Alto + n/100 ou "sem dados"), WhatsApp (copiar e abrir conversa), Ver detalhes (abre a ficha) e ⋮ (Bloquear/Desbloquear, Desativar/Reativar); seleção em massa (Ativar, Bloquear, Desativar); 50 por página; tabela sem limite de altura.

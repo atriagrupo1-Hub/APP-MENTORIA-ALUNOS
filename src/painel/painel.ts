@@ -3674,7 +3674,10 @@ export function montar(app: HTMLElement) {
     // Todos os alunos (aba Alunos e "Aluno existente"): cursos pelo nome, modalidade, último acesso e engajamento
     const cursosDe = new Map<string, Set<string>>();
     for (const c of S.cursos) for (const x of alunasDoCurso(c)) { let st = cursosDe.get(x.a.id); if (!st) cursosDe.set(x.a.id, st = new Set()); st.add(c.nome); }
-    const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0 }));
+    const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0,
+      // As mesmas informações da lista de antes
+      foto: S.fotos[a.id] || "", cadBR: br(cadastroDe(a)), ultTxt: ultimoAcessoTxt(a), niv: nivel(a)[2], nota: a.nota || 0,
+      prods: (() => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); })() }));
     return { prods, cats, mods, alunos, coms, eng, top, todos };
   }
   /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
