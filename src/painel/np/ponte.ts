@@ -3,7 +3,13 @@
  * O painel manda os dados reais (np-dados) e recebe as ações que gravam (np-acao).
  * O quadro fica fixo sobre a área de conteúdo e não é recriado a cada redesenho do painel.
  */
-import modeloHtml from "./modelo.html?raw";
+import modeloBruto from "./modelo.html?raw";
+
+/** A mesma base com que o modelo roda no claude.ai: o que está marcado como escondido fica escondido. */
+const BASE = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>\n';
+/** No modelo, acima de 760 px a barra lateral dele (200 px) come a largura; aqui ela não existe.
+ *  Cada mudança de arrumação passa a valer na mesma largura de conteúdo do modelo. */
+const modeloHtml = BASE + modeloBruto.replace(/@media\(max-width:(\d+)px\)/g, (m, n) => (+n > 760 ? `@media(max-width:${+n - 200}px),(max-width:760px)` : m)) + "\n</body></html>";
 
 export type NpAcao = { np: "acao"; tipo: string; [k: string]: unknown };
 
