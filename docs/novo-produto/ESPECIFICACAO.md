@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 300,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 301,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -340,3 +340,12 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Cada arquivo: ícone de documento com o tipo, nome, situação e barra: "Lendo página X de Y…" (com roda girando e barra de progresso), "✓ Lido · N páginas · N caracteres" (verde) ou "Não deu para ler este arquivo…" (vermelho).
 - Gerando a descrição: roda girando + "A IA está lendo o material inteiro. Leva alguns segundos."
 - Painel: ao recarregar, volta para a mesma tela (inclusive no meio de Criar/Editar curso, categoria ou módulo, com o que foi preenchido).
+
+## v301 (19/11/2026) — Aba Alunos e Adicionar/Cadastrar aluno (em teste no ilustrativo, ainda não aprovado)
+- Barra lateral ganha **Alunos**: números (Total, Ativos, Bloqueados, Desativados), busca, status, ordem (Últimos adicionados, Nome A–Z/Z–A, Mais antigos), tabela (aluno, status, cursos, cadastro, acesso até, ⋮ Ver acesso / Bloquear / Desativar ou Reativar +1 ano / Remover). 4 alunos ilustrativos. Botão **Cadastrar aluno**.
+- **+ Aluno dentro do curso**: primeiro escolhe **Aluno existente | Novo aluno**.
+  - Novo aluno — 5 etapas: 1 Dados do aluno · 2 Acesso · 3 Conteúdos liberados (card grande só com o curso, já marcado) · 4 Forma de liberação · 5 Resumo.
+  - Aluno existente — 3 etapas: Escolher aluno (lista com busca; quem já está no curso aparece apagado) · Forma de liberação · Resumo.
+- **Forma de liberação** (por curso): Tudo liberado agora · Uma aula a cada X dias (começa em [data], primeira aula no dia do início, "usar a regra do Módulo 1 em todos os módulos" — desmarcado, um intervalo por módulo) · Manual (primeira aula agora; as outras uma a uma). Mostra "Como o aluno vai receber" (cronograma com datas).
+- **Resumo**: dados, acesso, conteúdos, forma de liberação (cada bloco com Editar) e **Mensagem de acesso** com **Copiar mensagem**.
+- Cadastrar aluno pela aba Alunos: o mesmo fluxo, com todos os cursos para marcar na etapa 3.
