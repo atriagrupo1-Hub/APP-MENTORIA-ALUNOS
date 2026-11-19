@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 301,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 302,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -349,3 +349,17 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - **Forma de liberação** (por curso): Tudo liberado agora · Uma aula a cada X dias (começa em [data], primeira aula no dia do início, "usar a regra do Módulo 1 em todos os módulos" — desmarcado, um intervalo por módulo) · Manual (primeira aula agora; as outras uma a uma). Mostra "Como o aluno vai receber" (cronograma com datas).
 - **Resumo**: dados, acesso, conteúdos, forma de liberação (cada bloco com Editar) e **Mensagem de acesso** com **Copiar mensagem**.
 - Cadastrar aluno pela aba Alunos: o mesmo fluxo, com todos os cursos para marcar na etapa 3.
+
+## v302 (19/11/2026) — Adicionar aluno: escolha fica sozinha
+- Escolheu **Novo aluno** (ou **Aluno existente**): a outra opção some; fica só a escolhida, com **Trocar** ao lado para voltar à escolha.
+
+---
+## 🔖 MARCO "GOOGLE" (19/11/2026)
+Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a partir da **v301**, inclusive) fica guardado e **só vai para o painel quando ele disser "a partir do Google"**.
+- Base do que já está no painel: modelo **v300** (commit `82f1601`, `src/painel/np/modelo.html`).
+- Ainda **não** levado ao painel: v301 (aba Alunos, Adicionar/Cadastrar aluno em 5 etapas, Forma de liberação, Resumo com mensagem) e v302 em diante (lista abaixo, a cada mudança).
+- Ao ouvir "a partir do Google": comparar `docs/novo-produto/modelo-novo-produto.html` com a v300 (`git diff 82f1601 -- docs/novo-produto/modelo-novo-produto.html`), levar cada item ao painel real (painel + Supabase), primeiro arrumando o que faltar no ilustrativo.
+
+### Mudanças desde o marco (não levadas ao painel)
+- v301 — aba Alunos (4 ilustrativos) · + Aluno: Aluno existente | Novo aluno · 5 etapas (Dados, Acesso, Conteúdos liberados com card grande, Forma de liberação, Resumo + mensagem para copiar) · Forma de liberação: Tudo agora / 1 aula a cada X dias (regra do Módulo 1 para todos ou por módulo) / Manual · cronograma "Como o aluno vai receber".
+- v302 — escolhida a opção, a outra some (fica só a escolhida + Trocar).

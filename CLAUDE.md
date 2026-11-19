@@ -126,6 +126,10 @@ nunca justifica pular segurança, teste necessário ou validação.
 
 Toda mudança aprovada no modelo ilustrativo é salva no repositório: copiar o HTML para `docs/novo-produto/modelo-novo-produto.html`, atualizar `docs/novo-produto/ESPECIFICACAO.md` e commitar no branch da sessão. Isso é a base para implementar de verdade (painel + app do aluno + Supabase).
 
+## Marco "Google" — regra permanente
+
+Desde 19/11/2026 (modelo v301), tudo que for mudado no modelo ilustrativo fica só no ilustrativo e é anotado em `docs/novo-produto/ESPECIFICACAO.md` (seção MARCO "GOOGLE"). Quando o dono disser **"a partir do Google"**, levar ao painel real tudo o que mudou desde o marco (base: v300, commit `82f1601`).
+
 ## Git
 
 Desenvolver e commitar no branch de desenvolvimento da sessão.

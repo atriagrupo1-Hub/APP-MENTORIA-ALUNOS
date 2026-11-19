@@ -2215,6 +2215,8 @@ filtrar();
 .cx-modo{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin:6px 0 16px;border:1px solid var(--borda);border-radius:12px;background:#141518}
 .cx-modo button{height:44px;border:1px solid transparent;border-radius:9px;background:none;color:#A5ADB8;font:650 14px Manrope}
 .cx-modo button:hover{color:#EED9AD;background:rgba(226,198,140,.06)}.cx-modo button.on{background:#2a2518;border-color:#6d5a38;color:var(--ouro)}
+.cx-modo.um{grid-template-columns:minmax(0,1fr) auto;align-items:center}.cx-modo.um span.on{display:grid;place-items:center;height:44px;border:1px solid #6d5a38;border-radius:9px;background:#2a2518;color:var(--ouro);font:650 14px Manrope}
+.cx-modo .cx-trocar{height:44px;padding:0 16px;color:var(--t2);font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
 .cx-abas{display:flex;gap:4px;border-bottom:1px solid var(--div);margin-bottom:18px;overflow-x:auto;scrollbar-width:none}
 .cx-aba{display:inline-flex;align-items:center;gap:8px;padding:11px 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--t2);font:650 13.5px Manrope;white-space:nowrap}
 .cx-aba i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid #4a4d55;font:650 11px Manrope;font-style:normal}
@@ -2373,7 +2375,7 @@ function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden
     corpo='<div class="cx-res">'+al+'<div class="cx-rb"><h4>Conteúdos liberados '+(ctx?"":ed("cont"))+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>Curso</dt><dd>'+esc(c)+'</dd>').join("")+'</dl></div><div class="cx-rb"><h4>Forma de liberação '+ed("lib")+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>'+esc(c)+'</dt><dd>'+esc(libResumo(c))+'</dd>').join("")+'</dl></div>'+
       '<div class="cx-rb cx-msg"><h4>Mensagem de acesso</h4><div class="cx-msgt" id="cxMsg">'+esc(cxMsg())+'</div><button type="button" class="bt ouro cx-copiar" data-cxcopiar="1">Copiar mensagem</button></div></div>'}
   const titulo=ctx?"Adicionar aluno":"Cadastrar aluno",sub=ctx?esc(cx.curso)+" · "+(cx.modo?"preencha por partes. Nada é salvo até clicar em "+(cx.modo==="existente"?"Adicionar":"Cadastrar")+".":"escolha se é um aluno que já tem cadastro ou um aluno novo."):"Preencha por partes. Nada é salvo até clicar em Cadastrar.";
-  const seg=ctx?'<div class="cx-modo"><button type="button" class="'+(cx.modo==="existente"?"on":"")+'" data-cxmodo="existente">Aluno existente</button><button type="button" class="'+(cx.modo==="novo"?"on":"")+'" data-cxmodo="novo">Novo aluno</button></div>':"";
+  const seg=ctx&&cx.modo?'<div class="cx-modo um"><span class="on">'+(cx.modo==="novo"?"Novo aluno":"Aluno existente")+'</span><button type="button" class="cx-trocar" data-cxtrocar="1">Trocar</button></div>':ctx?'<div class="cx-modo"><button type="button" class="'+(cx.modo==="existente"?"on":"")+'" data-cxmodo="existente">Aluno existente</button><button type="button" class="'+(cx.modo==="novo"?"on":"")+'" data-cxmodo="novo">Novo aluno</button></div>':"";
   const abas=cx.modo?'<div class="cx-abas" role="tablist">'+P.map(([kk,t],j)=>'<button type="button" role="tab" class="cx-aba'+(j===i?" on":cx.feitos.has(kk)&&j<i?" ok":"")+'" data-cxpasso="'+j+'"><i>'+(j+1)+'</i>'+t+'</button>').join("")+'</div>':"";
   const fim=cx.modo==="existente"?"Adicionar ao curso":"Cadastrar";
   m.innerHTML='<div class="aj-jan cx-jan" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><div><h3 id="cxH">'+titulo+'</h3><p>'+sub+'</p></div><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo">'+seg+abas+corpo+'</div>'+
@@ -2398,6 +2400,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
     if(k==="reat"){a.st="ativos";a.val=isoMais(isoHoje(),0,12)}else a.st=k;salvarAlx();desenharAlx();toast(a.nome+": "+AX_ST[a.st][0].toLowerCase()+".");return}
   if(!cx||!b.closest("#cxModal"))return;
   if(b.dataset.cxfechar){document.getElementById("cxModal").hidden=true;cx=null;return}
+  if(b.dataset.cxtrocar){cx.modo="";cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();desenharCx();return}
   if(b.dataset.cxmodo){if(cx.modo!==b.dataset.cxmodo){cx.modo=b.dataset.cxmodo;cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();cx.foco=cx.modo==="novo"?"#cxPn":"#cxBusca"}desenharCx();return}
   if(b.dataset.cxpasso!==undefined){cxIr(+b.dataset.cxpasso);return}
   if(b.dataset.cxprox){cxIr(cx.passo+1);return}
