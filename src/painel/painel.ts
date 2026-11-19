@@ -7218,7 +7218,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     } else if (m.tipo === "codigo") {
       corpo = `
         ${cabModal(IC_EQ.chave, m.titulo || "Código de acesso", m.texto)}
-        <div class="eq-cod"><small>Código</small><b>${h(String(m.codigo || "").split("").join(" "))}</b><button type="button" class="eq-cod-copiar" data-a="copiar-codigo" data-v="${h(m.codigo)}">${IC_EQ.copia}Copiar código</button></div>
+        ${m.msg ? `<dl class="eq-dados">${(JSON.parse(String(m.dados || "[]")) as [string, string][]).map(([k, x]) => `<dt>${h(k)}</dt><dd>${h(x)}</dd>`).join("")}</dl>
+        <div class="eq-msg"><span>Mensagem para enviar ao membro</span><div class="eq-msgt">${h(String(m.msg))}</div><button type="button" class="al-botao-ouro eq-msg-copiar" data-a="copiar-msg-equipe" data-v="${h(String(m.msg))}">${IC_EQ.copia}Copiar mensagem</button></div>` : `<div class="eq-cod"><small>Código</small><b>${h(String(m.codigo || "").split("").join(" "))}</b><button type="button" class="eq-cod-copiar" data-a="copiar-codigo" data-v="${h(m.codigo)}">${IC_EQ.copia}Copiar código</button></div>`}
         <p class="eq-nota">${IC_EQ.info}Este código continua o mesmo enquanto não for alterado.</p>
         <div class="eq-mbts"><span></span><button type="button" class="al-botao-ouro" data-a="fechar">Fechar</button></div>`;
     } else if (m.tipo === "info") {
@@ -8474,6 +8475,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
 
       case "ver-codigo": { const e = pessoa(d.id); ui.modal = { tipo: "codigo", titulo: "Código de acesso", texto: "Este é o código que " + e.nome + " usa para entrar no painel (login " + e.login + ").", codigo: e.codigo ?? "" }; break; }
       case "equipe-nova": if (!euPode("adicionar")) { toast("Acesso bloqueado."); break; } fotoNova = null; ui.modal = { tipo: "equipe-nova" }; break;
+      case "copiar-msg-equipe": { const t = d.v || ""; const ok = () => { el.innerHTML = "✓ Mensagem copiada"; el.classList.add("eq-copiado"); toast("Mensagem copiada."); }; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, () => toast("Selecione a mensagem e copie.")); else toast("Selecione a mensagem e copie."); return; }
       case "copiar-codigo": { const c = d.v || ""; if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(c).then(() => toast("Código copiado."), () => toast("Código: " + c)); else toast("Código: " + c); return; }
       case "eq-filtro": ui.filtroEq = d.v; break;
       case "cfg-aba": if (d.v === "acesso") { if (ui.cfgAba === "acesso") { ui.cfgAba = ui.cfgAntes || "menu"; break; } if (!ui.sujo) { ui.cfgAntes = ui.cfgAba; ui.cfgAba = "acesso"; break; } }
@@ -9459,7 +9461,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
           await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
-          ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Login " + login + ". Passe este código para a pessoa entrar no painel.", codigo: String(r.codigo ?? "") };
+          const cod = String(r.codigo ?? codigo), linkPainel = location.origin + "/admin", funcao = v("papel") || (papel === "dono" ? "Dono" : papel === "admin" ? "Administrador" : "Suporte");
+          const msgEq = "Olá, " + primeiroNome(v("nome")) + "! Você agora faz parte da equipe AIŌN como " + funcao + ".\n\nLink do painel: " + linkPainel + "\nLogin: " + login + "\nCódigo: " + cod;
+          ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Passe estes dados para a pessoa entrar no painel.", codigo: cod, dados: JSON.stringify([["Função", funcao], ["Nome", v("nome")], ["Login", login], ["Código", cod], ["Link do painel", linkPainel]]), msg: msgEq };
         });
         return;
       }

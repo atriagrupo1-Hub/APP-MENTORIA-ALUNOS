@@ -6471,3 +6471,14 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .cadx-data { font-size: 12px; color: #94979E; font-variant-numeric: tabular-nums; }
 .cadx-ja { font-size: 11px; color: #E2C68C; white-space: nowrap; }
 @media (max-width: 560px) { .cadx-row { grid-template-columns: 20px 36px minmax(0, 1fr) auto; } .cadx-data { display: none; } }
+
+/* Equipe: dados e mensagem para enviar ao membro novo */
+.eq-dados { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 4px 0 14px; padding: 14px 18px; border: 1px solid #2B2D32; border-radius: 12px; background: #141518; font-size: 13.5px; }
+.eq-dados dt { color: #94979E; }
+.eq-dados dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.eq-msg { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.eq-msg > span { font-size: 13px; font-weight: 650; }
+.eq-msgt { white-space: pre-wrap; padding: 14px; border-radius: 10px; background: #17181B; border: 1px solid #292A2F; font-size: 13px; line-height: 1.7; }
+.eq-msg-copiar { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; }
+.eq-msg-copiar svg { width: 16px; height: 16px; }
+.eq-copiado { background: #15291d !important; border-color: #2c5a3c !important; color: #7FD49B !important; }
