@@ -855,6 +855,7 @@ label.g{display:block;margin-bottom:14px}label.g span{display:block;font-size:12
     <div class="marca">AIŌN</div>
     <button class="li on" data-ir="lista"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M10 9.5v5l4.5-2.5z"/></svg>Produtos</button>
     <button class="li" data-ir="categorias"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5a1.5 1.5 0 0 1 1.5-1.5h4.5l2 2.5h7.5a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5z"/></svg>Categorias</button>
+    <button class="li" data-ir="alunos"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/></svg>Alunos</button>
   </aside>
   <main>
     <div class="trilha">Workspace / AIŌN / Conteúdo / <span id="trilhaProd" hidden><button type="button" class="tr-link" data-ir="lista">Produtos</button> / </span><b id="trilhaFim">Produtos</b></div>
@@ -1033,6 +1034,7 @@ label.g{display:block;margin-bottom:14px}label.g span{display:block;font-size:12
     <!-- ===== PRODUTO ===== -->
     <section id="v-produto" class="oculto"><div id="ppPag"></div></section>
     <section id="v-categorias" class="oculto"><div id="catPag"></div></section>
+    <section id="v-alunos" class="oculto"><div id="alxPag"></div></section>
   </main>
 </div>
 <script>
@@ -1237,7 +1239,7 @@ document.addEventListener("click",e=>{if(!e.target.closest(".dd"))fecharDD();if(
   if(b.dataset.alsel!==undefined){const i=+b.dataset.alsel;alSel.has(i)?alSel.delete(i):alSel.add(i);cmRedes();return}
   if(b.dataset.alall){const vis=[...document.querySelectorAll("[data-alsel]")].map(x=>+x.dataset.alsel),tudo=vis.every(i=>alSel.has(i));vis.forEach(i=>tudo?alSel.delete(i):alSel.add(i));cmRedes();return}
   if(b.dataset.alm){const k=b.dataset.alm,L=alunosDe[ppNome]||[];if(k!=="limpar"){if(NPE)npAvisar({tipo:"alunos-st",prod:(PRODS.find(x=>x.nome===ppNome)||{}).id||"",st:k,lista:[...alSel].map(i=>L.find(x=>x.i===i)).filter(a=>a&&a.id).map(a=>({id:a.id,de:a.st}))});alSel.forEach(i=>{const a=L.find(x=>x.i===i);if(a)a.st=k});toast(alSel.size+(alSel.size===1?" aluno: ":" alunos: ")+AL_ST[k][0]+".")}alSel.clear();cmRedes();return}
-  if(b.dataset.almenu!==undefined){const i=+b.dataset.almenu,a=(alunosDe[ppNome]||[]).find(x=>x.i===i);menuConteudo(b,[["Ver detalhes",'data-alac="ver:'+i+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alac="'+(a.st==="bloq"?"ativos":"bloq")+':'+i+'"'],[a.st==="desat"?"Reativar":"Desativar",'data-alac="'+(a.st==="desat"?"ativos":"desat")+':'+i+'"'],["Remover do produto",'data-alac="rem:'+i+'"',1]]);return}
+  if(b.dataset.almenu!==undefined){const i=+b.dataset.almenu,a=(alunosDe[ppNome]||[]).find(x=>x.i===i);menuConteudo(b,[["Ver detalhes",'data-alac="ver:'+i+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alac="'+(a.st==="bloq"?"ativos":"bloq")+':'+i+'"'],[a.st==="desat"?"Reativar":"Desativar",'data-alac="'+(a.st==="desat"?"ativos":"desat")+':'+i+'"'],...(ppNome==="__todos__"?[]:[["Remover do produto",'data-alac="rem:'+i+'"',1]])]);return}
   if(b.dataset.alac){fecharMenuC();const[k,i0]=b.dataset.alac.split(":"),L=alunosDe[ppNome]||[],j=L.findIndex(x=>x.i===+i0),a=L[j];if(!a)return;
     if(k==="ver"){toast(a.nome+" · "+a.email+" · "+a.cod+" · progresso "+a.prog+"%");return}
     if(k==="rem"){perguntarApagar("Remover "+a.nome+" deste produto?",()=>{if(NPE&&a.id)npAvisar({tipo:"alunos-st",prod:(PRODS.find(x=>x.nome===ppNome)||{}).id||"",st:"rem",lista:[{id:a.id,de:a.st}]});L.splice(j,1);cmRedes();toast("Aluno removido do produto.")});return}
@@ -1505,7 +1507,7 @@ function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 // Adicionar alunos ao produto: um aluno ou em massa (planilha / colar e-mails)
 const alunosAdd={};let alProd="",alAba="um",alLista=[];
 const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
-function abrirAlunos(nome){alProd=nome;alAba="um";alLista=[];let m=document.getElementById("alModal");if(!m){m=document.createElement("div");m.id="alModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharAlunos()}
+function abrirAlunos(nome){if(typeof abrirCad==="function"){abrirCad(nome==="__todos__"?"":nome);return}alProd=nome;alAba="um";alLista=[];let m=document.getElementById("alModal");if(!m){m=document.createElement("div");m.id="alModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharAlunos()}
 function lerPlanilha(txt){const L=txt.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean);const out=[];L.forEach((l,k)=>{const c=l.split(/[;,\t]/).map(x=>x.trim().replace(/^"|"$/g,""));if(k===0&&c.some(x=>/e-?mail/i.test(x)))return;const em=c.find(x=>x.includes("@"))||"",nm=c.find(x=>x&&!x.includes("@"))||"";out.push({nome:nm,email:em.toLowerCase()})});return out}
 function classificar(L){const ja=new Set([...(alunosAdd[alProd]||[]),...((alunosDe[alProd]||[]).map(a=>a.email))]),vistos=new Set();return L.map(x=>{let st="ok";if(!emailOk(x.email))st="inv";else if(ja.has(x.email))st="ja";else if(vistos.has(x.email))st="rep";vistos.add(x.email);return{...x,st}})}
 function desenharAlunos(){const m=document.getElementById("alModal");if(!m||m.hidden)return;const C=classificar(alLista),ok=C.filter(x=>x.st==="ok").length;
@@ -2215,6 +2217,7 @@ function npIniciar(){
   if(NPD.mods){prodMods=NPD.mods;npBase(prodMods)}PRODS.forEach(x=>{if(x.desc)PP_DESC[x.nome]=x.desc});
   let t=null;try{t=JSON.parse(sessionStorage.getItem("aion-np-tela")||"null")}catch(e){}
   // Volta para a tela em que estava (depois de recarregar), desde que seja desta aba do painel (Produtos ou Categorias)
+  if(NPD.ir==="alunos"){filtrar();setTimeout(()=>ir("alunos"),0)}
   const aba=NPD.ir==="categorias"?"categorias":"lista",ehCat=x=>x.vista==="categorias"||(x.vista==="criar"&&x.ctx&&x.ctx.catCria),daAba=!!t&&(aba==="categorias"?ehCat(t):!ehCat(t));
   if(daAba&&t.vista==="criar"&&t.cr){const c=t.ctx||{};npCursoId=c.npCursoId||"";
     if(c.catCria){catCria=true;catEdit=c.catEdit||"";rascGuard={vista:"categorias"}}else if(c.prodEdit&&PRODS.some(x=>x.nome===c.prodEdit)){prodEdit=c.prodEdit;ppNome=c.prodEdit;rascGuard={vista:"produto",pp:{nome:c.prodEdit,aba:(t.pp&&t.pp.aba)||"sobre"}}}
@@ -2226,7 +2229,7 @@ function npIniciar(){
     if(m.np==="resp"&&m.rid&&npEspera[m.rid]){const f=npEspera[m.rid];delete npEspera[m.rid];f(m);return}
     if(m.np==="resp"){if(m.tipo==="curso"){npCursoId=m.id;const x=document.getElementById("cardRasc");if(x)x.remove()}if(m.tipo==="modulo"&&modulos[m.ix])modulos[m.ix].id=m.id;if(m.tipo==="aula"&&modulos[m.mi]&&modulos[m.mi].aulas[m.ix])modulos[m.mi].aulas[m.ix].id=m.id;if(m.tipo==="cat"&&catMeta[m.nome])catMeta[m.nome].id=m.id;if(m.tipo==="dup"){npPendDup=m.id}return}
     if(m.np==="dados"){npAplicar(m.d);if(npPendDup){const x=PRODS.find(p=>p.id===npPendDup);npPendDup="";if(x){if(vista==="criar")sairFluxo();ppNome=x.nome;ppAba="sobre";views.produto=ppNome;ir("produto");desenharProduto();scrollTo(0,0);toast("Curso duplicado. A cópia começa Não publicada.",true)}}return}
-    if(m.np!=="ir")return;if(m.v==="categorias"){catModo="";catVer="";ir("categorias")}else ir("lista");scrollTo(0,0);guardar()});
+    if(m.np!=="ir")return;if(m.v==="categorias"){catModo="";catVer="";ir("categorias")}else if(m.v==="alunos")ir("alunos");else ir("lista");scrollTo(0,0);guardar()});
   const altura=()=>{try{parent.postMessage({np:"altura",h:document.documentElement.scrollHeight},"*")}catch(e){}};new ResizeObserver(altura).observe(document.body);altura();
 }
 // Produto de exemplo em rascunho quando não há nada salvo (modelo)
@@ -2238,4 +2241,437 @@ function exemploRascunho(){const fm=document.querySelector('[data-pp="1"] .e1-ca
 [["desenharAula","auModal"],["desenharPG","pgModal"],["desenharIA","iaModal"],["desenharGD","gdModal"]].forEach(([f,id])=>{const o=window[f];if(!o)return;window[f]=function(){const j=document.querySelector("#"+id+" .aj-jan"),sc=j?j.scrollTop:0,r=o.apply(this,arguments),nj=document.querySelector("#"+id+" .aj-jan");if(nj)nj.scrollTop=sc;return r}});
 {const _da=window.desenharAula;window.desenharAula=function(){const r=_da.apply(this,arguments);marcarErrosAula();return r}}
 filtrar();
+</script>
+<style>
+/* ===== Alunos (aba lateral) e Adicionar/Cadastrar aluno ===== */
+.alx-pn .alx-barra{margin-top:16px}.alx-pn .alx-tab{background:#141518}.al-k[data-alxtab]{text-align:left;font:inherit;color:inherit;cursor:pointer}
+.alx-fbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 14px}
+.alx-fq{position:relative;display:flex;align-items:center;flex:1 1 320px;min-width:240px;height:44px;padding:0 14px;gap:10px;border:1px solid #4B402B;border-radius:10px;background:#141518}
+.alx-fq .pp-ic{width:18px;height:18px;color:var(--ouro);flex:none}.alx-fq input{flex:1;min-width:0;height:100%;border:0;background:none;color:var(--t1);font:500 13px Manrope;outline:none}.alx-fq input::placeholder{color:var(--ph)}
+.alx-fq:focus-within{border-color:var(--ouro)}
+.alx-f{position:relative;display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:1px solid #6d5a38;border-radius:10px;background:#141518;color:var(--t1);cursor:pointer}
+.alx-f:hover,.alx-f:focus-within{border-color:var(--ouro)}.alx-f.on{background:#2a2518;border-color:var(--ouro)}
+.alx-f .pp-ic{width:16px;height:16px;color:var(--ouro);flex:none}
+.alx-f select{appearance:none;-webkit-appearance:none;border:0;background:none;color:var(--t1);font:600 13px Manrope;padding:0 22px 0 0;height:100%;cursor:pointer;outline:none;max-width:200px}
+.alx-f select option{background:#1B1D21;color:var(--t1)}
+.alx-fs{position:absolute;right:12px;top:50%;width:14px;height:14px;transform:translateY(-50%);fill:none;stroke:var(--t2);stroke-width:2;pointer-events:none}
+.alx-fl{height:44px;padding:0 12px;border:0;background:none;color:var(--ouro);font:600 12.5px Manrope;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:760px){.alx-f{flex:1 1 calc(50% - 5px)}.alx-f select{max-width:none;flex:1}}
+.alx-cab{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.alx-cab h1{margin:2px 0 4px}
+.alx-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.alx-k{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1px solid var(--borda);border-radius:12px;background:var(--sup)}
+.alx-k i{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#2a2518;color:var(--ouro);font-style:normal}
+.alx-k i svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.alx-k.v i{background:#15291d;color:#7FD49B}.alx-k.r i{background:#2c1919;color:#E39B98}.alx-k.c i{background:#1f2024;color:#A5ADB8}
+.alx-k em{display:block;font-style:normal;font-size:12px;color:var(--t2)}.alx-k b{font-size:26px;font-weight:700;line-height:1.1}
+.alx-barra{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.alx-busca{position:relative;flex:1 1 280px;display:flex}.alx-busca svg{position:absolute;left:12px;top:50%;width:16px;height:16px;transform:translateY(-50%);fill:none;stroke:var(--t2);stroke-width:2;pointer-events:none}.alx-busca input{width:100%;padding-left:36px}
+.alx-tab{border:1px solid var(--borda);border-radius:12px;overflow:hidden;background:var(--sup)}
+.alx-l{display:grid;grid-template-columns:minmax(0,2.2fr) 110px minmax(0,2fr) 110px 110px 44px;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--div)}
+.alx-l:first-child{border-top:0}.alx-l.h{font-size:12px;font-weight:650;color:var(--t2);background:#17181B}
+.alx-quem{display:flex;align-items:center;gap:12px;min-width:0}.alx-quem div{min-width:0}.alx-quem b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.alx-quem small{display:block;font-size:11.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alx-av{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#2a2518;color:var(--ouro);font:650 12px Manrope}
+.alx-st{display:inline-flex;align-items:center;gap:5px;width:max-content;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:650}
+.alx-st.ativos{background:#15291d;color:#7FD49B}.alx-st.bloq{background:#2c1919;color:#E39B98}.alx-st.desat{background:#1f2024;color:#A5ADB8}
+.alx-cs{display:flex;flex-wrap:wrap;gap:4px}.alx-cs span{padding:2px 8px;border-radius:6px;background:#22231f;border:1px solid #3e3a30;color:#DFC089;font-size:11px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alx-dt{font-size:12px;color:var(--t2);font-variant-numeric:tabular-nums}
+.alx-vz{padding:34px;text-align:center;color:var(--t2)}
+@media(max-width:900px){.alx-ks{grid-template-columns:repeat(2,minmax(0,1fr))}.alx-l{grid-template-columns:minmax(0,1fr) auto 44px}.alx-l .alx-cs,.alx-l .alx-dt,.alx-l.h{display:none}.alx-l.h{display:none}}
+/* janela */
+.cx-jan{width:860px}
+.cx-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:22px 26px 6px}.cx-cab h3{margin:0;font-size:21px;font-weight:700;letter-spacing:-.3px}.cx-cab p{margin:4px 0 0;font-size:12.5px;color:var(--t2)}
+.cx-corpo{padding:10px 26px 22px}
+.cx-modo{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin:6px 0 16px;border:1px solid var(--borda);border-radius:12px;background:#141518}
+.cx-modo button{height:44px;border:1px solid transparent;border-radius:9px;background:none;color:#A5ADB8;font:650 14px Manrope}
+.cx-modo button:hover{color:#EED9AD;background:rgba(226,198,140,.06)}.cx-modo button.on{background:#2a2518;border-color:#6d5a38;color:var(--ouro)}
+.cx-modo.um{grid-template-columns:minmax(0,1fr) auto;align-items:center}.cx-modo.um span.on{display:grid;place-items:center;height:44px;border:1px solid #6d5a38;border-radius:9px;background:#2a2518;color:var(--ouro);font:650 14px Manrope}
+.cx-modo .cx-trocar{height:44px;padding:0 16px;color:var(--t2);font-size:12.5px;text-decoration:underline;text-underline-offset:3px}
+.cx-abas{display:flex;gap:4px;border-bottom:1px solid var(--div);margin-bottom:18px;overflow-x:auto;scrollbar-width:none}
+.cx-aba{display:inline-flex;align-items:center;gap:8px;padding:11px 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:none;color:var(--t2);font:650 13.5px Manrope;white-space:nowrap}
+.cx-aba i{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1px solid #4a4d55;font:650 11px Manrope;font-style:normal}
+.cx-aba.on{color:var(--t1);border-bottom-color:var(--ouro)}.cx-aba.on i{background:var(--ouro);border-color:var(--ouro);color:#202018}
+.cx-aba.ok i{background:#2c8a4b;border-color:#2c8a4b;color:#fff;font-size:0}.cx-aba.ok i:before{content:"✓";font-size:12px}
+.cx-g{display:grid;grid-template-columns:1fr 1fr;gap:16px 18px}.cx-full{grid-column:1/-1}
+.cx-c{display:flex;flex-direction:column;gap:6px;min-width:0}.cx-c>span{font-size:12.5px;font-weight:650}.cx-c>span i{color:#E39B98;font-style:normal}.cx-c small{font-size:11.5px;color:var(--t2)}
+.cx-c .campo{height:44px;font-size:13px;width:100%}
+.cx-c.erro .campo{border-color:#DFA19F}.cx-err{font-size:11.5px;color:#E39B98}
+.cx-lin{display:flex;gap:8px}.cx-lin .campo{flex:1;min-width:0}
+.cx-chips{display:flex;gap:6px;flex-wrap:wrap}.cx-chip{height:30px;padding:0 12px;border:1px solid var(--bcampo);border-radius:15px;background:var(--campo);color:var(--t1);font:600 12px Manrope}.cx-chip:hover,.cx-chip.on{border-color:var(--ouro);color:var(--ouro)}
+.cx-seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border:1px solid var(--borda);border-radius:10px;background:#141518}.cx-seg button{height:38px;border:1px solid transparent;border-radius:7px;background:none;color:#A5ADB8;font:600 13px Manrope}.cx-seg button.on{background:#2a2518;border-color:#6d5a38;color:var(--ouro)}
+.cx-dica{margin:0 0 14px;font-size:12.5px;color:var(--t2)}
+/* conteúdos: cards grandes */
+.cx-cursos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cx-curso{position:relative;display:grid;grid-template-columns:132px minmax(0,1fr);gap:16px;align-items:center;padding:14px;border:1px solid var(--borda);border-radius:14px;background:#141518;text-align:left;cursor:pointer;min-height:112px}
+.cx-curso:hover{border-color:#4B402B}.cx-curso.on{border-color:var(--ouro);background:#1d1a14;box-shadow:0 0 0 1px rgba(226,198,140,.25)}
+.cx-curso.fixo{cursor:default}
+.cx-capa{position:relative;aspect-ratio:16/9;border-radius:9px;border:1px solid var(--borda);background:linear-gradient(135deg,#3a3122,#16171a) center/cover}
+.cx-capa em{position:absolute;left:6px;bottom:6px;font:600 9px var(--mono);font-style:normal;letter-spacing:.8px;padding:2px 6px;border-radius:4px;background:rgba(17,18,20,.85);color:var(--ouro)}
+.cx-curso b{display:block;font-size:15.5px;font-weight:700;letter-spacing:-.2px;padding-right:30px}.cx-curso small{display:block;margin-top:6px;font-size:12.5px;color:var(--t2)}
+.cx-chk{position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:6px;border:1.5px solid #4a4d55;display:grid;place-items:center}.cx-curso.on .cx-chk{background:var(--ouro);border-color:var(--ouro);color:#202018}.cx-chk svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cx-curso.um{grid-column:1/-1;grid-template-columns:200px minmax(0,1fr);min-height:136px}.cx-curso.um b{font-size:18px}
+/* forma de liberação */
+.cx-fl{border:1px solid var(--borda);border-radius:14px;padding:16px;background:#141518}.cx-fl+.cx-fl{margin-top:12px}
+.cx-flt{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:14px;font-weight:700}.cx-flt span{font:500 10px var(--mono);letter-spacing:.8px;color:var(--ouro);padding:2px 7px;border-radius:4px;background:#2a2518}
+.cx-ops{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}@media(max-width:980px){.cx-ops{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cx-op{position:relative;display:flex;flex-direction:column;gap:4px;padding:14px 14px 14px 42px;border:1px solid var(--borda);border-radius:12px;background:var(--resp);text-align:left}
+.cx-op:before{content:"";position:absolute;left:14px;top:16px;width:16px;height:16px;border-radius:50%;border:2px solid #4a4d55}
+.cx-op.on{border-color:var(--ouro);background:#1d1a14}.cx-op.on:before{border:5px solid var(--ouro)}
+.cx-op b{font-size:13.5px}.cx-op em{font-style:normal;font-size:12px;color:var(--t2);line-height:1.5}
+.cx-cfg{margin-top:14px;padding:14px;border-radius:12px;background:#17181B;border:1px solid var(--div);display:flex;flex-direction:column;gap:12px}
+.cx-frase{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:13.5px}.cx-frase .campo{width:76px;height:38px;text-align:center;font-size:14px;font-weight:700}.cx-frase input[type=date]{width:auto}
+.cx-tg{display:flex;align-items:flex-start;gap:10px;font-size:13px;cursor:pointer}.cx-tg input{margin-top:3px;accent-color:#E2C68C;width:16px;height:16px}.cx-tg small{display:block;color:var(--t2);font-size:11.5px}
+.cx-mods{display:flex;flex-direction:column;gap:6px}
+.cx-mod{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--borda);border-radius:10px;background:#141518;font-size:12.5px}
+.cx-mod b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-mod small{color:var(--t2)}
+.cx-mod .cx-frase{font-size:12.5px}.cx-mod .campo{width:62px;height:34px}
+.cx-mod.rep{opacity:.6}
+.cx-cron{display:flex;flex-direction:column;border:1px solid var(--div);border-radius:10px;overflow:hidden}
+.cx-cron div{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-size:12.5px;border-top:1px solid var(--div)}.cx-cron div:first-child{border-top:0}
+.cx-cron div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-cron div b{flex:none;font-weight:600;color:var(--ouro);font-variant-numeric:tabular-nums}.cx-cron div.man b{color:var(--t2)}
+.cx-cron-t{display:block;margin:16px 0 8px;font-size:12px;font-weight:650;color:var(--t2)}
+.cx-sec{margin-top:14px}
+.cx-libm{height:36px;padding:0 14px;border:1px solid #5a3030;border-radius:9px;background:#2c1919;color:#E39B98;font:650 12.5px Manrope}.cx-libm.on{border-color:#2c5a3c;background:#15291d;color:#7FD49B}
+.cx-qp{min-width:220px}.cx-qp .cx-sel{height:36px;width:100%;font-size:12.5px}.cx-qp .cx-frase{font-size:12.5px}.cx-qp .cx-frase .campo{width:70px;height:34px}.cx-frase .cx-sel{width:auto;height:38px;text-align:left;font-weight:600}.cx-frase .cx-hora{width:auto;height:38px;color-scheme:dark}
+.cx-mlist{display:flex;flex-direction:column;gap:10px}
+.cx-mc{border:1px solid #6d5a38;border-radius:14px;background:#141518;padding:12px 14px}
+.cx-mh,.cx-ar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px}
+.cx-ar{grid-template-columns:auto minmax(0,1fr) auto auto;padding:10px 12px;border:1px solid var(--borda);border-radius:12px;background:#17181B;margin-top:8px}
+.cx-ar.vz{display:block;color:var(--t2);font-size:12.5px}
+.cx-th{position:relative;display:grid;place-items:center;flex:none;width:92px;aspect-ratio:16/9;border-radius:8px;border:1px solid #4B402B;background:radial-gradient(circle at 50% 40%,#3a3122,#141518 80%) center/cover;color:#E2C68C}
+.cx-th.a{width:72px}.cx-th svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;filter:drop-shadow(0 1px 2px #000)}
+.cx-mt{min-width:0;display:flex;flex-direction:column;gap:5px}.cx-mt b{font-size:14.5px;font-weight:650;line-height:1.35;overflow-wrap:anywhere}.cx-ar .cx-mt b{font-size:13.5px}.cx-mt small{font-size:12px;color:var(--t2)}
+.cx-mst{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cx-mst small{font-size:11.5px;color:var(--t2)}.cx-ar .cx-mst{flex-direction:column;align-items:flex-end;gap:4px}
+.cx-q{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:170px}.cx-q em{font-style:normal;font-size:11px;color:var(--t2)}.cx-q b{font-size:14px;font-weight:700}.cx-q small{font-size:11px;color:var(--t2)}
+.cx-q.ok b{color:#7FD49B}.cx-q.ag b{color:var(--ouro)}.cx-q.fora{opacity:.65}
+.cx-qin{display:flex;align-items:center;gap:6px}.cx-dt{height:36px!important;width:150px!important;padding:0 10px;font-size:12.5px!important;color-scheme:dark}
+.cx-desf{width:30px;height:30px;border:1px solid var(--bcampo);border-radius:7px;background:var(--campo);color:var(--ouro);font-size:14px}
+.cx-m1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:10px;background:#1d1a14;border:1px dashed #6d5a38;font-size:12.5px;font-weight:600}
+.cx-seg.mini{display:inline-grid;grid-template-columns:auto auto}.cx-seg.mini button{height:32px;padding:0 12px;font-size:12px}
+.cx-ma{margin-top:10px}.cx-ma summary{display:inline-flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:13px;font-weight:650}.cx-ma summary::-webkit-details-marker{display:none}
+.cx-ma summary svg{width:16px;height:16px;fill:none;stroke:var(--t2);stroke-width:1.6}.cx-ma summary:after{content:"⌃";transform:rotate(180deg);color:var(--t2);font-size:12px}.cx-ma[open] summary:after{transform:none}
+@media(max-width:760px){.cx-mh{grid-template-columns:auto minmax(0,1fr)}.cx-mh .cx-q{grid-column:1/-1}.cx-ar{grid-template-columns:auto minmax(0,1fr)}.cx-ar .cx-mst{align-items:flex-start}.cx-ar .cx-mst,.cx-ar .cx-q{grid-column:1/-1}.cx-th{width:72px}.cx-th.a{width:56px}}
+.cx-lc{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px;border:1px solid var(--borda);border-radius:12px;background:#141518}
+.cx-lc b{display:block;font-size:16px;font-weight:700}.cx-lc small{display:block;margin-top:6px;font-size:12px;color:var(--t2)}.cx-lc small b{display:inline;font-size:12px}.cx-lc .ok{color:#7FD49B}
+.cx-lc-st{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;font-size:11.5px;color:var(--t2)}
+.cx-lms{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:2px}
+.cx-lm{border:1px solid var(--borda);border-radius:12px;background:#141518;overflow:hidden}
+.cx-lm summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px;cursor:pointer;list-style:none}.cx-lm summary::-webkit-details-marker{display:none}
+.cx-lm summary:before{content:"›";font-size:16px;color:var(--t2);transition:transform .15s}.cx-lm[open] summary:before{transform:rotate(90deg)}
+.cx-lm-n{font:600 10px var(--mono);letter-spacing:.8px;color:var(--ouro);padding:2px 7px;border-radius:4px;background:#2a2518;text-transform:uppercase}
+.cx-lm summary b{font-size:13.5px;font-weight:700;min-width:0}.cx-lm summary em{margin-left:auto;font-style:normal;font-size:12px;color:var(--t2)}
+.cx-lm-as{border-top:1px solid var(--div)}
+.cx-la{display:grid;grid-template-columns:minmax(0,1fr) auto 170px;align-items:center;gap:10px;padding:8px 14px 8px 36px;border-top:1px solid var(--div);font-size:12.5px}.cx-la:first-child{border-top:0}
+.cx-la>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-la b{font-weight:600;text-align:right;white-space:nowrap}
+.cx-la.entra b{color:#7FD49B}.cx-la.agend b{color:var(--ouro)}.cx-la.fora{opacity:.6}.cx-la.fora b{color:var(--t2)}
+@media(max-width:640px){.cx-lc{grid-template-columns:96px minmax(0,1fr)}.cx-la{grid-template-columns:minmax(0,1fr) auto;padding-left:14px}.cx-la b{grid-column:1/-1;text-align:left}}
+/* resumo */
+.cx-res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cx-rb{padding:14px 16px;border:1px solid var(--borda);border-radius:12px;background:#141518;min-width:0}
+.cx-rb h4{display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;font-size:13px;font-weight:700}
+.cx-rb h4 button{border:0;background:none;color:var(--ouro);font:600 12px Manrope}
+.cx-rb dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:12.5px}.cx-rb dt{color:var(--t2)}.cx-rb dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.cx-msg{grid-column:1/-1}
+.cx-msgt{white-space:pre-wrap;padding:14px;border-radius:10px;background:#17181B;border:1px solid var(--div);font-size:13px;line-height:1.7}
+.cx-copiar{margin-top:10px}
+.cx-jan.largo{width:1120px}
+.cx-exb{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.cx-exb .alx-busca{flex:1 1 320px}.cx-exb select{width:auto;height:44px;min-width:160px}
+.cx-exf{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;border-bottom:1px solid var(--div)}
+.cx-tabs{display:flex;gap:20px}.cx-tabs button{display:inline-flex;align-items:center;gap:7px;padding:10px 0;margin-bottom:-1px;border:0;border-bottom:2px solid transparent;background:none;color:var(--t2);font:650 14px Manrope}.cx-tabs button.on{color:var(--ouro);border-bottom-color:var(--ouro)}.cx-tabs i{font:500 10.5px var(--mono);font-style:normal;padding:2px 7px;border-radius:5px;background:#292C32;color:#A5ADB8}
+.cx-qtd{font-size:12.5px;color:var(--t2)}.cx-qtd b{color:var(--ouro)}
+.cx-tab{border:1px solid var(--borda);border-radius:12px;overflow:auto;max-height:52vh;background:#141518}
+.cx-tr{display:grid;grid-template-columns:24px minmax(220px,2.2fr) 100px 100px 110px 150px 140px;align-items:center;gap:14px;width:100%;min-width:920px;padding:12px 16px;border:0;border-top:1px solid var(--div);background:none;color:var(--t1);text-align:left;font:500 13px Manrope}
+.cx-tr:first-child{border-top:0}.cx-tr.h{position:sticky;top:0;z-index:1;background:#17181B;font:500 10.5px var(--mono);letter-spacing:.8px;text-transform:uppercase;color:#7F8690;cursor:default}
+.cx-tr:not(.h):not(.ja):hover{background:#1a1b1f}.cx-tr.on{background:#1d1a14}.cx-tr.ja{opacity:.55;cursor:default}
+.cx-tr .cx-chk{position:static;width:20px;height:20px;padding:0;background:none}.cx-tr .cx-chk.on,.cx-tr.h .cx-chk.on{background:var(--ouro);border-color:var(--ouro);color:#202018}
+.cx-tq{display:flex;align-items:center;gap:12px;min-width:0}.cx-tq>span:last-child{min-width:0;display:flex;flex-direction:column}.cx-tq b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-tq small{font-size:11.5px;color:var(--t2)}.cx-tq .cx-ja{font-style:normal}
+.cx-te{display:flex;align-items:center;gap:8px}.cx-te small{font-size:11.5px;color:var(--t2)}
+.cx-eng{padding:3px 8px;border-radius:6px;font-size:11.5px;font-weight:650;border:1px solid}.cx-eng.alto{background:#15291d;border-color:#2c5a3c;color:#7FD49B}.cx-eng.medio{background:#2a2518;border-color:#6d5a38;color:#E2C68C}.cx-eng.baixo{background:#2c1919;border-color:#5a3030;color:#E39B98}
+.cx-ok{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:0}.cx-ok h3{margin:14px 0 4px;font-size:22px;font-weight:700}.cx-ok>p{margin:0 0 20px;color:var(--t2);font-size:13px}.cx-ok .cx-msg{width:100%;text-align:left}
+.cx-okd{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;width:100%;max-width:520px;margin:6px 0 20px;padding:14px 18px;border:1px solid var(--borda);border-radius:12px;background:#141518;text-align:left;font-size:13.5px}.cx-okd dt{color:var(--t2)}.cx-okd dd{margin:0;font-weight:650;overflow-wrap:anywhere}
+.cx-ok-ic{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#15291d;border:1px solid #2c5a3c;color:#7FD49B}.cx-ok-ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.cx-copiar.cx-copiado{background:#15291d;border-color:#2c5a3c;color:#7FD49B}
+#toast{z-index:60}
+/* aluno existente */
+.cx-lst{display:flex;flex-direction:column;gap:6px;max-height:44vh;overflow:auto}
+.cx-row{display:grid;grid-template-columns:22px 38px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--borda);border-radius:12px;background:#141518;text-align:left;width:100%}
+.cx-row:hover{border-color:#4B402B}.cx-row.on{border-color:var(--ouro);background:#1d1a14}.cx-row.ja{opacity:.5;cursor:default}
+.cx-row .cx-chk{position:static}.cx-row.on .cx-chk{background:var(--ouro);border-color:var(--ouro);color:#202018}
+.cx-ja{font-size:11px;color:var(--ouro);white-space:nowrap}
+.cx-pe{display:flex;align-items:center;gap:8px;padding:16px 26px;border-top:1px solid var(--borda);background:#17181B;flex-wrap:wrap}
+@media(max-width:760px){.cx-g,.cx-cursos,.cx-res,.cx-ops{grid-template-columns:1fr}.cx-curso,.cx-curso.um{grid-template-columns:96px minmax(0,1fr)}.cx-cab,.cx-corpo{padding-left:16px;padding-right:16px}.cx-pe{padding:14px 16px}.cx-row{grid-template-columns:22px 38px minmax(0,1fr)}.cx-row .alx-st,.cx-row .alx-dt{display:none}}
+</style>
+<script>
+// ===== Alunos (aba lateral) + Adicionar/Cadastrar aluno em 5 etapas =====
+const ALX_K="aion-modelo-alx",pad2=n=>String(n).padStart(2,"0");
+const isoHoje=()=>{const d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())};
+const isoMais=(iso,dias,meses)=>{const d=new Date((iso||isoHoje())+"T12:00:00");if(meses)d.setMonth(d.getMonth()+meses);if(dias)d.setDate(d.getDate()+dias);return d.getFullYear()+"-"+pad2(d.getMonth()+1)+"-"+pad2(d.getDate())};
+const tiraAc=t=>String(t||"").normalize("NFD").replace(/[̀-ͯ]/g,"");
+const iniAl=n=>{const p=String(n||"?").trim().split(/\s+/);return ((p[0]||"?")[0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase()};
+const celFmt=c=>{const d=String(c||"").replace(/\D/g,"").slice(0,11);return d.length>6?"("+d.slice(0,2)+") "+d.slice(2,7)+"-"+d.slice(7):d.length>2?"("+d.slice(0,2)+") "+d.slice(2):d};
+const AX_ST={ativos:["Ativo","✓"],bloq:["Bloqueado","🔒"],desat:["Desativado","⊘"]};
+const IC_AX={g:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>',ok:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.3l2.3 2.3 4.7-4.9"/>',bl:'<rect x="5.5" y="10.5" width="13" height="9.5" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/>',de:'<circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/>',lupa:'<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',mais:'<path d="M12 5v14M5 12h14"/>',chk:'<path d="M5 12.5l4.5 4.5L19 7.5"/>'};
+const svgAx=k=>'<svg viewBox="0 0 24 24" aria-hidden="true">'+IC_AX[k]+'</svg>';
+let ALX=(()=>{try{const v=JSON.parse(localStorage.getItem(ALX_K)||"null");if(Array.isArray(v)&&v.length)return v}catch(e){}
+  const P=i=>PRODS[i]&&PRODS[i].nome;return [
+  {id:"a1",nome:"Maria Fernanda Souza",login:"maria.s",email:"maria.souza@email.com",cel:"11987654321",cod:"4821",ent:"2026-10-02",val:"2027-10-02",apar:"android",st:"ativos",cursos:[P(0),P(1)].filter(Boolean)},
+  {id:"a2",nome:"João Pedro Lima",login:"joao.l",email:"joao.lima@email.com",cel:"21998761234",cod:"7390",ent:"2026-10-20",val:"2027-10-20",apar:"iphone",st:"ativos",cursos:[P(0)].filter(Boolean)},
+  {id:"a3",nome:"Ana Clara Ribeiro",login:"ana.r",email:"anaclara@email.com",cel:"31991234567",cod:"1584",ent:"2026-11-05",val:"2027-05-05",apar:"android",st:"bloq",cursos:[P(1)].filter(Boolean)},
+  {id:"a4",nome:"Carlos Eduardo Santos",login:"carlos.s",email:"carlos.santos@email.com",cel:"41996543210",cod:"6203",ent:"2026-11-15",val:"2026-11-18",apar:"iphone",st:"desat",cursos:[]}]})();
+// Modalidade, último acesso e engajamento (ilustrativos)
+const ALX_INFO={a1:{tipo:"mentoria",ult:"2026-11-18",eng:72},a2:{tipo:"geral",ult:"2026-11-17",eng:41},a3:{tipo:"mentoria",ult:"2026-11-01",eng:12},a4:{tipo:"geral",ult:"",eng:0}};
+function alxInfo(a){return {tipo:a.tipo||(ALX_INFO[a.id]||{}).tipo||"geral",ult:a.ult!=null?a.ult:(ALX_INFO[a.id]||{}).ult||"",eng:a.eng!=null?a.eng:(ALX_INFO[a.id]||{}).eng||0}}
+function salvarAlx(){if(NPE)return;try{localStorage.setItem(ALX_K,JSON.stringify(ALX))}catch(e){}}
+// No painel: os alunos vêm do Supabase (np-dados); nada fica guardado no navegador
+const npTodos=()=>(NPD.todos||[]).map(a=>({...a,cursos:[...(a.cursos||[])]}));if(NPE)ALX=npTodos();
+
+// ---------- Aba Alunos ----------
+let alxQ="",alxSt="",alxOrd="rec";
+const alxRec=a=>a.ent&&a.ent>=isoMais(isoHoje(),-7);
+let alxTab="todos";
+// A aba Alunos usa exatamente a mesma tela da aba Alunos do produto (cards, abas, busca, status, ordem, filtros, tabela, seleção, páginas)
+const ALX_TODOS="__todos__";let alxIds=null;
+function alxDias(iso){if(!iso)return 999;return Math.max(0,Math.round((new Date(isoHoje()+"T12:00:00")-new Date(iso+"T12:00:00"))/864e5))}
+let alxVis=null;const alxF={per:"",mod:"",cur:"",st:"",eng:""};
+function alxSync(){const L=alunosDe[ALX_TODOS];if(NPE||!L||!alxVis)return;const ficam=new Set(L.map(x=>x.id));let mudou=false;
+  ALX=ALX.filter(a=>{if(alxVis.has(a.id)&&!ficam.has(a.id)){mudou=true;return false}return true});
+  L.forEach(x=>{const a=ALX.find(y=>y.id===x.id);if(a&&a.st!==x.st){a.st=x.st;mudou=true}});if(mudou)salvarAlx()}
+function alxPassa(a){const f=alxInfo(a),q=tiraAc(alxQ.trim().toLowerCase()),dig=alxQ.replace(/\D/g,"");
+  if(q&&!tiraAc([a.nome,a.email,a.login,a.cod].join(" ").toLowerCase()).includes(q)&&!(dig.length>=3&&String(a.cel||"").includes(dig)))return false;
+  if(alxF.per&&alxDias(a.ent)>+alxF.per)return false;if(alxF.mod&&f.tipo!==alxF.mod)return false;if(alxF.cur&&!a.cursos.includes(alxF.cur))return false;if(alxF.st&&a.st!==alxF.st)return false;
+  if(alxF.eng){const k=f.eng>=67?"alto":f.eng>=34?"medio":"baixo";if(k!==alxF.eng)return false}return true}
+function desenharAlx(){const el=document.getElementById("alxPag");if(!el)return;alxSync();
+  const lin=a=>{const f=alxInfo(a);return {i:ALX.indexOf(a)+1,id:a.id,nome:a.nome,email:a.email||a.login,cod:a.cod,st:a.st,prog:f.eng,ult:alxDias(f.ult),cad:alxDias(a.ent)}};
+  const todos=ALX.map(lin),vis=ALX.filter(alxPassa).map(lin);alBusca="";alSt="";alF.st.clear();alF.per=alF.prog=alF.mod="";
+  ppNome=ALX_TODOS;const d={nome:ALX_TODOS,tipo:"",mod:0,aul:0,alu:ALX.length};
+  alunosDe[ALX_TODOS]=todos;let h=ppAlunos(d);alunosDe[ALX_TODOS]=vis;alxVis=new Set(vis.map(x=>x.id));
+  const ini=h.indexOf('<div class="cm-fil">'),fim=h.indexOf('<div class="al-tab">');
+  const sel=(id,ic,rot,ops,v)=>'<label class="alx-f'+(v?" on":"")+'">'+ppI(ic)+'<select id="'+id+'" aria-label="'+rot+'"><option value="">'+rot+'</option>'+ops.map(([k,t])=>'<option value="'+esc(k)+'"'+(v===k?" selected":"")+'>'+esc(t)+'</option>').join("")+'</select><svg class="alx-fs" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></label>';
+  const barra='<div class="alx-fbar"><label class="alx-fq">'+ppI('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>')+'<input type="search" id="alxQ" placeholder="Buscar por nome, e-mail, telefone ou matrícula…" value="'+esc(alxQ)+'" autocomplete="off"></label>'+
+    sel("alxFPer",'<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>',"Período",[["0","Hoje"],["7","Últimos 7 dias"],["30","Últimos 30 dias"],["90","Últimos 90 dias"],["365","Último ano"]],alxF.per)+
+    sel("alxFMod",'<path d="M2.5 9.5L12 5l9.5 4.5L12 14z"/><path d="M6.5 11.5v4.5c3.3 2.2 7.7 2.2 11 0v-4.5"/>',"Modalidade",[["mentoria","Mentoria"],["geral","Geral"]],alxF.mod)+
+    sel("alxFCur",'<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>',"Produto/Curso",PRODS.map(x=>[x.nome,x.nome]),alxF.cur)+
+    sel("alxFSt",'<circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',"Status de acesso",[["ativos","Ativos"],["bloq","Bloqueados"],["desat","Desativados"]],alxF.st)+
+    sel("alxFEng",'<path d="M5 20v-5M10 20v-9M15 20V7M20 20V4"/>',"Engajamento",[["alto","Alto"],["medio","Médio"],["baixo","Baixo"]],alxF.eng)+
+    (Object.values(alxF).some(Boolean)||alxQ?'<button type="button" class="alx-fl" data-alxlimpa="1">Limpar filtros</button>':'')+'</div>';
+  if(ini>=0&&fim>ini)h=h.slice(0,ini)+barra+tabelaAlunos(d);
+  el.innerHTML='<div class="pp-painel alx-pn">'+h+'</div>'}
+{const dp0=desenharProduto;desenharProduto=function(){if(vista==="alunos"){desenharAlx();return}return dp0.apply(this,arguments)}}
+function alxTabela(){const t=document.getElementById("alxTab");if(!t)return;const q=tiraAc(alxQ.trim().toLowerCase());
+  let L=ALX.filter(a=>(!q||tiraAc([a.nome,a.login,a.email,a.cod].join(" ").toLowerCase()).includes(q))&&(alxTab==="todos"?true:alxTab==="rec"?alxRec(a):a.st===alxTab));
+  L.sort((a,b)=>alxOrd==="az"?a.nome.localeCompare(b.nome):alxOrd==="za"?b.nome.localeCompare(a.nome):alxOrd==="ant"?a.ent.localeCompare(b.ent):b.ent.localeCompare(a.ent));
+  t.innerHTML='<div class="alx-l h"><span>Aluno</span><span>Status</span><span>Cursos</span><span>Cadastro</span><span>Acesso até</span><span></span></div>'+(L.map(a=>'<div class="alx-l"><span class="alx-quem"><span class="alx-av">'+esc(iniAl(a.nome))+'</span><div><b>'+esc(a.nome)+'</b><small>'+esc(a.login)+' · '+esc(a.email||celFmt(a.cel))+'</small></div></span><span class="alx-st '+a.st+'">'+AX_ST[a.st][1]+' '+AX_ST[a.st][0]+'</span><span class="alx-cs">'+(a.cursos.length?a.cursos.map(c=>'<span title="'+esc(c)+'">'+esc(c)+'</span>').join(""):'<em class="alx-dt">Nenhum curso</em>')+'</span><span class="alx-dt">'+dataBR(a.ent)+'</span><span class="alx-dt">'+dataBR(a.val)+'</span><button type="button" class="est-icb" data-alxmenu="'+a.id+'" aria-label="Mais opções"><svg viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18.5" r="1.6"/></svg></button></div>').join("")||'<div class="alx-vz">Nenhum aluno encontrado.</div>')}
+document.addEventListener("input",e=>{if(e.target.id==="alxQ"){alxQ=e.target.value;alPag=1;const y=scrollY;desenharAlx();scrollTo(0,y);const n=document.getElementById("alxQ");if(n){n.focus({preventScroll:true});n.setSelectionRange(n.value.length,n.value.length)}}});
+document.addEventListener("change",e=>{const k={alxFPer:"per",alxFMod:"mod",alxFCur:"cur",alxFSt:"st",alxFEng:"eng"}[e.target.id];if(k){alxF[k]=e.target.value;alPag=1;const y=scrollY;desenharAlx();scrollTo(0,y)}});
+
+// ---------- Janela: Adicionar / Cadastrar aluno ----------
+let cx=null;
+function abrirCad(curso){const hj=isoHoje();cx={curso:curso||"",modo:curso?"":"novo",passo:0,pn:"",sn:"",cel:"",email:"",login:"",loginMx:false,cod:String(1000+Math.floor(Math.random()*9000)),ent:hj,val:isoMais(hj,0,12),apar:"",link:"https://souaion.com",cursos:new Set(curso?[curso]:[]),lib:{},sel:new Set(),q:"",erro:"",feitos:new Set()};
+  let m=document.getElementById("cxModal");if(!m){m=document.createElement("div");m.id="cxModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharCx()}
+const cxPassos=()=>cx.modo==="existente"?[["esc","Escolher aluno"],["lib","Forma de liberação"]]:[["dados","Dados do aluno"],["acesso","Acesso"],["cont","Conteúdos liberados"],["lib","Forma de liberação"]];
+const cxLoginAuto=()=>{const a=tiraAc(cx.pn.trim().split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z0-9]/g,""),b=tiraAc(cx.sn.trim()).toLowerCase().replace(/[^a-z]/g,"");return a?a+(b?"."+b[0]:""):""};
+function libDe(nome){return cx.lib[nome]||(cx.lib[nome]={tipo:"",dias:7,prim:true,rep:true,porMod:{},m1:"imed",m1n:7,datas:{},dow:1,hora:"09:00",espera:0,libMods:{0:true},regra:{}})}
+function modsCurso(nome){const d=PRODS.find(x=>x.nome===nome);return d?modsDe(d):[]}
+// Situação de cada aula para o aluno: entra (já liberada), agendada (entra na data de todos) ou fica de fora
+function sitAula(m,a){const sm=stDe(m),sa=stDe(a);if(sm==="pub"&&sa==="pub")return "entra";if((sm==="agend"||sm==="pub")&&(sa==="agend"||sa==="pub")&&(sm==="agend"||sa==="agend"))return "agend";return "fora"}
+// Datas deste aluno: automáticas pela regra escolhida; o que for editado à mão (módulo ou aula) vale por cima
+const REGRAS_P=[["imed","Imediato"],["dias","Após X dias do cadastro"],["data","Data fixa"],["manual","Manual"]];
+function regraP(L,mi){return L.regra[mi]||(L.regra[mi]={t:mi===0?"imed":"manual",n:7*mi,d:""})}
+const DIAS_SEM=["domingo","segunda-feira","terça-feira","quarta-feira","quinta-feira","sexta-feira","sábado"];
+// Próxima data (a partir de iso; "inclui" = pode ser o próprio dia) que cai no dia da semana escolhido
+function proxDow(iso,dow,inclui){let d=inclui?iso:isoMais(iso,1);for(let i=0;i<7;i++){if(new Date(d+"T12:00:00").getDay()===+dow)return d;d=isoMais(d,1)}return d}
+function planoDe(nome){const L=libDe(nome),cad=cx.ent||isoHoje(),D=L.datas||(L.datas={}),tem=k=>Object.prototype.hasOwnProperty.call(D,k);let prev="",prevM="",nAula=0;
+  return modsCurso(nome).map((m,mi)=>{const X=Math.max(1,+(L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias))||1);let dm="";
+    const m1d=L.m1==="dias"?isoMais(cad,+L.m1n||0):cad;
+    if(L.tipo==="imediata")dm=cad;
+    else if(L.tipo==="mod"){dm=tem(mi)?D[mi]:(mi===0?m1d:isoMais(prevM||cad,X));prevM=dm}
+    else if(L.tipo==="conclui")dm=mi===0&&L.prim?cad:"conc";
+    else if(L.tipo==="pormod")dm=tem(mi)?D[mi]:(L.libMods[mi]?cad:"");
+    else if(L.tipo==="data")dm=tem(mi)?D[mi]:"";
+    else if(L.tipo==="pers"){const r=regraP(L,mi);dm=tem(mi)?D[mi]:r.t==="imed"?cad:r.t==="dias"?isoMais(cad,+r.n||0):r.t==="data"?(r.d||""):""}
+    else if(L.tipo==="dias")dm=tem(mi)?D[mi]:(mi===0?(L.m1==="dias"?isoMais(cad,+L.m1n||0):cad):(prev?isoMais(prev,X):cad));
+    else if(L.tipo==="manual")dm=tem(mi)?D[mi]:(mi===0&&L.prim?cad:"");
+    let pri=true;
+    const aulas=(m.aulas||[]).map((a,ai)=>{const sit=sitAula(m,a),k=mi+":"+ai;let q="";
+      if(sit==="entra"){
+        if(L.tipo==="imediata")q=cad;
+        else if(L.tipo==="mod"||L.tipo==="pormod"||L.tipo==="data"||L.tipo==="pers")q=tem(k)?D[k]:dm;
+        else if(L.tipo==="semana"){q=tem(k)?D[k]:(nAula===0?(L.prim?cad:proxDow(cad,L.dow,true)):proxDow(prev,L.dow,false));prev=q}
+        else if(L.tipo==="conclui")q=tem(k)?D[k]:(nAula===0&&L.prim?cad:"conc");
+        else if(L.tipo==="dias"){q=tem(k)?D[k]:(pri?(mi>0||L.prim?dm:isoMais(dm,X)):isoMais(prev,X));if(q)prev=q}
+        else if(L.tipo==="manual")q=tem(k)?D[k]:(pri&&mi===0&&L.prim?cad:(tem(mi)?D[mi]:""));
+        pri=false;nAula++}
+      return {a,ai,sit,q}});
+    if(L.tipo==="semana")dm=tem(mi)?D[mi]:((aulas.find(x=>x.sit==="entra")||{}).q||"");
+    return {m,mi,dm,X,aulas}})}
+function cronDe(nome){const out=[];planoDe(nome).forEach(p=>p.aulas.forEach(x=>{if(x.sit==="entra")out.push({m:idMod(p.m),a:x.a.nome||"Aula "+(x.ai+1),q:x.q});else if(x.sit==="agend")out.push({m:idMod(p.m),a:x.a.nome||"Aula "+(x.ai+1),q:"",ag:x.a.lib||p.m.lib||""})}));return out}
+function libResumo(nome){const L=libDe(nome),C=cronDe(nome).filter(x=>!x.ag&&x.q!=="conc"),n=C.length,com=C.filter(x=>x.q).length;
+  if(L.tipo==="imediata")return "Tudo o que já está liberado, no cadastro ("+n+(n===1?" aula":" aulas")+")";
+  if(L.tipo==="manual")return "Manual: "+com+(com===1?" aula com data":" aulas com data")+(n-com?", "+(n-com)+" você libera depois":"");
+  if(L.tipo==="pormod"){const P=planoDe(nome),li=P.filter(p=>p.dm);return "Por módulo: "+(li.length?li.map(p=>idMod(p.m)).join(", ")+" liberado"+(li.length>1?"s":"")+" no cadastro":"nenhum módulo liberado ainda")+(P.length-li.length?"; "+(P.length-li.length)+" bloqueado"+(P.length-li.length>1?"s":"")+" até você liberar":"")}
+  if(L.tipo==="data"){const P=planoDe(nome),com=P.filter(p=>p.dm);return "Por data fixa: "+(com.map(p=>idMod(p.m)+" em "+dataBR(p.dm)).join(", ")||"nenhuma data escolhida")+(P.length-com.length?" · "+(P.length-com.length)+" sem data":"")}
+  if(L.tipo==="pers")return "Personalizado: "+planoDe(nome).map(p=>{const r=regraP(L,p.mi);return idMod(p.m)+" "+(r.t==="imed"?"imediato":r.t==="dias"?(+r.n||0)+" dias após o cadastro":r.t==="data"?(r.d?"em "+dataBR(r.d):"data a escolher"):"manual")}).join(", ");
+  if(L.tipo==="mod")return "1 módulo inteiro a cada "+(L.rep?L.dias+" dias":"X dias por módulo")+", começando "+(L.m1==="dias"?(+L.m1n||0)+" dias após o cadastro":"no cadastro");
+  if(L.tipo==="semana"){const ult=C.filter(x=>x.q).sort((a,b)=>a.q.localeCompare(b.q)).pop();return "1 aula toda "+DIAS_SEM[+L.dow]+" às "+(L.hora||"09:00")+(L.prim?", a primeira no cadastro":"")+(ult?" · última aula em "+dataBR(ult.q):"")}
+  if(L.tipo==="conclui")return (L.prim?"Primeira aula no cadastro; ":"")+"cada aula abre quando o aluno conclui a anterior"+(+L.espera>0?" + "+L.espera+(+L.espera===1?" dia":" dias")+" de espera":"");
+  if(L.tipo==="dias"){const ult=C.filter(x=>x.q).sort((a,b)=>a.q.localeCompare(b.q)).pop();return "1 aula a cada "+(L.rep?L.dias+" dias":"X dias por módulo")+", começando "+(L.m1==="dias"?(+L.m1n||0)+" dias após o cadastro":"no cadastro")+(ult?" · última aula em "+dataBR(ult.q):"")}return "—"}
+function cxMsg(){const pn=cx.modo==="existente"?"":cx.pn.trim(),cs=[...cx.cursos];
+  if(cx.modo==="existente")return "Olá! O curso "+(cx.curso||cs.join(", "))+" foi liberado para você no aplicativo AIŌN.\n\nEntre com o seu login e código de sempre: "+cx.link;
+  return "Olá, "+(pn||"nome")+"! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: "+cx.link+"\nLogin: "+(cx.login||cxLoginAuto()||"login")+"\nCódigo: "+(cx.cod||"····")+(cx.apar?"\n\nVídeo de como instalar no "+(cx.apar==="iphone"?"iPhone":"Android")+": (link do vídeo)":"")}
+function cxConferir(k){
+  if(k==="dados"){if(!cx.pn.trim())return["pn","Preencha o nome."];if(!cx.sn.trim())return["sn","Preencha o sobrenome."];if(cx.cel.replace(/\D/g,"").length!==11)return["cel","Preencha o celular com DDD: (11) 98765-4321."];if(cx.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cx.email))return["email","Confira o e-mail."]}
+  if(k==="acesso"){const lg=(cx.login||cxLoginAuto());if(ALX.some(a=>a.login===lg))return["login","Já existe um aluno com o login "+lg+"."];if(!/^\d{4}$/.test(cx.cod))return["cod","O código precisa ter 4 números."];if(!cx.ent||!cx.val)return["val","Preencha o cadastro e o acesso até."];if(cx.val<cx.ent)return["val","O acesso até precisa ser depois do cadastro."];if(!cx.apar)return["apar","Escolha o celular do aluno: Android ou iPhone."]}
+  if(k==="cont"&&!cx.cursos.size)return["cont","Marque pelo menos um curso."];
+  if(k==="esc"&&!cx.sel.size)return["esc","Marque pelo menos um aluno."];
+  if(k==="lib"){for(const c of cx.cursos){const L=libDe(c);if(!L.tipo)return["lib","Escolha a forma de liberação de "+c+"."];if((L.tipo==="dias"||L.tipo==="mod")&&!(+L.dias>=1&&+L.dias<=365))return["lib","Os dias precisam ficar entre 1 e 365."];if((L.tipo==="dias"||L.tipo==="mod")&&L.m1==="dias"&&!(+L.m1n>=0&&+L.m1n<=365))return["lib","Os dias após o cadastro precisam ficar entre 0 e 365."];if(L.tipo==="pormod"&&!planoDe(c).some(p=>p.dm))return["lib","Marque pelo menos um módulo para liberar no cadastro."];if(L.tipo==="pers"){const P=planoDe(c);for(const p of P){const r=regraP(L,p.mi);if(r.t==="data"&&!r.d)return["lib","Escolha a data do "+idMod(p.m)+"."];if(r.t==="dias"&&!(+r.n>=0&&+r.n<=365))return["lib","Os dias do "+idMod(p.m)+" precisam ficar entre 0 e 365."]}}if(L.tipo==="conclui"&&!(+L.espera>=0&&+L.espera<=365))return["lib","A espera precisa ficar entre 0 e 365 dias."];if(L.tipo==="semana"&&!/^\d{2}:\d{2}$/.test(L.hora||""))return["lib","Escolha a hora da liberação."]}}
+  return null}
+function cxIr(i){const P=cxPassos();for(let k=0;k<i;k++){const e=cxConferir(P[k][0]);if(e){cx.passo=k;cx.erro=e[1];cx.campo=e[0];desenharCx();return}cx.feitos.add(P[k][0])}cx.passo=i;cx.erro="";cx.campo="";cx.yIni=0;desenharCx();cxGuardar()}
+function cxCampo(id,rot,html,obr,dica){return '<label class="cx-c'+(cx.campo===id?" erro":"")+'"><span>'+rot+(obr?' <i>*</i>':'')+'</span>'+html+(dica?'<small>'+dica+'</small>':'')+'</label>'}
+const cxIn=(id,v,extra)=>'<input class="campo" data-cxf="'+id+'" value="'+esc(v)+'" autocomplete="off" '+(extra||"")+'>';
+function cxCursoCard(nome,fixo){const d=PRODS.find(x=>x.nome===nome)||{tipo:"VÍDEO",mod:0,aul:0},ms=modsCurso(nome),na=ms.reduce((t,m)=>t+(m.aulas||[]).length,0),on=cx.cursos.has(nome);
+  return '<button type="button" class="cx-curso'+(on?" on":"")+(fixo?" fixo um":"")+'" '+(fixo?"":'data-cxcurso="'+esc(nome)+'"')+'><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo)+'</em></span><span><b>'+esc(nome)+'</b><small>'+(ms.length||d.mod||0)+(ms.length===1?" módulo":" módulos")+' · '+(na||d.aul||0)+((na||d.aul)===1?" aula":" aulas")+(d.cat?' · '+esc(d.cat):'')+'</small>'+(fixo?'<small>Liberado para o aluno ao '+(cx.modo==="existente"?"adicionar":"cadastrar")+'.</small>':'')+'</span><span class="cx-chk">'+(on?svgAx("chk"):"")+'</span></button>'}
+function cxCron(nome){const C=cronDe(nome);if(!C.length)return '<p class="cx-dica">Este curso ainda não tem aulas liberadas.</p>';const mostra=C.length>9?[...C.slice(0,7),null,C[C.length-1]]:C;
+  return '<div class="cx-cron">'+mostra.map(x=>x?'<div class="'+(x.q?"":"man")+'"><span>'+esc(x.m+" · "+x.a)+'</span><b>'+(x.ag?"Agendada: "+esc(x.ag):x.q==="conc"?"Ao concluir a anterior":x.q?(x.q===isoHoje()?"Hoje":dataBR(x.q)):"Você libera depois")+'</b></div>':'<div class="man"><span>… mais '+(C.length-8)+' aulas</span><b></b></div>').join("")+'</div>'}
+// Card do curso: capa, formato, nome, status atual e quantas aulas entram
+function cxLiberado(nome){const d=PRODS.find(x=>x.nome===nome)||{tipo:"",pub:"",libSt:""};let ent=0,ag=0,fo=0;modsCurso(nome).forEach(m=>(m.aulas||[]).forEach(a=>{const s=sitAula(m,a);s==="entra"?ent++:s==="agend"?ag++:fo++}));
+  const kPub=d.pub==="Não publicado"?"nao":"pub",kLib={Liberado:"pub",Bloqueado:"blo",Agendado:"agend",Oculto:"ocu"}[d.libSt]||"pub",pill=(k,t)=>'<span class="mc-st mc-'+k+'"><i></i>'+t+'</span>';
+  return '<div class="cx-lc"><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo||"CURSO")+'</em></span><div><b>'+esc(nome)+'</b><span class="cx-lc-st"><span>Publicação</span>'+pill(kPub,kPub==="pub"?"Publicado":"Não publicado")+'<span>Liberação</span>'+pill(kLib,d.libSt||"Liberado")+'</span><small><b class="ok">'+ent+(ent===1?" aula liberada":" aulas liberadas")+' para os alunos</b>'+(ag?' · '+ag+(ag===1?" agendada":" agendadas"):'')+(fo?' · '+fo+(fo===1?" fica de fora":" ficam de fora")+' (não publicada, oculta ou bloqueada)':'')+'</small></div></div>'}
+const TIPO_TX={video:"Vídeo",audio:"Áudio",ebook:"E-book",pdf:"PDF"};
+// Módulos e aulas no mesmo modelo da lista de conteúdo, com a data deste aluno
+function cxModsLib(nome){const L=libDe(nome),P=planoDe(nome),ed=["dias","manual","mod","semana","data","pers"].includes(L.tipo),c=esc(nome);
+  const th=(src,cl)=>'<span class="cx-th '+cl+'"'+(typeof src==="string"&&src?' style="background-image:url(\''+esc(src)+'\')"':'')+'>'+(cl==="a"?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M10.5 9v6l4.5-3z"/></svg>':'')+'</span>';
+  const quando=(q,key,sit,glob)=>{if(sit==="fora")return '<span class="cx-q fora"><em>Este aluno</em><b>Fica de fora</b></span>';if(sit==="agend")return '<span class="cx-q ag"><em>Agendado para todos</em><b>'+esc(glob||"Data marcada")+'</b></span>';
+    if(L.tipo==="pormod"&&key.includes(":"))return '<span class="cx-q '+(q?"ok":"fora")+'"><em>Este aluno</em><b>'+(q?(q===isoHoje()?"Hoje":dataBR(q)):"Bloqueado")+'</b></span>';
+    if(q==="conc")return '<span class="cx-q ag"><em>Este aluno</em><b>'+(key.includes(":")?"Ao concluir a anterior":"Ao concluir o módulo anterior")+'</b>'+(+L.espera>0?'<small>+ '+L.espera+(+L.espera===1?" dia":" dias")+' de espera</small>':'')+'</span>';
+    if(!ed)return '<span class="cx-q ok"><em>Este aluno</em><b>'+(q===isoHoje()?"Hoje":dataBR(q))+'</b></span>';
+    const mx=Object.prototype.hasOwnProperty.call(L.datas,key);
+    return '<span class="cx-q"><em>Este aluno'+(mx?' · editado':'')+'</em><span class="cx-qin"><input class="campo cx-dt" type="date" data-cxd="'+key+'" data-c="'+c+'" value="'+esc(q||"")+'" aria-label="Data de liberação para este aluno">'+(mx?'<button type="button" class="cx-desf" data-cxdesf="'+key+'" data-c="'+c+'" title="Voltar ao automático" aria-label="Voltar ao automático">↺</button>':'')+'</span>'+(!q?'<small>Você libera depois</small>':'')+'</span>'};
+  return '<div class="cx-mlist">'+P.map(p=>{const m=p.m,n=(m.aulas||[]).length,sm=stDe(m),sitM=sm==="pub"?"entra":sm==="agend"?"agend":"fora";
+    const m1=(L.tipo==="dias"||L.tipo==="mod")&&p.mi===0?'<div class="cx-m1"><span>Liberar o '+esc(idMod(m))+'</span><div class="cx-seg mini"><button type="button" class="'+(L.m1!=="dias"?"on":"")+'" data-cxm1="imed" data-c="'+c+'">Imediato</button><button type="button" class="'+(L.m1==="dias"?"on":"")+'" data-cxm1="dias" data-c="'+c+'">Depois de X dias do cadastro</button></div>'+(L.m1==="dias"?'<span class="cx-frase"><input class="campo" type="number" min="0" max="365" data-cxl="m1n" data-c="'+c+'" value="'+esc(String(L.m1n))+'"> dias após o cadastro</span>':'')+'</div>':
+      (L.tipo==="dias"||L.tipo==="mod")&&!L.rep?'<div class="cx-m1"><span>'+(L.tipo==="mod"?"Este módulo chega":"Neste módulo: 1 aula a cada")+'</span><span class="cx-frase"><input class="campo" type="number" min="1" max="365" data-cxl="mod" data-mi="'+p.mi+'" data-c="'+c+'" value="'+esc(String(L.porMod[p.mi]!=null?L.porMod[p.mi]:L.dias))+'"> dias'+(L.tipo==="mod"?" depois do módulo anterior":"")+'</span></div>':'';
+    let qm=quando(p.dm,String(p.mi),sitM,m.lib);
+    if(sitM==="entra"&&L.tipo==="pormod")qm='<span class="cx-q"><em>Este aluno</em><button type="button" class="cx-libm'+(L.libMods[p.mi]?" on":"")+'" data-cxpm="'+p.mi+'" data-c="'+c+'">'+(L.libMods[p.mi]?"✓ Liberado no cadastro":"🔒 Bloqueado")+'</button><small>'+(L.libMods[p.mi]?"Clique para bloquear":"Clique para liberar no cadastro")+'</small></span>';
+    if(sitM==="entra"&&L.tipo==="pers"){const r=regraP(L,p.mi);qm='<span class="cx-q cx-qp"><em>Regra deste módulo</em><select class="campo cx-sel" data-cxpr="'+p.mi+'" data-c="'+c+'">'+REGRAS_P.map(([v,t])=>'<option value="'+v+'"'+(r.t===v?" selected":"")+'>'+t+'</option>').join("")+'</select>'+(r.t==="dias"?'<span class="cx-frase"><input class="campo" type="number" min="0" max="365" data-cxprn="'+p.mi+'" data-c="'+c+'" value="'+esc(String(r.n))+'"> dias</span>':r.t==="data"?'<input class="campo cx-dt" type="date" data-cxprd="'+p.mi+'" data-c="'+c+'" value="'+esc(r.d||"")+'">':'')+'<small>'+(p.dm?"Este aluno: "+(p.dm===isoHoje()?"hoje":dataBR(p.dm)):r.t==="manual"?"Você libera depois":"Escolha a data")+'</small></span>'}
+    return '<div class="cx-mc"><div class="cx-mh">'+th(m.capa,"m")+'<div class="cx-mt"><b>'+esc(idMod(m)+" — "+(m.nome||""))+'</b><span class="cx-mst">'+seloC(m)+'<small>Para todos: '+(m.lib?"liberado em "+esc(m.lib):sm==="agend"?"agendado":"—")+'</small></span></div>'+qm+'</div>'+m1+
+      '<details class="cx-ma"'+(L.tipo==="manual"||p.mi===0?" open":"")+'><summary><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M10.5 9v6l4.5-3z"/></svg>Aulas do módulo ('+n+')</summary>'+(p.aulas.map(x=>'<div class="cx-ar">'+th(x.a.capa,"a")+'<div class="cx-mt"><b>'+esc((x.a.rot||"Aula")+" "+(x.ai+1)+" — "+(x.a.nome||""))+'</b><small>'+(TIPO_TX[x.a.t]||"Vídeo")+(x.a.dur?' · '+x.a.dur+' min':'')+'</small></div><span class="cx-mst">'+seloC(x.a)+'<small>Para todos: '+(x.a.lib?esc(x.a.lib):"—")+'</small></span>'+quando(x.q,p.mi+":"+x.ai,x.sit,x.a.lib)+'</div>').join("")||'<div class="cx-ar vz">Sem aulas</div>')+'</details></div>'}).join("")+'</div>'}
+function cxLib(nome){const L=libDe(nome),c=esc(nome);
+  const op=(v,t,ds)=>'<button type="button" class="cx-op'+(L.tipo===v?" on":"")+'" data-cxlib="'+c+'" data-cxv="'+v+'"><b>'+t+'</b><em>'+ds+'</em></button>';
+  let cfg="";
+  if(L.tipo==="imediata")cfg='<p class="cx-dica" style="margin:0">O aluno recebe no dia do cadastro tudo o que já está liberado para os alunos. O que está agendado chega na data; o que não está publicado fica de fora.</p>';
+  if(L.tipo==="dias")cfg='<div class="cx-frase">Liberar 1 aula a cada <input class="campo" type="number" min="1" max="365" data-cxl="dias" data-c="'+c+'" value="'+esc(String(L.dias))+'"> dias</div>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula no dia do início<small>Desmarcado: a primeira aula chega depois do primeiro intervalo.</small></span></label>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="rep" data-c="'+c+'"'+(L.rep?" checked":"")+'><span>Usar a regra do primeiro módulo em todos os módulos<small>As datas de cada módulo e de cada aula aparecem abaixo e dá para editar qualquer uma.</small></span></label>';
+  if(L.tipo==="pormod")cfg='<p class="cx-dica" style="margin:0">Escolha abaixo quais módulos o aluno acessa já no cadastro. Os outros ficam bloqueados; depois você libera cada um, quando quiser, na ficha do aluno.</p>';
+  if(L.tipo==="data")cfg='<p class="cx-dica" style="margin:0">Escolha abaixo a data de cada módulo (ex.: Módulo 1 em 19/11, Módulo 2 em 25/11, Módulo 3 em 15/12). As aulas acompanham a data do módulo, e dá para mudar a de uma aula. Sem data, o módulo fica bloqueado.</p>';
+  if(L.tipo==="pers")cfg='<p class="cx-dica" style="margin:0">Combine regras diferentes: em cada módulo, escolha Imediato, Após X dias do cadastro, Data fixa ou Manual (ex.: Módulo 1 imediato, Módulo 2 após 7 dias, Módulo 3 numa data, Módulo 4 só manual).</p>';
+  if(L.tipo==="mod")cfg='<div class="cx-frase">Liberar 1 módulo inteiro a cada <input class="campo" type="number" min="1" max="365" data-cxl="dias" data-c="'+c+'" value="'+esc(String(L.dias))+'"> dias</div>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="rep" data-c="'+c+'"'+(L.rep?" checked":"")+'><span>Usar o mesmo intervalo em todos os módulos<small>O módulo vem inteiro, com todas as aulas liberadas. Dá para editar a data de cada módulo e de cada aula abaixo.</small></span></label>';
+  if(L.tipo==="semana")cfg='<div class="cx-frase">Liberar 1 aula toda <select class="campo cx-sel" data-cxl="dow" data-c="'+c+'">'+DIAS_SEM.map((d,i)=>'<option value="'+i+'"'+(+L.dow===i?" selected":"")+'>'+d+'</option>').join("")+'</select> às <input class="campo cx-hora" type="time" data-cxl="hora" data-c="'+c+'" value="'+esc(L.hora||"09:00")+'"></div>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula no dia do cadastro<small>Desmarcado: a primeira aula chega na primeira '+DIAS_SEM[+L.dow]+' a partir do cadastro.</small></span></label>';
+  if(L.tipo==="conclui")cfg='<div class="cx-frase">Quando o aluno conclui uma aula, a próxima abre <input class="campo" type="number" min="0" max="365" data-cxl="espera" data-c="'+c+'" value="'+esc(String(L.espera))+'"> dias depois <small style="color:var(--t2)">(0 = na hora)</small></div>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula agora<small>As outras seguem o ritmo do aluno: só abrem depois que ele conclui a anterior.</small></span></label>';
+  if(L.tipo==="manual")cfg='<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula agora<small>Escolha abaixo o dia de cada módulo e de cada aula para este aluno. Sem data, você libera depois.</small></span></label>';
+  return '<div class="cx-fl"><div class="cx-ops">'+op("imediata","Tudo liberado agora","O aluno recebe agora tudo o que já está liberado no curso.")+op("dias","Uma aula a cada X dias","As aulas chegam uma por vez; dá para editar a data de cada uma.")+op("manual","Manual","Você escolhe o dia de cada módulo e de cada aula.")+op("pormod","Por módulo","Você escolhe quais módulos o aluno acessa agora; os outros ficam bloqueados.")+op("mod","Módulo inteiro a cada X dias","O módulo chega completo; o próximo vem X dias depois, contando do cadastro.")+op("data","Por data fixa","Você escolhe a data de cada módulo, sem intervalo regular.")+op("semana","Dia fixo da semana","Uma aula por semana, no dia e na hora que você escolher.")+op("conclui","Ao concluir a anterior","A próxima aula abre quando o aluno termina a anterior.")+op("pers","Personalizado","Uma regra diferente em cada módulo: imediato, após X dias, data fixa ou manual.")+'</div>'+(cfg?'<div class="cx-cfg">'+cfg+'</div>':'')+
+    '<div class="cx-sec">'+cxLiberado(nome)+(L.tipo?'<span class="cx-cron-t">Módulos e aulas</span>'+cxModsLib(nome):'')+'</div></div>'}
+function cxGuardar(){try{if(!cx){sessionStorage.removeItem("aion-modelo-cx");localStorage.removeItem("aion-modelo-cx");return}const j=document.querySelector("#cxModal .aj-jan"),o=JSON.stringify({...cx,cursos:[...cx.cursos],sel:[...cx.sel],feitos:[...cx.feitos],foco:"",y:j?j.scrollTop:0,t:Date.now()});sessionStorage.setItem("aion-modelo-cx",o);localStorage.setItem("aion-modelo-cx",o)}catch(e){}}
+function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden||!cx)return;const jv=m.querySelector(".aj-jan"),yv=cx.yIni!=null?cx.yIni:jv?jv.scrollTop:0;cx.yIni=null;
+  if(cx.fim){m.innerHTML='<div class="aj-jan cx-jan" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><span></span><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo cx-ok"><span class="cx-ok-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><h3 id="cxH">'+esc(cx.fim.titulo)+'</h3>'+(cx.fim.dados?'<dl class="cx-okd">'+cx.fim.dados.map(([k,v])=>'<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>').join("")+'</dl>':'<p>'+esc(cx.fim.sub||"")+'</p>')+
+    '<div class="cx-rb cx-msg"><h4>Mensagem para enviar ao aluno</h4><div class="cx-msgt" id="cxMsg">'+esc(cx.fim.msg)+'</div><button type="button" class="bt ouro cx-copiar" data-cxcopiar="1">Copiar mensagem</button></div></div>'+
+    '<div class="cx-pe"><span style="flex:1"></span><button type="button" class="bt ouro" data-cxfechar="1">Concluir</button></div></div>';cxGuardar();return}const P=cxPassos(),i=Math.min(cx.passo,P.length-1),k=P[i][0],ultimo=i===P.length-1,ctx=!!cx.curso;
+  let corpo="";
+  if(ctx&&!cx.modo)corpo='<p class="cx-dica">Aluno existente: escolha na lista de quem já tem cadastro. Novo aluno: preencha os dados e o acesso; o curso já vem marcado.</p>';
+  else if(k==="dados")corpo='<div class="cx-g">'+cxCampo("pn","Nome",cxIn("pn",cx.pn,'id="cxPn"'),1)+cxCampo("sn","Sobrenome",cxIn("sn",cx.sn),1)+cxCampo("cel","Celular (WhatsApp)",cxIn("cel",celFmt(cx.cel),'inputmode="numeric" placeholder="(11) 98765-4321"'),1,"Usado para enviar o acesso.")+cxCampo("email","E-mail",cxIn("email",cx.email,'type="email" placeholder="opcional"'),0)+'</div>';
+  else if(k==="acesso")corpo='<div class="cx-g">'+cxCampo("login","Login",cxIn("login",cx.login||cxLoginAuto(),'placeholder="gerado pelo nome"'),0,"Automático: nome + inicial do sobrenome (ex.: maria.s). Pode editar.")+
+    cxCampo("cod","Código de acesso",'<span class="cx-lin">'+cxIn("cod",cx.cod,'inputmode="numeric" maxlength="4"')+'<button type="button" class="bt" data-cxcod="1">Gerar outro</button></span>',1)+
+    cxCampo("ent","Cadastro",cxIn("ent",cx.ent,'type="date"'),1)+cxCampo("val","Acesso até",cxIn("val",cx.val,'type="date"')+'<span class="cx-chips">'+[[6,"6 meses"],[12,"1 ano"],[24,"2 anos"]].map(([n,t])=>'<button type="button" class="cx-chip'+(cx.val===isoMais(cx.ent,0,n)?" on":"")+'" data-cxval="'+n+'">'+t+'</button>').join("")+'</span>',1)+
+    cxCampo("link","Link do aplicativo",cxIn("link",cx.link,'type="url"'),0,"Vem do link geral. Pode trocar só para este aluno.")+
+    '<div class="cx-c'+(cx.campo==="apar"?" erro":"")+'"><span>Celular do aluno <i>*</i></span><div class="cx-seg"><button type="button" class="'+(cx.apar==="android"?"on":"")+'" data-cxapar="android">Android</button><button type="button" class="'+(cx.apar==="iphone"?"on":"")+'" data-cxapar="iphone">iPhone</button></div><small>Define qual vídeo de instalação vai junto com o acesso.</small></div></div>';
+  else if(k==="cont")corpo=ctx?'<p class="cx-dica">Este é o curso que o aluno recebe. Módulos e aulas avulsas: depois, na ficha do aluno.</p><div class="cx-cursos">'+cxCursoCard(cx.curso,true)+'</div>':'<p class="cx-dica">Marque os cursos que o aluno recebe agora.</p><div class="cx-cursos">'+(PRODS.map(d=>cxCursoCard(d.nome,false)).join("")||'<p class="cx-dica">Nenhum curso criado.</p>')+'</div>';
+  else if(k==="esc"){const q=tiraAc(cx.q.trim().toLowerCase()),tf=cx.tipoF||"",base=ALX.filter(a=>!q||tiraAc([a.nome,a.login,a.email,a.cod,a.cel].join(" ").toLowerCase()).includes(q)),nT=t=>base.filter(a=>!t||alxInfo(a).tipo===t).length;
+    const L=base.filter(a=>!tf||alxInfo(a).tipo===tf).sort((a,b)=>cx.ord==="ant"?a.ent.localeCompare(b.ent):b.ent.localeCompare(a.ent)),livres=L.filter(a=>!a.cursos.includes(cx.curso)),todos=livres.length&&livres.every(a=>cx.sel.has(a.id));
+    const eng=v=>{const k=v>=67?["Alto","alto"]:v>=34?["Médio","medio"]:["Baixo","baixo"];return '<span class="cx-eng '+k[1]+'">• '+k[0]+'</span><small>'+v+'/100</small>'};
+    corpo='<div class="cx-exb"><label class="alx-busca">'+svgAx("lupa")+'<input class="campo" id="cxBusca" type="search" placeholder="Buscar por nome, login, e-mail, celular ou código" value="'+esc(cx.q)+'" autocomplete="off"></label><select class="campo" id="cxOrd" aria-label="Ordem"><option value="rec"'+(cx.ord!=="ant"?" selected":"")+'>Mais recentes</option><option value="ant"'+(cx.ord==="ant"?" selected":"")+'>Mais antigos</option></select></div>'+
+     '<div class="cx-exf"><div class="cx-tabs">'+[["","Todos"],["mentoria","Mentoria"],["geral","Geral"]].map(([v,t])=>'<button type="button" class="'+(tf===v?"on":"")+'" data-cxtf="'+v+'">'+t+'<i>'+nT(v)+'</i></button>').join("")+'</div><span class="cx-qtd">'+L.length+(L.length===1?" aluno":" alunos")+(cx.sel.size?' · <b>'+cx.sel.size+(cx.sel.size===1?" marcado":" marcados")+'</b>':'')+'</span></div>'+
+     '<div class="cx-tab"><div class="cx-tr h"><button type="button" class="cx-chk'+(todos?" on":"")+'" data-cxtodos="1" aria-label="Selecionar todos" title="Selecionar todos"'+(livres.length?"":" disabled")+'>'+(todos?svgAx("chk"):"")+'</button><span>Aluno</span><span>Modalidade</span><span>Produtos</span><span>Último acesso</span><span>Engajamento</span><span>WhatsApp</span></div>'+
+     (L.map(a=>{const ja=a.cursos.includes(cx.curso),on=cx.sel.has(a.id),f=alxInfo(a);return '<button type="button" class="cx-tr'+(on?" on":"")+(ja?" ja":"")+'" '+(ja?"disabled":'data-cxsel="'+a.id+'"')+'><span class="cx-chk'+(on?" on":"")+'">'+(on?svgAx("chk"):"")+'</span><span class="cx-tq"><span class="alx-av">'+esc(iniAl(a.nome))+'</span><span><b>'+esc(a.nome)+'</b><small>'+(ja?'<em class="cx-ja">Já está no curso</em>':'Cadastrado em '+dataBR(a.ent))+'</small></span></span><span>'+(f.tipo==="mentoria"?"Mentoria":"Geral")+'</span><span>'+a.cursos.length+(a.cursos.length===1?" produto":" produtos")+'</span><span>'+(f.ult?dataBR(f.ult):"—")+'</span><span class="cx-te">'+eng(f.eng)+'</span><span>'+esc(celFmt(a.cel)||"—")+'</span></button>'}).join("")||'<p class="cx-dica" style="padding:16px">Nenhum aluno encontrado.</p>')+'</div>'}
+  else if(k==="lib")corpo='<p class="cx-dica">Escolha como '+(cx.modo==="existente"?"os alunos recebem":"o aluno recebe")+' as aulas. Dá para configurar no primeiro módulo e usar a mesma regra no curso inteiro.</p>'+[...cx.cursos].map(cxLib).join("");
+  else if(k==="res"){const ed=(p,t)=>'<button type="button" data-cxpasso="'+P.findIndex(x=>x[0]===p)+'">'+(t||"Editar")+'</button>';
+    const al=cx.modo==="existente"?'<div class="cx-rb"><h4>Alunos '+ed("esc","Trocar")+'</h4><dl>'+[...cx.sel].map(id=>{const a=ALX.find(x=>x.id===id)||{};return '<dt>'+esc(a.login||"")+'</dt><dd>'+esc(a.nome||"")+'</dd>'}).join("")+'</dl></div>'
+      :'<div class="cx-rb"><h4>Dados do aluno '+ed("dados")+'</h4><dl><dt>Nome</dt><dd>'+esc((cx.pn+" "+cx.sn).trim())+'</dd><dt>Celular</dt><dd>'+esc(celFmt(cx.cel))+'</dd><dt>E-mail</dt><dd>'+esc(cx.email||"—")+'</dd></dl></div><div class="cx-rb"><h4>Acesso '+ed("acesso")+'</h4><dl><dt>Login</dt><dd>'+esc(cx.login||cxLoginAuto())+'</dd><dt>Código</dt><dd>'+esc(cx.cod)+'</dd><dt>Cadastro</dt><dd>'+dataBR(cx.ent)+'</dd><dt>Acesso até</dt><dd>'+dataBR(cx.val)+'</dd><dt>Celular</dt><dd>'+(cx.apar==="iphone"?"iPhone":"Android")+'</dd></dl></div>';
+    corpo='<div class="cx-res">'+al+'<div class="cx-rb"><h4>Conteúdos liberados '+(ctx?"":ed("cont"))+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>Curso</dt><dd>'+esc(c)+'</dd>').join("")+'</dl></div><div class="cx-rb"><h4>Forma de liberação '+ed("lib")+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>'+esc(c)+'</dt><dd>'+esc(libResumo(c))+'</dd>').join("")+'</dl></div>'+[...cx.cursos].map(c=>'<div class="cx-rb cx-msg"><h4>Como o aluno vai receber · '+esc(c)+' '+ed("lib","Editar datas")+'</h4>'+cxCron(c)+'</div>').join("")+
+      '<div class="cx-rb cx-msg"><h4>Mensagem de acesso</h4><div class="cx-msgt" id="cxMsg">'+esc(cxMsg())+'</div><button type="button" class="bt ouro cx-copiar" data-cxcopiar="1">Copiar mensagem</button></div></div>'}
+  const titulo=ctx?"Adicionar aluno":"Cadastrar aluno",sub=ctx?esc(cx.curso)+" · "+(cx.modo?"preencha por partes. Nada é salvo até clicar em "+(cx.modo==="existente"?"Adicionar":"Cadastrar")+".":"escolha se é um aluno que já tem cadastro ou um aluno novo."):"Preencha por partes. Nada é salvo até clicar em Cadastrar.";
+  const seg=ctx&&cx.modo?'<div class="cx-modo um"><span class="on">'+(cx.modo==="novo"?"Novo aluno":"Aluno existente")+'</span><button type="button" class="cx-trocar" data-cxtrocar="1">Trocar</button></div>':ctx?'<div class="cx-modo"><button type="button" class="'+(cx.modo==="existente"?"on":"")+'" data-cxmodo="existente">Aluno existente</button><button type="button" class="'+(cx.modo==="novo"?"on":"")+'" data-cxmodo="novo">Novo aluno</button></div>':"";
+  const abas=cx.modo?'<div class="cx-abas" role="tablist">'+P.map(([kk,t],j)=>'<button type="button" role="tab" class="cx-aba'+(j===i?" on":cx.feitos.has(kk)&&j<i?" ok":"")+'" data-cxpasso="'+j+'"><i>'+(j+1)+'</i>'+t+'</button>').join("")+'</div>':"";
+  const fim=cx.modo==="existente"?"Adicionar ao curso":"Cadastrar aluno";
+  m.innerHTML='<div class="aj-jan cx-jan'+(k==="esc"&&cx.modo==="existente"?" largo":"")+'" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><div><h3 id="cxH">'+titulo+'</h3><p>'+sub+'</p></div><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo">'+seg+abas+corpo+'</div>'+
+   '<div class="cx-pe">'+(cx.modo&&i>0?'<button type="button" class="bt" data-cxvoltar="1">← Voltar</button>':'')+'<button type="button" class="bt" data-cxfechar="1">Cancelar</button><span style="flex:1"></span>'+(cx.erro?'<span class="aviso-esc" role="alert">'+esc(cx.erro)+'</span>':'')+
+   (cx.modo?(ultimo?'<button type="button" class="bt ouro" data-cxfim="1">'+fim+'</button>':'<button type="button" class="bt ouro" data-cxprox="1">Próximo: '+P[i+1][1]+' →</button>'):'')+'</div></div>';
+  const jn=m.querySelector(".aj-jan");if(jn)jn.scrollTop=yv;cxGuardar();
+  if(cx.foco){const f=m.querySelector(cx.foco);if(f){f.focus();try{const n=f.value.length;f.setSelectionRange&&f.type!=="date"&&f.type!=="number"&&f.setSelectionRange(n,n)}catch(e){}}cx.foco=""}}
+function cxFinal(){const P=cxPassos();for(let j=0;j<P.length;j++){const e=cxConferir(P[j][0]);if(e){cx.passo=j;cx.erro=e[1];cx.campo=e[0];desenharCx();return}}
+  if(NPE){cxEnviar();return}
+  const msg=cxMsg(),ex=cx.modo==="existente";carregando(true,ex?"Adicionando ao curso…":"Cadastrando o aluno…");
+  setTimeout(()=>{carregando(false);cxSalvar(msg,ex)},1300)}
+// Plano de cada curso para o painel: curso inteiro (tudo agora) ou aula a aula com a data deste aluno
+function cxPlano(){return [...cx.cursos].map(nome=>{const d=PRODS.find(x=>x.nome===nome)||{},L=libDe(nome),aulas=[];
+  if(L.tipo!=="imediata")planoDe(nome).forEach(p=>p.aulas.forEach(x=>{if(!x.a.id)return;if(x.sit==="agend")aulas.push({id:x.a.id,data:null});else if(x.sit==="entra"&&x.q&&x.q!=="conc")aulas.push({id:x.a.id,data:x.q})}));
+  return {id:d.id||"",nome,tipo:L.tipo,inteiro:L.tipo==="imediata",aulas,regra:libResumo(nome)}})}
+async function cxEnviar(){const ex=cx.modo==="existente";carregando(true,ex?"Adicionando ao curso…":"Cadastrando o aluno…");
+  try{const r=await npPedir({tipo:"aluno-salvar",modo:cx.modo,alunos:ex?[...cx.sel]:[],novo:ex?null:{nome:(cx.pn.trim()+" "+cx.sn.trim()).trim(),login:cx.login||cxLoginAuto(),cod:cx.cod,cel:cx.cel.replace(/\D/g,""),email:cx.email.trim(),ent:cx.ent,val:cx.val,apar:cx.apar,link:cx.link},planos:cxPlano()});
+    carregando(false);if(!ex){if(r.login)cx.login=r.login;if(r.cod)cx.cod=r.cod}
+    const nomes=ex?[...cx.sel].map(id=>ALX.find(a=>a.id===id)).filter(Boolean).map(a=>({nome:a.nome,cel:a.cel,ent:isoHoje()})):[{nome:(cx.pn.trim()+" "+cx.sn.trim()).trim(),cel:cx.cel,ent:cx.ent}],qtos=nomes.length;
+    cx.fim={titulo:ex?(qtos===1?"Aluno adicionado com sucesso":"Alunos adicionados com sucesso"):"Aluno cadastrado com sucesso",sub:"",dados:[["Curso",[...cx.cursos].join(", ")||"—"],...nomes.flatMap(x=>[["Aluno",x.nome],["Celular",celFmt(x.cel)||"—"],["Data de cadastro",dataBR(x.ent)]])],msg:cxMsg()};cx.yIni=0;desenharCx()}
+  catch(e){carregando(false);cx.erro=String(e&&e.message||"Não foi possível salvar agora.");desenharCx()}}
+function cxSalvar(msg,ex){
+  const libs=Object.fromEntries([...cx.cursos].map(c=>[c,{...libDe(c)}])),cs=[...cx.cursos];let nomes=[];
+  if(cx.modo==="existente"){cx.sel.forEach(id=>{const a=ALX.find(x=>x.id===id);if(!a)return;cs.forEach(c=>{if(!a.cursos.includes(c))a.cursos.push(c)});a.lib={...(a.lib||{}),...libs};nomes.push({nome:a.nome,email:a.email||a.login,cel:a.cel,ent:isoHoje()})})}
+  else{const nome=(cx.pn.trim()+" "+cx.sn.trim()).trim(),a={id:"a"+Date.now(),nome,login:cx.login||cxLoginAuto(),email:cx.email,cel:cx.cel.replace(/\D/g,""),cod:cx.cod,ent:cx.ent,val:cx.val,apar:cx.apar,st:"ativos",cursos:cs,lib:libs};ALX.unshift(a);nomes.push({nome,email:a.email||a.login,cel:a.cel,ent:a.ent})}
+  salvarAlx();
+  if(cx.curso){const S=alunosAdd[cx.curso]||(alunosAdd[cx.curso]=new Set());nomes.forEach(x=>S.add(x.email));const LA=alunosDe[cx.curso];if(LA){let n=LA.reduce((m,a)=>Math.max(m,a.i),0);nomes.forEach(x=>{n++;LA.unshift({i:n,nome:x.nome,email:x.email,cod:"AL"+(1000+n),st:"ativos",prog:0,ult:0,cad:0})})}}
+  const curso=cx.curso,qtos=nomes.length;
+  if(vista==="produto"){const y=scrollY;desenharProduto();scrollTo(0,y)}if(vista==="alunos")desenharAlx();if(typeof filtrar==="function")filtrar();
+  cx.fim={titulo:ex?(qtos===1?"Aluno adicionado com sucesso":"Alunos adicionados com sucesso"):"Aluno cadastrado com sucesso",sub:"",dados:[["Curso",cs.join(", ")||"—"],...nomes.flatMap(x=>[["Aluno",x.nome],["Celular",celFmt(x.cel)||"—"],["Data de cadastro",dataBR(x.ent)]])],msg};cx.yIni=0;desenharCx()}
+document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(NPE&&b.dataset.alac&&b.dataset.alac.startsWith("ver:")){const a=(alunosDe[ppNome]||[]).find(x=>x.i===+b.dataset.alac.split(":")[1]);if(a&&a.id)npAvisar({tipo:"ficha",id:a.id});return}
+  if(b.dataset.alxlimpa){alxQ="";for(const k in alxF)alxF[k]="";alPag=1;desenharAlx();return}
+  if(b.dataset.cxabrir!==undefined){abrirCad(b.dataset.cxabrir||"");return}
+  if(b.dataset.alxmenu){const a=ALX.find(x=>x.id===b.dataset.alxmenu);if(!a)return;menuConteudo(b,[["Ver acesso",'data-alxac="ver:'+a.id+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alxac="'+(a.st==="bloq"?"ativos":"bloq")+':'+a.id+'"'],[a.st==="desat"?"Reativar (+1 ano)":"Desativar",'data-alxac="'+(a.st==="desat"?"reat":"desat")+':'+a.id+'"'],["Remover aluno",'data-alxac="rem:'+a.id+'"',1]]);return}
+  if(b.dataset.alxac){fecharMenuC();const[k,id]=b.dataset.alxac.split(":"),a=ALX.find(x=>x.id===id);if(!a)return;
+    if(k==="ver"){toast(a.nome+" · login "+a.login+" · código "+a.cod+" · acesso até "+dataBR(a.val));return}
+    if(k==="rem"){perguntarApagar("Remover "+a.nome+"? A ficha e as liberações saem do aplicativo.",()=>{ALX=ALX.filter(x=>x.id!==id);salvarAlx();desenharAlx();toast("Aluno removido.")});return}
+    if(k==="reat"){a.st="ativos";a.val=isoMais(isoHoje(),0,12)}else a.st=k;salvarAlx();desenharAlx();toast(a.nome+": "+AX_ST[a.st][0].toLowerCase()+".");return}
+  if(!cx||!b.closest("#cxModal"))return;
+  if(b.dataset.cxfechar){document.getElementById("cxModal").hidden=true;cx=null;cxGuardar();return}
+  if(b.dataset.cxtrocar){cx.modo="";cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();desenharCx();return}
+  if(b.dataset.cxmodo){if(cx.modo!==b.dataset.cxmodo){cx.modo=b.dataset.cxmodo;cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();cx.foco=cx.modo==="novo"?"#cxPn":"#cxBusca"}desenharCx();return}
+  if(b.dataset.cxpasso!==undefined){cxIr(+b.dataset.cxpasso);return}
+  if(b.dataset.cxprox){cxIr(cx.passo+1);return}
+  if(b.dataset.cxvoltar){cx.passo=Math.max(0,cx.passo-1);cx.erro="";cx.campo="";cx.yIni=0;desenharCx();return}
+  if(b.dataset.cxfim){cxFinal();return}
+  if(b.dataset.cxcod){cx.cod=String(1000+Math.floor(Math.random()*9000));desenharCx();return}
+  if(b.dataset.cxval){cx.val=isoMais(cx.ent,0,+b.dataset.cxval);cx.campo="";cx.erro="";desenharCx();return}
+  if(b.dataset.cxapar){cx.apar=b.dataset.cxapar;if(cx.campo==="apar"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxcurso){const n=b.dataset.cxcurso;cx.cursos.has(n)?cx.cursos.delete(n):cx.cursos.add(n);if(cx.campo==="cont"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxtf!==undefined){cx.tipoF=b.dataset.cxtf;desenharCx();return}
+  if(b.dataset.cxtodos){const q=tiraAc(cx.q.trim().toLowerCase()),L=ALX.filter(a=>(!q||tiraAc([a.nome,a.login,a.email,a.cod,a.cel].join(" ").toLowerCase()).includes(q))&&(!cx.tipoF||alxInfo(a).tipo===cx.tipoF)&&!a.cursos.includes(cx.curso));const todos=L.length&&L.every(a=>cx.sel.has(a.id));L.forEach(a=>todos?cx.sel.delete(a.id):cx.sel.add(a.id));if(cx.campo==="esc"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxsel){const id=b.dataset.cxsel;cx.sel.has(id)?cx.sel.delete(id):cx.sel.add(id);if(cx.campo==="esc"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxdesf!==undefined){delete libDe(b.dataset.c).datas[b.dataset.cxdesf];desenharCx();return}
+  if(b.dataset.cxpm!==undefined){const L=libDe(b.dataset.c);L.libMods[b.dataset.cxpm]=!L.libMods[b.dataset.cxpm];if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxm1){libDe(b.dataset.c).m1=b.dataset.cxm1;desenharCx();return}
+  if(b.dataset.cxlib){const L=libDe(b.dataset.cxlib);if(L.tipo!==b.dataset.cxv)L.datas={};L.tipo=b.dataset.cxv;if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxcopiar){const t=cx.fim?cx.fim.msg:cxMsg();const ok=()=>{b.textContent="✓ Mensagem copiada";b.classList.add("cx-copiado");clearTimeout(window._cxCp);window._cxCp=setTimeout(()=>{if(b.isConnected){b.textContent="Copiar mensagem";b.classList.remove("cx-copiado")}},2500);toast("Mensagem copiada.",true)};(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t).then(ok):Promise.reject()).catch(()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(x){toast("Selecione a mensagem e copie.")}ta.remove()});return}});
+document.addEventListener("input",e=>{if(!cx)return;const t=e.target;
+  if(t.id==="cxBusca"){cx.q=t.value;cx.foco="#cxBusca";desenharCx();return}
+  const f=t.dataset&&t.dataset.cxf;if(f){let v=t.value;if(f==="cel"){v=v.replace(/\D/g,"").slice(0,11);t.value=celFmt(v)}if(f==="cod"){v=v.replace(/\D/g,"").slice(0,4);t.value=v}if(f==="login"){cx.loginMx=true;v=v.toLowerCase().replace(/\s+/g,"")}cx[f]=v;if(!cx.loginMx&&(f==="pn"||f==="sn"))cx.login="";if(cx.campo===f){cx.campo="";cx.erro="";const c=t.closest(".cx-c");if(c)c.classList.remove("erro");const av=document.querySelector("#cxModal .cx-pe .aviso-esc");if(av)av.remove()}return}
+  const l=t.dataset&&t.dataset.cxl;if(l){const L=libDe(t.dataset.c);if(l==="prim"||l==="rep")return;if(l==="mod")L.porMod[t.dataset.mi]=t.value;else L[l]=t.value;clearTimeout(window._cxT);window._cxT=setTimeout(()=>{const sel='[data-cxl="'+l+'"][data-c="'+CSS.escape(t.dataset.c)+'"]'+(l==="mod"?'[data-mi="'+t.dataset.mi+'"]':'');cx.foco=sel;desenharCx()},450)}});
+document.addEventListener("change",e=>{if(!cx)return;const t=e.target;if(t.id==="cxOrd"){cx.ord=t.value;desenharCx();return}if(t.dataset&&(t.dataset.cxpr!==undefined||t.dataset.cxprn!==undefined||t.dataset.cxprd!==undefined)){const L=libDe(t.dataset.c),mi=t.dataset.cxpr??t.dataset.cxprn??t.dataset.cxprd,r=regraP(L,mi);if(t.dataset.cxpr!==undefined)r.t=t.value;else if(t.dataset.cxprn!==undefined)r.n=t.value;else r.d=t.value;delete L.datas[mi];if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}if(t.dataset&&t.dataset.cxd!==undefined){libDe(t.dataset.c).datas[t.dataset.cxd]=t.value;desenharCx();return}const l=t.dataset&&t.dataset.cxl;if(l==="prim"||l==="rep"){libDe(t.dataset.c)[l]=t.checked;desenharCx()}if(t.dataset&&(t.dataset.cxf==="ent")){cx.ent=t.value;desenharCx()}});
+
+// ---------- ligações com o resto do modelo ----------
+views.alunos="Alunos";
+if(NPE&&typeof npAplicar==="function"){const ap0=npAplicar;npAplicar=function(d){ap0(d);ALX=npTodos();if(vista==="alunos")desenharAlx()}}
+{const ir0=ir;ir=function(v){ir0(v);if(v==="alunos"){trilhaProd.hidden=true;desenharAlx()}document.querySelectorAll(".lado .li").forEach(x=>x.classList.toggle("on",x.dataset.ir===(v==="alunos"?"alunos":v==="categorias"?"categorias":"lista")))}}
+if(vista==="alunos")ir("alunos");
+(()=>{let o=null;try{o=JSON.parse(sessionStorage.getItem("aion-modelo-cx")||localStorage.getItem("aion-modelo-cx")||"null")}catch(e){}if(!o||!o.t||Date.now()-o.t>864e5)return;
+  if(o.curso&&!PRODS.some(x=>x.nome===o.curso))return;cx={...o,cursos:new Set(o.cursos||[]),sel:new Set(o.sel||[]),feitos:new Set(o.feitos||[]),yIni:o.y||0};
+  let m=document.getElementById("cxModal");if(!m){m=document.createElement("div");m.id="cxModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharCx()})();
 </script>

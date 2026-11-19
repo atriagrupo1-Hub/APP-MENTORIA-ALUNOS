@@ -6438,3 +6438,36 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 /* Produtos e Categorias: a margem é a do próprio modelo (sem a do painel). */
 .casca2 .principal .conteudo:has(> .npx-tela) { padding: 0; max-width: none; }
 .casca2 .tp-trilha[hidden] { display: none; }
+
+/* + Aluno dentro do curso: aluno existente ou novo aluno */
+.cadx-modo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; margin: 4px 0 16px; border: 1px solid #2B2D32; border-radius: 12px; background: #141518; }
+.cadx-modo button { height: 42px; border: 1px solid transparent; border-radius: 9px; background: none; color: #A5ADB8; font: 600 14px Manrope, sans-serif; cursor: pointer; }
+.cadx-modo button:hover { color: #EED9AD; background: rgba(226, 198, 140, .06); }
+.cadx-modo button[aria-selected="true"] { background: #2a2518; border-color: #6d5a38; color: #E2C68C; }
+.cadx-escolha { margin: 4px 0 18px; }
+.cadx-barra { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cadx-busca { position: relative; flex: 1 1 260px; display: flex; }
+.cadx-busca svg { position: absolute; left: 12px; top: 50%; width: 16px; height: 16px; transform: translateY(-50%); fill: none; stroke: #94979E; stroke-width: 2; pointer-events: none; }
+.cadx-busca input { width: 100%; padding-left: 36px; }
+.cadx-barra select { flex: 0 0 auto; width: auto; }
+.cadx-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; font-size: 12.5px; color: #94979E; }
+.cadx-ocultar { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.cadx-lista { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow-y: auto; padding-right: 2px; }
+.cadx-row { display: grid; grid-template-columns: 20px 36px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; padding: 9px 12px; border: 1px solid #2B2D32; border-radius: 10px; background: #141518; cursor: pointer; }
+.cadx-row[hidden] { display: none; }
+.cadx-row:hover { border-color: #4B402B; }
+.cadx-row:has(input:checked) { border-color: #E2C68C; background: #1d1a14; }
+.cadx-row.ja { opacity: .55; cursor: default; grid-template-columns: 20px 36px minmax(0, 1fr) auto auto auto; }
+.cadx-row input { accent-color: #E2C68C; width: 16px; height: 16px; }
+.cadx-av { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; background: #2a2518; color: #E2C68C; font: 650 12px Manrope, sans-serif; }
+.cadx-av img { width: 100%; height: 100%; object-fit: cover; }
+.cadx-nome { min-width: 0; display: flex; flex-direction: column; }
+.cadx-nome b { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cadx-nome small { font-size: 11.5px; color: #94979E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cadx-st { padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.cadx-st.ativo { background: #15291d; color: #7FD49B; }
+.cadx-st.bloq { background: #2c1919; color: #E39B98; }
+.cadx-st.desat { background: #1f2024; color: #A5ADB8; }
+.cadx-data { font-size: 12px; color: #94979E; font-variant-numeric: tabular-nums; }
+.cadx-ja { font-size: 11px; color: #E2C68C; white-space: nowrap; }
+@media (max-width: 560px) { .cadx-row { grid-template-columns: 20px 36px minmax(0, 1fr) auto; } .cadx-data { display: none; } }

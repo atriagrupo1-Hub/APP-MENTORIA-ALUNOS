@@ -905,7 +905,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
-  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunos"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
@@ -1016,7 +1016,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
-    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout"), ui.tab === "layout" ? "categorias" : "lista", npDados, npAgir);
+    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas"), ui.tab === "layout" ? "categorias" : ui.tab === "alunas" ? "alunos" : "lista", npDados, npAgir);
     posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); pintarPubMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
@@ -1101,7 +1101,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -1147,7 +1147,7 @@ export function montar(app: HTMLElement) {
         </div>
       </aside>
       <div class="principal">
-        <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
+        <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
           ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
@@ -2050,7 +2050,7 @@ export function montar(app: HTMLElement) {
   };
   const AJUDA_ABAS: Record<string, [string, string, string]> = {
     inicio: ["Início", "O resumo do dia: o que pede atenção agora. Os comentários só aparecem enquanto ninguém da equipe aprovou, ocultou, apagou ou respondeu.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
-    alunas: ["Alunas", "Todas as alunas cadastradas, com a situação de cada uma.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
+    alunas: ["Alunos", "Todos os alunos cadastrados, com a situação de cada um.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
     ficha: ["Ficha da aluna", "Tudo sobre uma aluna: dados, aulas liberadas, progresso, anotações e histórico.", "confira o que ela já tem liberado antes de responder qualquer dúvida. Anote o que conversou para a equipe saber."],
     engajamento: ["Engajamento", "Quem está avançando e quem parou. Cada quadro tem um ? explicando o grupo.", "comece por “Precisam de um empurrão”; ligue ou mande o recado pelo WhatsApp (o botão já abre a conversa com a mensagem pronta); e clique em “Registrar contato” para anotar como foi — assim ninguém da equipe liga duas vezes para a mesma pessoa."],
     layout: ["Categorias", "Cada categoria tem uma capa e reúne os cursos que você escolher. Um curso pode estar em mais de uma categoria.", "clique numa categoria para ver os cursos dela, ou em Nova categoria para criar outra."],
@@ -3621,7 +3621,7 @@ export function montar(app: HTMLElement) {
     </article>`;
   }
   /** Produtos e Categorias: o modelo aprovado embutido (np/ponte.ts). */
-  const npTela = () => { void telaCursos; void telaCategorias; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
+  const npTela = () => { void telaCursos; void telaCategorias; void telaAlunas; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
   function npDados(): Record<string, unknown> {
     const agora = Date.now();
     const libSt = (vis: boolean, bloq: boolean, libera: string) => !vis ? "Oculto" : bloq ? "Bloqueado" : libera && new Date(libera).getTime() > agora ? "Agendado" : "Liberado";
@@ -3671,7 +3671,11 @@ export function montar(app: HTMLElement) {
         ult: u ? { mod: u.mod != null ? "Módulo " + u.mod : c.nome, aula: (u.num != null ? "Aula " + u.num + " – " : "") + u.titulo, quando: dataHoraCurta(u.quando) } : null,
         ag: ag ? { mod: ag.m.rot + " " + ag.m.num + " – " + ag.m.nome, aula: ag.a.rot + " " + ag.a.num + " – " + ag.a.nome, quando: dataHoraCurta(ag.a.libera) } : null };
     }
-    return { prods, cats, mods, alunos, coms, eng, top };
+    // Todos os alunos (aba Alunos e "Aluno existente"): cursos pelo nome, modalidade, último acesso e engajamento
+    const cursosDe = new Map<string, Set<string>>();
+    for (const c of S.cursos) for (const x of alunasDoCurso(c)) { let st = cursosDe.get(x.a.id); if (!st) cursosDe.set(x.a.id, st = new Set()); st.add(c.nome); }
+    const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0 }));
+    return { prods, cats, mods, alunos, coms, eng, top, todos };
   }
   /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
   function npCfg(modo: string, dias: number | null, libera: string) {
@@ -3740,6 +3744,53 @@ export function montar(app: HTMLElement) {
   const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
   function npAgir(m: NpAcao) {
     const el = document.body;
+    if (m.tipo === "ficha") { const a = aluna(String(m.id || "")); if (!a) return; ui.tab = "ficha"; ui.ficha = a.id; ui.modal = null; window.scrollTo(0, 0); render(); return; }
+    if (m.tipo === "aluno-salvar") {
+      type Plano = { id: string; inteiro: boolean; aulas: { id: string; data: string | null }[]; regra: string };
+      const rid = m.rid, planos = ((m.planos || []) as Plano[]).filter((x) => curso(x.id));
+      const falha = (t: string) => npResponder({ rid, erro: t });
+      if (!planos.length) { falha("Escolha o curso."); return; }
+      const n = m.novo as null | { nome: string; login: string; cod: string; cel: string; email: string; ent: string; val: string; apar: string; link: string };
+      if (n) {
+        const login = semAcento(n.login || loginAuto(n.nome)).toLowerCase();
+        if (S.alunas.some((x) => x.login === login)) { falha("Já existe um aluno com o login " + login + ". Troque o login na etapa Acesso."); return; }
+        if (!/^\d{4}$/.test(n.cod)) { falha("O código precisa ter 4 números."); return; }
+        if (String(n.cel).replace(/\D/g, "").length !== 11) { falha("Preencha o celular com DDD."); return; }
+        n.login = login;
+      }
+      // Libera os cursos (inteiros) e as aulas (uma a uma); aula com data futura entra no cronograma do aluno
+      const aplicar = async (alId: string, antes: { cursos: string[]; modulos: string[]; aulas: string[] }, cron: Record<string, number>) => {
+        const cs = new Set(antes.cursos), as = new Set(antes.aulas);
+        for (const pl of planos) { if (pl.inteiro) cs.add(pl.id); else pl.aulas.forEach((x) => as.add(x.id)); }
+        await rpc("salvar_liberacao", { p_aluna: alId, p_produtos: [...cs], p_modulos: antes.modulos, p_aulas: [...as] });
+        const datadas = planos.flatMap((pl) => pl.inteiro ? [] : pl.aulas.filter((x) => x.data && x.data > hoje()));
+        if (datadas.length) { const ce = Object.entries(cron); await rpc("salvar_cronograma", { p_aluna: alId, p_modulos: ce.map((x) => x[0]), p_dias: ce.map((x) => x[1]), p_aulas: datadas.map((x) => x.id), p_datas: datadas.map((x) => x.data) }); }
+      };
+      const nomesC = planos.map((x) => curso(x.id)!.nome).join(", ");
+      npExec(async () => {
+        try {
+          if (n) {
+            const r = await chamarFuncao("cadastrar-aluna", { nome: n.nome, login: n.login, codigo: n.cod, celular: n.cel, email: n.email, entrada: n.ent, validade: n.val });
+            if (!r.id) throw new Error("Não foi possível cadastrar o aluno agora.");
+            const nid = String(r.id);
+            await registrar(nid, "Aluno cadastrado");
+            const linkAl = n.link && n.link !== (LINKS.geral || enderecoDaMentoria()) ? n.link : "";
+            if (linkAl || n.apar) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl || null, aparelho: n.apar || null }); if (x.error) throw x.error; }
+            await aplicar(nid, { cursos: [], modulos: [], aulas: [] }, {});
+            await registrar(nid, "Liberou " + nomesC + " · " + planos.map((x) => x.regra).join(" · "));
+            npResponder({ rid, login: n.login, cod: n.cod });
+            return { msg: n.nome + " cadastrado.", texto: "cadastro de " + n.nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: nid }); } };
+          }
+          const ids = ((m.alunos || []) as string[]).filter((x) => aluna(x));
+          if (!ids.length) throw new Error("Marque pelo menos um aluno.");
+          for (const id of ids) { const al = aluna(id)!; await aplicar(al.id, al.acesso, al.cronograma); await registrar(al.id, "Liberou " + nomesC + " · " + planos.map((x) => x.regra).join(" · ")); }
+          npResponder({ rid });
+          return p(ids.length, "aluno adicionado", "alunos adicionados") + " ao curso " + nomesC + ".";
+        } catch (e) { falha(motivo(e)); throw e; }
+      });
+      return;
+    }
+    if (m.tipo === "aluno-add") { const c = curso(String(m.prod || "")); if (!c) return; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", curso: c.id, codigo: novoCodigo() }; render(); return; }
     if (m.tipo === "ia") {
       // IA do modelo: não grava nada, só devolve o texto (fora da fila de gravações).
       void (async () => {
@@ -3893,6 +3944,7 @@ export function montar(app: HTMLElement) {
     if (m.tipo === "alunos-st") {
       const c = curso(String(m.prod || "")), st = String(m.st || ""), lista = ((m.lista || []) as { id: string; de: string }[]).filter((x) => aluna(x.id));
       if (!lista.length) return;
+      if (st === "rem" && !c) { toast("Para tirar o aluno do sistema, abra a ficha dele (Ver detalhes)."); render(); return; }
       npExec(async () => {
         for (const x of lista) {
           const al = aluna(x.id)!;
@@ -6646,7 +6698,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
   // Nome + sobrenome → campo "nome" (o que é salvo) e, no cadastro novo, o login automático.
   document.addEventListener("input", (e) => {
-    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al") as HTMLFormElement | null; if (!f) return;
+    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (!f) return;
     const lg = f.elements.namedItem("login") as HTMLInputElement | null;
     if (t.name === "login") { t.dataset.auto = t.value ? "0" : "1"; return; }
     if (!t.hasAttribute("data-nome-parte")) return;
@@ -6658,8 +6710,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (lg && lg.dataset.auto === "1") lg.value = loginAuto(pn + " " + sn);
     atualizarCad();
   });
-  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
-  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
+  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
   function atualizarCad() {
     cadBotaoDesfazer();
     const f = cadForm(); if (!f) return;
@@ -6672,6 +6724,21 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const tipo = (f.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value) || "";
     const jc = f.querySelector<HTMLInputElement>("input[data-jor]"); if (jc && tipo && jc.dataset.mexeu !== "1") jc.checked = tipo === "mentoria";
   }
+  /** Adicionar aluno existente: busca, status, ordem e contagem direto na lista. */
+  function cadxFiltrar(f: HTMLFormElement) {
+    const q = norm((f.querySelector<HTMLInputElement>("[data-cadx-busca]")?.value || "").trim()), st = f.querySelector<HTMLSelectElement>("[data-cadx-st]")?.value || "", ord = f.querySelector<HTMLSelectElement>("[data-cadx-ord]")?.value || "rec", esconde = !!f.querySelector<HTMLInputElement>("[data-cadx-ja]")?.checked;
+    const box = f.querySelector<HTMLElement>(".cadx-lista"); if (!box) return;
+    const rows = [...box.querySelectorAll<HTMLElement>(".cadx-row")];
+    rows.sort((a, b) => ord === "az" ? a.dataset.nome!.localeCompare(b.dataset.nome!) : ord === "za" ? b.dataset.nome!.localeCompare(a.dataset.nome!) : ord === "ant" ? a.dataset.ent!.localeCompare(b.dataset.ent!) : b.dataset.ent!.localeCompare(a.dataset.ent!));
+    let n = 0; const nada = box.querySelector(".cadx-nada");
+    rows.forEach((r) => { const ok = (!q || r.dataset.busca!.includes(q)) && (!st || r.dataset.st === st) && !(esconde && r.classList.contains("ja")); r.hidden = !ok; if (ok) n++; box.insertBefore(r, nada); });
+    if (nada) (nada as HTMLElement).hidden = n > 0;
+    const sel = f.querySelectorAll('input[name="ex"]:checked').length;
+    const cont = f.querySelector("[data-cadx-cont]"); if (cont) cont.textContent = p(n, "aluno", "alunos") + (sel ? " · " + p(sel, "marcado", "marcados") : "");
+    const ok = f.querySelector<HTMLButtonElement>("[data-cadx-ok]"); if (ok) { ok.disabled = !sel; ok.textContent = sel ? "Adicionar " + p(sel, "aluno", "alunos") + " ao curso" : "Adicionar ao curso"; }
+  }
+  document.addEventListener("input", (e) => { const f = (e.target as HTMLElement).closest?.("form.cadx") as HTMLFormElement | null; if (f) cadxFiltrar(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cadx") as HTMLFormElement | null; if (f) cadxFiltrar(f); });
   function cadAbas(): string[] { const f = cadForm(); return f ? [...f.querySelectorAll<HTMLElement>("[data-cad-painel]")].map((x) => x.dataset.cadPainel!) : []; }
   function cadAtual(): string { return cadForm()?.querySelector<HTMLElement>("[data-cad-painel]:not([hidden])")?.dataset.cadPainel || "dados"; }
   /** Confere a aba; devolve a mensagem do que falta (vazio se está tudo certo). */
@@ -6713,8 +6780,45 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const m = ui.modal;
     if (!m) return "";
     let corpo = "";
-    if (m.tipo === "aluna") {
+    if (m.tipo === "aluna" && !m.id && m.curso && m.modo !== "novo" && curso(String(m.curso))) {
+      // Dentro do curso: primeiro escolhe aluno existente ou novo aluno.
+      const c = curso(String(m.curso))!, modo = String(m.modo || "");
+      const seg = `<div class="cadx-modo" role="tablist"><button type="button" role="tab" data-a="cad-modo" data-v="existente" aria-selected="${modo === "existente"}">Aluno existente</button><button type="button" role="tab" data-a="cad-modo" data-v="novo" aria-selected="false">Novo aluno</button></div>`;
+      const sit = (a: Aluna) => a.bloqueada ? ["bloq", "Bloqueado"] : vencida(a) ? ["desat", "Desativado"] : ["ativo", "Ativo"];
+      const lista = [...S.alunas].sort((x, y) => (y.entrada || "").localeCompare(x.entrada || "") || x.nome.localeCompare(y.nome));
+      corpo = `
+      <form data-f="aluno-existente" data-id="${c.id}" class="cad-al cadx" novalidate>
+        <div class="cad-topo"><h2 class="titulo">Adicionar aluno</h2><span class="cad-topo-dir"><button type="button" class="cri-x" data-a="fechar" aria-label="Fechar" title="Fechar">${xis}</button></span></div>
+        <p class="explica">${h(c.nome)} · ${modo === "existente" ? "marque quem já tem cadastro e vai receber este curso." : "escolha se é um aluno que já tem cadastro ou um aluno novo."}</p>
+        ${seg}
+        ${modo === "existente" ? `
+        <div class="cadx-barra">
+          <label class="cadx-busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="cadexBusca" class="campo" type="search" placeholder="Buscar por nome, login, e-mail ou código" autocomplete="off" data-cadx-busca /></label>
+          <select class="campo" data-cadx-st aria-label="Status"><option value="">Todos os status</option><option value="ativo">Ativos</option><option value="bloq">Bloqueados</option><option value="desat">Desativados</option></select>
+          <select class="campo" data-cadx-ord aria-label="Ordem"><option value="rec">Últimos adicionados</option><option value="az">Nome (A–Z)</option><option value="za">Nome (Z–A)</option><option value="ant">Mais antigos</option></select>
+        </div>
+        <div class="cadx-topo"><span data-cadx-cont>${p(lista.length, "aluno", "alunos")}</span><label class="cadx-ocultar"><input type="checkbox" data-cadx-ja checked /> Esconder quem já está no curso</label></div>
+        <div class="cadx-lista">${lista.map((a) => { const ja = a.acesso.cursos.includes(c.id) || alunasDoCurso(c).some((x) => x.a.id === a.id), [st, stT] = sit(a);
+          return `<label class="cadx-row${ja ? " ja" : ""}" data-busca="${h(norm([a.nome, a.login, a.email, a.codigo].join(" ")))}" data-nome="${h(norm(a.nome))}" data-ent="${h(a.entrada || "")}" data-st="${st}"${ja ? " hidden" : ""}>
+            <input type="checkbox" name="ex" value="${a.id}" ${ja ? "disabled" : ""} />
+            <span class="cadx-av">${S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : h(iniciais(a.nome))}</span>
+            <span class="cadx-nome"><b>${h(a.nome)}</b><small>${h(a.login || a.email || "")}</small></span>
+            <span class="cadx-st ${st}">${stT}</span>
+            <span class="cadx-data">${a.entrada ? br(a.entrada) : "—"}</span>
+            ${ja ? `<span class="cadx-ja">Já está no curso</span>` : ""}
+          </label>`; }).join("") || `<p class="cad-dica">Nenhum aluno cadastrado ainda. Use Novo aluno.</p>`}
+          <p class="cad-dica cadx-nada" hidden>Nenhum aluno encontrado com esse filtro.</p>
+        </div>` : `<p class="cad-dica cadx-escolha">Aluno existente: escolha na lista de quem já tem cadastro. Novo aluno: preencha os dados, o acesso e o curso já vem marcado.</p>`}
+        <div class="rodape-modal cad-pe">
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+          <span style="flex:1"></span>
+          ${modo === "existente" ? `<button class="botao" data-cadx-ok disabled>Adicionar ao curso</button>` : ""}
+        </div>
+      </form>`;
+      if (modo === "existente" && !ui.focar) ui.focar = "cadexBusca";
+    } else if (m.tipo === "aluna") {
       const a = m.id ? aluna(m.id) : null;
+      const ctxC = !a && m.curso ? curso(String(m.curso)) : null;
       const d = hoje(), cod = a ? a.codigo : m.codigo || novoCodigo();
       const jor = S.config.jornada;
       const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso app"], ["produtos", "Acesso produtos"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
@@ -6723,15 +6827,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cri-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : ctxC ? "Adicionar aluno" : "Cadastrar aluno"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cri-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
+        ${ctxC ? `<div class="cadx-modo" role="tablist"><button type="button" role="tab" data-a="cad-modo" data-v="existente" aria-selected="false">Aluno existente</button><button type="button" role="tab" data-a="cad-modo" data-v="novo" aria-selected="true">Novo aluno</button></div>` : ""}
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
           <label class="cad-c"><span>Nome <b>*</b></span><input id="alunaNome" class="campo" name="pnome" value="${h(a ? a.nome.trim().split(/\s+/)[0] : "")}" autocomplete="off" data-nome-parte /></label>
           <label class="cad-c"><span>Sobrenome <b>*</b></span><input class="campo" name="snome" value="${h(a ? a.nome.trim().split(/\s+/).slice(1).join(" ") : "")}" autocomplete="off" data-nome-parte /><input type="hidden" name="nome" value="${h(a ? a.nome : "")}" /></label>
           <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
           <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
-          ${a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluna da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
+          ${ctxC ? "" : a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluno</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluno da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluno geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluno</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluno da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluno geral (outros produtos)</span></label></div><small>Aluno da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
           <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : a && S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : a ? h(iniciais(a.nome)) : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${(fotoNova && fotoPara === "aln") || (a && S.fotos[a.id]) ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
@@ -6764,7 +6869,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Editar liberação</button>`;
         })()) : ""}
         ${a ? "" : painelAba("conteudos", `<p class="cad-dica">Marque os cursos que ela recebe agora. Módulos e aulas avulsas: depois, em Liberar conteúdo.</p>
-          <div class="cad-cursos">${S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
+          <div class="cad-cursos">${ctxC ? `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${ctxC.id}" checked /><span><b>${h(ctxC.nome)}</b><small>${p(ctxC.modulos.length, "módulo", "módulos")} · liberado ao cadastrar</small></span></label>` : S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
         ${a ? "" : painelAba("obs", `<label class="cad-c cad-full"><span>Observação (opcional)</span><textarea class="campo" name="obs" rows="5" maxlength="2000" placeholder="Ex.: veio pela live de outubro, prefere contato à tarde."></textarea><small>Fica na ficha dela, em Observações.</small></label>`)}
         <div class="rodape-modal cad-pe">
           <button type="button" class="botao-neutro grande" data-a="cad-voltar" hidden>← Voltar</button>
@@ -7154,6 +7259,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
 
+      case "cad-modo": if (ui.modal) { ui.modal = { ...ui.modal, modo: d.v }; if (d.v === "novo" && !ui.modal.codigo) ui.modal.codigo = novoCodigo(); ui.focar = d.v === "novo" ? "alunaNome" : "cadexBusca"; } break;
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
       case "editar-aluna": cadHist = []; cadAntes = null; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
@@ -8764,6 +8870,17 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           await abrirSessao(true);
           ocupado = false; render();
         })();
+        return;
+      }
+      case "aluno-existente": {
+        const c = curso(id); if (!c) return;
+        const ids = [...form.querySelectorAll<HTMLInputElement>('input[name="ex"]:checked')].map((x) => x.value).filter((x) => aluna(x));
+        if (!ids.length) { toast("Marque pelo menos um aluno."); return; }
+        void executar(async () => {
+          for (const x of ids) { const al = aluna(x)!; if (al.acesso.cursos.includes(c.id)) continue; await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: [...al.acesso.cursos, c.id], p_modulos: al.acesso.modulos, p_aulas: al.acesso.aulas }); await registrar(al.id, "Liberou o curso " + c.nome); }
+          ui.modal = null;
+          return p(ids.length, "aluno adicionado", "alunos adicionados") + " ao curso " + c.nome + ".";
+        });
         return;
       }
       case "aluna": {

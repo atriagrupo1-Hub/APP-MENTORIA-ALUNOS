@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 300,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 312,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -340,3 +340,48 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 - Cada arquivo: ícone de documento com o tipo, nome, situação e barra: "Lendo página X de Y…" (com roda girando e barra de progresso), "✓ Lido · N páginas · N caracteres" (verde) ou "Não deu para ler este arquivo…" (vermelho).
 - Gerando a descrição: roda girando + "A IA está lendo o material inteiro. Leva alguns segundos."
 - Painel: ao recarregar, volta para a mesma tela (inclusive no meio de Criar/Editar curso, categoria ou módulo, com o que foi preenchido).
+
+## v301 (19/11/2026) — Aba Alunos e Adicionar/Cadastrar aluno (em teste no ilustrativo, ainda não aprovado)
+- Barra lateral ganha **Alunos**: números (Total, Ativos, Bloqueados, Desativados), busca, status, ordem (Últimos adicionados, Nome A–Z/Z–A, Mais antigos), tabela (aluno, status, cursos, cadastro, acesso até, ⋮ Ver acesso / Bloquear / Desativar ou Reativar +1 ano / Remover). 4 alunos ilustrativos. Botão **Cadastrar aluno**.
+- **+ Aluno dentro do curso**: primeiro escolhe **Aluno existente | Novo aluno**.
+  - Novo aluno — 5 etapas: 1 Dados do aluno · 2 Acesso · 3 Conteúdos liberados (card grande só com o curso, já marcado) · 4 Forma de liberação · 5 Resumo.
+  - Aluno existente — 3 etapas: Escolher aluno (lista com busca; quem já está no curso aparece apagado) · Forma de liberação · Resumo.
+- **Forma de liberação** (por curso): Tudo liberado agora · Uma aula a cada X dias (começa em [data], primeira aula no dia do início, "usar a regra do Módulo 1 em todos os módulos" — desmarcado, um intervalo por módulo) · Manual (primeira aula agora; as outras uma a uma). Mostra "Como o aluno vai receber" (cronograma com datas).
+- **Resumo**: dados, acesso, conteúdos, forma de liberação (cada bloco com Editar) e **Mensagem de acesso** com **Copiar mensagem**.
+- Cadastrar aluno pela aba Alunos: o mesmo fluxo, com todos os cursos para marcar na etapa 3.
+
+## v302 (19/11/2026) — Adicionar aluno: escolha fica sozinha
+- Escolheu **Novo aluno** (ou **Aluno existente**): a outra opção some; fica só a escolhida, com **Trocar** ao lado para voltar à escolha.
+
+---
+## 🔖 MARCO "GOOGLE" (19/11/2026)
+Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a partir da **v301**, inclusive) fica guardado e **só vai para o painel quando ele disser "a partir do Google"**.
+- Base do que já está no painel: modelo **v300** (commit `82f1601`, `src/painel/np/modelo.html`).
+- Ainda **não** levado ao painel: v301 (aba Alunos, Adicionar/Cadastrar aluno em 5 etapas, Forma de liberação, Resumo com mensagem) e v302 em diante (lista abaixo, a cada mudança).
+- Ao ouvir "a partir do Google": comparar `docs/novo-produto/modelo-novo-produto.html` com a v300 (`git diff 82f1601 -- docs/novo-produto/modelo-novo-produto.html`), levar cada item ao painel real (painel + Supabase), primeiro arrumando o que faltar no ilustrativo.
+
+### Mudanças desde o marco (não levadas ao painel)
+- v301 — aba Alunos (4 ilustrativos) · + Aluno: Aluno existente | Novo aluno · 5 etapas (Dados, Acesso, Conteúdos liberados com card grande, Forma de liberação, Resumo + mensagem para copiar) · Forma de liberação: Tudo agora / 1 aula a cada X dias (regra do Módulo 1 para todos ou por módulo) / Manual · cronograma "Como o aluno vai receber".
+- v302 — escolhida a opção, a outra some (fica só a escolhida + Trocar).
+- v303 — Forma de liberação: "Tudo liberado agora" libera só o que já está liberado para os alunos. Embaixo: card do curso (capa, formato, nome, Publicação e Liberação atuais, "N aulas entram agora · N agendadas · N ficam de fora") e Módulos e aulas separados (cada módulo abre/fecha, com o status dele e das aulas: ✓ Liberada no cadastro · Libera em [data] · Fica de fora). "Uma aula a cada X dias" e "Manual" também só usam as aulas já liberadas.
+- v304 — Forma de liberação com os **cards de módulo e aula** (mesmo modelo da lista de conteúdo: capa, "Módulo N — NOME", status para todos e "liberado em", "Aulas do módulo (n)" com as aulas, tipo e duração) e a **data deste aluno** em cada módulo e cada aula.
+  - Tudo liberado agora: datas fixas (hoje). Uma aula a cada X dias: 1º módulo **Imediato** ou **Depois de X dias do cadastro**; as datas saem pela regra (primeira aula no início, regra do 1º módulo em todos, ou um intervalo por módulo) e **qualquer data de módulo ou aula pode ser editada** (↺ volta ao automático; as seguintes seguem a partir da editada). Manual: você escolhe o dia de cada módulo e de cada aula; sem data = você libera depois; "Liberar a primeira aula agora".
+  - Aula agendada para todos mostra a data de todos; aula não publicada/oculta/bloqueada: "Fica de fora". Trocar a opção limpa as datas editadas.
+  - O cronograma "Como o aluno vai receber" saiu desta etapa e foi para o **Resumo**.
+  - A janela de Adicionar/Cadastrar aluno **continua aberta no mesmo ponto** depois de recarregar a página.
+- v305 — Forma de liberação com 9 opções (as 3 primeiras continuam iguais): **Tudo liberado agora** · **Uma aula a cada X dias** · **Manual** · **Por módulo** (marca quais módulos o aluno acessa no cadastro; os outros ficam 🔒 até você liberar) · **Módulo inteiro a cada X dias** (contando do cadastro; 1º módulo imediato ou após X dias; intervalo igual ou por módulo) · **Por data fixa** (você escolhe a data de cada módulo; aulas acompanham; sem data = bloqueado) · **Dia fixo da semana** (1 aula toda [dia] às [hora]; primeira no cadastro ou no primeiro [dia]) · **Ao concluir a anterior** (a próxima abre quando o aluno conclui a anterior, + X dias de espera; primeira agora) · **Personalizado** (em cada módulo: Imediato, Após X dias do cadastro, Data fixa ou Manual). Todas mostram os cards de módulo e aula com a data deste aluno; o Resumo traz o texto da regra e o cronograma.
+- v306 — Mensagem de acesso sem "Curso liberado" e sem "Como você vai receber": só saudação, link, login, código (e vídeo de instalação).
+- v307 — Copiar mensagem: o botão vira "✓ Mensagem copiada" (verde, por 2,5 s) e aparece o aviso "Mensagem copiada." por cima da janela.
+- v308 — Sem a etapa Resumo: Novo aluno tem 4 etapas (Dados · Acesso · Conteúdos liberados · Forma de liberação) e Aluno existente 2 (Escolher aluno · Forma de liberação). Na última, o botão é **Cadastrar aluno** (ou **Adicionar ao curso**). Ao clicar: tela de carregar com a logo AIŌN → "Aluno cadastrado com sucesso" (nome · curso) com a **mensagem para enviar ao aluno** e **Copiar mensagem**; botão **Concluir** fecha.
+- v309 — Tela de sucesso: abaixo de "Aluno cadastrado com sucesso", quadro com **Curso**, **Aluno**, **Celular** e **Data de cadastro**; depois a mensagem para enviar.
+- v310 — Aluno existente (escolher): janela mais larga; busca (nome, login, e-mail, celular, código) + ordem **Mais recentes / Mais antigos**; abas **Todos · Mentoria · Geral** com contagem; total de alunos e quantos marcados; tabela como a aba Alunos do painel: ☐ (no topo: **selecionar todos**), Aluno (foto/iniciais, nome, "Cadastrado em" ou "Já está no curso"), Modalidade, Produtos, Último acesso, Engajamento (Baixo/Médio/Alto + n/100), WhatsApp.
+- v311 — Aba Alunos (barra lateral) com o mesmo topo da aba Alunos do produto: painel com ícone, "Alunos" + "Gerencie seus alunos…", botão **+ Aluno**; 5 cards (Total de alunos, Ativos, Bloqueados, Desativados, Adicionados recentes — clicáveis); abas Todos · Ativos · Bloqueados · Desativados · Adicionados recentes (últimos 7 dias) com contagem; busca e ordem (Mais recentes, Mais antigos, Nome A–Z/Z–A); tabela.
+- v312 — Aba Alunos = a mesma tela da aba Alunos do produto (cards, abas com contagem, tabela com seleção em massa, ações ⋮, páginas e itens por página), com a barra de filtros do painel: **Buscar por nome, e-mail, telefone ou matrícula…** · **Período** (cadastro: hoje, 7, 30, 90 dias, último ano) · **Modalidade** (Mentoria, Geral) · **Produto/Curso** · **Status de acesso** (Ativos, Bloqueados, Desativados) · **Engajamento** (Alto, Médio, Baixo) · Limpar filtros. Os cards e as abas mostram o total; a tabela mostra o resultado dos filtros.
+
+### ✅ "A partir do Google" executado (19/11/2026)
+Levado ao painel real tudo de v301 a v312 (`src/painel/np/modelo.html` + `painel.ts`):
+- Aba **Alunos** do painel = a aba Alunos do modelo, com os alunos reais (cards, abas, filtros, tabela, ações). "Ver detalhes" abre a ficha do painel.
+- **+ Aluno** (no curso) e **Cadastrar aluno** (aba Alunos) = a janela nova: Aluno existente | Novo aluno, etapas, Forma de liberação (9 opções), tela de sucesso com a mensagem.
+- Gravação: novo aluno pela Edge Function `cadastrar-aluna`; liberação com `salvar_liberacao` (curso inteiro em "Tudo liberado agora"; nas outras, aula por aula) e `salvar_cronograma` (data de cada aula futura para o aluno).
+- Limites do banco hoje: "Ao concluir a anterior" libera só a primeira aula (o resto fica para liberar na ficha); a hora do "Dia fixo da semana" não é gravada (só o dia); aula nova criada depois no curso não entra sozinha para quem foi liberado aula a aula.
+Novo marco: o que mudar no ilustrativo daqui em diante volta a ser anotado abaixo.

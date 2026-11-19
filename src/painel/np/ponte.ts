@@ -55,7 +55,7 @@ function posicionar() {
 }
 
 /** Chamado depois de cada redesenho do painel. */
-export function npSincronizar(ativo: boolean, vista: "lista" | "categorias", dados: () => Record<string, unknown>, agir: (m: NpAcao) => void) {
+export function npSincronizar(ativo: boolean, vista: "lista" | "categorias" | "alunos", dados: () => Record<string, unknown>, agir: (m: NpAcao) => void) {
   aoAgir = agir;
   if (!ativo) { if (quadro) quadro.style.display = "none"; return; }
   const f = quadroDe();
