@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 305,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 306,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -370,3 +370,4 @@ Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a p
   - O cronograma "Como o aluno vai receber" saiu desta etapa e foi para o **Resumo**.
   - A janela de Adicionar/Cadastrar aluno **continua aberta no mesmo ponto** depois de recarregar a página.
 - v305 — Forma de liberação com 9 opções (as 3 primeiras continuam iguais): **Tudo liberado agora** · **Uma aula a cada X dias** · **Manual** · **Por módulo** (marca quais módulos o aluno acessa no cadastro; os outros ficam 🔒 até você liberar) · **Módulo inteiro a cada X dias** (contando do cadastro; 1º módulo imediato ou após X dias; intervalo igual ou por módulo) · **Por data fixa** (você escolhe a data de cada módulo; aulas acompanham; sem data = bloqueado) · **Dia fixo da semana** (1 aula toda [dia] às [hora]; primeira no cadastro ou no primeiro [dia]) · **Ao concluir a anterior** (a próxima abre quando o aluno conclui a anterior, + X dias de espera; primeira agora) · **Personalizado** (em cada módulo: Imediato, Após X dias do cadastro, Data fixa ou Manual). Todas mostram os cards de módulo e aula com a data deste aluno; o Resumo traz o texto da regra e o cronograma.
+- v306 — Mensagem de acesso sem "Curso liberado" e sem "Como você vai receber": só saudação, link, login, código (e vídeo de instalação).
