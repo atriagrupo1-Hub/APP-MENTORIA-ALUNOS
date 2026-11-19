@@ -684,7 +684,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", rkBusca: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -5074,15 +5074,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
     const mp = ui.modPagina ? acharModulo(ui.modPagina) : null;
     if (mp && mp.c.id === c.id) return paginaModulo(c, mp.m, mp.i);
-    const aba = ui.cursoAba || "visao";
+    const ABA_NOVA: Record<string, string> = { visao: "sobre", modulos: "conteudo", relatorios: "engaj", alunas: "alunos" };
+    const aba = ABA_NOVA[ui.cursoAba] || ui.cursoAba || "sobre";
     const todas = alunasDoCurso(c);
-    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["config", "Sobre o curso"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["relatorios", "Relatórios"]];
-    const conteudo = aba === "modulos" ? modulosCurso(c)
-      : aba === "alunas" ? alunasCursoAba(c, todas)
+    const conteudo = aba === "conteudo" ? modulosCurso(c)
+      : aba === "alunos" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
       : aba === "config" ? configCurso(c)
-      : aba === "relatorios" ? relatoriosCurso(c, todas)
-      : visaoGeralCurso(c, todas);
+      : aba === "engaj" ? relatoriosCurso(c, todas)
+      : aba === "ranking" ? rankingCurso(c, todas)
+      : sobreProduto(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
     const cv = (() => {
       const titAba = ({ visao: ["Visão geral", "Acompanhe a estrutura, as alunas e as atividades."], config: ["Sobre o curso", "Capa, textos, onde aparece e publicação."], modulos: ["Módulos e aulas", "Organize os módulos e as aulas."], alunas: ["Alunas", "Quem tem acesso a este curso."], comentarios: ["Comentários", "Responda e modere os comentários das alunas."], relatorios: ["Relatórios", "Como o curso está indo."] } as Record<string, [string, string]>)[aba] || ["Visão geral", ""];
@@ -5108,20 +5109,77 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>
       </div>`;
     })();
+    void cv; void visaoGeralCurso;
+    const ABAS_P: [string, string, string][] = [["sobre", "Sobre o produto", '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'], ["conteudo", "Conteúdo", '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>'], ["engaj", "Engajamento", '<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>'], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : ""), '<path d="M4 5h16v11H9l-5 4z"/>'], ["alunos", "Alunos", '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>'], ["ranking", "Ranking de alunos", '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>']];
+    const nomeAba = aba === "config" ? "Editar curso" : (ABAS_P.find((x) => x[0] === aba) || ABAS_P[0])[1];
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
     return `
-    <section class="tela ativa cs">
-      ${cv || `      <div class="cs-trilha">
-        <button type="button" class="cs-volta-ic" data-a="aba" data-v="cursos" aria-label="Voltar para Cursos e conteúdos">${IC_CURSO.voltar}</button>
-        <span><button type="button" class="link cs-link-trilha" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true" class="cs-sep">›</span><b>${h(c.nome)}</b></span>
-        <span style="flex:1"></span>
-        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna ${IC_EXTERNO}</button>
-        <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
-        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
-        <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
-      </div>`}
-      <nav class="cs-abas" aria-label="Partes do curso">${ABAS_C.map(([v, t]) => `<button type="button" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${t}</button>`).join("")}</nav>
+    <section class="tela ativa cs ppx">
+      <div class="pp-top"><button type="button" class="pp-volta" data-a="aba" data-v="cursos" aria-label="Voltar para Produtos">${IC_CURSO.voltar}</button>
+        <nav class="pp-trilha" aria-label="Você está em"><button type="button" data-a="aba" data-v="cursos">Produtos</button><span aria-hidden="true">›</span><button type="button" data-a="curso-aba" data-v="sobre">${h(c.nome)}</button><span aria-hidden="true">›</span><b>${h(nomeAba)}</b></nav>
+        <span class="np-flex"></span>
+        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver como aluno ${IC_EXTERNO}</button>
+        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}</summary><div><button type="button" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
+      </div>
+      <nav class="pp-abas" aria-label="Partes do produto">${ABAS_P.map(([v, t, ic]) => `<button type="button" class="pp-aba${aba === v ? " on" : ""}" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${ppI(ic)}${t}</button>`).join("")}</nav>
       ${conteudo}
     </section>`;
+  }
+
+  /** Aba "Sobre o produto" (modelo novo produto): dados reais do curso. */
+  function sobreProduto(c: Curso, todas: AlunaCurso[]) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+    const agora = Date.now();
+    const lib = aulas.filter(({ a, m }) => !c.rascunho && !m.rascunho && m.pub && !a.rascunho && a.pub && a.acesso !== "bloqueada" && !(a.libera && new Date(a.libera).getTime() > agora));
+    const pct = aulas.length ? Math.round((lib.length / aulas.length) * 100) : 0;
+    const seg = aulas.reduce((t, x) => t + (x.a.duracao || 0), 0), hh = Math.floor(seg / 3600), mm = Math.round((seg % 3600) / 60);
+    const horas = String(hh).padStart(2, "0") + "h " + String(mm).padStart(2, "0") + "min";
+    const tipoN = c.tipo === "ebook" ? "E-book" : c.tipo === "audio" ? "Áudio" : "Vídeo";
+    const cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
+    const im = capaSite(c.capa);
+    const datasLib = aulas.map((x) => x.a.liberadaEm || x.a.publicadoEm || "").concat([c.publicadoEm || ""]).filter(Boolean).sort();
+    const u = ULT_LIB.get(c.id);
+    const ult = u ? (u.mod != null ? "Módulo " + u.mod + " – " : "") + (u.num != null ? "Aula " + u.num : h(u.titulo)) : "—";
+    const eng = todas.length ? Math.round(todas.reduce((t, x) => t + x.pct, 0) / todas.length) : 0;
+    const st: [string, string] = c.rascunho ? ["Não publicado", "#A5ADB8"] : !c.visivel ? ["Oculto", "#A3BADB"] : c.bloq ? ["Bloqueado", "#DFA19F"] : c.libera && new Date(c.libera).getTime() > agora ? ["Agendado", "#E2C68C"] : ["Publicado", "#9AC7AB"];
+    const campo = (ic: string, t: string, v: string, inl = false) => `<div class="pp-campo${inl ? " pp-in" : ""}">${ppI(ic)}<div><em>${t}</em>${v}</div></div>`;
+    const tile = (ic: string, t: string, v: string | number, dica = "") => `<div class="pp-tile">${ppI(ic)}<span><em>${t}${dica}</em><b>${v}</b></span></div>`;
+    const lin = (ic: string, t: string, v: string) => `<div class="pp-lin">${ppI(ic)}<span>${t}</span><b>${v}</b></div>`;
+    const IC_TAG = '<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.4"/>', IC_CAM = '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>', IC_CAL = '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>', IC_PLAY = '<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>';
+    return `<div class="pp-painel">
+      <div class="pp-hrow"><h2 class="pp-h">${ppI('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}Sobre o produto</h2><button type="button" class="al-botao-ouro pp-ed" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button></div>
+      <div class="pp-sobre"><div class="pp-esq"><div class="pp-capa">${im ? `<img src="${h(im)}" alt="" onerror="this.remove()" />` : `<span class="pp-capa-n">${h(c.nome)}</span>`}<span class="pp-tipo">${tipoN}</span></div>
+        ${campo(IC_TAG, "Nome", `<b class="pp-nome">${h(c.nome)}</b>`)}${campo('<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/>', "Descrição", `<p>${h(c.descricao || "Sem descrição.")}</p>`)}${campo(IC_CAM, "Formato", `<span class="pp-pill">${tipoN}</span>`, true)}${campo(IC_TAG, "Categoria", `<span class="pp-pill">${h(cats)}</span>`, true)}</div>
+        <div class="pp-dir"><div class="pp-tiles">${tile(IC_CAM, "Total de módulos", c.modulos.length)}${tile(IC_PLAY, "Total de aulas", aulas.length)}${tile('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', "Horas totais", horas)}</div>
+          <div class="pp-box pp-prog"><div class="pp-prog-c">${ppI('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>')}<b>Progresso de liberação</b><span>${pct}%</span></div><div class="pp-barra"><i style="width:${pct}%"></i></div><small>${lib.length} de ${aulas.length} ${aulas.length === 1 ? "aula liberada" : "aulas liberadas"}</small></div>
+          <div class="pp-box">${lin(IC_CAL, "Data de criação", c.criado ? br(diaDe(c.criado)) : "—")}${lin(IC_PLAY, "Data da primeira aula/módulo liberado", datasLib[0] ? br(diaDe(datasLib[0])) : "—")}${lin('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Última aula liberada", ult)}
+            <div class="pp-tiles pp-t2">${tile('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>', "Total de alunos", todas.length)}${tile('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>', "Engajamento médio", eng + "%", " " + dicaCampo("Média de quanto os alunos assistem do conteúdo liberado.", "pp.eng"))}</div>
+            <div class="pp-st">${ppI(IC_CAM)}<b>Status</b><span class="pp-stp" style="--c:${st[1]}">${ppI('<path d="M5 12.5l4.5 4.5L19 7.5"/>')}${st[0]}</span></div></div></div></div>
+    </div>`;
+  }
+
+  /** Aba "Ranking de alunos": pontos provisórios = aulas concluídas × 10 + módulos concluídos × 50 (regra final a definir com o dono). */
+  function rankingCurso(c: Curso, todas: AlunaCurso[]) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas);
+    const L = todas.map((x) => { const feitas = aulas.filter((a) => x.a.feitas.has(a.id)), mods = c.modulos.filter((m) => m.aulas.length && m.aulas.every((a) => x.a.feitas.has(a.id))).length, seg = feitas.reduce((t, a) => t + (a.duracao || 0), 0);
+      return { x, n: feitas.length, mods, seg, pts: feitas.length * 10 + mods * 50 }; }).sort((a, b) => b.pts - a.pts || b.x.pct - a.x.pct);
+    const q = norm(ui.rkBusca || "").trim(), F = L.filter((r) => !q || norm(r.x.a.nome).includes(q));
+    const ini = (n: string) => n.split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase();
+    const hm = (s: number) => Math.floor(s / 3600) + "h " + String(Math.round((s % 3600) / 60)).padStart(2, "0") + "m";
+    const pod = [1, 0, 2].map((k) => { const r = L[k]; return r ? `<div class="rk-pd rk-pd${k}">${k === 0 ? `<span class="rk-coroa">${ppI('<path d="M4 17l-1-10 5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/>')}</span>` : ""}<span class="rk-av">${h(ini(r.x.a.nome))}<i>${k + 1}</i></span><div class="rk-base"><b>${h(r.x.a.nome)}</b><em>${r.pts} pts</em></div></div>` : "<div></div>"; }).join("");
+    const conc = L.filter((r) => r.n > 0).length, tot = L.reduce((t, r) => t + r.n, 0), eng = todas.length ? Math.round(todas.reduce((t, x) => t + x.pct, 0) / todas.length) : 0;
+    const k4 = (ic: string, t: string, v: string | number, on = false) => `<div class="pp-tile${on ? " on" : ""}">${ppI(ic)}<span><em>${t}</em><b>${v}</b></span></div>`;
+    return `<div class="pp-painel">
+      <div class="pp-hrow"><h2 class="pp-h">${ppI('<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>')}Ranking de alunos</h2></div>
+      <p class="pp-sub">Desempenho e evolução dos alunos neste curso. Pontos: 10 por aula concluída e 50 por módulo concluído.</p>
+      <div class="pp-tiles pp-t4">${k4('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/>', "Alunos matriculados", todas.length, true)}${k4('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Concluíram aulas", conc)}${k4('<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>', "Aulas assistidas", tot)}${k4('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>', "Engajamento médio", eng + "%")}</div>
+      ${L.length ? `<div class="pp-box rk-podbox"><h3 class="pp-h3">Top 3 do curso</h3><div class="rk-podio">${pod}</div></div>` : ""}
+      <div class="pp-box"><div class="rk-tc"><h3 class="pp-h3">Ranking geral <em>(${L.length} ${L.length === 1 ? "aluno" : "alunos"})</em></h3><label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" data-rk-busca value="${h(ui.rkBusca || "")}" placeholder="Buscar aluno…" aria-label="Buscar aluno" /></label></div>
+        ${F.length ? `<div class="rk-sc"><div class="rk-tab" role="table"><div class="rk-l rk-hd" role="row"><span>#</span><span>Aluno</span><span>Pontos</span><span>Aulas concluídas</span><span>Módulos concluídos</span><span>Tempo de estudo</span><span>Progresso</span></div>${F.slice(0, 50).map((r) => { const pos = L.indexOf(r) + 1; return `<div class="rk-l" role="row"><span><b class="rk-pos${pos <= 3 ? " rk-p" + pos : ""}">${pos}</b></span><span class="rk-nm"><span class="rk-mini">${h(ini(r.x.a.nome))}</span><b>${h(r.x.a.nome)}</b></span><span><b class="rk-pts">${r.pts} pts</b></span><span>${r.n}</span><span>${r.mods} / ${c.modulos.length}</span><span>${hm(r.seg)}</span><span>${r.x.pct}%</span></div>`; }).join("")}</div></div>` : `<div class="np-vazio">${L.length ? "Nenhum aluno encontrado." : "Nenhum aluno neste curso ainda."}</div>`}
+      </div>
+    </div>`;
   }
 
   function blocoModulo(c: Curso, m: Modulo, i: number) {
@@ -9150,6 +9208,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cat-busca")) { ui.catBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-rk-busca")) { ui.rkBusca = t.value; render(); return; }
     if (t.hasAttribute("data-ka-busca")) { ui.kaBusca = t.value; render(); return; }
     if (t.hasAttribute("data-eq-busca")) { ui.eqBusca = t.value; render(); return; }
     if (t.hasAttribute("data-com-busca")) { ui.comBusca = t.value; ui.comPag = 1; render(); return; }
