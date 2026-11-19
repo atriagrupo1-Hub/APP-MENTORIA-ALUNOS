@@ -1505,7 +1505,7 @@ function esc(t){return String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 // Adicionar alunos ao produto: um aluno ou em massa (planilha / colar e-mails)
 const alunosAdd={};let alProd="",alAba="um",alLista=[];
 const emailOk=e=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
-function abrirAlunos(nome){alProd=nome;alAba="um";alLista=[];let m=document.getElementById("alModal");if(!m){m=document.createElement("div");m.id="alModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharAlunos()}
+function abrirAlunos(nome){if(NPE){const d=PRODS.find(x=>x.nome===nome);if(d&&d.id){npAvisar({tipo:"aluno-add",prod:d.id});return}}alProd=nome;alAba="um";alLista=[];let m=document.getElementById("alModal");if(!m){m=document.createElement("div");m.id="alModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharAlunos()}
 function lerPlanilha(txt){const L=txt.replace(/\r/g,"").split("\n").map(l=>l.trim()).filter(Boolean);const out=[];L.forEach((l,k)=>{const c=l.split(/[;,\t]/).map(x=>x.trim().replace(/^"|"$/g,""));if(k===0&&c.some(x=>/e-?mail/i.test(x)))return;const em=c.find(x=>x.includes("@"))||"",nm=c.find(x=>x&&!x.includes("@"))||"";out.push({nome:nm,email:em.toLowerCase()})});return out}
 function classificar(L){const ja=new Set([...(alunosAdd[alProd]||[]),...((alunosDe[alProd]||[]).map(a=>a.email))]),vistos=new Set();return L.map(x=>{let st="ok";if(!emailOk(x.email))st="inv";else if(ja.has(x.email))st="ja";else if(vistos.has(x.email))st="rep";vistos.add(x.email);return{...x,st}})}
 function desenharAlunos(){const m=document.getElementById("alModal");if(!m||m.hidden)return;const C=classificar(alLista),ok=C.filter(x=>x.st==="ok").length;

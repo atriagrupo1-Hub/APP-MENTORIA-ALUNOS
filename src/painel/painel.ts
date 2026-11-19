@@ -3740,6 +3740,7 @@ export function montar(app: HTMLElement) {
   const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
   function npAgir(m: NpAcao) {
     const el = document.body;
+    if (m.tipo === "aluno-add") { const c = curso(String(m.prod || "")); if (!c) return; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", curso: c.id, codigo: novoCodigo() }; render(); return; }
     if (m.tipo === "ia") {
       // IA do modelo: não grava nada, só devolve o texto (fora da fila de gravações).
       void (async () => {
@@ -6646,7 +6647,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
   // Nome + sobrenome → campo "nome" (o que é salvo) e, no cadastro novo, o login automático.
   document.addEventListener("input", (e) => {
-    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al") as HTMLFormElement | null; if (!f) return;
+    const t = e.target as HTMLInputElement, f = t.closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (!f) return;
     const lg = f.elements.namedItem("login") as HTMLInputElement | null;
     if (t.name === "login") { t.dataset.auto = t.value ? "0" : "1"; return; }
     if (!t.hasAttribute("data-nome-parte")) return;
@@ -6658,8 +6659,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (lg && lg.dataset.auto === "1") lg.value = loginAuto(pn + " " + sn);
     atualizarCad();
   });
-  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
-  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
+  document.addEventListener("focusin", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (f) cadAntes = fotoCad(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cad-al:not(.cadx)") as HTMLFormElement | null; if (!f || !cadAntes) return; const agora = fotoCad(f); if (!mesmaFoto(cadAntes, agora)) { cadGuardar(f, cadAntes); cadAntes = agora; } });
   function atualizarCad() {
     cadBotaoDesfazer();
     const f = cadForm(); if (!f) return;
@@ -6672,6 +6673,21 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const tipo = (f.querySelector<HTMLInputElement>('input[name="tipo"]:checked')?.value) || "";
     const jc = f.querySelector<HTMLInputElement>("input[data-jor]"); if (jc && tipo && jc.dataset.mexeu !== "1") jc.checked = tipo === "mentoria";
   }
+  /** Adicionar aluno existente: busca, status, ordem e contagem direto na lista. */
+  function cadxFiltrar(f: HTMLFormElement) {
+    const q = norm((f.querySelector<HTMLInputElement>("[data-cadx-busca]")?.value || "").trim()), st = f.querySelector<HTMLSelectElement>("[data-cadx-st]")?.value || "", ord = f.querySelector<HTMLSelectElement>("[data-cadx-ord]")?.value || "rec", esconde = !!f.querySelector<HTMLInputElement>("[data-cadx-ja]")?.checked;
+    const box = f.querySelector<HTMLElement>(".cadx-lista"); if (!box) return;
+    const rows = [...box.querySelectorAll<HTMLElement>(".cadx-row")];
+    rows.sort((a, b) => ord === "az" ? a.dataset.nome!.localeCompare(b.dataset.nome!) : ord === "za" ? b.dataset.nome!.localeCompare(a.dataset.nome!) : ord === "ant" ? a.dataset.ent!.localeCompare(b.dataset.ent!) : b.dataset.ent!.localeCompare(a.dataset.ent!));
+    let n = 0; const nada = box.querySelector(".cadx-nada");
+    rows.forEach((r) => { const ok = (!q || r.dataset.busca!.includes(q)) && (!st || r.dataset.st === st) && !(esconde && r.classList.contains("ja")); r.hidden = !ok; if (ok) n++; box.insertBefore(r, nada); });
+    if (nada) (nada as HTMLElement).hidden = n > 0;
+    const sel = f.querySelectorAll('input[name="ex"]:checked').length;
+    const cont = f.querySelector("[data-cadx-cont]"); if (cont) cont.textContent = p(n, "aluno", "alunos") + (sel ? " · " + p(sel, "marcado", "marcados") : "");
+    const ok = f.querySelector<HTMLButtonElement>("[data-cadx-ok]"); if (ok) { ok.disabled = !sel; ok.textContent = sel ? "Adicionar " + p(sel, "aluno", "alunos") + " ao curso" : "Adicionar ao curso"; }
+  }
+  document.addEventListener("input", (e) => { const f = (e.target as HTMLElement).closest?.("form.cadx") as HTMLFormElement | null; if (f) cadxFiltrar(f); });
+  document.addEventListener("change", (e) => { const f = (e.target as HTMLElement).closest?.("form.cadx") as HTMLFormElement | null; if (f) cadxFiltrar(f); });
   function cadAbas(): string[] { const f = cadForm(); return f ? [...f.querySelectorAll<HTMLElement>("[data-cad-painel]")].map((x) => x.dataset.cadPainel!) : []; }
   function cadAtual(): string { return cadForm()?.querySelector<HTMLElement>("[data-cad-painel]:not([hidden])")?.dataset.cadPainel || "dados"; }
   /** Confere a aba; devolve a mensagem do que falta (vazio se está tudo certo). */
@@ -6713,8 +6729,45 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const m = ui.modal;
     if (!m) return "";
     let corpo = "";
-    if (m.tipo === "aluna") {
+    if (m.tipo === "aluna" && !m.id && m.curso && m.modo !== "novo" && curso(String(m.curso))) {
+      // Dentro do curso: primeiro escolhe aluno existente ou novo aluno.
+      const c = curso(String(m.curso))!, modo = String(m.modo || "");
+      const seg = `<div class="cadx-modo" role="tablist"><button type="button" role="tab" data-a="cad-modo" data-v="existente" aria-selected="${modo === "existente"}">Aluno existente</button><button type="button" role="tab" data-a="cad-modo" data-v="novo" aria-selected="false">Novo aluno</button></div>`;
+      const sit = (a: Aluna) => a.bloqueada ? ["bloq", "Bloqueado"] : vencida(a) ? ["desat", "Desativado"] : ["ativo", "Ativo"];
+      const lista = [...S.alunas].sort((x, y) => (y.entrada || "").localeCompare(x.entrada || "") || x.nome.localeCompare(y.nome));
+      corpo = `
+      <form data-f="aluno-existente" data-id="${c.id}" class="cad-al cadx" novalidate>
+        <div class="cad-topo"><h2 class="titulo">Adicionar aluno</h2><span class="cad-topo-dir"><button type="button" class="cri-x" data-a="fechar" aria-label="Fechar" title="Fechar">${xis}</button></span></div>
+        <p class="explica">${h(c.nome)} · ${modo === "existente" ? "marque quem já tem cadastro e vai receber este curso." : "escolha se é um aluno que já tem cadastro ou um aluno novo."}</p>
+        ${seg}
+        ${modo === "existente" ? `
+        <div class="cadx-barra">
+          <label class="cadx-busca"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="cadexBusca" class="campo" type="search" placeholder="Buscar por nome, login, e-mail ou código" autocomplete="off" data-cadx-busca /></label>
+          <select class="campo" data-cadx-st aria-label="Status"><option value="">Todos os status</option><option value="ativo">Ativos</option><option value="bloq">Bloqueados</option><option value="desat">Desativados</option></select>
+          <select class="campo" data-cadx-ord aria-label="Ordem"><option value="rec">Últimos adicionados</option><option value="az">Nome (A–Z)</option><option value="za">Nome (Z–A)</option><option value="ant">Mais antigos</option></select>
+        </div>
+        <div class="cadx-topo"><span data-cadx-cont>${p(lista.length, "aluno", "alunos")}</span><label class="cadx-ocultar"><input type="checkbox" data-cadx-ja checked /> Esconder quem já está no curso</label></div>
+        <div class="cadx-lista">${lista.map((a) => { const ja = a.acesso.cursos.includes(c.id) || alunasDoCurso(c).some((x) => x.a.id === a.id), [st, stT] = sit(a);
+          return `<label class="cadx-row${ja ? " ja" : ""}" data-busca="${h(norm([a.nome, a.login, a.email, a.codigo].join(" ")))}" data-nome="${h(norm(a.nome))}" data-ent="${h(a.entrada || "")}" data-st="${st}"${ja ? " hidden" : ""}>
+            <input type="checkbox" name="ex" value="${a.id}" ${ja ? "disabled" : ""} />
+            <span class="cadx-av">${S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : h(iniciais(a.nome))}</span>
+            <span class="cadx-nome"><b>${h(a.nome)}</b><small>${h(a.login || a.email || "")}</small></span>
+            <span class="cadx-st ${st}">${stT}</span>
+            <span class="cadx-data">${a.entrada ? br(a.entrada) : "—"}</span>
+            ${ja ? `<span class="cadx-ja">Já está no curso</span>` : ""}
+          </label>`; }).join("") || `<p class="cad-dica">Nenhum aluno cadastrado ainda. Use Novo aluno.</p>`}
+          <p class="cad-dica cadx-nada" hidden>Nenhum aluno encontrado com esse filtro.</p>
+        </div>` : `<p class="cad-dica cadx-escolha">Aluno existente: escolha na lista de quem já tem cadastro. Novo aluno: preencha os dados, o acesso e o curso já vem marcado.</p>`}
+        <div class="rodape-modal cad-pe">
+          <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
+          <span style="flex:1"></span>
+          ${modo === "existente" ? `<button class="botao" data-cadx-ok disabled>Adicionar ao curso</button>` : ""}
+        </div>
+      </form>`;
+      if (modo === "existente" && !ui.focar) ui.focar = "cadexBusca";
+    } else if (m.tipo === "aluna") {
       const a = m.id ? aluna(m.id) : null;
+      const ctxC = !a && m.curso ? curso(String(m.curso)) : null;
       const d = hoje(), cod = a ? a.codigo : m.codigo || novoCodigo();
       const jor = S.config.jornada;
       const abas: [string, string][] = a ? [["dados", "Dados do aluno"], ["acesso", "Acesso app"], ["produtos", "Acesso produtos"]] : [["dados", "Dados do aluno"], ["acesso", "Acesso"], ["conteudos", "Conteúdos liberados"], ["obs", "Observações"]];
@@ -6723,15 +6776,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const painelAba = (k: string, html: string) => `<div class="cad-painel" data-cad-painel="${k}"${k === "dados" ? "" : " hidden"}>${html}</div>`;
       corpo = `
       <form data-f="aluna" data-id="${a ? a.id : ""}" class="cad-al" novalidate>
-        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : "Cadastrar aluna"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cri-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
+        <div class="cad-topo"><h2 class="titulo">${a ? h(a.nome) : ctxC ? "Adicionar aluno" : "Cadastrar aluno"}</h2><span class="cad-topo-dir">${a ? `<button type="button" class="cad-desfazer" data-a="cad-desfazer" disabled title="Desfaz as últimas alterações feitas aqui (até 5), antes de salvar">↶ Desfazer</button>` : ""}<button type="button" class="cri-x" data-a="fechar" data-cad-cancelar aria-label="Fechar" title="Fechar">${xis}</button></span></div>
         <p class="explica">${a ? "Editar dados. " + p(a.liberadas, "aula liberada", "aulas liberadas") + (a.bloqueada ? " · bloqueada" : "") : "Preencha por partes. Nada é salvo até clicar em Cadastrar."}</p>
+        ${ctxC ? `<div class="cadx-modo" role="tablist"><button type="button" role="tab" data-a="cad-modo" data-v="existente" aria-selected="false">Aluno existente</button><button type="button" role="tab" data-a="cad-modo" data-v="novo" aria-selected="true">Novo aluno</button></div>` : ""}
         <div class="cad-abas" role="tablist">${abas.map(([k, t], n) => `<button type="button" role="tab" data-a="cad-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         ${painelAba("dados", `<div class="cad-grade">
           <label class="cad-c"><span>Nome <b>*</b></span><input id="alunaNome" class="campo" name="pnome" value="${h(a ? a.nome.trim().split(/\s+/)[0] : "")}" autocomplete="off" data-nome-parte /></label>
           <label class="cad-c"><span>Sobrenome <b>*</b></span><input class="campo" name="snome" value="${h(a ? a.nome.trim().split(/\s+/).slice(1).join(" ") : "")}" autocomplete="off" data-nome-parte /><input type="hidden" name="nome" value="${h(a ? a.nome : "")}" /></label>
           <label class="cad-c"><span>Celular (WhatsApp) <b>*</b></span><input class="campo" name="celular" data-i="celular" type="tel" inputmode="numeric" autocomplete="off" maxlength="15" placeholder="(11) 98765-4321" value="${h(a ? formatarCelular(a.celular) : "")}" /><small>Usado para enviar o acesso.</small></label>
           <label class="cad-c"><span>E-mail</span><input class="campo" name="email" type="email" inputmode="email" autocomplete="off" placeholder="opcional" value="${h(a ? a.email : "")}" /></label>
-          ${a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluna da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluna</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluna da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluna geral (outros produtos)</span></label></div><small>Aluna da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
+          ${ctxC ? "" : a ? (jor ? `<div class="cad-c cad-full"><span>Tipo de aluno</span><div class="cad-seg"><label><input type="radio" name="tipo" value="mentoria" ${daMentoria(a) ? "checked" : ""} /><span>Aluno da mentoria</span></label><label><input type="radio" name="tipo" value="geral" ${daMentoria(a) ? "" : "checked"} /><span>Aluno geral (outros produtos)</span></label></div><small>Trocar para mentoria libera a mentoria; trocar para geral tira o acesso à mentoria (curso, módulos e aulas dela). Vale ao clicar em Salvar.</small></div>` : "") : `<div class="cad-c cad-full"><span>Tipo de aluno</span><div class="cad-seg">${jor ? `<label><input type="radio" name="tipo" value="mentoria" checked /><span>Aluno da mentoria</span></label>` : ""}<label><input type="radio" name="tipo" value="geral" ${jor ? "" : "checked"} /><span>Aluno geral (outros produtos)</span></label></div><small>Aluno da mentoria já sai com a mentoria liberada. Dá para ajustar em Conteúdos liberados.</small></div>`}
           <div class="cad-c cad-full"><span>Foto (opcional)</span><div class="cad-foto"><span class="cad-av" id="alnFoto">${fotoNova && fotoPara === "aln" ? `<img src="${fotoNova.foto}" alt="" />` : a && S.fotos[a.id] ? `<img src="${h(S.fotos[a.id])}" alt="" />` : a ? h(iniciais(a.nome)) : "?"}</span><button type="button" class="botao-neutro grande" data-a="aln-foto">${(fotoNova && fotoPara === "aln") || (a && S.fotos[a.id]) ? "Trocar foto" : "Enviar foto"}</button><small>Sem foto, aparece a inicial do nome.</small></div></div>
         </div>`)}
         ${painelAba("acesso", `<div class="cad-grade">
@@ -6764,7 +6818,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <button type="button" class="botao-neutro grande" data-a="liberar" data-id="${a.id}">Editar liberação</button>`;
         })()) : ""}
         ${a ? "" : painelAba("conteudos", `<p class="cad-dica">Marque os cursos que ela recebe agora. Módulos e aulas avulsas: depois, em Liberar conteúdo.</p>
-          <div class="cad-cursos">${S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
+          <div class="cad-cursos">${ctxC ? `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${ctxC.id}" checked /><span><b>${h(ctxC.nome)}</b><small>${p(ctxC.modulos.length, "módulo", "módulos")} · liberado ao cadastrar</small></span></label>` : S.cursos.length ? S.cursos.map((c) => `<label class="cad-curso"><input type="checkbox" name="cad-c" value="${c.id}" ${c.id === jor ? "checked data-jor" : ""} /><span><b>${h(c.nome)}</b><small>${c.id === jor ? "Mentoria · " : ""}${p(c.modulos.length, "módulo", "módulos")}</small></span></label>`).join("") : `<p class="cad-dica">Nenhum curso cadastrado.</p>`}</div>`)}
         ${a ? "" : painelAba("obs", `<label class="cad-c cad-full"><span>Observação (opcional)</span><textarea class="campo" name="obs" rows="5" maxlength="2000" placeholder="Ex.: veio pela live de outubro, prefere contato à tarde."></textarea><small>Fica na ficha dela, em Observações.</small></label>`)}
         <div class="rodape-modal cad-pe">
           <button type="button" class="botao-neutro grande" data-a="cad-voltar" hidden>← Voltar</button>
@@ -7154,6 +7208,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
 
+      case "cad-modo": if (ui.modal) { ui.modal = { ...ui.modal, modo: d.v }; if (d.v === "novo" && !ui.modal.codigo) ui.modal.codigo = novoCodigo(); ui.focar = d.v === "novo" ? "alunaNome" : "cadexBusca"; } break;
       case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
       case "editar-aluna": cadHist = []; cadAntes = null; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
@@ -8764,6 +8819,17 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           await abrirSessao(true);
           ocupado = false; render();
         })();
+        return;
+      }
+      case "aluno-existente": {
+        const c = curso(id); if (!c) return;
+        const ids = [...form.querySelectorAll<HTMLInputElement>('input[name="ex"]:checked')].map((x) => x.value).filter((x) => aluna(x));
+        if (!ids.length) { toast("Marque pelo menos um aluno."); return; }
+        void executar(async () => {
+          for (const x of ids) { const al = aluna(x)!; if (al.acesso.cursos.includes(c.id)) continue; await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: [...al.acesso.cursos, c.id], p_modulos: al.acesso.modulos, p_aulas: al.acesso.aulas }); await registrar(al.id, "Liberou o curso " + c.nome); }
+          ui.modal = null;
+          return p(ids.length, "aluno adicionado", "alunos adicionados") + " ao curso " + c.nome + ".";
+        });
         return;
       }
       case "aluna": {
