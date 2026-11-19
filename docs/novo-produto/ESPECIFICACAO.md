@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 308,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 309,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -373,3 +373,4 @@ Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a p
 - v306 — Mensagem de acesso sem "Curso liberado" e sem "Como você vai receber": só saudação, link, login, código (e vídeo de instalação).
 - v307 — Copiar mensagem: o botão vira "✓ Mensagem copiada" (verde, por 2,5 s) e aparece o aviso "Mensagem copiada." por cima da janela.
 - v308 — Sem a etapa Resumo: Novo aluno tem 4 etapas (Dados · Acesso · Conteúdos liberados · Forma de liberação) e Aluno existente 2 (Escolher aluno · Forma de liberação). Na última, o botão é **Cadastrar aluno** (ou **Adicionar ao curso**). Ao clicar: tela de carregar com a logo AIŌN → "Aluno cadastrado com sucesso" (nome · curso) com a **mensagem para enviar ao aluno** e **Copiar mensagem**; botão **Concluir** fecha.
+- v309 — Tela de sucesso: abaixo de "Aluno cadastrado com sucesso", quadro com **Curso**, **Aluno**, **Celular** e **Data de cadastro**; depois a mensagem para enviar.

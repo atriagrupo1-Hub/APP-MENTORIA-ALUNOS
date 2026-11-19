@@ -2305,6 +2305,7 @@ filtrar();
 .cx-msgt{white-space:pre-wrap;padding:14px;border-radius:10px;background:#17181B;border:1px solid var(--div);font-size:13px;line-height:1.7}
 .cx-copiar{margin-top:10px}
 .cx-ok{display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:0}.cx-ok h3{margin:14px 0 4px;font-size:22px;font-weight:700}.cx-ok>p{margin:0 0 20px;color:var(--t2);font-size:13px}.cx-ok .cx-msg{width:100%;text-align:left}
+.cx-okd{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;width:100%;max-width:520px;margin:6px 0 20px;padding:14px 18px;border:1px solid var(--borda);border-radius:12px;background:#141518;text-align:left;font-size:13.5px}.cx-okd dt{color:var(--t2)}.cx-okd dd{margin:0;font-weight:650;overflow-wrap:anywhere}
 .cx-ok-ic{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#15291d;border:1px solid #2c5a3c;color:#7FD49B}.cx-ok-ic svg{width:30px;height:30px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.cx-copiar.cx-copiado{background:#15291d;border-color:#2c5a3c;color:#7FD49B}
 #toast{z-index:60}
 /* aluno existente */
@@ -2464,7 +2465,7 @@ function cxLib(nome){const L=libDe(nome),c=esc(nome);
     '<div class="cx-sec">'+cxLiberado(nome)+(L.tipo?'<span class="cx-cron-t">Módulos e aulas</span>'+cxModsLib(nome):'')+'</div></div>'}
 function cxGuardar(){try{if(!cx){sessionStorage.removeItem("aion-modelo-cx");localStorage.removeItem("aion-modelo-cx");return}const j=document.querySelector("#cxModal .aj-jan"),o=JSON.stringify({...cx,cursos:[...cx.cursos],sel:[...cx.sel],feitos:[...cx.feitos],foco:"",y:j?j.scrollTop:0,t:Date.now()});sessionStorage.setItem("aion-modelo-cx",o);localStorage.setItem("aion-modelo-cx",o)}catch(e){}}
 function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden||!cx)return;const jv=m.querySelector(".aj-jan"),yv=cx.yIni!=null?cx.yIni:jv?jv.scrollTop:0;cx.yIni=null;
-  if(cx.fim){m.innerHTML='<div class="aj-jan cx-jan" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><span></span><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo cx-ok"><span class="cx-ok-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><h3 id="cxH">'+esc(cx.fim.titulo)+'</h3><p>'+esc(cx.fim.sub)+'</p>'+
+  if(cx.fim){m.innerHTML='<div class="aj-jan cx-jan" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><span></span><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo cx-ok"><span class="cx-ok-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><h3 id="cxH">'+esc(cx.fim.titulo)+'</h3>'+(cx.fim.dados?'<dl class="cx-okd">'+cx.fim.dados.map(([k,v])=>'<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>').join("")+'</dl>':'<p>'+esc(cx.fim.sub||"")+'</p>')+
     '<div class="cx-rb cx-msg"><h4>Mensagem para enviar ao aluno</h4><div class="cx-msgt" id="cxMsg">'+esc(cx.fim.msg)+'</div><button type="button" class="bt ouro cx-copiar" data-cxcopiar="1">Copiar mensagem</button></div></div>'+
     '<div class="cx-pe"><span style="flex:1"></span><button type="button" class="bt ouro" data-cxfechar="1">Concluir</button></div></div>';cxGuardar();return}const P=cxPassos(),i=Math.min(cx.passo,P.length-1),k=P[i][0],ultimo=i===P.length-1,ctx=!!cx.curso;
   let corpo="";
@@ -2498,13 +2499,13 @@ function cxFinal(){const P=cxPassos();for(let j=0;j<P.length;j++){const e=cxConf
   setTimeout(()=>{carregando(false);cxSalvar(msg,ex)},1300)}
 function cxSalvar(msg,ex){
   const libs=Object.fromEntries([...cx.cursos].map(c=>[c,{...libDe(c)}])),cs=[...cx.cursos];let nomes=[];
-  if(cx.modo==="existente"){cx.sel.forEach(id=>{const a=ALX.find(x=>x.id===id);if(!a)return;cs.forEach(c=>{if(!a.cursos.includes(c))a.cursos.push(c)});a.lib={...(a.lib||{}),...libs};nomes.push({nome:a.nome,email:a.email||a.login})})}
-  else{const nome=(cx.pn.trim()+" "+cx.sn.trim()).trim(),a={id:"a"+Date.now(),nome,login:cx.login||cxLoginAuto(),email:cx.email,cel:cx.cel.replace(/\D/g,""),cod:cx.cod,ent:cx.ent,val:cx.val,apar:cx.apar,st:"ativos",cursos:cs,lib:libs};ALX.unshift(a);nomes.push({nome,email:a.email||a.login})}
+  if(cx.modo==="existente"){cx.sel.forEach(id=>{const a=ALX.find(x=>x.id===id);if(!a)return;cs.forEach(c=>{if(!a.cursos.includes(c))a.cursos.push(c)});a.lib={...(a.lib||{}),...libs};nomes.push({nome:a.nome,email:a.email||a.login,cel:a.cel,ent:isoHoje()})})}
+  else{const nome=(cx.pn.trim()+" "+cx.sn.trim()).trim(),a={id:"a"+Date.now(),nome,login:cx.login||cxLoginAuto(),email:cx.email,cel:cx.cel.replace(/\D/g,""),cod:cx.cod,ent:cx.ent,val:cx.val,apar:cx.apar,st:"ativos",cursos:cs,lib:libs};ALX.unshift(a);nomes.push({nome,email:a.email||a.login,cel:a.cel,ent:a.ent})}
   salvarAlx();
   if(cx.curso){const S=alunosAdd[cx.curso]||(alunosAdd[cx.curso]=new Set());nomes.forEach(x=>S.add(x.email));const LA=alunosDe[cx.curso];if(LA){let n=LA.reduce((m,a)=>Math.max(m,a.i),0);nomes.forEach(x=>{n++;LA.unshift({i:n,nome:x.nome,email:x.email,cod:"AL"+(1000+n),st:"ativos",prog:0,ult:0,cad:0})})}}
   const curso=cx.curso,qtos=nomes.length;
   if(vista==="produto"){const y=scrollY;desenharProduto();scrollTo(0,y)}if(vista==="alunos")desenharAlx();if(typeof filtrar==="function")filtrar();
-  cx.fim={titulo:ex?(qtos===1?"Aluno adicionado com sucesso":"Alunos adicionados com sucesso"):"Aluno cadastrado com sucesso",sub:(qtos===1?nomes[0].nome:qtos+" alunos")+(curso?" · "+curso:""),msg};cx.yIni=0;desenharCx()}
+  cx.fim={titulo:ex?(qtos===1?"Aluno adicionado com sucesso":"Alunos adicionados com sucesso"):"Aluno cadastrado com sucesso",sub:"",dados:[["Curso",cs.join(", ")||"—"],...nomes.flatMap(x=>[["Aluno",x.nome],["Celular",celFmt(x.cel)||"—"],["Data de cadastro",dataBR(x.ent)]])],msg};cx.yIni=0;desenharCx()}
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.cxabrir!==undefined){abrirCad(b.dataset.cxabrir||"");return}
   if(b.dataset.alxmenu){const a=ALX.find(x=>x.id===b.dataset.alxmenu);if(!a)return;menuConteudo(b,[["Ver acesso",'data-alxac="ver:'+a.id+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alxac="'+(a.st==="bloq"?"ativos":"bloq")+':'+a.id+'"'],[a.st==="desat"?"Reativar (+1 ano)":"Desativar",'data-alxac="'+(a.st==="desat"?"reat":"desat")+':'+a.id+'"'],["Remover aluno",'data-alxac="rem:'+a.id+'"',1]]);return}
