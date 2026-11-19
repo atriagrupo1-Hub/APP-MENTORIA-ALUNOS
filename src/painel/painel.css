@@ -6396,3 +6396,39 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .ppx .pp-vz { margin: 0; font-size: 13px; color: var(--t2); }
 .ppx .pp-mt { margin-top: 18px; }
 @media (max-width: 1100px) { .ppx .pp-g3 { grid-template-columns: 1fr; } }
+
+
+/* ===== Página da categoria (modelo novo produto) ===== */
+.ppx .ctp { padding: 0; overflow: hidden; }
+.ppx .ctp-hd { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 22px; border-bottom: 1px solid var(--borda); }
+.ppx .ctp-h { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 650; }
+.ppx .ctp-res { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px); gap: 24px; padding: 22px; align-items: stretch; }
+.ppx .ctp-box { display: flex; flex-direction: column; padding: 22px; border: 1px solid var(--borda); border-radius: 16px; background: #141518; min-width: 0; }
+.ppx .ctp-topo { display: flex; justify-content: space-between; align-items: center; }
+.ppx .ctp-selo { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px; border: 1px solid #6d5a38; border-radius: 999px; background: #211f19; color: var(--ouro); font-size: 13px; font-weight: 600; }
+.ppx .ctp-selo .pp-ic { width: 16px; height: 16px; }
+.ppx .ctp-nome { margin: 16px 0 10px; font: 600 34px/1.1 "Cormorant Garamond", Georgia, serif; letter-spacing: .5px; text-transform: uppercase; overflow-wrap: anywhere; }
+.ppx .ctp-linha { margin: 0 0 6px; font-size: 14px; line-height: 1.5; color: var(--t2); }
+.ppx .ctp-linha .pp-ic { display: inline-block; width: 16px; height: 16px; vertical-align: -3px; margin-right: 6px; color: var(--ouro); }
+.ppx .ctp-linha b { color: var(--t1); font-weight: 600; }
+.ppx .ctp-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.ppx .ctp-nums > div, .ppx .ctp-datas > div { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--borda); border-radius: 12px; color: var(--ouro); min-width: 0; }
+.ppx .ctp-nums em, .ppx .ctp-datas em { display: block; font-style: normal; font-size: 13px; color: var(--t2); }
+.ppx .ctp-nums b { display: block; font-size: 24px; font-weight: 700; color: var(--t1); }
+.ppx .ctp-datas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 14px 0 20px; }
+.ppx .ctp-datas b { display: block; font-size: 15px; color: var(--t1); }
+.ppx .ctp-pe { display: flex; justify-content: flex-end; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+.ppx .ctp-pe .np-st { flex: 1 1 300px; max-width: 360px; padding-top: 0; border-top: 0; }
+.ppx .ctp-pe .np-dd { height: 44px; border-radius: 10px; font-size: 13px; padding: 0 12px; }
+.ppx .ctp-ed { height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+.ppx .ctp-card { display: flex; align-items: flex-start; justify-content: center; min-width: 0; }
+.ppx .ctp-card .kx-card { width: 100%; }
+.ppx .ctp-cur { margin-top: 16px; }
+.ppx .ctp-cur-cab { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.ppx .ctp-cur-cab .pp-h3 { margin: 0; display: flex; align-items: center; gap: 8px; }
+.ppx .ctp-tot { margin: 4px 0 0; font-size: 13px; color: var(--t2); }
+.ppx .ctp-vz { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 28px 20px; border: 1px solid #4B402B; border-radius: 14px; background: radial-gradient(120% 140% at 50% 0%, rgba(226,198,140,.12), transparent 60%), #141518; }
+.ppx .ctp-vz h4 { margin: 0 0 6px; font-size: 18px; }
+.ppx .ctp-vz p { margin: 0 0 16px; font-size: 14px; color: var(--t2); }
+@media (max-width: 900px) { .ppx .ctp-res { grid-template-columns: minmax(0, 1fr); } .ppx .ctp-card { max-width: 420px; } }
+@media (max-width: 640px) { .ppx .ctp-nums, .ppx .ctp-datas { grid-template-columns: 1fr; } .ppx .ctp-hd { padding: 14px 16px; } .ppx .ctp-res { padding: 16px; } }

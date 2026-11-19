@@ -3603,6 +3603,19 @@ export function montar(app: HTMLElement) {
   const npVista = (acao: string, lista: boolean, vGrade = "grade") => `<span class="np-vista" role="group" aria-label="Forma de ver"><button type="button" class="np-vt${lista ? "" : " on"}" data-a="${acao}" data-v="${vGrade}" aria-pressed="${!lista}" aria-label="Em cards">${NP_IC.grade}</button><button type="button" class="np-vt${lista ? " on" : ""}" data-a="${acao}" data-v="lista" aria-pressed="${lista}" aria-label="Em lista">${NP_IC.lista}</button></span>`;
   const npFiltro = (f: string, pub: boolean, vis: boolean, bloq: boolean, libera: string) => { const ag = vis && !bloq && !!libera && new Date(libera).getTime() > Date.now();
     return f === "pub" ? pub : f === "nao" ? !pub : f === "oculto" ? !vis : f === "bloqueado" ? vis && bloq : f === "agendado" ? ag : f === "liberado" ? vis && !bloq && !ag : true; };
+  function npCardCurso(c: Curso, menuHtml: string) {
+    const im = capaSite(c.capa), xs = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x), au = totalAulas(c), al = numerosCurso(c).alunas;
+    const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !c.rascunho}" data-a="curso-pub" data-id="${c.id}" data-v="${v ? 1 : 0}"><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+    return `<article class="np-card">
+      <button type="button" class="np-capa" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DO PRODUTO</span></span>`}<span class="np-tipo">${npTipo(c.tipo)}</span></button>
+      <div class="np-cc">
+        <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button><span class="np-l np-lin"><span class="np-lb">Categoria</span><span class="np-cat">${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</span></span></span>
+        <div class="np-nums"><div><b>${c.modulos.length}</b><span>${c.modulos.length === 1 ? "MÓDULO" : "MÓDULOS"}</span></div><div><b>${au}</b><span>${au === 1 ? "AULA" : "AULAS"}</span></div><div><b>${al}</b><span>${al === 1 ? "ALUNO" : "ALUNOS"}</span></div></div>
+        ${npStatus("c" + c.id, !c.rascunho, c.visivel, c.bloq, c.libera, pubBt, "curso:" + c.id, `<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
+        <div class="np-pe">${menuHtml}<button type="button" class="np-abrir" data-a="abrir-curso" data-id="${c.id}" data-v="${c.rascunho ? "config" : "visao"}">${c.rascunho ? "Continuar edição" : "Abrir produto"} <span aria-hidden="true">→</span></button></div>
+      </div>
+    </article>`;
+  }
   const npTipo = (t: string) => t === "ebook" ? "E-BOOK" : t === "audio" ? "ÁUDIO" : "VÍDEO";
 
   function telaCategorias() {
@@ -3730,67 +3743,54 @@ export function montar(app: HTMLElement) {
   /** Dentro da categoria: só os cursos dela, em cartões. */
   function telaCategoriaAba() {
     const x = catAba(ui.catxSel); if (!x) { ui.tab = "layout"; return telaAbas(); }
-    const img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
+    const img = capaSite(x.capa);
     const itens = itensReais(x.id).filter((y) => y.tipo === "curso");
     const daCat = itens.map((y) => curso(y.item)).filter((c): c is Curso => !!c);
     const q = norm(ui.kaBusca || "").trim(), ordem = ui.kaOrdem || "recentes", vista = ui.kaVista === "lista" ? "lista" : "grade";
     const lista = daCat.filter((c) => !q || casa(q, c.nome))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "antigos" ? (a.criado || "").localeCompare(b.criado || "") : (b.criado || "").localeCompare(a.criado || ""));
     const fora = cursosDeVerdade().filter((c) => !daCat.some((y) => y.id === c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
-    const VIS: Record<Estado3, string> = { ativo: "Visível para alunas", bloqueado: "Bloqueada (aparece com cadeado)", desativado: "Oculta para alunas" };
-    const IC_OLHO_S = IC_OLHO_C;
     // Visão geral e Editar curso à vista; o resto no ⋮.
     const menu = (c: Curso) => { const k = "kac:" + c.id, it = itens.find((y) => y.item === c.id); return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
         ${it ? `<span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-item-tirar" data-id="${it.id}">Tirar desta categoria</button>` : ""}
       </span>` : ""}</span>`; };
-    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
-    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa), ec = estado3(c.visivel, c.bloq); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(ec)}</button>`; };
-    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_S}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar curso</button>${menu(c)}`;
-    const cartao = (c: Curso) => `
-      <article class="ka-card${cls3(estado3(c.visivel, c.bloq))}">
-        ${capaC(c, "ka-capa")}
-        <div class="ka-corpo">
-          <button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>
-          ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}
-          ${stats(c)}
-          <div class="ka-bts">${bts(c)}</div>
-        </div>
-      </article>`;
-    const linha = (c: Curso) => `
-      <article class="ka-linha${cls3(estado3(c.visivel, c.bloq))}">
-        ${capaC(c, "ka-mini")}
-        <div class="ka-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
-        ${stats(c)}
-        <div class="ka-bts">${bts(c)}</div>
-      </article>`;
     const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso");
     return `
-    <section class="tela ativa ax ka">
-      <nav class="ka-trilha"><button type="button" data-a="aba" data-v="layout">‹ Categorias</button><span>/</span><b>${h(x.nome)}</b></nav>
-      <div class="ka-tit"><h1>${h(x.nome)}</h1><p>Gerencie a categoria e seus cursos associados.</p></div>
-      <div class="ka-cab${cls3(e)}">
-        <span class="ka-cab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
-        <div class="ka-cab-txt">
-          <small>Categoria de cursos${x.rascunho ? ` · <em class="ka-rasc">Não publicada</em>` : ""}</small>
-          <h2>${h(x.nome)}</h2>
-          ${x.descricao ? `<p class="ka-desc">${h(x.descricao)}</p>` : ""}
-          <p class="ka-meta"><span class="ka-vis ka-vis-${e}">● ${VIS[e]}</span> · ${p(daCat.length, "curso", "cursos")}</p>
-        </div>
-        <button type="button" class="al-botao ka-editar" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button>
-      </div>
-      <div class="ka-sec">
-        <div class="ka-sec-cab"><div><h3>Cursos nesta categoria ${dicaCampo(`Os cursos que aparecem quando a aluna abre esta categoria. Um curso pode estar em várias categorias; tirar daqui não apaga o curso.`, "ka.cursos")}</h3><p>Organize e gerencie os cursos desta categoria.</p></div>
-          <span class="ka-sec-bts"><button type="button" class="al-botao" data-a="ka-add-abrir" aria-expanded="${ui.kaAdd}">${IC_ABAC.mais}Adicionar existente</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></span></div>
-        ${ui.kaAdd ? `<div class="ka-add">${fora.length ? `<select class="campo" id="kaAddSel" aria-label="Curso já cadastrado">${fora.map((c) => `<option value="${c.id}">${h(c.nome)}</option>`).join("")}</select><button type="button" class="al-botao-ouro" data-a="ka-add" data-id="${x.id}">Adicionar à categoria</button>` : `<em>Todos os cursos já estão nesta categoria.</em>`}<button type="button" class="al-botao" data-a="ka-add-abrir">Cancelar</button></div>` : ""}
-        <div class="kg-barra">
-          <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" type="search" id="kaBusca" data-ka-busca value="${h(ui.kaBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
-          <select class="campo kg-sel" data-ka-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-          <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="ka-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="ka-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
-        </div>
-        ${!lista.length ? `<div class="vazio">${daCat.length ? "Nenhum curso encontrado." : "Nenhum curso nesta categoria ainda. Use Novo curso ou Adicionar existente."}</div>`
-          : vista === "lista" ? `<div class="ka-lista">${lista.map(linha).join("")}</div>` : `<div class="ka-grade">${lista.map(cartao).join("")}</div>`}
+    <section class="tela ativa ax ka ppx np">
+      <div class="pp-top"><button type="button" class="pp-volta" data-a="aba" data-v="layout" aria-label="Voltar para Categorias">${IC_CURSO.voltar}</button><nav class="pp-trilha" aria-label="Você está em"><button type="button" data-a="aba" data-v="layout">Categorias</button><span aria-hidden="true">›</span><b>${h(x.nome)}</b></nav></div>
+      ${(() => {
+        const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+        const fmtN: Record<string, string> = { video: "Vídeos", ebook: "E-books", audio: "Áudios" };
+        const nTipo: Record<string, number> = {}; daCat.forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; nTipo[t] = (nTipo[t] || 0) + 1; });
+        const fmt = Object.keys(nTipo).sort((a, b) => nTipo[b] - nTipo[a])[0] || "video";
+        const seg = daCat.reduce((t, c) => t + c.modulos.reduce((u, m) => u + m.aulas.reduce((v, a) => v + (a.duracao || 0), 0), 0), 0), mi = Math.round(seg / 60);
+        const alu = new Set(daCat.flatMap((c) => alunasDoCurso(c).map((y) => y.a.id))).size;
+        const libEm = x.publicadoEm || (x.libera && new Date(x.libera).getTime() <= Date.now() ? x.libera : "");
+        const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !x.rascunho}" data-a="${v === !x.rascunho ? "estado-menu" : "catx-pub-toggle"}" data-id="${x.id}"${v === !x.rascunho ? ` data-v="np-p:p${x.id}"` : ""}><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+        const kM = "ctpm:" + x.id;
+        return `<div class="pp-painel ctp">
+          <div class="ctp-hd"><span class="ctp-h">Categoria, formato e aparência ${dicaCampo("Resumo da categoria: formato, cursos, horas e situação. Use Editar categoria para mudar nome, capa ou aparência.", "ctp.resumo")}</span><span class="ctp-h">Card da categoria ${dicaCampo("É assim que a categoria aparece para o aluno dentro do aplicativo.", "ctp.card")}</span></div>
+          <div class="ctp-res"><div class="ctp-box">
+            <div class="ctp-topo"><span class="ctp-selo">${ppI('<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.4"/>')}Categoria</span><span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${kM}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kM}" aria-label="Mais opções">${IC_ABAC.pontos}</button>${ui.estMenu === kM ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="catx-duplicar" data-id="${x.id}">Duplicar</button><span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-remover" data-id="${x.id}">Excluir categoria</button></span>` : ""}</span></div>
+            <h2 class="ctp-nome">${h(x.nome)}</h2>
+            <p class="ctp-linha">${ppI('<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M10.5 9.5v5l4-2.5z"/>')}Formato: <b>${fmtN[fmt]}</b></p>
+            <p class="ctp-linha">${ppI('<path d="M5 6h14M5 10.5h14M5 15h9"/>')}Descrição: <b>${h(x.descricao || "—")}</b></p>
+            <div class="ctp-nums"><div>${ppI('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>')}<span><em>Cursos</em><b>${daCat.length}</b></span></div><div>${ppI('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>')}<span><em>Horas aula</em><b>${Math.floor(mi / 60)}h${String(mi % 60).padStart(2, "0")}</b></span></div><div>${ppI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>')}<span><em>Alunos</em><b>${alu}</b></span></div></div>
+            <div class="ctp-datas"><div>${ppI('<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>')}<span><em>Data de criação</em><b>${x.criado ? br(diaDe(x.criado)) : "—"}</b></span></div><div>${ppI('<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M9 15l2 2 4-4"/>')}<span><em>Liberado em</em><b>${libEm ? br(diaDe(libEm)) : "—"}</b></span></div></div>
+            <div class="ctp-pe">${npStatus("p" + x.id, !x.rascunho, x.pub, x.bloq, x.libera, pubBt, "catx:" + x.id, `<button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}<button type="button" class="al-botao-ouro ctp-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button></div>
+          </div>
+          <div class="ctp-card"><style>${cssKx(x)}</style><article class="kx-card"><span class="kx-capa">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span><div class="kx-info">${x.cardRotulo ? `<p class="kx-rot">${h(x.cardRotulo)}</p>` : ""}<b class="kx-tit">${h(x.nome)}</b>${x.descricao ? `<p class="kx-desc">${h(x.descricao)}</p>` : ""}<span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${h(x.botao || "Ver categoria")}</b></span></div></article></div>
+          </div></div>`;
+      })()}
+      <div class="pp-painel ctp-cur">
+        <div class="ctp-cur-cab"><div><h3 class="pp-h3">Cursos da categoria ${dicaCampo(`Os cursos que aparecem quando o aluno abre esta categoria. Um curso pode estar em várias categorias; tirar daqui não apaga o curso.`, "ka.cursos")}</h3><p class="ctp-tot">${p(daCat.length, "curso", "cursos")} · ${daCat.reduce((t, c) => t + totalAulas(c), 0)} aulas</p></div>
+          <span class="ka-sec-bts"><button type="button" class="al-botao" data-a="ka-add-abrir" aria-expanded="${ui.kaAdd}">${IC_ABAC.mais}Curso que já existe</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Curso novo</button></span></div>
+        ${ui.kaAdd ? `<div class="ka-add">${fora.length ? `<select class="campo" id="kaAddSel" aria-label="Curso já cadastrado">${fora.map((c) => `<option value="${c.id}">${h(c.nome)}</option>`).join("")}</select><button type="button" class="al-botao-ouro" data-a="ka-add" data-id="${x.id}">Adicionar à categoria</button>` : `<em>Todos os cursos já estão nesta categoria.</em>`}</div>` : ""}
+        ${daCat.length ? `<div class="np-filtros"><label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" id="kaBusca" data-ka-busca value="${h(ui.kaBusca || "")}" placeholder="Pesquisar curso…" aria-label="Pesquisar curso" /></label><select class="campo np-sel" data-ka-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select><span class="np-flex"></span>${npVista("ka-vista", vista === "lista")}</div>` : ""}
+        ${!daCat.length ? `<div class="ctp-vz"><h4>Esta categoria ainda não tem cursos</h4><p>Adicione um curso novo ou um curso que já existe para organizar esta categoria.</p><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Adicionar curso</button></div>`
+          : !lista.length ? `<div class="np-vazio">Nenhum curso encontrado.</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista.map((c) => npCardCurso(c, menu(c))).join("")}</div>`}
       </div>
       ${soltos.length ? `<div class="ka-sec"><h3 class="ka-h3">Módulos e aulas nesta categoria</h3><div class="cx-itens">${soltos.map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b>${it.tipo === "aula" ? `<button type="button" class="al-botao" data-a="abrir-aula" data-id="${it.item}">Abrir</button>` : ""}<button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("")}</div></div>` : ""}
       ${ui.catxEditar ? editarCatAba() : ""}
@@ -3948,19 +3948,7 @@ export function montar(app: HTMLElement) {
         <button type="button" role="menuitem" class="perigo" data-a="curso-remover" data-id="${c.id}">Excluir curso</button>
       </span>` : ""}</span>`; };
     const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo np-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
-    const npCard = (c: Curso) => {
-      const im = capaSite(c.capa), xs = catsDo(c), au = totalAulas(c), al = nAl(c);
-      const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !c.rascunho}" data-a="curso-pub" data-id="${c.id}" data-v="${v ? 1 : 0}"><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
-      return `<article class="np-card">
-        <button type="button" class="np-capa" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DO PRODUTO</span></span>`}<span class="np-tipo">${npTipo(c.tipo)}</span></button>
-        <div class="np-cc">
-          <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button><span class="np-l np-lin"><span class="np-lb">Categoria</span><span class="np-cat">${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</span></span></span>
-          <div class="np-nums"><div><b>${c.modulos.length}</b><span>${c.modulos.length === 1 ? "MÓDULO" : "MÓDULOS"}</span></div><div><b>${au}</b><span>${au === 1 ? "AULA" : "AULAS"}</span></div><div><b>${al}</b><span>${al === 1 ? "ALUNO" : "ALUNOS"}</span></div></div>
-          ${npStatus("c" + c.id, !c.rascunho, c.visivel, c.bloq, c.libera, pubBt, "curso:" + c.id, `<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
-          <div class="np-pe">${menu(c)}<button type="button" class="np-abrir" data-a="abrir-curso" data-id="${c.id}" data-v="${c.rascunho ? "config" : "visao"}">${c.rascunho ? "Continuar edição" : "Abrir produto"} <span aria-hidden="true">→</span></button></div>
-        </div>
-      </article>`;
-    };
+    const npCard = (c: Curso) => npCardCurso(c, menu(c));
     const vazioTxt = q || fCat || fSt ? "Nenhum produto com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro em “Criar novo produto”." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda.";
     return `
     <section class="tela ativa np">
