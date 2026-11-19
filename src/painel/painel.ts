@@ -21,7 +21,7 @@ import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
-import { npSincronizar, type NpAcao } from "./np/ponte";
+import { npSincronizar, npResponder, type NpAcao } from "./np/ponte";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -3630,8 +3630,8 @@ export function montar(app: HTMLElement) {
       const aulas = c.modulos.flatMap((m) => m.aulas), seg = aulas.reduce((t, a) => t + (a.duracao || 0), 0);
       const lib = aulas.filter((a) => !a.rascunho && a.pub && a.acesso !== "bloqueada" && !(a.libera && new Date(a.libera).getTime() > agora)).length;
       const u = ULT_LIB.get(c.id), al = alunasDoCurso(c);
-      mods[c.nome] = c.modulos.map((m) => ({ id: m.id, rot: m.rot, num: String(m.num), nome: m.nome, desc: m.intro, bt: m.botao || "Ver aulas", capa: capaSite(m.capaH || m.capa) || null, capaOrig: null, criado: m.criado ? br(diaDe(m.criado)) : "", st: stAula(m.rascunho, m.pub, !m.ativo, m.libera), lib: m.libera ? br(diaDe(m.libera)) : (m.publicadoEm ? br(diaDe(m.publicadoEm)) : ""), libCfg: m.liberaModo ? { tipo: m.liberaModo === "dias" ? "dias" : m.liberaModo === "data" ? "data" : "imediata", dias: m.liberaDias ?? 0, data: m.libera ? diaDe(m.libera) : "", hora: "09:00" } : null,
-        aulas: m.aulas.map((a) => ({ id: a.id, t: a.tipo === "pdf" ? "ebook" : a.tipo, nome: a.nome, desc: a.texto || "", mats: a.extras.map((x) => ({ t: x.tipo, nome: x.nome || x.tipo })), url: "", link: a.video || "", prog: 0, dim: "", st: stAula(a.rascunho, a.pub, a.acesso === "bloqueada", a.libera), dur: Math.round((a.duracao || 0) / 60), lib: a.libera ? br(diaDe(a.libera)) : (a.liberadaEm ? br(diaDe(a.liberadaEm)) : ""), capa: capaSite(a.capa) || "" })) }));
+      mods[c.nome] = c.modulos.map((m) => ({ id: m.id, rot: m.rot, num: String(m.num), nome: m.nome, desc: m.intro, bt: m.botao || "Ver aulas", capa: capaSite(m.capaH || m.capa) || null, capaOrig: null, criado: m.criado ? br(diaDe(m.criado)) : "", st: stAula(m.rascunho, m.pub, !m.ativo, m.libera), lib: m.libera ? br(diaDe(m.libera)) : (m.publicadoEm ? br(diaDe(m.publicadoEm)) : ""), libCfg: npCfg(m.liberaModo, m.liberaDias, m.libera),
+        aulas: m.aulas.map((a) => ({ id: a.id, t: a.tipo === "pdf" ? "ebook" : a.tipo, nome: a.nome, desc: a.texto || "", mats: a.extras.map((x) => ({ t: x.tipo, nome: x.nome || x.tipo })), url: "", link: a.video || "", prog: 0, dim: "", libCfg: a.acesso === "bloqueada" ? { tipo: "tranc" } : npCfg(a.liberaModo, a.liberaDias, a.libera), st: stAula(a.rascunho, a.pub, a.acesso === "bloqueada", a.libera), dur: Math.round((a.duracao || 0) / 60), lib: a.libera ? br(diaDe(a.libera)) : (a.liberadaEm ? br(diaDe(a.liberadaEm)) : ""), capa: capaSite(a.capa) || "" })) }));
       return { id: c.id, tipo: npTipo(c.tipo), nome: c.nome, cat: catsDe(c)[0]?.nome || "", mod: c.modulos.length, aul: aulas.length, alu: al.length, cri: c.criado ? br(diaDe(c.criado)) : "—", lib: c.publicadoEm ? br(diaDe(c.publicadoEm)) : "—", st: c.rascunho ? "Não publicado" : !c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Publicado", preco: 0,
         pub: c.rascunho ? "Não publicado" : "Publicado", libSt: libSt(c.visivel, c.bloq, c.libera), capaUrl: capaSite(c.capa) || "", hrs: String(Math.floor(seg / 3600)).padStart(2, "0") + "h " + String(Math.round((seg % 3600) / 60)).padStart(2, "0") + "min", libQ: lib,
         ult: u ? (u.mod != null ? "Módulo " + u.mod + " – " : "") + (u.num != null ? "Aula " + u.num : u.titulo) : "", eng: al.length ? Math.round(al.reduce((t, x) => t + x.pct, 0) / al.length) : 0, desc: c.descricao || "" };
@@ -3648,7 +3648,7 @@ export function montar(app: HTMLElement) {
     for (const c of S.cursos) {
       const todasA = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
       const al = alunasDoCurso(c).map((x) => { const feitas = todasA.filter((y) => x.a.feitas.has(y.a.id)), mo = c.modulos.filter((m) => m.aulas.length && m.aulas.every((a) => x.a.feitas.has(a.id))).length, sg = feitas.reduce((t, y) => t + (y.a.duracao || 0), 0);
-        return { nome: x.a.nome, email: x.a.email || x.a.login || "", cod: x.a.codigo || "", st: x.a.bloqueada ? "bloq" : vencida(x.a) ? "desat" : "ativos", prog: x.pct, ult: dias(x.a.ultimoAcessoEm || x.a.ultimoAcesso), cad: dias(x.incluida), aul: feitas.length, mod: mo, min: Math.round(sg / 60), pts: feitas.length * 10 + mo * 50, com: x.a.nComentarios || 0, sg }; });
+        return { id: x.a.id, nome: x.a.nome, email: x.a.email || x.a.login || "", cod: x.a.codigo || "", st: x.a.bloqueada ? "bloq" : vencida(x.a) ? "desat" : "ativos", prog: x.pct, ult: dias(x.a.ultimoAcessoEm || x.a.ultimoAcesso), cad: dias(x.incluida), aul: feitas.length, mod: mo, min: Math.round(sg / 60), pts: feitas.length * 10 + mo * 50, com: x.a.nComentarios || 0, sg }; });
       alunos[c.nome] = al;
       const nomeAu = (a: Aula, m: Modulo) => m.rot + " " + m.num + " · " + a.rot + " " + a.num + " — " + a.nome;
       const cms = comentariosDoCurso(c);
@@ -3671,21 +3671,257 @@ export function montar(app: HTMLElement) {
     }
     return { prods, cats, mods, alunos, coms, eng, top };
   }
+  /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
+  function npCfg(modo: string, dias: number | null, libera: string) {
+    if (!modo) return null;
+    const dt = libera ? new Date(libera) : null, z = (n: number) => String(n).padStart(2, "0");
+    return { tipo: modo === "cadastro" || modo === "prazo" ? "dias" : modo === "data" ? "data" : "imediata", dias: dias ?? 0, data: libera ? diaDe(libera) : "", hora: dt && !isNaN(+dt) ? z(dt.getHours()) + ":" + z(dt.getMinutes()) : "09:00" };
+  }
+  /** Ações do modelo entram numa fila: uma grava depois da outra, nenhuma se perde. */
+  let npCadeia: Promise<void> = Promise.resolve();
+  const npExec = (fn: () => Promise<Resultado>) => { npCadeia = npCadeia.then(async () => { while (ocupado) await new Promise((r) => setTimeout(r, 120)); await executar(fn); }).catch(() => undefined); };
+  /** Status do modelo (pub/agend/nao/ocu/blo) + liberação → campos do módulo ou da aula. */
+  function npStCampos(st: string, lib: NpLibCfg, modulo: boolean): Record<string, unknown> {
+    if (st === "nao") return { rascunho: true };
+    if (st === "ocu") return { rascunho: false, publicado: false };
+    if (st === "blo") return modulo ? { rascunho: false, publicado: true, bloqueado_geral: true } : { rascunho: false, publicado: true };
+    const r: Record<string, unknown> = { rascunho: false, publicado: true };
+    if (modulo) r.bloqueado_geral = false;
+    if (!modulo && lib && lib.tipo === "junto") return { ...r, libera_modo: null, libera_em: null, libera_dias: null };
+    if (!lib || lib.tipo === "imediata" || lib.tipo === "tranc") return { ...r, libera_modo: "imediato", libera_em: null, libera_dias: null };
+    return { ...r, ...npLib(lib) };
+  }
+  /** Imagem que veio do modelo (data URL) → arquivo para o depósito. */
+  const npArquivo = async (url: unknown, nome: string) => { if (typeof url !== "string" || !url.startsWith("data:")) return null; const b = await (await fetch(url)).blob(); return new File([b], nome + (b.type.includes("png") ? ".png" : ".jpg"), { type: b.type || "image/jpeg" }); };
+  /** Categoria pelo nome; se não existir, cria (como em Criar curso › Criar nova). */
+  async function npCategoria(nome: string): Promise<CatAba | null> {
+    const n = nome.trim(); if (!n) return null;
+    const ja = S.catsAba.find((x) => norm(x.nome) === norm(n)); if (ja) return ja;
+    const jor = curso(S.config.jornada)?.cat || ""; const aba = (S.cats.find((k) => k.id !== jor) || S.cats[0])?.id || ""; if (!aba) return null;
+    const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: n, ordem: S.catsAba.filter((y) => y.aba === aba).length, publicado: false, rascunho: true }).select("id").single());
+    await registrar(null, "Criou a categoria " + n, ["catx", r.data!.id]);
+    return { id: r.data!.id, aba, nome: n } as CatAba;
+  }
+  type NpCurso = { tipo: string; cat: string; rotulo: string; nome: string; desc: string; botao: string; capaH: string | null; capaV: string | null };
+  type NpLibCfg = { tipo: string; dias?: number; data?: string; hora?: string } | null;
+  type NpAula = { id: string; dup?: string; t: string; nome: string; desc: string; link: string; file: File | null; capa: string | null; lib: NpLibCfg; mats: { t: string; titulo: string; texto: string; file: File | null }[] };
+  type NpMod = { rot: string; num: string; nome: string; desc: string; bt: string; capa: string | null; lib: NpLibCfg; aulas?: NpAula[] };
+  /** Grava uma aula vinda do modelo (nova ou editada) com arquivo, capa, link, liberação e materiais. */
+  async function npGravarAula(moduloId: string, a: NpAula): Promise<string> {
+    const tipo = a.t === "ebook" ? "pdf" : a.t === "audio" ? "audio" : "video";
+    const campos: Record<string, unknown> = { titulo: a.nome, tipo, texto: a.desc || null };
+    const lib = a.lib;
+    if (!lib || lib.tipo === "junto") Object.assign(campos, { rascunho: !lib, libera_modo: null, libera_em: null, libera_dias: null });
+    else if (lib.tipo === "tranc") Object.assign(campos, { rascunho: false, publicado: true });
+    else Object.assign(campos, npLib(lib));
+    if (a.file && tipo !== "video") campos.arquivo_path = await enviarArquivo(tipo === "pdf" ? "materiais" : "audios", "aulas", a.file);
+    const fc = await npArquivo(a.capa, "capa-aula"); if (fc) campos.capa_path = await enviarArquivo("capas", "aulas", fc);
+    let id = a.id;
+    if (!id && a.dup && acharAula(a.dup)) { id = String(await rpc("duplicar_aula", { p_aula: a.dup })); campos.modulo_id = moduloId; }
+    if (id) falhou(await supabase.from("aulas").update(campos).eq("id", id).select("id").single());
+    else {
+      const x = acharModulo(moduloId), num = x ? Math.max(0, ...x.m.aulas.map((y) => y.num)) + 1 : 1;
+      const r = falhou(await supabase.from("aulas").insert({ modulo_id: moduloId, numero: num, rotulo: x?.m.aulas[x.m.aulas.length - 1]?.rot || "Aula", publicado: true, ...campos }).select("id").single()); id = r.data!.id;
+    }
+    if (lib && lib.tipo === "tranc") await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: true });
+    const ref = a.link ? idDoVideo(a.link) : "";
+    if (tipo === "video" && ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(a.link), video_ref: ref }));
+    const x2 = acharModulo(moduloId), pid = x2?.c.id;
+    for (const [i, mt] of (a.mats || []).entries()) {
+      if (!mt.file && !(mt.t === "texto" && mt.texto)) continue;
+      const t2 = mt.t === "texto" ? "texto" : mt.t === "audio" ? "audio" : "pdf";
+      const path = mt.file ? await enviarArquivo(t2 === "audio" ? "audios" : "materiais", "materiais", mt.file) : null;
+      falhou(await supabase.from("conteudos").insert({ produto_id: pid, aula_id: id, tipo: t2, titulo: mt.titulo || (t2 === "texto" ? "Texto" : t2.toUpperCase()), texto: t2 === "texto" ? mt.texto : null, arquivo_path: path, ordem: i, publicado: true }).select("id").single());
+    }
+    return id;
+  }
+  const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
   function npAgir(m: NpAcao) {
     const el = document.body;
+    if (m.tipo === "curso-criar" || m.tipo === "curso-editar") {
+      const dd = m.dados as NpCurso, idC = String(m.id || ""); if (!dd || !dd.nome) return;
+      npExec(async () => {
+        const ebook = dd.tipo === "ebook";
+        const fH = await npArquivo(dd.capaH, "capa"), fV = await npArquivo(dd.capaV, "capa-em-pe");
+        const deitada = fH ? await enviarArquivo("capas", "cursos", fH) : null, emPe = fV ? await enviarArquivo("capas", "cursos", fV) : null;
+        const xa = await npCategoria(dd.cat);
+        const campos: Record<string, unknown> = { titulo: dd.nome, card_rotulo: dd.rotulo, descricao: dd.desc || null, card_botao: dd.botao || null, tipo_conteudo: dd.tipo };
+        if (ebook ? emPe : deitada) campos.capa_path = ebook ? emPe : deitada;
+        if (!ebook && emPe) campos.capa_vertical_path = emPe;
+        if (xa) { campos.categoria_id = xa.aba; campos.categoria_aba_id = xa.id; }
+        if (m.tipo === "curso-editar" && idC) {
+          falhou(await supabase.from("produtos").update(campos).eq("id", idC).select("id").single());
+          if (xa && !S.catItens.some((i) => i.cat === xa.id && i.tipo === "curso" && i.item === idC)) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: idC, ordem: itensDe(xa.id).length }).select("id").single());
+          await registrar(null, "Editou o curso " + dd.nome);
+          return "Curso salvo.";
+        }
+        const r = falhou(await supabase.from("produtos").insert({ ...campos, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
+        if (xa) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
+        await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
+        await registrar(null, "Criou o curso " + dd.nome);
+        npResponder({ tipo: "curso", id: r.data!.id });
+        return { msg: "Curso salvo.", texto: "criação do curso " + dd.nome, desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); } };
+      });
+      return;
+    }
+    if (m.tipo === "aula-salvar") {
+      const dd = m.dados as NpAula, mid = String(m.modulo || ""); if (!dd || !mid) return;
+      if (dd.t === "video" && dd.file && !dd.link) toast("Vídeo por arquivo ainda não é aceito no painel: use o link do YouTube ou do Cloudflare Stream.");
+      npExec(async () => { const id = await npGravarAula(mid, dd); await registrar(null, (dd.id ? "Editou a aula " : "Criou a aula ") + dd.nome); if (!dd.id) npResponder({ tipo: "aula", mi: m.mi, ix: m.ix, id }); return "Aula salva."; });
+      return;
+    }
+    if (m.tipo === "modulo-salvar") {
+      const dd = m.dados as NpMod, pid = String(m.produto || ""), idM = String(m.id || ""), c = curso(pid); if (!dd || !pid) return;
+      npExec(async () => {
+        const f = await npArquivo(dd.capa, "capa-modulo"), capa = f ? await enviarArquivo("capas", "modulos", f) : null;
+        const campos: Record<string, unknown> = { titulo: dd.nome, numero: Number(dd.num) || 0, rotulo: dd.rot || "Módulo", intro: dd.desc || null, botao_texto: dd.bt || null, ...npLib(dd.lib) };
+        if (capa) campos.capa_horizontal_path = capa;
+        if (idM) { falhou(await supabase.from("modulos").update(campos).eq("id", idM).select("id").single()); await registrar(null, "Editou o módulo " + dd.nome); return "Módulo salvo."; }
+        const r = falhou(await supabase.from("modulos").insert({ produto_id: pid, ...campos }).select("id").single());
+        for (const a of dd.aulas || []) await npGravarAula(r.data!.id, a);
+        await registrar(null, "Criou o módulo " + dd.nome + (c ? " em " + c.nome : ""));
+        npResponder({ tipo: "modulo", ix: m.ix, id: r.data!.id });
+        return { msg: "Módulo salvo.", texto: "novo módulo " + dd.nome, desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
+      });
+      return;
+    }
+    if (m.tipo === "conteudo-sync") {
+      type It = { id: string; st: string; lib: NpLibCfg; mod?: string };
+      const M = (m.mods || []) as It[], A = (m.aulas || []) as It[], OA = (m.ordAulas || []) as { mod: string; ids: string[] }[], OM = (m.ordMods || null) as string[] | null;
+      npExec(async () => {
+        for (const x of M) if (acharModulo(x.id)) falhou(await supabase.from("modulos").update(npStCampos(x.st, x.lib, true)).eq("id", x.id).select("id").single());
+        for (const x of A) {
+          const y = acharAula(x.id); if (!y) continue;
+          const campos = npStCampos(x.st, x.lib, false); if (x.mod && x.mod !== y.m.id && acharModulo(x.mod)) campos.modulo_id = x.mod;
+          falhou(await supabase.from("aulas").update(campos).eq("id", x.id).select("id").single());
+          const bloq = x.st === "blo"; if (bloq !== (y.a.acesso === "bloqueada")) await rpc("definir_bloqueio_aula", { p_aula: x.id, p_bloqueada: bloq });
+        }
+        for (const o of OA) if (o.ids.length && acharModulo(o.mod)) await rpc("ordenar_aulas", { p_modulo: o.mod, p_ids: o.ids });
+        if (OM && OM.length) await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: OM });
+        await registrar(null, "Mudou status, liberação ou ordem no conteúdo (" + (M.length + A.length) + " itens)");
+      });
+      return;
+    }
+    if (m.tipo === "excluir") {
+      const mods = ((m.mods || []) as string[]).filter((i) => acharModulo(i)), aulas = ((m.aulas || []) as string[]).filter((i) => acharAula(i));
+      npExec(async () => {
+        for (const i of aulas) falhou(await supabase.from("aulas").delete().eq("id", i).select("id").single());
+        for (const i of mods) falhou(await supabase.from("modulos").delete().eq("id", i).select("id").single());
+        await registrar(null, "Excluiu " + [mods.length ? p(mods.length, "módulo", "módulos") : "", aulas.length ? p(aulas.length, "aula", "aulas") : ""].filter(Boolean).join(" e ") + " (vai para a Lixeira)");
+      });
+      return;
+    }
+    if (m.tipo === "curso-excluir") {
+      const c = curso(String(m.id || "")); if (!c) return;
+      npExec(async () => { await rpc("remover_produto", { p_produto: c.id }); await registrar(null, "Excluiu o curso " + c.nome + " (vai para a Lixeira)"); });
+      return;
+    }
+    if (m.tipo === "curso-duplicar") {
+      const c = curso(String(m.id || "")); if (!c) return; const manter = new Set((m.manter || []) as string[]);
+      npExec(async () => {
+        const novo = String(await rpc("duplicar_produto", { p_produto: c.id }));
+        const fica = new Set(c.modulos.filter((x) => manter.has(x.id)).map((x) => x.num + "|" + x.nome));
+        if (fica.size < c.modulos.length) {
+          const r = falhou(await supabase.from("modulos").select("id, numero, titulo").eq("produto_id", novo));
+          for (const x of (r.data ?? []) as { id: string; numero: number; titulo: string }[]) if (!fica.has(x.numero + "|" + x.titulo)) falhou(await supabase.from("modulos").delete().eq("id", x.id).select("id").single());
+        }
+        falhou(await supabase.from("produtos").update({ rascunho: true }).eq("id", novo).select("id").single());
+        await registrar(null, "Duplicou o curso " + c.nome);
+        npResponder({ tipo: "dup", id: novo });
+        return { msg: "Curso duplicado.", texto: "cópia de " + c.nome, desfazer: async () => { await rpc("remover_produto", { p_produto: novo }); } };
+      });
+      return;
+    }
+    if (m.tipo === "cat-salvar") {
+      const idC = String(m.id || ""), nome = String(m.nome || "").trim(); if (!nome) return;
+      npExec(async () => {
+        const f = await npArquivo(m.capaH || m.capaV, "capa-categoria"), capa = f ? await enviarArquivo("capas", "categorias", f) : null;
+        const campos: Record<string, unknown> = { titulo: nome, descricao: String(m.d || "") || null, card_rotulo: String(m.rot || "") || null, botao_texto: String(m.bt || "") || null };
+        if (capa) campos.capa_path = capa;
+        if (idC && catAba(idC)) { falhou(await supabase.from("categorias_aba").update(campos).eq("id", idC).select("id").single()); await registrar(null, "Editou a categoria " + nome, ["catx", idC]); return; }
+        const jor = curso(S.config.jornada)?.cat || ""; const aba = (S.cats.find((k) => k.id !== jor) || S.cats[0])?.id || ""; if (!aba) throw new Error("Crie primeiro um botão no menu do app.");
+        const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, ordem: S.catsAba.filter((y) => y.aba === aba).length, publicado: false, rascunho: true, ...campos }).select("id").single());
+        await registrar(null, "Criou a categoria " + nome, ["catx", r.data!.id]);
+        npResponder({ tipo: "cat", nome, id: r.data!.id });
+        return { msg: "Categoria salva.", texto: "criação da categoria " + nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
+      });
+      return;
+    }
+    if (m.tipo === "cat-excluir") {
+      const x = catAba(String(m.id || "")); if (!x) return;
+      npExec(async () => {
+        falhou(await supabase.from("categoria_itens").delete().eq("categoria_aba_id", x.id).select("id"));
+        falhou(await supabase.from("produtos").update({ categoria_aba_id: null }).eq("categoria_aba_id", x.id).select("id"));
+        falhou(await supabase.from("categorias_aba").delete().eq("id", x.id).select("id").single());
+        await registrar(null, "Excluiu a categoria " + x.nome);
+      });
+      return;
+    }
+    if (m.tipo === "cat-cursos") {
+      const x = catAba(String(m.cat || "")), ids = ((m.ids || []) as string[]).filter((i) => curso(i)); if (!x || !ids.length) return;
+      npExec(async () => {
+        let n = itensDe(x.id).length;
+        for (const i of ids) {
+          if (!S.catItens.some((k) => k.cat === x.id && k.tipo === "curso" && k.item === i)) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: x.id, tipo: "curso", item_id: i, ordem: n++ }).select("id").single());
+          falhou(await supabase.from("produtos").update({ categoria_aba_id: x.id, categoria_id: x.aba }).eq("id", i).select("id").single());
+        }
+        await registrar(null, "Adicionou " + p(ids.length, "curso", "cursos") + " à categoria " + x.nome, ["catx", x.id]);
+      });
+      return;
+    }
+    if (m.tipo === "comentario") {
+      const k = S.comentarios.find((y) => y.id === m.id); if (!k) return; const a = String(m.acao || "");
+      npExec(async () => {
+        if (a === "enviar") { await rpc("responder_comentario", { p_comentario: k.id, p_texto: String(m.texto || ""), p_publicar: true }); await registrar(k.autoraId || null, "Respondeu um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]); return; }
+        const st = a === "ocultar" ? "oculto" : a === "apagar" ? "removido" : "publicado";
+        await rpc("moderar_comentario", { p_comentario: k.id, p_status: st });
+        if (st === "removido") for (const rid of k.respIds ?? []) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });
+        await registrar(k.autoraId || null, (a === "aprovar" ? "Aprovou" : a === "ocultar" ? "Ocultou" : a === "apagar" ? "Apagou" : "Mostrou de novo") + " um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]);
+      });
+      return;
+    }
+    if (m.tipo === "alunos-st") {
+      const c = curso(String(m.prod || "")), st = String(m.st || ""), lista = ((m.lista || []) as { id: string; de: string }[]).filter((x) => aluna(x.id));
+      if (!lista.length) return;
+      npExec(async () => {
+        for (const x of lista) {
+          const al = aluna(x.id)!;
+          if (st === "bloq") await rpc("definir_status_aluna", { p_aluna: al.id, p_status: "bloqueada" });
+          else if (st === "ativos") { if (al.bloqueada) await rpc("definir_status_aluna", { p_aluna: al.id, p_status: "ativa" }); if (x.de === "desat") await rpc("renovar_acesso", { p_aluna: al.id, p_dias: 0, p_meses: 0, p_anos: 1 }); }
+          else if (st === "desat") await rpc("definir_validade", { p_aluna: al.id, p_validade: fimDoDia(maisDias(hoje(), -1)) });
+          else if (st === "rem" && c) {
+            const mIds = new Set(c.modulos.map((y) => y.id)), aIds = new Set(c.modulos.flatMap((y) => y.aulas.map((z) => z.id)));
+            await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: al.acesso.cursos.filter((y) => y !== c.id), p_modulos: al.acesso.modulos.filter((y) => !mIds.has(y)), p_aulas: al.acesso.aulas.filter((y) => !aIds.has(y)) });
+          }
+          await registrar(al.id, st === "bloq" ? "Aluno bloqueado" : st === "ativos" ? "Aluno reativado" : st === "desat" ? "Aluno desativado (acesso encerrado)" : "Removido do curso " + (c?.nome || ""));
+        }
+      });
+      return;
+    }
+    if (m.tipo === "alunos-add") {
+      const c = curso(String(m.prod || "")); if (!c) return; const lista = (m.lista || []) as { nome: string; email: string }[];
+      const achar = (e: string) => { const k = e.trim().toLowerCase(); return S.alunas.find((a) => (a.email || "").toLowerCase() === k || (a.login || "").toLowerCase() === k); };
+      const sem = lista.filter((x) => !achar(x.email)).map((x) => x.nome || x.email);
+      npExec(async () => {
+        for (const x of lista) { const al = achar(x.email); if (!al || al.acesso.cursos.includes(c.id)) continue; await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: [...al.acesso.cursos, c.id], p_modulos: al.acesso.modulos, p_aulas: al.acesso.aulas }); await registrar(al.id, "Liberou o curso " + c.nome); }
+        if (sem.length) return (sem.length === 1 ? sem[0] + " ainda não tem cadastro" : sem.length + " alunos ainda não têm cadastro") + ": cadastre em Alunos e libere o curso " + c.nome + ".";
+      });
+      return;
+    }
     const v = String(m.v || ""), id = String(m.id || "");
+    const acaoNp = (nome: string, d: Record<string, string>) => { npCadeia = npCadeia.then(async () => { while (ocupado) await new Promise((r) => setTimeout(r, 120)); acao(nome, d, el, el); }); };
     const est = v === "Liberado" ? "ativo" : v === "Bloqueado" ? "bloqueado" : v === "Oculto" ? "desativado" : "";
     if (m.tipo === "curso-status") {
-      if (m.campo === "pub") acao("curso-pub", { id, v: v === "Publicado" ? "1" : "0" }, el, el);
-      else if (est) acao("estado-set", { v: "curso:" + id + ":" + est }, el, el);
+      if (m.campo === "pub") acaoNp("curso-pub", { id, v: v === "Publicado" ? "1" : "0" });
+      else if (est) acaoNp("estado-set", { v: "curso:" + id + ":" + est });
       else if (v === "Agendado") { ui.curso = id; ui.cursoAba = "config"; ui.tab = "curso"; render(); }
       return;
     }
     if (m.tipo === "cat-status") {
       const x = catAba(id); if (!x) return;
-      if (m.campo === "pub") { if ((v === "Publicado") === x.rascunho) acao("catx-pub-toggle", { id }, el, el); }
-      else if (est) acao("estado-set", { v: "catx:" + id + ":" + est }, el, el);
-      else if (v === "Agendado") acao("catx-editar", { id }, el, el);
+      if (m.campo === "pub") { if ((v === "Publicado") === x.rascunho) acaoNp("catx-pub-toggle", { id }); }
+      else if (est) acaoNp("estado-set", { v: "catx:" + id + ":" + est });
+      else if (v === "Agendado") acaoNp("catx-editar", { id });
     }
   }
   const npTipo = (t: string) => t === "ebook" ? "E-BOOK" : t === "audio" ? "ÁUDIO" : "VÍDEO";

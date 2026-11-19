@@ -11,6 +11,10 @@ let quadro: HTMLIFrameElement | null = null;
 let assinatura = "";
 let vistaAtual = "";
 let aoAgir: ((m: NpAcao) => void) | null = null;
+let carregado = false;
+
+/** Resposta do painel ao modelo (ex.: id do curso criado). */
+export function npResponder(m: Record<string, unknown>) { quadro?.contentWindow?.postMessage({ np: "resp", ...m }, "*"); }
 
 function quadroDe(): HTMLIFrameElement {
   if (quadro) return quadro;
@@ -51,9 +55,15 @@ export function npSincronizar(ativo: boolean, vista: "lista" | "categorias", dad
   const f = quadroDe();
   const d = dados();
   const ass = JSON.stringify(d);
-  if (ass !== assinatura) {
+  if (ass !== assinatura && carregado && quadro) {
+    // Dados novos (depois de gravar): o modelo atualiza sem recarregar, para não perder a tela em que está.
+    assinatura = ass;
+    f.contentWindow?.postMessage({ np: "dados", d }, "*");
+    if (vista !== vistaAtual) { vistaAtual = vista; f.contentWindow?.postMessage({ np: "ir", v: vista }, "*"); }
+  } else if (ass !== assinatura) {
     assinatura = ass;
     vistaAtual = vista;
+    f.onload = () => { carregado = true; };
     const json = ass.replace(/</g, "\\u003c");
     f.srcdoc = modeloHtml.replace("<script>", `<script>window.NP_EMBED=1;window.NP_DADOS=${json};window.NP_DADOS.ir=${JSON.stringify(vista)};</script>\n<script>`);
   } else if (vista !== vistaAtual) {
