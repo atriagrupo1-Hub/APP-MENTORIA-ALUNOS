@@ -1017,6 +1017,15 @@ label.g{display:block;margin-bottom:14px}label.g span{display:block;font-size:12
 <script>
 const NPE=!!window.NP_EMBED,NPD=window.NP_DADOS||{};if(NPE)document.documentElement.classList.add("npe");
 function npAvisar(o){try{parent.postMessage({np:"acao",...o},"*")}catch(e){}}
+// IA e Baixar no painel: o mesmo window.claude do claude.ai, atendido pelo painel (Edge Function ia-modelo)
+const npEspera={};let npRid=0;
+function npPedir(o){return new Promise((ok,falha)=>{const rid="r"+(++npRid);npEspera[rid]=m=>m.erro?falha(new Error(m.erro)):ok(m);npAvisar({...o,rid})})}
+const npB64=b=>new Promise((ok,falha)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]||"");r.onerror=falha;r.readAsDataURL(b)});
+if(NPE){const sample=async(pedido,op)=>{op=op||{};const imagens=[];for(const b of (op.images||[]).slice(0,3)){try{imagens.push({tipo:b.type||"image/png",base64:await npB64(b)})}catch(e){}}const r=await npPedir({tipo:"ia",pedido:String(pedido),nivel:op.modelTier||"default",imagens});return{text:String(r.texto||"")}};
+  sample.json=async(pedido,op)=>{const r=await sample(pedido+"\n\nResponda SOMENTE com o JSON, sem texto em volta.",op);const t=r.text,i=t.indexOf("{"),j=t.lastIndexOf("}");return JSON.parse(i>=0&&j>i?t.slice(i,j+1):t)};
+  sample.limits=async()=>({images:{maxPerCall:3}});
+  const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data]);const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=filename||"arquivo";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}};
+  window.claude={use:async k=>k==="sample"?sample:k==="downloads"?downloads:null}}
 let npCursoId="",npPendDup="";
 function npAula(a){return{id:a.id||"",dup:a.dupDe||"",t:a.t,nome:a.nome||"",desc:a.desc||"",link:a.link||"",file:a._file||null,capa:typeof a.capa==="string"&&a.capa.startsWith("data:")?a.capa:null,lib:a.libCfg||null,mats:(a.mats||[]).map(x=>({t:x.t,titulo:x.titulo||x.arq||"",texto:x.texto||"",file:x._file||null}))}}
 function npBase(pm){for(const k in pm)(pm[k]||[]).forEach((m,i)=>{m._np0=JSON.stringify([m.st,m.libCfg||null]);m._npI=i;m._npO=JSON.stringify((m.aulas||[]).filter(a=>a.id).map(a=>a.id));(m.aulas||[]).forEach(a=>{a._np0=JSON.stringify([a.st,a.libCfg||null,m.id])})})}
@@ -2175,6 +2184,7 @@ function npIniciar(){
   if(pedida==="categorias"&&t&&t.ctv&&(catMeta[t.ctv])){catModo="ver";catVer=t.ctv;desenharCategorias()}
   filtrar();if(t&&t.y&&pedida!=="lista")requestAnimationFrame(()=>scrollTo(0,t.y));
   addEventListener("message",e=>{const m=e.data||{};
+    if(m.np==="resp"&&m.rid&&npEspera[m.rid]){const f=npEspera[m.rid];delete npEspera[m.rid];f(m);return}
     if(m.np==="resp"){if(m.tipo==="curso"){npCursoId=m.id;const x=document.getElementById("cardRasc");if(x)x.remove()}if(m.tipo==="modulo"&&modulos[m.ix])modulos[m.ix].id=m.id;if(m.tipo==="aula"&&modulos[m.mi]&&modulos[m.mi].aulas[m.ix])modulos[m.mi].aulas[m.ix].id=m.id;if(m.tipo==="cat"&&catMeta[m.nome])catMeta[m.nome].id=m.id;if(m.tipo==="dup"){npPendDup=m.id}return}
     if(m.np==="dados"){npAplicar(m.d);if(npPendDup){const x=PRODS.find(p=>p.id===npPendDup);npPendDup="";if(x){if(vista==="criar")sairFluxo();ppNome=x.nome;ppAba="sobre";views.produto=ppNome;ir("produto");desenharProduto();scrollTo(0,0);toast("Curso duplicado. A cópia começa Não publicada.",true)}}return}
     if(m.np!=="ir")return;if(m.v==="categorias"){catModo="";catVer="";ir("categorias")}else ir("lista");scrollTo(0,0);guardar()});

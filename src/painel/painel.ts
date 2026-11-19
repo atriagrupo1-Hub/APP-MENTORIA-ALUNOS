@@ -323,7 +323,7 @@ if (PREVIA && typeof window !== "undefined") {
     const metodo = (init?.method || (entrada instanceof Request ? entrada.method : "GET")).toUpperCase();
     if (url.startsWith(SUPA) && metodo !== "GET" && metodo !== "HEAD") {
       const c = url.slice(SUPA.length).split("?")[0];
-      const livre = c.startsWith("/auth/v1/") || c === "/functions/v1/entrar" || ["/functions/v1/extrair-ebook", "/functions/v1/gerar-descricao-curso", "/functions/v1/gerar-capa"].includes(c) || (c.startsWith("/rest/v1/rpc/") && LEITURA.test(c.slice(13)));
+      const livre = c.startsWith("/auth/v1/") || c === "/functions/v1/entrar" || ["/functions/v1/extrair-ebook", "/functions/v1/gerar-descricao-curso", "/functions/v1/gerar-capa", "/functions/v1/ia-modelo"].includes(c) || (c.startsWith("/rest/v1/rpc/") && LEITURA.test(c.slice(13)));
       if (!livre) {
         const sp = document.querySelector("#previaSelo span"); if (sp) sp.textContent = "● Prévia · salvo só no teste (some ao recarregar)";
         let corpo: Record<string, unknown> = {};
@@ -3738,6 +3738,14 @@ export function montar(app: HTMLElement) {
   const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
   function npAgir(m: NpAcao) {
     const el = document.body;
+    if (m.tipo === "ia") {
+      // IA do modelo: não grava nada, só devolve o texto (fora da fila de gravações).
+      void (async () => {
+        try { const x = await chamarFuncao("ia-modelo", { pedido: m.pedido, nivel: m.nivel, imagens: m.imagens }); npResponder({ rid: m.rid, texto: String(x.texto || "") }); }
+        catch (e) { toast(motivo(e)); npResponder({ rid: m.rid, erro: motivo(e) }); }
+      })();
+      return;
+    }
     if (m.tipo === "curso-criar" || m.tipo === "curso-editar") {
       const dd = m.dados as NpCurso, idC = String(m.id || ""); if (!dd || !dd.nome) return;
       npExec(async () => {
