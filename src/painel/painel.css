@@ -6373,3 +6373,26 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .ppx .np-busca { flex: 0 1 280px; }
 @media (max-width: 900px) { .ppx .pp-t4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pp-top { flex-wrap: wrap; } }
 @media (max-width: 520px) { .ppx .pp-t4 { grid-template-columns: 1fr; } }
+
+.ppx .pp-seg { display: inline-flex; border: 1px solid var(--borda); border-radius: 10px; overflow: hidden; background: var(--resp); margin-top: 14px; }
+.ppx .pp-seg button { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 0; background: none; color: var(--t2); font: 600 13px Manrope, system-ui, sans-serif; cursor: pointer; }
+.ppx .pp-seg button + button { border-left: 1px solid var(--borda); }
+.ppx .pp-seg button.on { background: #2a2518; color: var(--ouro); box-shadow: inset 0 0 0 1px #6d5a38; }
+.ppx .pp-seg .pp-ic { width: 16px; height: 16px; }
+.ppx .pp-cont { margin-top: 14px; }
+.ppx .pp-g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.ppx .pp-ros { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.ppx .pp-rosca { width: 130px; height: 130px; flex: none; }
+.ppx .pp-rn { fill: #EEEEF0; font: 700 26px Manrope, sans-serif; } .ppx .pp-rl { fill: #94979E; font: 500 12px Manrope, sans-serif; }
+.ppx .pp-leg { flex: 1; min-width: 160px; display: flex; flex-direction: column; }
+.ppx .pp-leg div { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--div); font-size: 13px; }
+.ppx .pp-leg i { width: 10px; height: 10px; border-radius: 50%; }
+.ppx .pp-leg em { font-style: normal; color: var(--t2); font-weight: 500; }
+.ppx .pp-rk { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--div); font-size: 13px; }
+.ppx .pp-rk span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.ppx .pp-rk em { font-style: normal; font-size: 12px; color: var(--t2); white-space: nowrap; }
+.ppx .pp-rk em.pp-ok { padding: 3px 9px; border-radius: 999px; background: #173524; color: #7FD49B; }
+.ppx .pp-rk em.pp-ag { padding: 3px 9px; border-radius: 999px; background: #2a2440; color: #B9A8F0; }
+.ppx .pp-vz { margin: 0; font-size: 13px; color: var(--t2); }
+.ppx .pp-mt { margin-top: 18px; }
+@media (max-width: 1100px) { .ppx .pp-g3 { grid-template-columns: 1fr; } }

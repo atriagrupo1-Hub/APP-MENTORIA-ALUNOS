@@ -684,7 +684,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", rkBusca: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", rkBusca: "", ctVis: "cont", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -5077,7 +5077,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const ABA_NOVA: Record<string, string> = { visao: "sobre", modulos: "conteudo", relatorios: "engaj", alunas: "alunos" };
     const aba = ABA_NOVA[ui.cursoAba] || ui.cursoAba || "sobre";
     const todas = alunasDoCurso(c);
-    const conteudo = aba === "conteudo" ? modulosCurso(c)
+    const conteudo = aba === "conteudo" ? conteudoProduto(c)
       : aba === "alunos" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
       : aba === "config" ? configCurso(c)
@@ -5124,6 +5124,37 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       <nav class="pp-abas" aria-label="Partes do produto">${ABAS_P.map(([v, t, ic]) => `<button type="button" class="pp-aba${aba === v ? " on" : ""}" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${ppI(ic)}${t}</button>`).join("")}</nav>
       ${conteudo}
     </section>`;
+  }
+
+  /** Aba "Conteúdo" (modelo novo produto): números + Conteúdos (editor de módulos e aulas) / Estatísticas. */
+  function conteudoProduto(c: Curso) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+    const seg = aulas.reduce((t, x) => t + (x.a.duracao || 0), 0), hh = Math.floor(seg / 3600), mm = Math.round((seg % 3600) / 60);
+    const vis = ui.ctVis === "est" ? "est" : "cont";
+    const k = (ic: string, t: string, v: string | number, on = false) => `<div class="pp-tile${on ? " on" : ""}">${ppI(ic)}<span><em>${t}</em><b>${v}</b></span></div>`;
+    const IC_CAM = '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>';
+    const topo = `<div class="pp-hrow"><h2 class="pp-h">${ppI(IC_CAM)}Conteúdo</h2></div><p class="pp-sub">Gerencie módulos, aulas e todo o material do seu curso.</p>
+      <div class="pp-tiles pp-t4">${k(IC_CAM, "Módulos", c.modulos.length, true)}${k('<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>', "Aulas", aulas.length)}${k('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', "Tempo total", hh + "h " + String(mm).padStart(2, "0") + "m")}${k('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Horas aula", (seg / 3600).toFixed(1).replace(".", ",") + "h")}</div>
+      <div class="pp-seg" role="tablist" aria-label="Ver"><button type="button" role="tab" class="${vis === "cont" ? "on" : ""}" aria-selected="${vis === "cont"}" data-a="ct-vis" data-v="cont">${ppI(IC_CAM)}Conteúdos</button><button type="button" role="tab" class="${vis === "est" ? "on" : ""}" aria-selected="${vis === "est"}" data-a="ct-vis" data-v="est">${ppI('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>')}Estatísticas</button></div>`;
+    if (vis === "cont") return `<div class="pp-painel">${topo}</div><div class="pp-cont">${modulosCurso(c)}</div>`;
+    // Estatísticas com dados reais
+    const tipos: [string, number, string][] = [["Vídeo", aulas.filter((x) => x.a.tipo === "video").length, "#E2C68C"], ["Áudio", aulas.filter((x) => x.a.tipo === "audio").length, "#8FB3E0"], ["E-book", aulas.filter((x) => x.a.tipo === "pdf").length, "#7FD49B"], ["Material", aulas.reduce((t, x) => t + x.a.extras.length, 0), "#E0A070"]];
+    const totT = tipos.reduce((t, x) => t + x[1], 0) || 1;
+    const C = 2 * Math.PI * 52; let off = 0;
+    const ros = tipos.map(([, v, cor]) => { const l = (v / totT) * C, g = l ? `<circle r="52" cx="70" cy="70" fill="none" stroke="${cor}" stroke-width="18" stroke-dasharray="${Math.max(0, l - 2)} ${C - l + 2}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>` : ""; off += l; return g; }).join("");
+    const coms = comentariosDoCurso(c), porAula = new Map<string, number>(); coms.forEach((x) => porAula.set(x.aula, (porAula.get(x.aula) || 0) + 1));
+    const top = aulas.filter((x) => porAula.get(x.a.id)).sort((a, b) => (porAula.get(b.a.id) || 0) - (porAula.get(a.a.id) || 0)).slice(0, 3);
+    const agora = Date.now(), agend = aulas.filter((x) => x.a.libera && new Date(x.a.libera).getTime() > agora).sort((a, b) => a.a.libera.localeCompare(b.a.libera)).slice(0, 3);
+    const u = ULT_LIB.get(c.id);
+    const nomeA = (x: { a: Aula; m: Modulo }) => `${h(x.m.rot)} ${x.m.num} · ${h(x.a.rot)} ${x.a.num} — ${h(x.a.nome)}`;
+    return `<div class="pp-painel">${topo}
+      <div class="pp-g3">
+        <div class="pp-box"><h3 class="pp-h3">Distribuição do conteúdo</h3><div class="pp-ros"><svg viewBox="0 0 140 140" class="pp-rosca" role="img" aria-label="${aulas.length} itens por tipo">${ros}<text x="70" y="70" text-anchor="middle" class="pp-rn">${aulas.length}</text><text x="70" y="90" text-anchor="middle" class="pp-rl">${nomeItens(c, aulas.length)}</text></svg><div class="pp-leg">${tipos.map(([t, v, cor]) => `<div><i style="background:${cor}"></i><span>${t}</span><b>${v} <em>(${Math.round((v / totT) * 100)}%)</em></b></div>`).join("")}</div></div></div>
+        <div class="pp-box"><h3 class="pp-h3">Aulas com mais comentários</h3>${top.length ? top.map((x, i) => `<div class="pp-rk"><b class="rk-pos rk-p${i + 1}">${i + 1}</b><span>${nomeA(x)}</span><em>${porAula.get(x.a.id)} ${porAula.get(x.a.id) === 1 ? "comentário" : "comentários"}</em></div>`).join("") : `<p class="pp-vz">Nenhum comentário ainda.</p>`}</div>
+        <div class="pp-box"><h3 class="pp-h3">Última aula liberada</h3>${u ? `<div class="pp-rk"><span>${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</span><em class="pp-ok">Liberado</em></div>` : `<p class="pp-vz">Nenhuma liberação ainda.</p>`}
+          <h3 class="pp-h3 pp-mt">O que tem agendado</h3>${agend.length ? agend.map((x) => `<div class="pp-rk"><span>${nomeA(x)}</span><em class="pp-ag">${dataHoraCurta(x.a.libera)}</em></div>`).join("") : `<p class="pp-vz">Nada agendado.</p>`}</div>
+      </div></div>`;
   }
 
   /** Aba "Sobre o produto" (modelo novo produto): dados reais do curso. */
@@ -8104,6 +8135,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
       case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
       case "cat-tipo": ui.catTipo = d.v || ""; break;
+      case "ct-vis": ui.ctVis = d.v === "est" ? "est" : "cont"; break;
       case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
