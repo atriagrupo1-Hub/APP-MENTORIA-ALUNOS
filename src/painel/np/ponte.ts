@@ -18,6 +18,9 @@ let assinatura = "";
 let vistaAtual = "";
 let aoAgir: ((m: NpAcao) => void) | null = null;
 let carregado = false;
+let fila: Record<string, unknown>[] = [];
+/** Pede ao modelo para abrir algo (ex.: a janela de liberação de um aluno); espera o quadro carregar. */
+export function npEnviar(m: Record<string, unknown>) { if (carregado && quadro?.contentWindow) quadro.contentWindow.postMessage(m, "*"); else fila.push(m); }
 
 /** Resposta do painel ao modelo (ex.: id do curso criado). */
 export function npResponder(m: Record<string, unknown>) { quadro?.contentWindow?.postMessage({ np: "resp", ...m }, "*"); }
@@ -69,7 +72,7 @@ export function npSincronizar(ativo: boolean, vista: "lista" | "categorias" | "a
   } else if (ass !== assinatura) {
     assinatura = ass;
     vistaAtual = vista;
-    f.onload = () => { carregado = true; };
+    f.onload = () => { carregado = true; const q = fila; fila = []; q.forEach((m) => f.contentWindow?.postMessage(m, "*")); };
     const json = ass.replace(/</g, "\\u003c");
     f.srcdoc = modeloHtml.replace("<script>", `<script>window.NP_EMBED=1;window.NP_DADOS=${json};window.NP_DADOS.ir=${JSON.stringify(vista)};</script>\n<script>`);
   } else if (vista !== vistaAtual) {
