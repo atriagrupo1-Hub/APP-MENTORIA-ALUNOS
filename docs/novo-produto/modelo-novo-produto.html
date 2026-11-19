@@ -2303,7 +2303,8 @@ filtrar();
 .cx-rb dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:12.5px}.cx-rb dt{color:var(--t2)}.cx-rb dd{margin:0;font-weight:600;overflow-wrap:anywhere}
 .cx-msg{grid-column:1/-1}
 .cx-msgt{white-space:pre-wrap;padding:14px;border-radius:10px;background:#17181B;border:1px solid var(--div);font-size:13px;line-height:1.7}
-.cx-copiar{margin-top:10px}
+.cx-copiar{margin-top:10px}.cx-copiar.cx-copiado{background:#15291d;border-color:#2c5a3c;color:#7FD49B}
+#toast{z-index:60}
 /* aluno existente */
 .cx-lst{display:flex;flex-direction:column;gap:6px;max-height:44vh;overflow:auto}
 .cx-row{display:grid;grid-template-columns:22px 38px minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--borda);border-radius:12px;background:#141518;text-align:left;width:100%}
@@ -2520,7 +2521,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
   if(b.dataset.cxpm!==undefined){const L=libDe(b.dataset.c);L.libMods[b.dataset.cxpm]=!L.libMods[b.dataset.cxpm];if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
   if(b.dataset.cxm1){libDe(b.dataset.c).m1=b.dataset.cxm1;desenharCx();return}
   if(b.dataset.cxlib){const L=libDe(b.dataset.cxlib);if(L.tipo!==b.dataset.cxv)L.datas={};L.tipo=b.dataset.cxv;if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
-  if(b.dataset.cxcopiar){const t=cxMsg();const ok=()=>toast("Mensagem copiada. É só colar no WhatsApp do aluno.",true);(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t).then(ok):Promise.reject()).catch(()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(x){toast("Selecione a mensagem e copie.")}ta.remove()});return}});
+  if(b.dataset.cxcopiar){const t=cxMsg();const ok=()=>{b.textContent="✓ Mensagem copiada";b.classList.add("cx-copiado");clearTimeout(window._cxCp);window._cxCp=setTimeout(()=>{if(b.isConnected){b.textContent="Copiar mensagem";b.classList.remove("cx-copiado")}},2500);toast("Mensagem copiada.",true)};(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t).then(ok):Promise.reject()).catch(()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(x){toast("Selecione a mensagem e copie.")}ta.remove()});return}});
 document.addEventListener("input",e=>{if(!cx)return;const t=e.target;
   if(t.id==="cxBusca"){cx.q=t.value;cx.foco="#cxBusca";desenharCx();return}
   const f=t.dataset&&t.dataset.cxf;if(f){let v=t.value;if(f==="cel"){v=v.replace(/\D/g,"").slice(0,11);t.value=celFmt(v)}if(f==="cod"){v=v.replace(/\D/g,"").slice(0,4);t.value=v}if(f==="login"){cx.loginMx=true;v=v.toLowerCase().replace(/\s+/g,"")}cx[f]=v;if(!cx.loginMx&&(f==="pn"||f==="sn"))cx.login="";if(cx.campo===f){cx.campo="";cx.erro="";const c=t.closest(".cx-c");if(c)c.classList.remove("erro");const av=document.querySelector("#cxModal .cx-pe .aviso-esc");if(av)av.remove()}return}
