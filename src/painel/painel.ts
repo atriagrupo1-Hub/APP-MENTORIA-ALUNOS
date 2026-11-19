@@ -905,7 +905,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
-  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunas"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunos"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
@@ -1016,7 +1016,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
-    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout"), ui.tab === "layout" ? "categorias" : "lista", npDados, npAgir);
+    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas"), ui.tab === "layout" ? "categorias" : ui.tab === "alunas" ? "alunos" : "lista", npDados, npAgir);
     posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); pintarPubMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
@@ -1101,7 +1101,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -1147,7 +1147,7 @@ export function montar(app: HTMLElement) {
         </div>
       </aside>
       <div class="principal">
-        <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
+        <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
           ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
@@ -2050,7 +2050,7 @@ export function montar(app: HTMLElement) {
   };
   const AJUDA_ABAS: Record<string, [string, string, string]> = {
     inicio: ["Início", "O resumo do dia: o que pede atenção agora. Os comentários só aparecem enquanto ninguém da equipe aprovou, ocultou, apagou ou respondeu.", "comece pelos comentários esperando e pelos acessos que vencem. Clique no nome da aluna para abrir a ficha dela."],
-    alunas: ["Alunas", "Todas as alunas cadastradas, com a situação de cada uma.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
+    alunas: ["Alunos", "Todos os alunos cadastrados, com a situação de cada um.", "use os filtros para achar quem está vencendo ou sem acesso. Abra a ficha para liberar aulas, renovar ou mandar o acesso pelo WhatsApp."],
     ficha: ["Ficha da aluna", "Tudo sobre uma aluna: dados, aulas liberadas, progresso, anotações e histórico.", "confira o que ela já tem liberado antes de responder qualquer dúvida. Anote o que conversou para a equipe saber."],
     engajamento: ["Engajamento", "Quem está avançando e quem parou. Cada quadro tem um ? explicando o grupo.", "comece por “Precisam de um empurrão”; ligue ou mande o recado pelo WhatsApp (o botão já abre a conversa com a mensagem pronta); e clique em “Registrar contato” para anotar como foi — assim ninguém da equipe liga duas vezes para a mesma pessoa."],
     layout: ["Categorias", "Cada categoria tem uma capa e reúne os cursos que você escolher. Um curso pode estar em mais de uma categoria.", "clique numa categoria para ver os cursos dela, ou em Nova categoria para criar outra."],
@@ -3621,7 +3621,7 @@ export function montar(app: HTMLElement) {
     </article>`;
   }
   /** Produtos e Categorias: o modelo aprovado embutido (np/ponte.ts). */
-  const npTela = () => { void telaCursos; void telaCategorias; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
+  const npTela = () => { void telaCursos; void telaCategorias; void telaAlunas; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
   function npDados(): Record<string, unknown> {
     const agora = Date.now();
     const libSt = (vis: boolean, bloq: boolean, libera: string) => !vis ? "Oculto" : bloq ? "Bloqueado" : libera && new Date(libera).getTime() > agora ? "Agendado" : "Liberado";
@@ -3671,7 +3671,11 @@ export function montar(app: HTMLElement) {
         ult: u ? { mod: u.mod != null ? "Módulo " + u.mod : c.nome, aula: (u.num != null ? "Aula " + u.num + " – " : "") + u.titulo, quando: dataHoraCurta(u.quando) } : null,
         ag: ag ? { mod: ag.m.rot + " " + ag.m.num + " – " + ag.m.nome, aula: ag.a.rot + " " + ag.a.num + " – " + ag.a.nome, quando: dataHoraCurta(ag.a.libera) } : null };
     }
-    return { prods, cats, mods, alunos, coms, eng, top };
+    // Todos os alunos (aba Alunos e "Aluno existente"): cursos pelo nome, modalidade, último acesso e engajamento
+    const cursosDe = new Map<string, Set<string>>();
+    for (const c of S.cursos) for (const x of alunasDoCurso(c)) { let st = cursosDe.get(x.a.id); if (!st) cursosDe.set(x.a.id, st = new Set()); st.add(c.nome); }
+    const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0 }));
+    return { prods, cats, mods, alunos, coms, eng, top, todos };
   }
   /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
   function npCfg(modo: string, dias: number | null, libera: string) {
@@ -3740,6 +3744,52 @@ export function montar(app: HTMLElement) {
   const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
   function npAgir(m: NpAcao) {
     const el = document.body;
+    if (m.tipo === "ficha") { const a = aluna(String(m.id || "")); if (!a) return; ui.tab = "ficha"; ui.ficha = a.id; ui.modal = null; window.scrollTo(0, 0); render(); return; }
+    if (m.tipo === "aluno-salvar") {
+      type Plano = { id: string; inteiro: boolean; aulas: { id: string; data: string | null }[]; regra: string };
+      const rid = m.rid, planos = ((m.planos || []) as Plano[]).filter((x) => curso(x.id));
+      const falha = (t: string) => npResponder({ rid, erro: t });
+      if (!planos.length) { falha("Escolha o curso."); return; }
+      const n = m.novo as null | { nome: string; login: string; cod: string; cel: string; email: string; ent: string; val: string; apar: string; link: string };
+      if (n) {
+        const login = semAcento(n.login || loginAuto(n.nome)).toLowerCase();
+        if (S.alunas.some((x) => x.login === login)) { falha("Já existe um aluno com o login " + login + ". Troque o login na etapa Acesso."); return; }
+        if (!/^\d{4}$/.test(n.cod)) { falha("O código precisa ter 4 números."); return; }
+        if (String(n.cel).replace(/\D/g, "").length !== 11) { falha("Preencha o celular com DDD."); return; }
+        n.login = login;
+      }
+      // Libera os cursos (inteiros) e as aulas (uma a uma); aula com data futura entra no cronograma do aluno
+      const aplicar = async (alId: string, antes: { cursos: string[]; modulos: string[]; aulas: string[] }, cron: Record<string, number>) => {
+        const cs = new Set(antes.cursos), as = new Set(antes.aulas);
+        for (const pl of planos) { if (pl.inteiro) cs.add(pl.id); else pl.aulas.forEach((x) => as.add(x.id)); }
+        await rpc("salvar_liberacao", { p_aluna: alId, p_produtos: [...cs], p_modulos: antes.modulos, p_aulas: [...as] });
+        const datadas = planos.flatMap((pl) => pl.inteiro ? [] : pl.aulas.filter((x) => x.data && x.data > hoje()));
+        if (datadas.length) { const ce = Object.entries(cron); await rpc("salvar_cronograma", { p_aluna: alId, p_modulos: ce.map((x) => x[0]), p_dias: ce.map((x) => x[1]), p_aulas: datadas.map((x) => x.id), p_datas: datadas.map((x) => x.data) }); }
+      };
+      const nomesC = planos.map((x) => curso(x.id)!.nome).join(", ");
+      npExec(async () => {
+        try {
+          if (n) {
+            const r = await chamarFuncao("cadastrar-aluna", { nome: n.nome, login: n.login, codigo: n.cod, celular: n.cel, email: n.email, entrada: n.ent, validade: n.val });
+            if (!r.id) throw new Error("Não foi possível cadastrar o aluno agora.");
+            const nid = String(r.id);
+            await registrar(nid, "Aluno cadastrado");
+            const linkAl = n.link && n.link !== (LINKS.geral || enderecoDaMentoria()) ? n.link : "";
+            if (linkAl || n.apar) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl || null, aparelho: n.apar || null }); if (x.error) throw x.error; }
+            await aplicar(nid, { cursos: [], modulos: [], aulas: [] }, {});
+            await registrar(nid, "Liberou " + nomesC + " · " + planos.map((x) => x.regra).join(" · "));
+            npResponder({ rid, login: n.login, cod: n.cod });
+            return { msg: n.nome + " cadastrado.", texto: "cadastro de " + n.nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: nid }); } };
+          }
+          const ids = ((m.alunos || []) as string[]).filter((x) => aluna(x));
+          if (!ids.length) throw new Error("Marque pelo menos um aluno.");
+          for (const id of ids) { const al = aluna(id)!; await aplicar(al.id, al.acesso, al.cronograma); await registrar(al.id, "Liberou " + nomesC + " · " + planos.map((x) => x.regra).join(" · ")); }
+          npResponder({ rid });
+          return p(ids.length, "aluno adicionado", "alunos adicionados") + " ao curso " + nomesC + ".";
+        } catch (e) { falha(motivo(e)); throw e; }
+      });
+      return;
+    }
     if (m.tipo === "aluno-add") { const c = curso(String(m.prod || "")); if (!c) return; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", curso: c.id, codigo: novoCodigo() }; render(); return; }
     if (m.tipo === "ia") {
       // IA do modelo: não grava nada, só devolve o texto (fora da fila de gravações).
@@ -3894,6 +3944,7 @@ export function montar(app: HTMLElement) {
     if (m.tipo === "alunos-st") {
       const c = curso(String(m.prod || "")), st = String(m.st || ""), lista = ((m.lista || []) as { id: string; de: string }[]).filter((x) => aluna(x.id));
       if (!lista.length) return;
+      if (st === "rem" && !c) { toast("Para tirar o aluno do sistema, abra a ficha dele (Ver detalhes)."); render(); return; }
       npExec(async () => {
         for (const x of lista) {
           const al = aluna(x.id)!;
