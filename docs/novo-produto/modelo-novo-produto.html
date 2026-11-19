@@ -2187,6 +2187,7 @@ filtrar();
 </script>
 <style>
 /* ===== Alunos (aba lateral) e Adicionar/Cadastrar aluno ===== */
+.alx-pn .alx-barra{margin-top:16px}.alx-pn .alx-tab{background:#141518}.al-k[data-alxtab]{text-align:left;font:inherit;color:inherit;cursor:pointer}
 .alx-cab{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:20px}
 .alx-cab h1{margin:2px 0 4px}
 .alx-ks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
@@ -2354,17 +2355,20 @@ function salvarAlx(){try{localStorage.setItem(ALX_K,JSON.stringify(ALX))}catch(e
 
 // ---------- Aba Alunos ----------
 let alxQ="",alxSt="",alxOrd="rec";
-function desenharAlx(){const el=document.getElementById("alxPag");if(!el)return;const n=k=>ALX.filter(a=>a.st===k).length;
-  const k=(cl,ic,t,v)=>'<div class="alx-k '+cl+'"><i>'+svgAx(ic)+'</i><div><em>'+t+'</em><b>'+v+'</b></div></div>';
-  el.innerHTML='<div class="alx-cab"><div><span class="rot">Relacionamento</span><h1>Alunos</h1><p class="desc">Todos os alunos cadastrados, com status, cursos e acesso.</p></div><button type="button" class="bt ouro" data-cxabrir="">'+svgAx("mais").replace('aria-hidden','style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2" aria-hidden')+'Cadastrar aluno</button></div>'+
-   '<div class="alx-ks">'+k("","g","Total de alunos",ALX.length)+k("v","ok","Ativos",n("ativos"))+k("r","bl","Bloqueados",n("bloq"))+k("c","de","Desativados",n("desat"))+'</div>'+
+const alxRec=a=>a.ent&&a.ent>=isoMais(isoHoje(),-7);
+let alxTab="todos";
+function desenharAlx(){const el=document.getElementById("alxPag");if(!el)return;const n=k=>ALX.filter(a=>a.st===k).length,tot=ALX.length,at=n("ativos"),blo=n("bloq"),des=n("desat"),rec=ALX.filter(alxRec).length;
+  const kp=(ic,cl,t,v,on,tab)=>'<button type="button" class="cm-k al-k'+(on?" on":"")+'" data-alxtab="'+tab+'"><span class="cm-ki '+cl+'">'+ppI(ic)+'</span><div><em>'+t+'</em><b>'+v+'</b></div></button>';
+  el.innerHTML='<div class="pp-painel alx-pn"><div class="eg-cab"><div class="eg-t">'+ppI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>')+'<div><h2>Alunos</h2><p>Gerencie seus alunos e acompanhe o progresso e os principais status.</p></div></div><button type="button" class="bt ouro pp-ed" data-cxabrir="">'+ppI('<path d="M12 5v14M5 12h14"/>')+'Aluno</button></div>'+
+   '<div class="al-ks">'+kp('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>',"cm-i0","Total de alunos",tot,alxTab==="todos","todos")+kp('<circle cx="12" cy="12" r="8.5"/><path d="M8 12.5l3 3 5-6"/>',"cm-i1","Ativos",at,alxTab==="ativos","ativos")+kp('<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5v2"/>',"cm-i2","Bloqueados",blo,alxTab==="bloq","bloq")+kp('<circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/>',"cm-i3","Desativados",des,alxTab==="desat","desat")+
+   '<button type="button" class="cm-k al-k al-rec'+(alxTab==="rec"?" on":"")+'" data-alxtab="rec"><span class="cm-ki cm-i0">'+ppI('<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M8 15h3M13 15h3"/>')+'</span><div><b class="al-rt">Adicionados recentes</b></div></button></div>'+
+   '<div class="cm-tabs al-tabs" role="tablist">'+[["todos","Todos",tot],["ativos","Ativos",at],["bloq","Bloqueados",blo],["desat","Desativados",des],["rec","Adicionados recentes",rec]].map(([k,t,v])=>'<button type="button" role="tab" aria-selected="'+(alxTab===k)+'" class="'+(alxTab===k?"on":"")+'" data-alxtab="'+k+'">'+t+'<i>'+v+'</i></button>').join("")+'</div>'+
    '<div class="alx-barra"><label class="alx-busca">'+svgAx("lupa")+'<input class="campo" id="alxQ" type="search" placeholder="Buscar por nome, login, e-mail ou código" value="'+esc(alxQ)+'" autocomplete="off"></label>'+
-   '<select class="campo" id="alxSt" aria-label="Status"><option value="">Todos os status</option><option value="ativos"'+(alxSt==="ativos"?" selected":"")+'>Ativos</option><option value="bloq"'+(alxSt==="bloq"?" selected":"")+'>Bloqueados</option><option value="desat"'+(alxSt==="desat"?" selected":"")+'>Desativados</option></select>'+
-   '<select class="campo" id="alxOrd" aria-label="Ordem"><option value="rec">Últimos adicionados</option><option value="az"'+(alxOrd==="az"?" selected":"")+'>Nome (A–Z)</option><option value="za"'+(alxOrd==="za"?" selected":"")+'>Nome (Z–A)</option><option value="ant"'+(alxOrd==="ant"?" selected":"")+'>Mais antigos</option></select></div>'+
-   '<div class="alx-tab" id="alxTab"></div>';
+   '<select class="campo" id="alxOrd" aria-label="Ordem"><option value="rec">Mais recentes</option><option value="ant"'+(alxOrd==="ant"?" selected":"")+'>Mais antigos</option><option value="az"'+(alxOrd==="az"?" selected":"")+'>Nome (A–Z)</option><option value="za"'+(alxOrd==="za"?" selected":"")+'>Nome (Z–A)</option></select></div>'+
+   '<div class="alx-tab" id="alxTab"></div></div>';
   alxTabela()}
 function alxTabela(){const t=document.getElementById("alxTab");if(!t)return;const q=tiraAc(alxQ.trim().toLowerCase());
-  let L=ALX.filter(a=>(!q||tiraAc([a.nome,a.login,a.email,a.cod].join(" ").toLowerCase()).includes(q))&&(!alxSt||a.st===alxSt));
+  let L=ALX.filter(a=>(!q||tiraAc([a.nome,a.login,a.email,a.cod].join(" ").toLowerCase()).includes(q))&&(alxTab==="todos"?true:alxTab==="rec"?alxRec(a):a.st===alxTab));
   L.sort((a,b)=>alxOrd==="az"?a.nome.localeCompare(b.nome):alxOrd==="za"?b.nome.localeCompare(a.nome):alxOrd==="ant"?a.ent.localeCompare(b.ent):b.ent.localeCompare(a.ent));
   t.innerHTML='<div class="alx-l h"><span>Aluno</span><span>Status</span><span>Cursos</span><span>Cadastro</span><span>Acesso até</span><span></span></div>'+(L.map(a=>'<div class="alx-l"><span class="alx-quem"><span class="alx-av">'+esc(iniAl(a.nome))+'</span><div><b>'+esc(a.nome)+'</b><small>'+esc(a.login)+' · '+esc(a.email||celFmt(a.cel))+'</small></div></span><span class="alx-st '+a.st+'">'+AX_ST[a.st][1]+' '+AX_ST[a.st][0]+'</span><span class="alx-cs">'+(a.cursos.length?a.cursos.map(c=>'<span title="'+esc(c)+'">'+esc(c)+'</span>').join(""):'<em class="alx-dt">Nenhum curso</em>')+'</span><span class="alx-dt">'+dataBR(a.ent)+'</span><span class="alx-dt">'+dataBR(a.val)+'</span><button type="button" class="est-icb" data-alxmenu="'+a.id+'" aria-label="Mais opções"><svg viewBox="0 0 24 24"><circle cx="12" cy="5.5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="18.5" r="1.6"/></svg></button></div>').join("")||'<div class="alx-vz">Nenhum aluno encontrado.</div>')}
 document.addEventListener("input",e=>{if(e.target.id==="alxQ"){alxQ=e.target.value;alxTabela()}});
@@ -2528,6 +2532,7 @@ function cxSalvar(msg,ex){
   if(vista==="produto"){const y=scrollY;desenharProduto();scrollTo(0,y)}if(vista==="alunos")desenharAlx();if(typeof filtrar==="function")filtrar();
   cx.fim={titulo:ex?(qtos===1?"Aluno adicionado com sucesso":"Alunos adicionados com sucesso"):"Aluno cadastrado com sucesso",sub:"",dados:[["Curso",cs.join(", ")||"—"],...nomes.flatMap(x=>[["Aluno",x.nome],["Celular",celFmt(x.cel)||"—"],["Data de cadastro",dataBR(x.ent)]])],msg};cx.yIni=0;desenharCx()}
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.alxtab){alxTab=b.dataset.alxtab;desenharAlx();return}
   if(b.dataset.cxabrir!==undefined){abrirCad(b.dataset.cxabrir||"");return}
   if(b.dataset.alxmenu){const a=ALX.find(x=>x.id===b.dataset.alxmenu);if(!a)return;menuConteudo(b,[["Ver acesso",'data-alxac="ver:'+a.id+'"'],[a.st==="bloq"?"Desbloquear":"Bloquear",'data-alxac="'+(a.st==="bloq"?"ativos":"bloq")+':'+a.id+'"'],[a.st==="desat"?"Reativar (+1 ano)":"Desativar",'data-alxac="'+(a.st==="desat"?"reat":"desat")+':'+a.id+'"'],["Remover aluno",'data-alxac="rem:'+a.id+'"',1]]);return}
   if(b.dataset.alxac){fecharMenuC();const[k,id]=b.dataset.alxac.split(":"),a=ALX.find(x=>x.id===id);if(!a)return;

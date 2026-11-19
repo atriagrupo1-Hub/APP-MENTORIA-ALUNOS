@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 310,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 311,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -375,3 +375,4 @@ Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a p
 - v308 — Sem a etapa Resumo: Novo aluno tem 4 etapas (Dados · Acesso · Conteúdos liberados · Forma de liberação) e Aluno existente 2 (Escolher aluno · Forma de liberação). Na última, o botão é **Cadastrar aluno** (ou **Adicionar ao curso**). Ao clicar: tela de carregar com a logo AIŌN → "Aluno cadastrado com sucesso" (nome · curso) com a **mensagem para enviar ao aluno** e **Copiar mensagem**; botão **Concluir** fecha.
 - v309 — Tela de sucesso: abaixo de "Aluno cadastrado com sucesso", quadro com **Curso**, **Aluno**, **Celular** e **Data de cadastro**; depois a mensagem para enviar.
 - v310 — Aluno existente (escolher): janela mais larga; busca (nome, login, e-mail, celular, código) + ordem **Mais recentes / Mais antigos**; abas **Todos · Mentoria · Geral** com contagem; total de alunos e quantos marcados; tabela como a aba Alunos do painel: ☐ (no topo: **selecionar todos**), Aluno (foto/iniciais, nome, "Cadastrado em" ou "Já está no curso"), Modalidade, Produtos, Último acesso, Engajamento (Baixo/Médio/Alto + n/100), WhatsApp.
+- v311 — Aba Alunos (barra lateral) com o mesmo topo da aba Alunos do produto: painel com ícone, "Alunos" + "Gerencie seus alunos…", botão **+ Aluno**; 5 cards (Total de alunos, Ativos, Bloqueados, Desativados, Adicionados recentes — clicáveis); abas Todos · Ativos · Bloqueados · Desativados · Adicionados recentes (últimos 7 dias) com contagem; busca e ordem (Mais recentes, Mais antigos, Nome A–Z/Z–A); tabela.
