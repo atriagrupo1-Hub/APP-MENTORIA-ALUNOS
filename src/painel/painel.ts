@@ -997,6 +997,8 @@ export function montar(app: HTMLElement) {
   let atualizando = false;
   function render() {
     if (ui.tab === "cursoNovo" && ui.cn) guardarCn();
+    // A tela em que a pessoa está fica guardada nesta aba do navegador: ao recarregar, volta para ela.
+    if (cnPronto && eu) try { sessionStorage.setItem("aion-painel-tela", JSON.stringify({ tab: ui.tab, ficha: ui.ficha, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, cfgAba: ui.cfgAba, y: window.scrollY })); } catch { /* ignora */ }
     if (cnPronto) try { sessionStorage.setItem("aion-cn-aberto", ui.tab === "cursoNovo" ? "1" : "0"); } catch { /* ignora */ }
     const ae = document.activeElement as HTMLInputElement | null;
     const fid = ae && ae.id;
@@ -4966,6 +4968,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
     </span>` : ""}</span>`;
   }
   const VOLTA_KEY = "aion-painel-volta";
+  const TELA_KEY = "aion-painel-tela";
   // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
   (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
     try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
@@ -10010,6 +10013,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       S = await dadosP;
+      // Recarregou a página (F5, versão nova): volta para a tela em que estava.
+      try { const tt = sessionStorage.getItem(TELA_KEY); if (tt && !sessionStorage.getItem(VOLTA_KEY)) { const o = JSON.parse(tt); for (const k of ["tab", "ficha", "curso", "cursoAba", "modPagina", "aula", "catxSel", "cfgAba"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cfgAba === "acesso") ui.cfgAba = "menu"; if (ui.tab === "ficha" && !S.alunas.some((x) => x.id === ui.ficha)) ui.tab = "alunas"; if ((ui.curso && !curso(ui.curso)) || (ui.aula && !acharAula(ui.aula))) { ui.curso = null; ui.aula = null; if (ui.tab === "curso" || ui.tab === "aula") ui.tab = "cursos"; } if (typeof o.y === "number" && o.y > 0) setTimeout(() => window.scrollTo(0, o.y), 120); } } catch { /* ignora */ }
       // Voltou do botão Atualizar: abre a mesma página em que estava.
       try { const vt = sessionStorage.getItem(VOLTA_KEY); if (vt) { sessionStorage.removeItem(VOLTA_KEY); const o = JSON.parse(vt); for (const k of ["tab", "curso", "cursoAba", "modPagina", "aula", "catxSel", "catxEditar", "cfgAba", "cn"]) if (k in o && o[k] != null) (ui as Record<string, unknown>)[k] = o[k]; if (ui.cfgAba === "acesso") ui.cfgAba = "menu"; if (ui.cn) ui.cn = { ...novoCn(), ...ui.cn, extr: ui.cn.extr ? { ...ui.cn.extr, lendo: false } : null, doc: null, ebook: null, capa: null, capaPe: null, ia: null }; ui.primeiraVez = false; if (o.y) setTimeout(() => window.scrollTo(0, o.y), 300); if (!o.silencioso) setTimeout(() => toast("Painel atualizado."), 400); } } catch { /* ignora */ }
       // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.

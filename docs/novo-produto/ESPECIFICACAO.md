@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 299,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 300,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -334,3 +334,9 @@ Cancelar sempre pergunta: "Sair sem salvar?" → Continuar editando / Salvar e s
 ## v299 (19/11/2026) — IA da descrição
 - "Gerar descrição com IA": lê o material inteiro (todas as páginas do PDF, até 300 mil caracteres por arquivo; até 150 mil vão para a IA) e segue os critérios do dono: **promessa** principal tirada do material, **pontos** centrais do conteúdo, **curiosidade** e, quando o material/contexto falar de prazo ou vagas, **escassez/urgência**. Nada inventado; sem copiar trechos ("Introdução", páginas, capítulos); até 180 caracteres.
 - PDF de material da aula também recebe o documento inteiro (até 150 mil caracteres por arquivo).
+
+## v300 (19/11/2026) — Arquivos da IA e "carregando"
+- Área de arquivos das janelas de IA (descrição e PDF da aula): caixa de envio maior com ícone ("Adicionar arquivos · clique ou arraste aqui"), aceita arrastar e soltar; com arquivo na lista vira "Adicionar outro arquivo".
+- Cada arquivo: ícone de documento com o tipo, nome, situação e barra: "Lendo página X de Y…" (com roda girando e barra de progresso), "✓ Lido · N páginas · N caracteres" (verde) ou "Não deu para ler este arquivo…" (vermelho).
+- Gerando a descrição: roda girando + "A IA está lendo o material inteiro. Leva alguns segundos."
+- Painel: ao recarregar, volta para a mesma tela (inclusive no meio de Criar/Editar curso, categoria ou módulo, com o que foi preenchido).
