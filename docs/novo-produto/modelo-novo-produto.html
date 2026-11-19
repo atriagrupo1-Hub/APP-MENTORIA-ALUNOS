@@ -2260,6 +2260,20 @@ filtrar();
 .cx-cron div{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-size:12.5px;border-top:1px solid var(--div)}.cx-cron div:first-child{border-top:0}
 .cx-cron div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-cron div b{flex:none;font-weight:600;color:var(--ouro);font-variant-numeric:tabular-nums}.cx-cron div.man b{color:var(--t2)}
 .cx-cron-t{font-size:12px;font-weight:650;color:var(--t2)}
+.cx-lc{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px;border:1px solid var(--borda);border-radius:12px;background:#141518}
+.cx-lc b{display:block;font-size:16px;font-weight:700}.cx-lc small{display:block;margin-top:6px;font-size:12px;color:var(--t2)}.cx-lc small b{display:inline;font-size:12px}.cx-lc .ok{color:#7FD49B}
+.cx-lc-st{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;font-size:11.5px;color:var(--t2)}
+.cx-lms{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:2px}
+.cx-lm{border:1px solid var(--borda);border-radius:12px;background:#141518;overflow:hidden}
+.cx-lm summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:11px 14px;cursor:pointer;list-style:none}.cx-lm summary::-webkit-details-marker{display:none}
+.cx-lm summary:before{content:"›";font-size:16px;color:var(--t2);transition:transform .15s}.cx-lm[open] summary:before{transform:rotate(90deg)}
+.cx-lm-n{font:600 10px var(--mono);letter-spacing:.8px;color:var(--ouro);padding:2px 7px;border-radius:4px;background:#2a2518;text-transform:uppercase}
+.cx-lm summary b{font-size:13.5px;font-weight:700;min-width:0}.cx-lm summary em{margin-left:auto;font-style:normal;font-size:12px;color:var(--t2)}
+.cx-lm-as{border-top:1px solid var(--div)}
+.cx-la{display:grid;grid-template-columns:minmax(0,1fr) auto 170px;align-items:center;gap:10px;padding:8px 14px 8px 36px;border-top:1px solid var(--div);font-size:12.5px}.cx-la:first-child{border-top:0}
+.cx-la>span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-la b{font-weight:600;text-align:right;white-space:nowrap}
+.cx-la.entra b{color:#7FD49B}.cx-la.agend b{color:var(--ouro)}.cx-la.fora{opacity:.6}.cx-la.fora b{color:var(--t2)}
+@media(max-width:640px){.cx-lc{grid-template-columns:96px minmax(0,1fr)}.cx-la{grid-template-columns:minmax(0,1fr) auto;padding-left:14px}.cx-la b{grid-column:1/-1;text-align:left}}
 /* resumo */
 .cx-res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .cx-rb{padding:14px 16px;border:1px solid var(--borda);border-radius:12px;background:#141518;min-width:0}
@@ -2323,10 +2337,12 @@ const cxPassos=()=>cx.modo==="existente"?[["esc","Escolher aluno"],["lib","Forma
 const cxLoginAuto=()=>{const a=tiraAc(cx.pn.trim().split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z0-9]/g,""),b=tiraAc(cx.sn.trim()).toLowerCase().replace(/[^a-z]/g,"");return a?a+(b?"."+b[0]:""):""};
 function libDe(nome){return cx.lib[nome]||(cx.lib[nome]={tipo:"",dias:7,ini:isoHoje(),prim:true,rep:true,porMod:{}})}
 function modsCurso(nome){const d=PRODS.find(x=>x.nome===nome);return d?modsDe(d):[]}
-function cronDe(nome){const L=libDe(nome),out=[];let prev="",k=0;modsCurso(nome).forEach((m,mi)=>{const X=Math.max(1,+(L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias))||1);(m.aulas||[]).forEach((a,ai)=>{let q;
+// Situação de cada aula para o aluno: entra (já liberada), agendada (entra na data) ou fica de fora
+function sitAula(m,a){const sm=stDe(m),sa=stDe(a);if(sm==="pub"&&sa==="pub")return "entra";if((sm==="agend"||sm==="pub")&&(sa==="agend"||sa==="pub")&&(sm==="agend"||sa==="agend"))return "agend";return "fora"}
+function cronDe(nome){const L=libDe(nome),out=[];let prev="",k=0;modsCurso(nome).forEach((m,mi)=>{const X=Math.max(1,+(L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias))||1);(m.aulas||[]).filter(a=>sitAula(m,a)==="entra").forEach((a,ai)=>{let q;
   if(L.tipo==="imediata")q=isoHoje();else if(L.tipo==="manual")q=k===0&&L.prim?isoHoje():"";else q=k===0?(L.prim?L.ini:isoMais(L.ini,X)):isoMais(prev,X);
   prev=q||prev;out.push({m:idMod(m),a:a.nome||"Aula "+(ai+1),q});k++})});return out}
-function libResumo(nome){const L=libDe(nome),C=cronDe(nome),n=C.length;if(L.tipo==="imediata")return "Tudo liberado no cadastro ("+n+(n===1?" aula":" aulas")+")";
+function libResumo(nome){const L=libDe(nome),C=cronDe(nome),n=C.length;if(L.tipo==="imediata")return "Tudo o que já está liberado, no cadastro ("+n+(n===1?" aula":" aulas")+")";
   if(L.tipo==="manual")return (L.prim?"Primeira aula liberada agora; ":"")+"as outras você libera manualmente";
   if(L.tipo==="dias"){const ult=C.filter(x=>x.q).pop();return "1 aula a cada "+(L.rep?L.dias+" dias em todos os módulos":"X dias por módulo")+", a partir de "+dataBR(L.ini)+(ult?" · última aula em "+dataBR(ult.q):"")}return "—"}
 function cxMsg(){const pn=cx.modo==="existente"?"":cx.pn.trim(),cs=[...cx.cursos];
@@ -2346,16 +2362,26 @@ function cxCursoCard(nome,fixo){const d=PRODS.find(x=>x.nome===nome)||{tipo:"VÍ
   return '<button type="button" class="cx-curso'+(on?" on":"")+(fixo?" fixo um":"")+'" '+(fixo?"":'data-cxcurso="'+esc(nome)+'"')+'><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo)+'</em></span><span><b>'+esc(nome)+'</b><small>'+(ms.length||d.mod||0)+(ms.length===1?" módulo":" módulos")+' · '+(na||d.aul||0)+((na||d.aul)===1?" aula":" aulas")+(d.cat?' · '+esc(d.cat):'')+'</small>'+(fixo?'<small>Liberado para o aluno ao '+(cx.modo==="existente"?"adicionar":"cadastrar")+'.</small>':'')+'</span><span class="cx-chk">'+(on?svgAx("chk"):"")+'</span></button>'}
 function cxCron(nome){const C=cronDe(nome);if(!C.length)return '<p class="cx-dica">Este curso ainda não tem aulas.</p>';const mostra=C.length>7?[...C.slice(0,5),null,C[C.length-1]]:C;
   return '<span class="cx-cron-t">Como o aluno vai receber</span><div class="cx-cron">'+mostra.map(x=>x?'<div class="'+(x.q?"":"man")+'"><span>'+esc(x.m+" · "+x.a)+'</span><b>'+(x.q?(x.q===isoHoje()?"Hoje":dataBR(x.q)):"Manual")+'</b></div>':'<div class="man"><span>… mais '+(C.length-6)+' aulas</span><b></b></div>').join("")+'</div>'}
+// "Tudo liberado agora": mostra o curso e, por módulo, o que entra, o que está agendado e o que fica de fora
+function cxLiberado(nome){const d=PRODS.find(x=>x.nome===nome)||{tipo:"",pub:"",libSt:""},ms=modsCurso(nome);let ent=0,ag=0,fo=0;
+  const kPub=d.pub==="Não publicado"?"nao":"pub",kLib={Liberado:"pub",Bloqueado:"blo",Agendado:"agend",Oculto:"ocu"}[d.libSt]||"pub";
+  const pill=(k,t)=>'<span class="mc-st mc-'+k+'"><i></i>'+t+'</span>';
+  const mods=ms.map((m,mi)=>{const as=(m.aulas||[]).map((a,ai)=>{const s=sitAula(m,a);s==="entra"?ent++:s==="agend"?ag++:fo++;
+      return '<div class="cx-la '+s+'"><span>'+esc((a.rot||"Aula")+" "+(ai+1)+" · "+(a.nome||""))+'</span>'+seloC(a)+'<b>'+(s==="entra"?"✓ Liberada no cadastro":s==="agend"?"Libera em "+esc(a.lib||m.lib||"data marcada"):"Fica de fora")+'</b></div>'}).join("");
+    const nE=(m.aulas||[]).filter(a=>sitAula(m,a)==="entra").length;
+    return '<details class="cx-lm"'+(mi<2?" open":"")+'><summary><span class="cx-lm-n">'+esc(idMod(m))+'</span><b>'+esc(m.nome||"")+'</b>'+seloC(m)+'<em>'+nE+' de '+(m.aulas||[]).length+(nE===1?" aula entra":" aulas entram")+'</em></summary><div class="cx-lm-as">'+(as||'<div class="cx-la fora"><span>Sem aulas</span></div>')+'</div></details>'}).join("");
+  return '<div class="cx-lc"><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo||"CURSO")+'</em></span><div><b>'+esc(nome)+'</b><span class="cx-lc-st"><span>Publicação</span>'+pill(kPub,kPub==="pub"?"Publicado":"Não publicado")+'<span>Liberação</span>'+pill(kLib,d.libSt||"Liberado")+'</span><small><b class="ok">'+ent+(ent===1?" aula entra":" aulas entram")+' agora</b>'+(ag?' · '+ag+(ag===1?" agendada":" agendadas"):'')+(fo?' · '+fo+(fo===1?" fica de fora":" ficam de fora")+' (não publicada, oculta ou bloqueada)':'')+'</small></div></div>'+
+   '<span class="cx-cron-t">Módulos e aulas</span><div class="cx-lms">'+(mods||'<p class="cx-dica">Este curso ainda não tem módulos.</p>')+'</div>'}
 function cxLib(nome){const L=libDe(nome),ms=modsCurso(nome),d=PRODS.find(x=>x.nome===nome)||{tipo:""};
   const op=(v,t,ds)=>'<button type="button" class="cx-op'+(L.tipo===v?" on":"")+'" data-cxlib="'+esc(nome)+'" data-cxv="'+v+'"><b>'+t+'</b><em>'+ds+'</em></button>';
   let cfg="";
-  if(L.tipo==="imediata")cfg='<p class="cx-dica" style="margin:0">Todas as aulas ficam liberadas no dia do cadastro.</p>'+cxCron(nome);
+  if(L.tipo==="imediata")cfg='<p class="cx-dica" style="margin:0">O aluno recebe no dia do cadastro tudo o que já está liberado para os alunos neste curso. O que está agendado chega na data; o que não está publicado fica de fora.</p>'+cxLiberado(nome);
   if(L.tipo==="dias")cfg='<div class="cx-frase">Liberar 1 aula a cada <input class="campo" type="number" min="1" max="365" data-cxl="dias" data-c="'+esc(nome)+'" value="'+esc(String(L.dias))+'"> dias, começando em <input class="campo" type="date" data-cxl="ini" data-c="'+esc(nome)+'" value="'+esc(L.ini)+'"></div>'+
     '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+esc(nome)+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula no dia do início<small>Desmarcado: a primeira aula chega depois do primeiro intervalo.</small></span></label>'+
     '<label class="cx-tg"><input type="checkbox" data-cxl="rep" data-c="'+esc(nome)+'"'+(L.rep?" checked":"")+'><span>Usar a regra do '+esc(ms[0]?idMod(ms[0]):"Módulo 1")+' em todos os módulos<small>Configure no primeiro módulo e a mesma regra vale para o curso inteiro. Desmarque para mudar módulo por módulo.</small></span></label>'+
     (ms.length?'<div class="cx-mods">'+ms.map((m,mi)=>'<div class="cx-mod'+(L.rep&&mi>0?" rep":"")+'"><span><b>'+esc(idMod(m)+" – "+m.nome)+'</b><small>'+(m.aulas||[]).length+((m.aulas||[]).length===1?" aula":" aulas")+'</small></span><span class="cx-frase">a cada <input class="campo" type="number" min="1" max="365" '+(mi===0?'data-cxl="dias"':'data-cxl="mod" data-mi="'+mi+'"')+' data-c="'+esc(nome)+'" value="'+esc(String(mi===0?L.dias:L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias)))+'"'+(L.rep&&mi>0?" disabled":"")+'> dias</span></div>').join("")+'</div>':'')+cxCron(nome);
   if(L.tipo==="manual")cfg='<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+esc(nome)+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula agora<small>As outras ficam fechadas: você libera uma a uma na ficha do aluno, quando quiser.</small></span></label>'+cxCron(nome);
-  return '<div class="cx-fl"><div class="cx-flt"><span>'+esc(d.tipo||"CURSO")+'</span>'+esc(nome)+'</div><div class="cx-ops">'+op("imediata","Tudo liberado agora","O aluno recebe o curso inteiro no dia do cadastro.")+op("dias","Uma aula a cada X dias","As aulas chegam uma por vez, no intervalo que você escolher.")+op("manual","Manual","Você libera as aulas quando quiser.")+'</div>'+(cfg?'<div class="cx-cfg">'+cfg+'</div>':'')+'</div>'}
+  return '<div class="cx-fl"><div class="cx-flt"><span>'+esc(d.tipo||"CURSO")+'</span>'+esc(nome)+'</div><div class="cx-ops">'+op("imediata","Tudo liberado agora","O aluno recebe agora tudo o que já está liberado no curso.")+op("dias","Uma aula a cada X dias","As aulas chegam uma por vez, no intervalo que você escolher.")+op("manual","Manual","Você libera as aulas quando quiser.")+'</div>'+(cfg?'<div class="cx-cfg">'+cfg+'</div>':'')+'</div>'}
 function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden||!cx)return;const P=cxPassos(),i=Math.min(cx.passo,P.length-1),k=P[i][0],ultimo=i===P.length-1,ctx=!!cx.curso;
   let corpo="";
   if(ctx&&!cx.modo)corpo='<p class="cx-dica">Aluno existente: escolha na lista de quem já tem cadastro. Novo aluno: preencha os dados e o acesso; o curso já vem marcado.</p>';
