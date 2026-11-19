@@ -277,6 +277,8 @@ const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
 const APARELHO = new Map<string, "android" | "iphone">();
 /** Equipe: nome e foto para responder comentários (0136), por pessoa. */
 const PERFIL_COM = new Map<string, { nome: string; foto: string }>();
+/** Equipe: celular, e-mail e observação (0137). */
+const CONTATO_EQ = new Map<string, { cel: string; email: string; obs: string }>();
 /** Última aula liberada de cada produto (0130). */
 type UltLib = { aula: string; titulo: string; mod: number | null; num: number | null; quando: string; alunas: number; avisadas: number };
 const ULT_LIB = new Map<string, UltLib>();
@@ -7136,18 +7138,25 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <div class="eqn-ccab"><span class="eqn-cic">${ICP[pp]}</span><div><h3>${nomeP}</h3><p>As opções desta função vão ser escolhidas em breve.</p></div></div>
         </section>`;
       const fotoAtual = e ? S.fotos[e.id] : "";
-      const pc = e ? PERFIL_COM.get(e.id) : undefined, fotoCom = pc?.foto || "";
+      const pc = e ? PERFIL_COM.get(e.id) : undefined, fotoCom = pc?.foto || "", ct = e ? CONTATO_EQ.get(e.id) : undefined;
       const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
       const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
-        ${cabModal(nova ? IC_PF.add : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha por partes. Nada é salvo até clicar em Salvar." : "Atualize as informações do membro da equipe.")}
+        ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe e defina o acesso." : "Atualize as informações do membro da equipe.")}
         <div class="cad-abas eqn-abas" role="tablist">${abasEq.map(([k, t], n) => `<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
-        <div class="eqn-pn" data-eqn-p="perfil">
-          <div class="eq-campo"><span>Foto do perfil <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece aqui dentro da administração.")}</span>
-            <div class="eqn-foto"><span class="eqn-circ" id="eqnFoto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span>
-              <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2MB.</small></div></div></div>
-          <label class="eq-campo"><span>Seu nome oficial ${ajuda("É como a pessoa acessa e se identifica aqui dentro da administração.")}</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>Acesso bloqueado.</small>` : ""}</label>
+        <div class="eqn-pn eqn-perfil" data-eqn-p="perfil">
+          <div class="eqn-pf-foto"><span class="eqn-pf-rot">Foto do perfil <i class="eqn-opc">(opcional)</i></span>
+            <div class="eqn-foto"><button type="button" class="eqn-circ eqn-circ2" id="eqnFoto" data-a="eqn-foto" aria-label="Enviar foto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}<span class="eqn-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5h3l1.5-2h7l1.5 2h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span></button>
+              <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2 MB.</small><small>Dá para dar zoom, mover e centralizar.</small></div></div></div>
+          <div class="eqn-pf-campos">
+            <label class="eq-campo"><span>Nome <b class="eqn-obr">*</b> ${ajuda("O nome oficial: é como a pessoa se identifica aqui dentro da administração.")}</span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="pnome" data-eqn-nome value="${h((e?.nome ?? "").trim().split(/\s+/)[0] || "")}" placeholder="Ex.: João" autocomplete="off" ${semNome ? "readonly" : ""} /></span></label>
+            <label class="eq-campo"><span>Sobrenome <b class="eqn-obr">*</b></span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="snome" data-eqn-nome value="${h((e?.nome ?? "").trim().split(/\s+/).slice(1).join(" "))}" placeholder="Ex.: Silva" autocomplete="off" ${semNome ? "readonly" : ""} /></span></label>
+            <label class="eq-campo"><span>Celular (WhatsApp)</span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.6 18.6z"/><path d="M9 8.8c.2-.6.7-.7 1-.6l.6 1.5-.6.8c.5 1 1.3 1.8 2.4 2.4l.8-.6 1.5.6c.1.4 0 .9-.6 1.1-2.7.6-5.7-2.4-5.1-5.2z"/></svg><input class="campo" name="celEq" data-i="celular" type="tel" inputmode="numeric" maxlength="15" value="${h(ct?.cel ? formatarCelular(ct.cel) : "")}" placeholder="(00) 00000-0000" autocomplete="off" /></span></label>
+            <label class="eq-campo"><span>E-mail</span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg><input class="campo" name="emailEq" type="email" inputmode="email" value="${h(ct?.email || "")}" placeholder="Ex.: joao@aion.com" autocomplete="off" /></span></label>
+          </div>
+          <label class="eq-campo eqn-pf-obs"><span>Observações <i class="eqn-opc">(opcional)</i></span><span class="eqn-ic eqn-ic-ta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 11h16M4 16h9M15.5 19l4-4"/></svg><textarea class="campo" name="obsEq" maxlength="300" rows="3" data-eqn-obs placeholder="Ex.: Função, setor ou outras informações relevantes...">${h(ct?.obs || "")}</textarea></span><small class="eqn-cont" data-eqn-cont>${(ct?.obs || "").length}/300</small></label>
+          <input type="hidden" name="nome" value="${h(e?.nome ?? "")}" />
         </div>
         <div class="eqn-pn" data-eqn-p="acesso" hidden>
         <div class="eqn-corpo">
@@ -9469,12 +9478,14 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const papel = papelTxt === "Administrador" ? "admin" : papelTxt === "Dono" ? "dono" : "suporte";
         const codigo = form.elements.namedItem("codigo") ? v("codigo").trim() : "";
         const perms = permsDoForm(form), permsSup = permsSupDoForm(form);
-        if (nome.length < 2) { toast("Preencha o nome."); return; }
+        if (nome.length < 2 || (form.elements.namedItem("snome") && !v("snome"))) { toast("Preencha o nome e o sobrenome."); return; }
+        { const cl = v("celEq").replace(/\D/g, ""); if (cl && (cl.length < 10 || cl.length > 11)) { toast("Confira o celular: (00) 00000-0000."); return; } const em = v("emailEq"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast("Confira o e-mail."); return; } }
         if (codigo && !/^\d{4,6}$/.test(codigo)) { toast("O código tem de 4 a 6 números."); return; }
         if (S.equipe.some((x) => x.login === login && x.id !== e.id)) { toast("Esse login já está na equipe."); return; }
         const antes = { nome: e.nome, login: e.login, papel: e.papel === "Administrador" ? "admin" : e.papel === "Dono" ? "dono" : "suporte", codigo: e.codigo ?? "" };
         void executar(async () => {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
+          { const ca = CONTATO_EQ.get(e.id), cel = v("celEq").replace(/\D/g, ""); if (cel !== (ca?.cel || "") || v("emailEq").toLowerCase() !== (ca?.email || "") || v("obsEq") !== (ca?.obs || "")) { await rpc("salvar_contato_colaborador", { p_id: e.id, p_celular: cel, p_email: v("emailEq"), p_obs: v("obsEq") }); CONTATO_EQ.set(e.id, { cel, email: v("emailEq").toLowerCase(), obs: v("obsEq") }); } }
           { const nc = v("nomeCom").trim(), fc = v("fotoCom"), pa = PERFIL_COM.get(e.id); if (nc !== (pa?.nome || "") || fc !== (pa?.foto || "")) { await rpc("salvar_perfil_comentario", { p_id: e.id, p_nome: nc, p_foto: fc || null }); PERFIL_COM.set(e.id, { nome: nc, foto: fc }); } }
           if (fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: e.id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[e.id] = fp.foto; }
           if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome, p_abas_bloqueadas: perms.abas });
@@ -9487,7 +9498,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "equipe-add": {
         const login = v("login").trim().toLowerCase();
-        if (v("nome").trim().length < 2) { toast("Preencha o nome oficial (etapa Perfil)."); return; }
+        if (!v("pnome") || !v("snome")) { toast("Preencha o nome e o sobrenome (etapa Perfil)."); return; }
+        { const cl = v("celEq").replace(/\D/g, ""); if (cl && (cl.length < 10 || cl.length > 11)) { toast("Confira o celular: (00) 00000-0000."); return; } const em = v("emailEq"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast("Confira o e-mail."); return; } }
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
         if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
         // O código é quem cadastra que escolhe — nunca sorteado.
@@ -9498,6 +9510,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo, permissoes });
           if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
+          if (r.id && (v("celEq") || v("emailEq") || v("obsEq"))) { try { await rpc("salvar_contato_colaborador", { p_id: String(r.id), p_celular: v("celEq"), p_email: v("emailEq"), p_obs: v("obsEq") }); CONTATO_EQ.set(String(r.id), { cel: v("celEq").replace(/\D/g, ""), email: v("emailEq").toLowerCase(), obs: v("obsEq") }); } catch { toast("Membro criado, mas o celular/e-mail não foram salvos. Edite o membro para tentar de novo."); } }
           if (r.id && (v("nomeCom").trim() || v("fotoCom"))) { try { await rpc("salvar_perfil_comentario", { p_id: String(r.id), p_nome: v("nomeCom").trim(), p_foto: v("fotoCom") || null }); PERFIL_COM.set(String(r.id), { nome: v("nomeCom").trim(), foto: v("fotoCom") }); } catch { toast("Membro criado, mas não consegui salvar o nome/foto de comentários. Edite o membro para tentar de novo."); } }
           await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
@@ -9662,6 +9675,11 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     e.preventDefault();
     if (ui.sujo && ui.sujo.f === f.dataset.f) ui.sujo = null;
     enviar(f.dataset.f!, f, (e as SubmitEvent).submitter as HTMLButtonElement | null);
+  });
+  document.addEventListener("input", (e) => {
+    const t = e.target as HTMLInputElement, f = t.closest?.("form.eqn") as HTMLFormElement | null; if (!f) return;
+    if (t.dataset?.eqnNome !== undefined) { const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim(); (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim(); }
+    if (t.dataset?.eqnObs !== undefined) { const c = f.querySelector("[data-eqn-cont]"); if (c) c.textContent = t.value.length + "/300"; }
   });
   app.addEventListener("input", (e) => {
     { const ti = e.target as HTMLInputElement; if (ti.closest?.('form[data-f="aluna"]')) { if (ti.dataset?.jor !== undefined && ti.name === "cad-c") ti.dataset.mexeu = "1"; atualizarCad(); } }
@@ -10201,6 +10219,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.
       try { if (ui.tab === "cursoNovo" || sessionStorage.getItem("aion-cn-aberto") === "1") await voltarRascCn(); } catch { /* ignora */ }
       cnPronto = true;
+      void supabase.rpc("contatos_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; celular: string | null; email: string | null; observacao: string | null }[]) CONTATO_EQ.set(x.id, { cel: x.celular || "", email: x.email || "", obs: x.observacao || "" }); });
       void supabase.rpc("perfis_comentario_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; nome_comentario: string | null; foto_comentario: string | null }[]) PERFIL_COM.set(x.id, { nome: x.nome_comentario || "", foto: x.foto_comentario || "" }); });
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();

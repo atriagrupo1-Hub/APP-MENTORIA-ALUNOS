@@ -6492,3 +6492,24 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .eqn-aj:hover, .eqn-aj:focus { border-color: #E2C68C; color: #E2C68C; outline: none; }
 .eqn-aj:hover::after, .eqn-aj:focus::after { content: attr(data-dica); position: absolute; left: -8px; top: calc(100% + 8px); z-index: 20; width: 280px; padding: 10px 12px; border-radius: 8px; border: 1px solid #3D4048; background: #1B1D21; color: #C9CCD2; font: 400 12px/1.6 Manrope, sans-serif; text-align: left; box-shadow: 0 12px 28px rgba(0,0,0,.45); white-space: normal; }
 .eqn-tirar { margin-left: 8px; border: 0; background: none; color: #E39B98; font: 600 12px Manrope, sans-serif; cursor: pointer; text-decoration: underline; }
+
+/* Equipe — etapa Perfil (foto, nome, sobrenome, celular, e-mail, observações) */
+.eqn-perfil { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 22px 28px; }
+.eqn-pf-foto { padding-right: 28px; border-right: 1px solid #292A2F; }
+.eqn-pf-rot { display: block; margin-bottom: 14px; font-size: 14px; font-weight: 650; }
+.eqn-pf-foto .eqn-foto { display: flex; align-items: center; gap: 18px; }
+.eqn-circ2 { position: relative; width: 140px !important; height: 140px !important; padding: 0; border: 0; cursor: pointer; }
+.eqn-circ2 img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.eqn-cam { position: absolute; right: 2px; bottom: 6px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 10px; background: #141518; border: 2px solid #E2C68C; color: #fff; }
+.eqn-cam svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; }
+.eqn-pf-foto small { display: block; margin-top: 8px; font-size: 12.5px; color: #94979E; }
+.eqn-pf-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 22px; align-content: start; }
+.eqn-obr { color: #E39B98; font-weight: 700; }
+.eqn-ic { position: relative; display: flex; align-items: center; }
+.eqn-ic > svg { position: absolute; left: 14px; width: 20px; height: 20px; fill: none; stroke: #C9CCD2; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.eqn-ic .campo { padding-left: 46px; height: 50px; width: 100%; }
+.eqn-ic-ta > svg { top: 14px; }
+.eqn-ic-ta textarea.campo { height: auto; min-height: 110px; padding-top: 12px; resize: vertical; }
+.eqn-pf-obs { grid-column: 1 / -1; }
+.eqn-cont { align-self: flex-end; text-align: right; font-size: 12px; color: #94979E; }
+@media (max-width: 760px) { .eqn-perfil, .eqn-pf-campos { grid-template-columns: 1fr; } .eqn-pf-foto { padding-right: 0; border-right: 0; } }
