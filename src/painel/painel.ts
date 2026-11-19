@@ -3654,14 +3654,14 @@ export function montar(app: HTMLElement) {
     };
     const tot = (t: string) => S.catsAba.filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || npFiltro(vis, !x.rascunho, x.pub, x.bloq, x.libera)) && (!t || fmtCat(x) === t)).length;
     if (!S.catsAba.length) return `
-    <section class="tela ativa np">
+    <section class="tela ativa npx">
       <div class="np-v0"><h2>Ainda não há categorias</h2><p>Crie categorias para agrupar e organizar seus cursos <br>(como Vídeos, Áudios, E-books, Mentorias, etc.).</p>
         <button type="button" class="al-botao-ouro np-criar" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar categoria</button>
         <div class="np-ben"><div>${IC_CUR.pasta}<span>Organize<br>seus cursos</span></div><div>${IC_CUR.camadas}<span>Facilite a navegação<br>dos alunos</span></div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg><span>Ganhe agilidade<br>na gestão</span></div></div></div>
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;
     return `
-    <section class="tela ativa np kg">
+    <section class="tela ativa npx kg">
       <nav class="np-abas" role="tablist" aria-label="Formato">${[["", "Todos"], ["video", "Vídeo"], ["ebook", "E-book"], ["audio", "Áudio"]].map(([k, t]) => `<button type="button" role="tab" class="np-aba${(ui.catTipo || "") === k ? " on" : ""}" data-a="cat-tipo" data-v="${k}" aria-selected="${(ui.catTipo || "") === k}">${t}<i>${tot(k)}</i></button>`).join("")}</nav>
       <div class="np-filtros">
         <label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria" aria-label="Buscar categoria" /></label>
@@ -3758,7 +3758,7 @@ export function montar(app: HTMLElement) {
       </span>` : ""}</span>`; };
     const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso");
     return `
-    <section class="tela ativa ax ka ppx np">
+    <section class="tela ativa ax ka ppx npx">
       <div class="pp-top"><button type="button" class="pp-volta" data-a="aba" data-v="layout" aria-label="Voltar para Categorias">${IC_CURSO.voltar}</button><nav class="pp-trilha" aria-label="Você está em"><button type="button" data-a="aba" data-v="layout">Categorias</button><span aria-hidden="true">›</span><b>${h(x.nome)}</b></nav></div>
       ${(() => {
         const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
@@ -3951,7 +3951,7 @@ export function montar(app: HTMLElement) {
     const npCard = (c: Curso) => npCardCurso(c, menu(c));
     const vazioTxt = q || fCat || fSt ? "Nenhum produto com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro em “Criar novo produto”." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda.";
     return `
-    <section class="tela ativa np">
+    <section class="tela ativa npx">
       <nav class="np-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Vídeo"], ["ebooks", "E-book"], ["audios", "Áudio"]] as const).map(([k, t]) => `<button type="button" role="tab" class="np-aba${ui.prodTipo === k ? " on" : ""}" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<i>${nTipo(k)}</i></button>`).join("")}</nav>
       <div class="np-filtros">
         <label class="np-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar produto" aria-label="Buscar produto" /></label>

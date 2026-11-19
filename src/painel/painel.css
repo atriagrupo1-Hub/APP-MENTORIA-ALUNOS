@@ -6232,14 +6232,14 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 
 
 /* ===== Layout novo (modelo "Novo produto"): lista de produtos e de categorias ===== */
-.np { --np-fundo: #101113; --np-sup: #191A1E; --np-card: #141518; --np-resp: #17181B; --np-borda: #2B2D32; --np-div: #26272c; --np-t1: #EEEEF0; --np-t2: #94979E; --np-t3: #7F8791; --np-ouro: #E2C68C; --np-souro: #202018; --np-mono: "IBM Plex Mono", ui-monospace, monospace; color: var(--np-t1); }
+.npx { --np-fundo: #101113; --np-sup: #191A1E; --np-card: #141518; --np-resp: #17181B; --np-borda: #2B2D32; --np-div: #26272c; --np-t1: #EEEEF0; --np-t2: #94979E; --np-t3: #7F8791; --np-ouro: #E2C68C; --np-souro: #202018; --np-mono: "IBM Plex Mono", ui-monospace, monospace; color: var(--np-t1); }
 .np-abas { display: flex; gap: 24px; border-bottom: 1px solid var(--np-borda); margin-bottom: 20px; overflow-x: auto; }
 .np-aba { border: 0; background: none; padding: 12px 0; margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--np-t2); font: 600 12px Manrope, system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
 .np-aba.on { color: var(--np-ouro); border-bottom-color: var(--np-ouro); }
 .np-aba i { font: 500 10px var(--np-mono); font-style: normal; background: #292C32; color: #A5ADB8; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 .np-filtros { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
 .np-busca { position: relative; display: flex; align-items: center; flex: 0 1 280px; min-width: 180px; }
-.np-busca svg { position: absolute; left: 12px; width: 16px; height: 16px; pointer-events: none; color: var(--np-t2); }
+.np-busca svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; pointer-events: none; color: var(--np-t2); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
 .np-busca .campo { width: 100%; height: 40px; padding-left: 36px; }
 .np-sel { height: 40px; width: auto; }
 .np-total { font-size: 12px; color: var(--np-t2); }
