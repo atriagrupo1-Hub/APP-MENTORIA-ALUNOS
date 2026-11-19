@@ -21,7 +21,7 @@ import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
-import { npSincronizar, npResponder, type NpAcao } from "./np/ponte";
+import { npSincronizar, npResponder, npEnviar, type NpAcao } from "./np/ponte";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -3671,7 +3671,9 @@ export function montar(app: HTMLElement) {
     const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0,
       // As mesmas informações da lista de antes
       foto: S.fotos[a.id] || "", cadBR: br(cadastroDe(a)), ultTxt: ultimoAcessoTxt(a), niv: nivel(a)[2], nota: a.nota || 0,
-      prods: (() => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); })() }));
+      prods: (() => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); })(),
+      // Liberação atual: cursos inteiros e cada aula liberada (com a data deste aluno, se houver)
+      lib: { inteiros: S.cursos.filter((c) => a.acesso.cursos.includes(c.id)).map((c) => c.nome), aulas: Object.fromEntries(S.cursos.filter((c) => !a.acesso.cursos.includes(c.id)).flatMap((c) => c.modulos.flatMap((m) => m.aulas.filter((x) => a.acesso.modulos.includes(m.id) || a.acesso.aulas.includes(x.id)).map((x) => [x.id, a.datas[x.id] || ""])))) } }));
     return { prods, cats, mods, alunos, coms, eng, top, todos };
   }
   /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
@@ -3746,7 +3748,7 @@ export function montar(app: HTMLElement) {
       type Plano = { id: string; inteiro: boolean; aulas: { id: string; data: string | null }[]; regra: string };
       const rid = m.rid, planos = ((m.planos || []) as Plano[]).filter((x) => curso(x.id));
       const falha = (t: string) => npResponder({ rid, erro: t });
-      if (!planos.length) { falha("Escolha o curso."); return; }
+      if (!planos.length && m.modo !== "liberar") { falha("Escolha o curso."); return; }
       const n = m.novo as null | { nome: string; login: string; cod: string; cel: string; email: string; ent: string; val: string; apar: string; link: string };
       if (n) {
         const login = semAcento(n.login || loginAuto(n.nome)).toLowerCase();
@@ -3764,6 +3766,27 @@ export function montar(app: HTMLElement) {
         if (datadas.length) { const ce = Object.entries(cron); await rpc("salvar_cronograma", { p_aluna: alId, p_modulos: ce.map((x) => x[0]), p_dias: ce.map((x) => x[1]), p_aulas: datadas.map((x) => x.id), p_datas: datadas.map((x) => x.data) }); }
       };
       const nomesC = planos.map((x) => curso(x.id)!.nome).join(", ");
+      if (m.modo === "liberar") {
+        // Refaz a liberação inteira deste aluno: o que ficou marcado segue a forma escolhida; o resto sai
+        const al = aluna(String(((m.alunos || []) as string[])[0] || "")); if (!al) { falha("Aluno não encontrado."); return; }
+        npExec(async () => {
+          try {
+            const fora = (aid: string) => !acharAula(aid);
+            const cs = planos.filter((x) => x.inteiro).map((x) => x.id);
+            const as = [...new Set([...planos.flatMap((x) => x.inteiro ? [] : x.aulas.map((y) => y.id)), ...al.acesso.aulas.filter(fora)])];
+            const ms = al.acesso.modulos.filter((mid) => !acharModulo(mid));
+            await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: cs, p_modulos: ms, p_aulas: as });
+            const futuras = new Map(planos.flatMap((x) => x.inteiro ? [] : x.aulas.filter((y) => y.data && y.data > hoje()).map((y) => [y.id, y.data as string] as [string, string])));
+            const limpar = Object.keys(al.datas).filter((aid) => !futuras.has(aid));
+            const ids = [...futuras.keys(), ...limpar];
+            if (ids.length || Object.keys(al.cronograma).length) await rpc("salvar_cronograma", { p_aluna: al.id, p_modulos: [], p_dias: [], p_aulas: ids, p_datas: ids.map((x) => futuras.get(x) ?? null) });
+            await registrar(al.id, "Liberação refeita: " + (planos.length ? planos.map((x) => curso(x.id)!.nome + " (" + x.regra + ")").join(" · ") : "nenhum curso"));
+            npResponder({ rid });
+            return "Liberação de " + al.nome + " salva.";
+          } catch (e) { falha(motivo(e)); throw e; }
+        });
+        return;
+      }
       npExec(async () => {
         try {
           if (n) {
@@ -7257,7 +7280,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
 
       case "cad-modo": if (ui.modal) { ui.modal = { ...ui.modal, modo: d.v }; if (d.v === "novo" && !ui.modal.codigo) ui.modal.codigo = novoCodigo(); ui.focar = d.v === "novo" ? "alunaNome" : "cadexBusca"; } break;
-      case "aluna-nova": fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", codigo: novoCodigo() }; break;
+      case "aluna-nova": ui.modal = null; ui.tab = "alunas"; render(); npEnviar({ np: "abrir", tipo: "cadastrar" }); return;
       case "ficha": ui.tab = "ficha"; ui.ficha = d.id; ui.modal = null; ui.verCodigo = null; window.scrollTo(0, 0); break;
       case "editar-aluna": cadHist = []; cadAntes = null; fotoNova = null; fotoPara = null; ui.modal = { tipo: "aluna", id: d.id }; if (d.v === "acesso") setTimeout(() => cadIr("acesso"), 0); break;
       case "desfazer-abrir": ui.modal = { tipo: "desfazer" }; break;
@@ -7424,8 +7447,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "cad-prazo": { const f = cadForm(); if (!f) return; cadGuardar(f); const e = f.elements.namedItem("entrada") as HTMLInputElement, vv = f.elements.namedItem("validade") as HTMLInputElement; const dt = new Date((e.value || hoje()) + "T12:00:00"); dt.setMonth(dt.getMonth() + Number(d.v)); vv.value = dt.toISOString().slice(0, 10); f.querySelectorAll<HTMLElement>(".cad-chip").forEach((x) => x.classList.toggle("on", x === el)); return; }
       case "aln-foto": fotoPara = "aln"; arquivoFoto.click(); return;
       case "gerar-codigo": if (el.closest("form.cad-al")) cadGuardar(el.closest("form") as HTMLFormElement); ((el.closest("form") as HTMLFormElement).elements.namedItem("codigo") as HTMLInputElement).value = novoCodigo(); atualizarCad(); return;
-      case "liberar": ui.modal = { tipo: "liberar", id: d.id }; break;
-      case "cronograma": ui.modal = { tipo: "cronograma", id: d.id }; break;
+      // Liberação e cronograma: a janela nova (conteúdos + forma de liberação), na aba Alunos
+      case "liberar": case "cronograma": ui.modal = null; ui.menu = null; ui.tab = "alunas"; render(); npEnviar({ np: "abrir", tipo: "liberar", id: d.id }); return;
       case "preencher-datas": {
         const form = el.closest("form") as HTMLFormElement;
         const n = Math.max(1, parseInt((document.getElementById("intervaloDias") as HTMLInputElement).value, 10) || 1);
