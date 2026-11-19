@@ -3751,7 +3751,7 @@ export function montar(app: HTMLElement) {
       const rid = m.rid, planos = ((m.planos || []) as Plano[]).filter((x) => curso(x.id));
       const falha = (t: string) => npResponder({ rid, erro: t });
       if (!planos.length && m.modo !== "liberar") { falha("Escolha o curso."); return; }
-      const n = m.novo as null | { nome: string; login: string; cod: string; cel: string; email: string; ent: string; val: string; apar: string; link: string };
+      const n = m.novo as null | { nome: string; login: string; cod: string; cel: string; email: string; ent: string; val: string; apar: string; link: string; foto?: string | null };
       if (n) {
         const login = semAcento(n.login || loginAuto(n.nome)).toLowerCase();
         if (S.alunas.some((x) => x.login === login)) { falha("Já existe um aluno com o login " + login + ". Troque o login na etapa Acesso."); return; }
@@ -3799,6 +3799,7 @@ export function montar(app: HTMLElement) {
             const linkAl = n.link && n.link !== (LINKS.geral || enderecoDaMentoria()) ? n.link : "";
             if (linkAl || n.apar) { const x = await supabase.from("aluna_link").upsert({ aluna_id: nid, link: linkAl || null, aparelho: n.apar || null }); if (x.error) throw x.error; }
             await aplicar(nid, { cursos: [], modulos: [], aulas: [] }, {});
+            if (n.foto) { try { await rpc("salvar_foto_aluna", { p_aluna: nid, p_foto: n.foto, p_original: n.foto, p_ajuste: null }); fotosCache[nid] = n.foto; } catch { toast("Aluno cadastrado, mas a foto não foi salva. Envie de novo na ficha."); } }
             await registrar(nid, "Liberou " + nomesC + " · " + planos.map((x) => x.regra).join(" · "));
             npResponder({ rid, login: n.login, cod: n.cod });
             return { msg: n.nome + " cadastrado.", texto: "cadastro de " + n.nome, desfazer: async () => { await rpc("remover_aluna", { p_aluna: nid }); } };
