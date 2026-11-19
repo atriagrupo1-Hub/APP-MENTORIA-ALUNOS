@@ -21,6 +21,7 @@ import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
+import { npSincronizar, npResponder, type NpAcao } from "./np/ponte";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -684,7 +685,7 @@ export function montar(app: HTMLElement) {
     engDias: 7, engMenu: "" as string,
     ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
-    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
+    curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", rkBusca: "", ctVis: "cont", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
   };
   const previas: Record<string, string> = {};
   let pend: null | (() => Promise<Resultado>) = null;
@@ -780,7 +781,7 @@ export function montar(app: HTMLElement) {
     "aula-bloquear": "cur_estado", "aula-liberar": "cur_estado", "mod-bloquear": "cur_estado",
     "curso-novo": "cur_editar", "curso-novo-cat": "cur_editar", "mod-add": "cur_editar", "aula-add-abrir": "cur_editar", "aula-editar": "cur_editar", "mod-editar": "cur_editar",
     "aula-duplicar": "cur_editar", "mod-duplicar": "cur_editar", "cs-duplicar": "cur_editar", "aula-renomear": "cur_editar", "mod-renomear": "cur_editar",
-    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mod-pub": "cur_estado", "aula-pub": "cur_estado", "aula-lib-abrir": "cur_estado", "mod-lib-abrir": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
+    "aula-sobe": "cur_editar", "mods-estado": "cur_estado", "mod-pub": "cur_estado", "curso-pub": "cur_estado", "aula-pub": "cur_estado", "aula-lib-abrir": "cur_estado", "mod-lib-abrir": "cur_estado", "mods-duplicar": "cur_editar", "mods-excluir": "cur_excluir", "aula-desce": "cur_editar", "mod-sobe": "cur_editar", "mod-desce": "cur_editar",
     "curso-remover": "cur_excluir", "mod-remover": "cur_excluir", "aula-remover": "cur_excluir",
     "cat-add": "cat_editar", "cat-nova": "cat_editar", "cat-criar": "cat_editar", "cat-remover": "cat_editar", "cat-renomear": "cat_editar", "cat-sobe": "cat_editar", "cat-desce": "cat_editar", "cat-duplicar": "cat_editar",
     "catx-nova": "cat_editar", "catx-nova-geral": "cat_editar", "catx-criar": "cat_editar", "catx-remover": "cat_editar", "catx-duplicar": "cat_editar", "catx-item-add": "cat_editar", "catx-item-tirar": "cat_editar", "ka-add": "cat_editar", "ka-add-abrir": "cat_editar",
@@ -1013,6 +1014,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
+    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout"), ui.tab === "layout" ? "categorias" : "lista", npDados, npAgir);
     posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); pintarPubMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
@@ -1097,7 +1099,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: telaCursos, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -1145,7 +1147,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3576,25 +3578,364 @@ export function montar(app: HTMLElement) {
    */
   /** Só cursos de verdade: os antigos produtos com o mesmo nome de uma categoria (Descobertas, E-books…) são a própria categoria, não um curso. */
   const cursosDeVerdade = () => S.cursos.filter((c) => ehCursoReal(c.id));
+  /* ---------- Layout novo (modelo "Novo produto"): cards de produto e de categoria ---------- */
+  const NP_SETA = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  const NP_IC = {
+    img: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>`,
+    ok: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+    ponto: `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.5"/></svg>`,
+    aberto: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>`,
+    cad: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+    cal: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>`,
+    olhoX: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.5 7.6C4.6 8.9 3.2 10.8 2.5 12c1 1.5 4.5 6 9.5 6 1.5 0 2.9-.4 4.1-1"/></svg>`,
+    grade: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>`,
+    lista: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.5" cy="6.5" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="17.5" r="1.2"/></svg>`,
+  };
+  /** Publicação ▾ e Liberação ▾ lado a lado (card do produto/categoria). */
+  function npStatus(k: string, pub: boolean, vis: boolean, bloq: boolean, libera: string, pubAcao: (v: boolean) => string, estPref: string, abrirAgenda: string) {
+    const agend = vis && !bloq && !!libera && new Date(libera).getTime() > Date.now();
+    const lib: [string, string, string] = !vis ? ["Oculto", "np-ocu", NP_IC.olhoX] : bloq ? ["Bloqueado", "np-blo", NP_IC.cad] : agend ? ["Agendado", "np-age", NP_IC.cal] : ["Liberado", "np-lib", NP_IC.aberto];
+    const kP = "np-p:" + k, kL = "np-l:" + k, e = !vis ? "desativado" : bloq ? "bloqueado" : "ativo";
+    const it = (v: string, t: string, ic: string, cls: string) => `<button type="button" role="menuitemradio" aria-checked="${e === v && !(v === "ativo" && agend)}" data-a="estado-set" data-v="${estPref}:${v}"><span class="np-op ${cls}">${ic}${t}</span></button>`;
+    return `<div class="np-st">
+      <div><span class="np-lb">Publicação <i title="Publicado: aparece no aplicativo. Não publicado: ninguém vê.">i</i></span><span class="est3 kg-menu np-menu"><button type="button" class="np-dd ${pub ? "np-pub" : "np-npub"}" data-a="estado-menu" data-v="${kP}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kP}">${pub ? NP_IC.ok : NP_IC.ponto}<span>${pub ? "Publicado" : "Não publicado"}</span>${NP_SETA}</button>${ui.estMenu === kP ? `<span class="est3-menu kb-menu" role="menu">${pubAcao(true)}${pubAcao(false)}</span>` : ""}</span></div>
+      <div><span class="np-lb">Liberação <i title="Liberado: o aluno abre. Bloqueado: aparece com cadeado. Agendado: abre na data marcada. Oculto: não aparece.">i</i></span><span class="est3 kg-menu np-menu"><button type="button" class="np-dd ${lib[1]}" data-a="estado-menu" data-v="${kL}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kL}">${lib[2]}<span>${lib[0]}</span>${NP_SETA}</button>${ui.estMenu === kL ? `<span class="est3-menu kb-menu" role="menu">${it("ativo", "Liberado", NP_IC.aberto, "np-lib")}${it("bloqueado", "Bloqueado", NP_IC.cad, "np-blo")}${it("desativado", "Oculto", NP_IC.olhoX, "np-ocu")}${abrirAgenda}</span>` : ""}</span></div>
+    </div>`;
+  }
+  const npVista = (acao: string, lista: boolean, vGrade = "grade") => `<span class="np-vista" role="group" aria-label="Forma de ver"><button type="button" class="np-vt${lista ? "" : " on"}" data-a="${acao}" data-v="${vGrade}" aria-pressed="${!lista}" aria-label="Em cards">${NP_IC.grade}</button><button type="button" class="np-vt${lista ? " on" : ""}" data-a="${acao}" data-v="lista" aria-pressed="${lista}" aria-label="Em lista">${NP_IC.lista}</button></span>`;
+  const npFiltro = (f: string, pub: boolean, vis: boolean, bloq: boolean, libera: string) => { const ag = vis && !bloq && !!libera && new Date(libera).getTime() > Date.now();
+    return f === "pub" ? pub : f === "nao" ? !pub : f === "oculto" ? !vis : f === "bloqueado" ? vis && bloq : f === "agendado" ? ag : f === "liberado" ? vis && !bloq && !ag : true; };
+  function npCardCurso(c: Curso, menuHtml: string) {
+    const im = capaSite(c.capa), xs = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x), au = totalAulas(c), al = numerosCurso(c).alunas;
+    const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !c.rascunho}" data-a="curso-pub" data-id="${c.id}" data-v="${v ? 1 : 0}"><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+    return `<article class="np-card">
+      <button type="button" class="np-capa" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DO PRODUTO</span></span>`}<span class="np-tipo">${npTipo(c.tipo)}</span></button>
+      <div class="np-cc">
+        <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${h(c.nome)}</button><span class="np-l np-lin"><span class="np-lb">Categoria</span><span class="np-cat">${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</span></span></span>
+        <div class="np-nums"><div><b>${c.modulos.length}</b><span>${c.modulos.length === 1 ? "MÓDULO" : "MÓDULOS"}</span></div><div><b>${au}</b><span>${au === 1 ? "AULA" : "AULAS"}</span></div><div><b>${al}</b><span>${al === 1 ? "ALUNO" : "ALUNOS"}</span></div></div>
+        ${npStatus("c" + c.id, !c.rascunho, c.visivel, c.bloq, c.libera, pubBt, "curso:" + c.id, `<button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="config"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
+        <div class="np-pe">${menuHtml}<button type="button" class="np-abrir" data-a="abrir-curso" data-id="${c.id}" data-v="${c.rascunho ? "config" : "visao"}">${c.rascunho ? "Continuar edição" : "Abrir produto"} <span aria-hidden="true">→</span></button></div>
+      </div>
+    </article>`;
+  }
+  /** Produtos e Categorias: o modelo aprovado embutido (np/ponte.ts). */
+  const npTela = () => { void telaCursos; void telaCategorias; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
+  function npDados(): Record<string, unknown> {
+    const agora = Date.now();
+    const libSt = (vis: boolean, bloq: boolean, libera: string) => !vis ? "Oculto" : bloq ? "Bloqueado" : libera && new Date(libera).getTime() > agora ? "Agendado" : "Liberado";
+    const catsDe = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
+    const stAula = (rasc: boolean, pub: boolean, bloq: boolean, libera: string) => rasc ? "nao" : !pub ? "ocu" : bloq ? "blo" : libera && new Date(libera).getTime() > agora ? "agend" : "pub";
+    const mods: Record<string, unknown[]> = {};
+    const prods = S.cursos.map((c) => {
+      const aulas = c.modulos.flatMap((m) => m.aulas), seg = aulas.reduce((t, a) => t + (a.duracao || 0), 0);
+      const lib = aulas.filter((a) => !a.rascunho && a.pub && a.acesso !== "bloqueada" && !(a.libera && new Date(a.libera).getTime() > agora)).length;
+      const u = ULT_LIB.get(c.id), al = alunasDoCurso(c);
+      mods[c.nome] = c.modulos.map((m) => ({ id: m.id, rot: m.rot, num: String(m.num), nome: m.nome, desc: m.intro, bt: m.botao || "Ver aulas", capa: capaSite(m.capaH || m.capa) || null, capaOrig: null, criado: m.criado ? br(diaDe(m.criado)) : "", st: stAula(m.rascunho, m.pub, !m.ativo, m.libera), lib: m.libera ? br(diaDe(m.libera)) : (m.publicadoEm ? br(diaDe(m.publicadoEm)) : ""), libCfg: npCfg(m.liberaModo, m.liberaDias, m.libera),
+        aulas: m.aulas.map((a) => ({ id: a.id, t: a.tipo === "pdf" ? "ebook" : a.tipo, nome: a.nome, desc: a.texto || "", mats: a.extras.map((x) => ({ t: x.tipo, nome: x.nome || x.tipo })), url: "", link: a.video || "", prog: 0, dim: "", libCfg: a.acesso === "bloqueada" ? { tipo: "tranc" } : npCfg(a.liberaModo, a.liberaDias, a.libera), st: stAula(a.rascunho, a.pub, a.acesso === "bloqueada", a.libera), dur: Math.round((a.duracao || 0) / 60), lib: a.libera ? br(diaDe(a.libera)) : (a.liberadaEm ? br(diaDe(a.liberadaEm)) : ""), capa: capaSite(a.capa) || "" })) }));
+      return { id: c.id, tipo: npTipo(c.tipo), nome: c.nome, cat: catsDe(c)[0]?.nome || "", mod: c.modulos.length, aul: aulas.length, alu: al.length, cri: c.criado ? br(diaDe(c.criado)) : "—", lib: c.publicadoEm ? br(diaDe(c.publicadoEm)) : "—", st: c.rascunho ? "Não publicado" : !c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Publicado", preco: 0,
+        pub: c.rascunho ? "Não publicado" : "Publicado", libSt: libSt(c.visivel, c.bloq, c.libera), capaUrl: capaSite(c.capa) || "", hrs: String(Math.floor(seg / 3600)).padStart(2, "0") + "h " + String(Math.round((seg % 3600) / 60)).padStart(2, "0") + "min", libQ: lib,
+        ult: u ? (u.mod != null ? "Módulo " + u.mod + " – " : "") + (u.num != null ? "Aula " + u.num : u.titulo) : "", eng: al.length ? Math.round(al.reduce((t, x) => t + x.pct, 0) / al.length) : 0, desc: c.descricao || "" };
+    });
+    const cats = S.catsAba.map((x) => {
+      const cs = S.catItens.filter((i) => i.cat === x.id && i.tipo === "curso").map((i) => curso(i.item)).filter((c): c is Curso => !!c);
+      const n: Record<string, number> = {}; cs.forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; n[t] = (n[t] || 0) + 1; });
+      return { n: x.nome, q: cs.length, meta: { id: x.id, fmt: Object.keys(n).sort((a, b) => n[b] - n[a])[0] || "video", ic: "men", d: x.descricao, rot: x.cardRotulo, bt: x.botao, pub: x.rascunho ? "Não publicado" : "Publicado", lib: libSt(x.pub, x.bloq, x.libera), capa: capaSite(x.capa) || "", cri: x.criado ? br(diaDe(x.criado)) : "" } };
+    });
+    const alunos: Record<string, unknown[]> = {}, coms: Record<string, unknown[]> = {}, eng: Record<string, unknown> = {}, top: Record<string, unknown> = {};
+    const dias = (iso: string) => iso ? Math.max(0, diasEntre(diaDe(iso), hoje())) : 999;
+    const mmss = (sg: number) => Math.floor(sg / 60) + ":" + String(Math.round(sg % 60)).padStart(2, "0");
+    const hmin = (sg: number) => Math.floor(sg / 3600) + "h " + String(Math.round((sg % 3600) / 60)).padStart(2, "0") + "min";
+    for (const c of S.cursos) {
+      const todasA = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+      const al = alunasDoCurso(c).map((x) => { const feitas = todasA.filter((y) => x.a.feitas.has(y.a.id)), mo = c.modulos.filter((m) => m.aulas.length && m.aulas.every((a) => x.a.feitas.has(a.id))).length, sg = feitas.reduce((t, y) => t + (y.a.duracao || 0), 0);
+        return { id: x.a.id, nome: x.a.nome, email: x.a.email || x.a.login || "", cod: x.a.codigo || "", st: x.a.bloqueada ? "bloq" : vencida(x.a) ? "desat" : "ativos", prog: x.pct, ult: dias(x.a.ultimoAcessoEm || x.a.ultimoAcesso), cad: dias(x.incluida), aul: feitas.length, mod: mo, min: Math.round(sg / 60), pts: feitas.length * 10 + mo * 50, com: x.a.nComentarios || 0, sg }; });
+      alunos[c.nome] = al;
+      const nomeAu = (a: Aula, m: Modulo) => m.rot + " " + m.num + " · " + a.rot + " " + a.num + " — " + a.nome;
+      const cms = comentariosDoCurso(c);
+      coms[c.nome] = cms.map((k) => { const y = todasA.find((z) => z.a.id === k.aula), d = new Date(k.criado || k.quando); const z = (n: number) => String(n).padStart(2, "0");
+        return { id: k.id, n: k.autora, dias: dias(k.criado || k.quando), dt: isNaN(+d) ? "" : z(d.getDate()) + "/" + z(d.getMonth() + 1) + ", " + z(d.getHours()) + ":" + z(d.getMinutes()), ts: +d || 0, t: k.texto, m: y ? y.m.rot + " " + y.m.num : "", a: y ? y.a.rot + " " + y.a.num : "", st: k.estado === "moderar" ? "pend" : k.estado === "oculto" ? "ocu" : k.estado === "removido" ? "apag" : k.resposta ? "resp" : "pub", resp: k.resposta || "" }; });
+      const n = al.length, ativos = al.filter((x) => x.ult <= 7).length, pouco = al.filter((x) => x.ult > 7 && x.ult <= 30).length;
+      const engM = n ? Math.round(al.reduce((t, x) => t + x.prog, 0) / n) : 0, totAul = al.reduce((t, x) => t + x.aul, 0), totSg = al.reduce((t, x) => t + x.sg, 0), conc = n ? Math.round((al.filter((x) => x.prog === 100).length / n) * 100) : 0;
+      const mods6 = c.modulos.slice(0, 6), mPct = mods6.map((m) => { const ids = m.aulas.map((a) => a.id); const lst = alunasDoCurso(c); return lst.length && ids.length ? Math.round((lst.reduce((t, x) => t + ids.filter((i) => x.a.feitas.has(i)).length / ids.length, 0) / lst.length) * 100) : 0; });
+      const pv = { e: [engM, engM], x: ["", ""], k: [engM + "%", "0%", totAul.toLocaleString("pt-BR"), "0%", hmin(totSg), "0%", conc + "%", "0%"] };
+      eng[c.nome] = { per: { "7": pv, "30": pv, "90": pv }, nA: n, ativos, pouco, mods: mods6.map((m) => m.rot + " " + m.num + " – " + m.nome), mPct, ind: [(n ? Math.round((al.filter((x) => x.aul > 0).length / n) * 100) : 0) + "%", (n ? (totAul / n).toFixed(1).replace(".", ",") : "0"), hmin(n ? totSg / n : 0), conc + "%", String(ativos)] };
+      const vist = todasA.map((y) => ({ y, v: alunasDoCurso(c).filter((x) => x.a.feitas.has(y.a.id)).length })).filter((x) => x.v).sort((a2, b2) => b2.v - a2.v).slice(0, 3);
+      const porA = new Map<string, number>(); cms.forEach((k) => porA.set(k.aula, (porA.get(k.aula) || 0) + 1));
+      const tc = todasA.filter((y) => porA.get(y.a.id)).sort((a2, b2) => (porA.get(b2.a.id) || 0) - (porA.get(a2.a.id) || 0)).slice(0, 3);
+      const meses = [...new Set(todasA.map((y) => (y.a.criado || "").slice(0, 7)).filter(Boolean))].sort();
+      const ev = meses.map((mm) => todasA.filter((y) => (y.a.criado || "").slice(0, 7) <= mm).length);
+      const u = ULT_LIB.get(c.id), agora2 = Date.now(), ag = todasA.filter((y) => y.a.libera && new Date(y.a.libera).getTime() > agora2).sort((a2, b2) => a2.a.libera.localeCompare(b2.a.libera))[0];
+      top[c.nome] = { vistas: vist.map((x) => [nomeAu(x.y.a, x.y.m), x.v, mmss(x.y.a.duracao || 0)]), coms: tc.map((y) => [nomeAu(y.a, y.m), porA.get(y.a.id) || 0, mmss(y.a.duracao || 0)]), ev,
+        ult: u ? { mod: u.mod != null ? "Módulo " + u.mod : c.nome, aula: (u.num != null ? "Aula " + u.num + " – " : "") + u.titulo, quando: dataHoraCurta(u.quando) } : null,
+        ag: ag ? { mod: ag.m.rot + " " + ag.m.num + " – " + ag.m.nome, aula: ag.a.rot + " " + ag.a.num + " – " + ag.a.nome, quando: dataHoraCurta(ag.a.libera) } : null };
+    }
+    return { prods, cats, mods, alunos, coms, eng, top };
+  }
+  /** Liberação gravada → formato do modelo (dias após o cadastro = "cadastro" no banco). */
+  function npCfg(modo: string, dias: number | null, libera: string) {
+    if (!modo) return null;
+    const dt = libera ? new Date(libera) : null, z = (n: number) => String(n).padStart(2, "0");
+    return { tipo: modo === "cadastro" || modo === "prazo" ? "dias" : modo === "data" ? "data" : "imediata", dias: dias ?? 0, data: libera ? diaDe(libera) : "", hora: dt && !isNaN(+dt) ? z(dt.getHours()) + ":" + z(dt.getMinutes()) : "09:00" };
+  }
+  /** Ações do modelo entram numa fila: uma grava depois da outra, nenhuma se perde. */
+  let npCadeia: Promise<void> = Promise.resolve();
+  const npExec = (fn: () => Promise<Resultado>) => { npCadeia = npCadeia.then(async () => { while (ocupado) await new Promise((r) => setTimeout(r, 120)); await executar(fn); }).catch(() => undefined); };
+  /** Status do modelo (pub/agend/nao/ocu/blo) + liberação → campos do módulo ou da aula. */
+  function npStCampos(st: string, lib: NpLibCfg, modulo: boolean): Record<string, unknown> {
+    if (st === "nao") return { rascunho: true };
+    if (st === "ocu") return { rascunho: false, publicado: false };
+    if (st === "blo") return modulo ? { rascunho: false, publicado: true, bloqueado_geral: true } : { rascunho: false, publicado: true };
+    const r: Record<string, unknown> = { rascunho: false, publicado: true };
+    if (modulo) r.bloqueado_geral = false;
+    if (!modulo && lib && lib.tipo === "junto") return { ...r, libera_modo: null, libera_em: null, libera_dias: null };
+    if (!lib || lib.tipo === "imediata" || lib.tipo === "tranc") return { ...r, libera_modo: "imediato", libera_em: null, libera_dias: null };
+    return { ...r, ...npLib(lib) };
+  }
+  /** Imagem que veio do modelo (data URL) → arquivo para o depósito. */
+  const npArquivo = async (url: unknown, nome: string) => { if (typeof url !== "string" || !url.startsWith("data:")) return null; const b = await (await fetch(url)).blob(); return new File([b], nome + (b.type.includes("png") ? ".png" : ".jpg"), { type: b.type || "image/jpeg" }); };
+  /** Categoria pelo nome; se não existir, cria (como em Criar curso › Criar nova). */
+  async function npCategoria(nome: string): Promise<CatAba | null> {
+    const n = nome.trim(); if (!n) return null;
+    const ja = S.catsAba.find((x) => norm(x.nome) === norm(n)); if (ja) return ja;
+    const jor = curso(S.config.jornada)?.cat || ""; const aba = (S.cats.find((k) => k.id !== jor) || S.cats[0])?.id || ""; if (!aba) return null;
+    const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, titulo: n, ordem: S.catsAba.filter((y) => y.aba === aba).length, publicado: false, rascunho: true }).select("id").single());
+    await registrar(null, "Criou a categoria " + n, ["catx", r.data!.id]);
+    return { id: r.data!.id, aba, nome: n } as CatAba;
+  }
+  type NpCurso = { tipo: string; cat: string; rotulo: string; nome: string; desc: string; botao: string; capaH: string | null; capaV: string | null };
+  type NpLibCfg = { tipo: string; dias?: number; data?: string; hora?: string } | null;
+  type NpAula = { id: string; dup?: string; t: string; nome: string; desc: string; link: string; file: File | null; capa: string | null; lib: NpLibCfg; mats: { t: string; titulo: string; texto: string; file: File | null }[] };
+  type NpMod = { rot: string; num: string; nome: string; desc: string; bt: string; capa: string | null; lib: NpLibCfg; aulas?: NpAula[] };
+  /** Grava uma aula vinda do modelo (nova ou editada) com arquivo, capa, link, liberação e materiais. */
+  async function npGravarAula(moduloId: string, a: NpAula): Promise<string> {
+    const tipo = a.t === "ebook" ? "pdf" : a.t === "audio" ? "audio" : "video";
+    const campos: Record<string, unknown> = { titulo: a.nome, tipo, texto: a.desc || null };
+    const lib = a.lib;
+    if (!lib || lib.tipo === "junto") Object.assign(campos, { rascunho: !lib, libera_modo: null, libera_em: null, libera_dias: null });
+    else if (lib.tipo === "tranc") Object.assign(campos, { rascunho: false, publicado: true });
+    else Object.assign(campos, npLib(lib));
+    if (a.file && tipo !== "video") campos.arquivo_path = await enviarArquivo(tipo === "pdf" ? "materiais" : "audios", "aulas", a.file);
+    const fc = await npArquivo(a.capa, "capa-aula"); if (fc) campos.capa_path = await enviarArquivo("capas", "aulas", fc);
+    let id = a.id;
+    if (!id && a.dup && acharAula(a.dup)) { id = String(await rpc("duplicar_aula", { p_aula: a.dup })); campos.modulo_id = moduloId; }
+    if (id) falhou(await supabase.from("aulas").update(campos).eq("id", id).select("id").single());
+    else {
+      const x = acharModulo(moduloId), num = x ? Math.max(0, ...x.m.aulas.map((y) => y.num)) + 1 : 1;
+      const r = falhou(await supabase.from("aulas").insert({ modulo_id: moduloId, numero: num, rotulo: x?.m.aulas[x.m.aulas.length - 1]?.rot || "Aula", publicado: true, ...campos }).select("id").single()); id = r.data!.id;
+    }
+    if (lib && lib.tipo === "tranc") await rpc("definir_bloqueio_aula", { p_aula: id, p_bloqueada: true });
+    const ref = a.link ? idDoVideo(a.link) : "";
+    if (tipo === "video" && ref) falhou(await supabase.from("aula_midia").upsert({ aula_id: id, video_provider: provedorDoLink(a.link), video_ref: ref }));
+    const x2 = acharModulo(moduloId), pid = x2?.c.id;
+    for (const [i, mt] of (a.mats || []).entries()) {
+      if (!mt.file && !(mt.t === "texto" && mt.texto)) continue;
+      const t2 = mt.t === "texto" ? "texto" : mt.t === "audio" ? "audio" : "pdf";
+      const path = mt.file ? await enviarArquivo(t2 === "audio" ? "audios" : "materiais", "materiais", mt.file) : null;
+      falhou(await supabase.from("conteudos").insert({ produto_id: pid, aula_id: id, tipo: t2, titulo: mt.titulo || (t2 === "texto" ? "Texto" : t2.toUpperCase()), texto: t2 === "texto" ? mt.texto : null, arquivo_path: path, ordem: i, publicado: true }).select("id").single());
+    }
+    return id;
+  }
+  const npLib = (lib: NpMod["lib"]) => !lib || !lib.tipo ? { rascunho: true } : { rascunho: false, publicado: true, bloqueado_geral: false, libera_modo: lib.tipo === "dias" ? "cadastro" : lib.tipo === "data" ? "data" : "imediato", libera_dias: lib.tipo === "dias" ? Number(lib.dias) || 0 : null, libera_em: lib.tipo === "data" && lib.data ? new Date(lib.data + "T" + (lib.hora || "09:00")).toISOString() : null };
+  function npAgir(m: NpAcao) {
+    const el = document.body;
+    if (m.tipo === "curso-criar" || m.tipo === "curso-editar") {
+      const dd = m.dados as NpCurso, idC = String(m.id || ""); if (!dd || !dd.nome) return;
+      npExec(async () => {
+        const ebook = dd.tipo === "ebook";
+        const fH = await npArquivo(dd.capaH, "capa"), fV = await npArquivo(dd.capaV, "capa-em-pe");
+        const deitada = fH ? await enviarArquivo("capas", "cursos", fH) : null, emPe = fV ? await enviarArquivo("capas", "cursos", fV) : null;
+        const xa = await npCategoria(dd.cat);
+        const campos: Record<string, unknown> = { titulo: dd.nome, card_rotulo: dd.rotulo, descricao: dd.desc || null, card_botao: dd.botao || null, tipo_conteudo: dd.tipo };
+        if (ebook ? emPe : deitada) campos.capa_path = ebook ? emPe : deitada;
+        if (!ebook && emPe) campos.capa_vertical_path = emPe;
+        if (xa) { campos.categoria_id = xa.aba; campos.categoria_aba_id = xa.id; }
+        if (m.tipo === "curso-editar" && idC) {
+          falhou(await supabase.from("produtos").update(campos).eq("id", idC).select("id").single());
+          if (xa && !S.catItens.some((i) => i.cat === xa.id && i.tipo === "curso" && i.item === idC)) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: idC, ordem: itensDe(xa.id).length }).select("id").single());
+          await registrar(null, "Editou o curso " + dd.nome);
+          return "Curso salvo.";
+        }
+        const r = falhou(await supabase.from("produtos").insert({ ...campos, inicio: 1, ordem: S.cursos.length, rascunho: true, publicado: false }).select("id").single());
+        if (xa) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: xa.id, tipo: "curso", item_id: r.data!.id, ordem: itensDe(xa.id).length }).select("id").single());
+        await rpc("ordenar_lista", { p_tabela: "produtos", p_ids: [...S.cursos.map((c) => c.id), r.data!.id] });
+        await registrar(null, "Criou o curso " + dd.nome);
+        npResponder({ tipo: "curso", id: r.data!.id });
+        return { msg: "Curso salvo.", texto: "criação do curso " + dd.nome, desfazer: async () => { await rpc("remover_produto", { p_produto: r.data!.id }); } };
+      });
+      return;
+    }
+    if (m.tipo === "aula-salvar") {
+      const dd = m.dados as NpAula, mid = String(m.modulo || ""); if (!dd || !mid) return;
+      if (dd.t === "video" && dd.file && !dd.link) toast("Vídeo por arquivo ainda não é aceito no painel: use o link do YouTube ou do Cloudflare Stream.");
+      npExec(async () => { const id = await npGravarAula(mid, dd); await registrar(null, (dd.id ? "Editou a aula " : "Criou a aula ") + dd.nome); if (!dd.id) npResponder({ tipo: "aula", mi: m.mi, ix: m.ix, id }); return "Aula salva."; });
+      return;
+    }
+    if (m.tipo === "modulo-salvar") {
+      const dd = m.dados as NpMod, pid = String(m.produto || ""), idM = String(m.id || ""), c = curso(pid); if (!dd || !pid) return;
+      npExec(async () => {
+        const f = await npArquivo(dd.capa, "capa-modulo"), capa = f ? await enviarArquivo("capas", "modulos", f) : null;
+        const campos: Record<string, unknown> = { titulo: dd.nome, numero: Number(dd.num) || 0, rotulo: dd.rot || "Módulo", intro: dd.desc || null, botao_texto: dd.bt || null, ...npLib(dd.lib) };
+        if (capa) campos.capa_horizontal_path = capa;
+        if (idM) { falhou(await supabase.from("modulos").update(campos).eq("id", idM).select("id").single()); await registrar(null, "Editou o módulo " + dd.nome); return "Módulo salvo."; }
+        const r = falhou(await supabase.from("modulos").insert({ produto_id: pid, ...campos }).select("id").single());
+        for (const a of dd.aulas || []) await npGravarAula(r.data!.id, a);
+        await registrar(null, "Criou o módulo " + dd.nome + (c ? " em " + c.nome : ""));
+        npResponder({ tipo: "modulo", ix: m.ix, id: r.data!.id });
+        return { msg: "Módulo salvo.", texto: "novo módulo " + dd.nome, desfazer: async () => { falhou(await supabase.from("modulos").delete().eq("id", r.data!.id).select("id").single()); } };
+      });
+      return;
+    }
+    if (m.tipo === "conteudo-sync") {
+      type It = { id: string; st: string; lib: NpLibCfg; mod?: string };
+      const M = (m.mods || []) as It[], A = (m.aulas || []) as It[], OA = (m.ordAulas || []) as { mod: string; ids: string[] }[], OM = (m.ordMods || null) as string[] | null;
+      npExec(async () => {
+        for (const x of M) if (acharModulo(x.id)) falhou(await supabase.from("modulos").update(npStCampos(x.st, x.lib, true)).eq("id", x.id).select("id").single());
+        for (const x of A) {
+          const y = acharAula(x.id); if (!y) continue;
+          const campos = npStCampos(x.st, x.lib, false); if (x.mod && x.mod !== y.m.id && acharModulo(x.mod)) campos.modulo_id = x.mod;
+          falhou(await supabase.from("aulas").update(campos).eq("id", x.id).select("id").single());
+          const bloq = x.st === "blo"; if (bloq !== (y.a.acesso === "bloqueada")) await rpc("definir_bloqueio_aula", { p_aula: x.id, p_bloqueada: bloq });
+        }
+        for (const o of OA) if (o.ids.length && acharModulo(o.mod)) await rpc("ordenar_aulas", { p_modulo: o.mod, p_ids: o.ids });
+        if (OM && OM.length) await rpc("ordenar_lista", { p_tabela: "modulos", p_ids: OM });
+        await registrar(null, "Mudou status, liberação ou ordem no conteúdo (" + (M.length + A.length) + " itens)");
+      });
+      return;
+    }
+    if (m.tipo === "excluir") {
+      const mods = ((m.mods || []) as string[]).filter((i) => acharModulo(i)), aulas = ((m.aulas || []) as string[]).filter((i) => acharAula(i));
+      npExec(async () => {
+        for (const i of aulas) falhou(await supabase.from("aulas").delete().eq("id", i).select("id").single());
+        for (const i of mods) falhou(await supabase.from("modulos").delete().eq("id", i).select("id").single());
+        await registrar(null, "Excluiu " + [mods.length ? p(mods.length, "módulo", "módulos") : "", aulas.length ? p(aulas.length, "aula", "aulas") : ""].filter(Boolean).join(" e ") + " (vai para a Lixeira)");
+      });
+      return;
+    }
+    if (m.tipo === "curso-excluir") {
+      const c = curso(String(m.id || "")); if (!c) return;
+      npExec(async () => { await rpc("remover_produto", { p_produto: c.id }); await registrar(null, "Excluiu o curso " + c.nome + " (vai para a Lixeira)"); });
+      return;
+    }
+    if (m.tipo === "curso-duplicar") {
+      const c = curso(String(m.id || "")); if (!c) return; const manter = new Set((m.manter || []) as string[]);
+      npExec(async () => {
+        const novo = String(await rpc("duplicar_produto", { p_produto: c.id }));
+        const fica = new Set(c.modulos.filter((x) => manter.has(x.id)).map((x) => x.num + "|" + x.nome));
+        if (fica.size < c.modulos.length) {
+          const r = falhou(await supabase.from("modulos").select("id, numero, titulo").eq("produto_id", novo));
+          for (const x of (r.data ?? []) as { id: string; numero: number; titulo: string }[]) if (!fica.has(x.numero + "|" + x.titulo)) falhou(await supabase.from("modulos").delete().eq("id", x.id).select("id").single());
+        }
+        falhou(await supabase.from("produtos").update({ rascunho: true }).eq("id", novo).select("id").single());
+        await registrar(null, "Duplicou o curso " + c.nome);
+        npResponder({ tipo: "dup", id: novo });
+        return { msg: "Curso duplicado.", texto: "cópia de " + c.nome, desfazer: async () => { await rpc("remover_produto", { p_produto: novo }); } };
+      });
+      return;
+    }
+    if (m.tipo === "cat-salvar") {
+      const idC = String(m.id || ""), nome = String(m.nome || "").trim(); if (!nome) return;
+      npExec(async () => {
+        const f = await npArquivo(m.capaH || m.capaV, "capa-categoria"), capa = f ? await enviarArquivo("capas", "categorias", f) : null;
+        const campos: Record<string, unknown> = { titulo: nome, descricao: String(m.d || "") || null, card_rotulo: String(m.rot || "") || null, botao_texto: String(m.bt || "") || null };
+        if (capa) campos.capa_path = capa;
+        if (idC && catAba(idC)) { falhou(await supabase.from("categorias_aba").update(campos).eq("id", idC).select("id").single()); await registrar(null, "Editou a categoria " + nome, ["catx", idC]); return; }
+        const jor = curso(S.config.jornada)?.cat || ""; const aba = (S.cats.find((k) => k.id !== jor) || S.cats[0])?.id || ""; if (!aba) throw new Error("Crie primeiro um botão no menu do app.");
+        const r = falhou(await supabase.from("categorias_aba").insert({ aba_id: aba, ordem: S.catsAba.filter((y) => y.aba === aba).length, publicado: false, rascunho: true, ...campos }).select("id").single());
+        await registrar(null, "Criou a categoria " + nome, ["catx", r.data!.id]);
+        npResponder({ tipo: "cat", nome, id: r.data!.id });
+        return { msg: "Categoria salva.", texto: "criação da categoria " + nome, desfazer: async () => { falhou(await supabase.from("categorias_aba").delete().eq("id", r.data!.id).select("id").single()); } };
+      });
+      return;
+    }
+    if (m.tipo === "cat-excluir") {
+      const x = catAba(String(m.id || "")); if (!x) return;
+      npExec(async () => {
+        falhou(await supabase.from("categoria_itens").delete().eq("categoria_aba_id", x.id).select("id"));
+        falhou(await supabase.from("produtos").update({ categoria_aba_id: null }).eq("categoria_aba_id", x.id).select("id"));
+        falhou(await supabase.from("categorias_aba").delete().eq("id", x.id).select("id").single());
+        await registrar(null, "Excluiu a categoria " + x.nome);
+      });
+      return;
+    }
+    if (m.tipo === "cat-cursos") {
+      const x = catAba(String(m.cat || "")), ids = ((m.ids || []) as string[]).filter((i) => curso(i)); if (!x || !ids.length) return;
+      npExec(async () => {
+        let n = itensDe(x.id).length;
+        for (const i of ids) {
+          if (!S.catItens.some((k) => k.cat === x.id && k.tipo === "curso" && k.item === i)) falhou(await supabase.from("categoria_itens").insert({ categoria_aba_id: x.id, tipo: "curso", item_id: i, ordem: n++ }).select("id").single());
+          falhou(await supabase.from("produtos").update({ categoria_aba_id: x.id, categoria_id: x.aba }).eq("id", i).select("id").single());
+        }
+        await registrar(null, "Adicionou " + p(ids.length, "curso", "cursos") + " à categoria " + x.nome, ["catx", x.id]);
+      });
+      return;
+    }
+    if (m.tipo === "comentario") {
+      const k = S.comentarios.find((y) => y.id === m.id); if (!k) return; const a = String(m.acao || "");
+      npExec(async () => {
+        if (a === "enviar") { await rpc("responder_comentario", { p_comentario: k.id, p_texto: String(m.texto || ""), p_publicar: true }); await registrar(k.autoraId || null, "Respondeu um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]); return; }
+        const st = a === "ocultar" ? "oculto" : a === "apagar" ? "removido" : "publicado";
+        await rpc("moderar_comentario", { p_comentario: k.id, p_status: st });
+        if (st === "removido") for (const rid of k.respIds ?? []) await rpc("moderar_comentario", { p_comentario: rid, p_status: "removido" });
+        await registrar(k.autoraId || null, (a === "aprovar" ? "Aprovou" : a === "ocultar" ? "Ocultou" : a === "apagar" ? "Apagou" : "Mostrou de novo") + " um comentário de " + k.autora, ["comentario", k.id, ctxAula(k.aula)]);
+      });
+      return;
+    }
+    if (m.tipo === "alunos-st") {
+      const c = curso(String(m.prod || "")), st = String(m.st || ""), lista = ((m.lista || []) as { id: string; de: string }[]).filter((x) => aluna(x.id));
+      if (!lista.length) return;
+      npExec(async () => {
+        for (const x of lista) {
+          const al = aluna(x.id)!;
+          if (st === "bloq") await rpc("definir_status_aluna", { p_aluna: al.id, p_status: "bloqueada" });
+          else if (st === "ativos") { if (al.bloqueada) await rpc("definir_status_aluna", { p_aluna: al.id, p_status: "ativa" }); if (x.de === "desat") await rpc("renovar_acesso", { p_aluna: al.id, p_dias: 0, p_meses: 0, p_anos: 1 }); }
+          else if (st === "desat") await rpc("definir_validade", { p_aluna: al.id, p_validade: fimDoDia(maisDias(hoje(), -1)) });
+          else if (st === "rem" && c) {
+            const mIds = new Set(c.modulos.map((y) => y.id)), aIds = new Set(c.modulos.flatMap((y) => y.aulas.map((z) => z.id)));
+            await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: al.acesso.cursos.filter((y) => y !== c.id), p_modulos: al.acesso.modulos.filter((y) => !mIds.has(y)), p_aulas: al.acesso.aulas.filter((y) => !aIds.has(y)) });
+          }
+          await registrar(al.id, st === "bloq" ? "Aluno bloqueado" : st === "ativos" ? "Aluno reativado" : st === "desat" ? "Aluno desativado (acesso encerrado)" : "Removido do curso " + (c?.nome || ""));
+        }
+      });
+      return;
+    }
+    if (m.tipo === "alunos-add") {
+      const c = curso(String(m.prod || "")); if (!c) return; const lista = (m.lista || []) as { nome: string; email: string }[];
+      const achar = (e: string) => { const k = e.trim().toLowerCase(); return S.alunas.find((a) => (a.email || "").toLowerCase() === k || (a.login || "").toLowerCase() === k); };
+      const sem = lista.filter((x) => !achar(x.email)).map((x) => x.nome || x.email);
+      npExec(async () => {
+        for (const x of lista) { const al = achar(x.email); if (!al || al.acesso.cursos.includes(c.id)) continue; await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: [...al.acesso.cursos, c.id], p_modulos: al.acesso.modulos, p_aulas: al.acesso.aulas }); await registrar(al.id, "Liberou o curso " + c.nome); }
+        if (sem.length) return (sem.length === 1 ? sem[0] + " ainda não tem cadastro" : sem.length + " alunos ainda não têm cadastro") + ": cadastre em Alunos e libere o curso " + c.nome + ".";
+      });
+      return;
+    }
+    const v = String(m.v || ""), id = String(m.id || "");
+    const acaoNp = (nome: string, d: Record<string, string>) => { npCadeia = npCadeia.then(async () => { while (ocupado) await new Promise((r) => setTimeout(r, 120)); acao(nome, d, el, el); }); };
+    const est = v === "Liberado" ? "ativo" : v === "Bloqueado" ? "bloqueado" : v === "Oculto" ? "desativado" : "";
+    if (m.tipo === "curso-status") {
+      if (m.campo === "pub") acaoNp("curso-pub", { id, v: v === "Publicado" ? "1" : "0" });
+      else if (est) acaoNp("estado-set", { v: "curso:" + id + ":" + est });
+      else if (v === "Agendado") { ui.curso = id; ui.cursoAba = "config"; ui.tab = "curso"; render(); }
+      return;
+    }
+    if (m.tipo === "cat-status") {
+      const x = catAba(id); if (!x) return;
+      if (m.campo === "pub") { if ((v === "Publicado") === x.rascunho) acaoNp("catx-pub-toggle", { id }); }
+      else if (est) acaoNp("estado-set", { v: "catx:" + id + ":" + est });
+      else if (v === "Agendado") acaoNp("catx-editar", { id });
+    }
+  }
+  const npTipo = (t: string) => t === "ebook" ? "E-BOOK" : t === "audio" ? "ÁUDIO" : "VÍDEO";
+
   function telaCategorias() {
     const q = norm(ui.catBusca || "").trim(), ordem = ui.catxOrdem || "recentes", vista = ui.catVista === "lista" ? "lista" : "grade", vis = ui.catVis || "";
     const nCursos = (x: CatAba) => itensReais(x.id).filter((i) => i.tipo === "curso").length;
+    const cursosDa = (x: CatAba) => itensReais(x.id).filter((i) => i.tipo === "curso").map((i) => curso(i.item)).filter((c): c is Curso => !!c);
+    const fmtCat = (x: CatAba) => { const n: Record<string, number> = {}; cursosDa(x).forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; n[t] = (n[t] || 0) + 1; }); return Object.keys(n).sort((a, b) => n[b] - n[a])[0] || "video"; };
     const lista = S.catsAba
-      .filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || (vis === "rascunho" ? x.rascunho : estado3(x.pub, x.bloq) === vis)))
+      .filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || npFiltro(vis, !x.rascunho, x.pub, x.bloq, x.libera)) && (!ui.catTipo || fmtCat(x) === ui.catTipo))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "recentes" ? (b.criado || "").localeCompare(a.criado || "") : ordem === "cursos" ? nCursos(b) - nCursos(a) || a.nome.localeCompare(b.nome) : S.catsAba.indexOf(a) - S.catsAba.indexOf(b));
     const arrastar = ordem === "posicao";
-    const IC_SETA_D = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`;
-    const info = (x: CatAba) => `${p(nCursos(x), "curso", "cursos")}${x.criado ? " · Criada " + br(diaDe(x.criado)) : ""}`;
     // Mesmo padrão do Módulo 0: Publicada / Não publicada e o acesso (Liberada, Bloqueada, Oculta; Rascunho quando não publicada).
-    const vis3 = (x: CatAba) => { const kp = "kpub2:" + x.id, ka = "kacc:" + x.id, e = estado3(x.pub, x.bloq), pub = !x.rascunho;
-      const pubPil = `<span class="est3 mpub"><button type="button" class="mpub-pil ${pub ? "on" : "off"}" data-a="estado-menu" data-v="${kp}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kp}">${pub ? "Publicada" : "Não publicada"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>${ui.estMenu === kp ? `<span class="est3-menu" role="menu">${pub ? `<button type="button" role="menuitem" data-a="catx-pub-toggle" data-id="${x.id}"><span class="mpub-pil off">Não publicada</span></button>` : `<button type="button" role="menuitem" data-a="catx-pub-toggle" data-id="${x.id}"><span class="mpub-pil on">Publicada</span></button>`}</span>` : ""}</span>`;
-      const [rot, cor] = e === "ativo" ? ["Liberada", "verde"] : e === "bloqueado" ? ["Bloqueada", "amarelo"] : ["Oculta", "vermelho"];
-      const accPil = !pub ? `<span class="est3"><span class="est3-pil macc-rasc">Rascunho</span></span>` : `<span class="est3"><button type="button" class="est3-pil ${cor}" data-a="estado-menu" data-v="${ka}" aria-haspopup="menu" aria-expanded="${ui.estMenu === ka}">${e === "bloqueado" ? IC_CAD : e === "desativado" ? IC_OLHO_X : IC_OLHO}${rot}</button>${ui.estMenu === ka ? `<span class="est3-menu" role="menu">
-        <button type="button" role="menuitemradio" aria-checked="${e === "ativo"}" data-a="estado-set" data-v="catx:${x.id}:ativo"><span class="est3-pil verde">${IC_OLHO}Liberada</span></button>
-        <button type="button" role="menuitemradio" aria-checked="${e === "bloqueado"}" data-a="estado-set" data-v="catx:${x.id}:bloqueado"><span class="est3-pil amarelo">${IC_CAD}Bloqueada</span></button>
-        <button type="button" role="menuitemradio" aria-checked="${e === "desativado"}" data-a="estado-set" data-v="catx:${x.id}:desativado"><span class="est3-pil vermelho">${IC_OLHO_X}Oculta</span></button>
-      </span>` : ""}</span>`;
-      return `<span class="kg-vis">${pubPil}${accPil}</span>`; };
     // Editar, Duplicar, Ocultar/Mostrar, Publicar e Excluir ficam juntos no ⋮.
     const menu = (x: CatAba) => { const k = "kg:" + x.id, e = estado3(x.pub, x.bloq); return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(x.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}">Editar</button>
@@ -3604,33 +3945,41 @@ export function montar(app: HTMLElement) {
         <span class="kb-sep"></span>
         <button type="button" role="menuitem" class="perigo" data-a="catx-remover" data-id="${x.id}">Excluir</button>
       </span>` : ""}</span>`; };
-    const capa = (x: CatAba, cls: string) => { const img = capaSite(x.capa), e = estado3(x.pub, x.bloq); return `<button type="button" class="${cls}" data-a="catx-entrar" data-id="${x.id}" aria-label="Abrir ${h(x.nome)}">${img ? `<img src="${h(img)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(e, true)}</button>`; };
     const alca = arrastar ? `<span class="kc-alca kg-alca" title="Arraste para mudar a ordem">${IC_ABAC.alca}</span>` : "";
-    const cartao = (x: CatAba) => `
-      <article class="kg-card${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
-        <div class="kg-capa-box">${capa(x, "kg-capa")}${alca}</div>
-        <button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button>
-        <p class="kg-info">${info(x)}</p>
-        <div class="kg-pe">${vis3(x)}<span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span></div>
+    const minsDa = (x: CatAba) => Math.round(cursosDa(x).reduce((t, c) => t + c.modulos.reduce((u, m) => u + m.aulas.reduce((v, a) => v + (a.duracao || 0), 0), 0), 0) / 60);
+    const npCat = (x: CatAba) => {
+      const im = capaSite(x.capa), nc = nCursos(x), mi = minsDa(x);
+      const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !x.rascunho}" data-a="${v === !x.rascunho ? "estado-menu" : "catx-pub-toggle"}" data-id="${x.id}"${v === !x.rascunho ? ` data-v="np-p:k${x.id}"` : ""}><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+      return `<article class="np-card${arrastar ? " np-arrasta" : ""}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
+        <button type="button" class="np-capa" data-a="catx-entrar" data-id="${x.id}" aria-label="Abrir ${h(x.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="np-capa-vazia">${NP_IC.img}<span>CAPA DA CATEGORIA</span></span>`}<span class="np-tipo">${npTipo(fmtCat(x))}</span>${alca}</button>
+        <div class="np-cc">
+          <span class="np-l"><span class="np-lb">Nome</span><button type="button" class="np-nome" data-a="catx-entrar" data-id="${x.id}">${h(x.nome)}</button><span class="np-l np-lin"><span class="np-lb">Descrição</span><span class="np-cat">${h(x.descricao || "—")}</span></span></span>
+          <div class="np-nums"><div><b>${nc}</b><span>${nc === 1 ? "CURSO" : "CURSOS"}</span></div><div><b>${Math.floor(mi / 60)}h${String(mi % 60).padStart(2, "0")}</b><span>HORAS AULA</span></div></div>
+          ${npStatus("k" + x.id, !x.rascunho, x.pub, x.bloq, x.libera, pubBt, "catx:" + x.id, `<button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}
+          <div class="np-pe">${menu(x)}<button type="button" class="np-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir categoria <span aria-hidden="true">→</span></button></div>
+        </div>
       </article>`;
-    const linha = (x: CatAba) => `
-      <article class="kg-linha${cls3(estado3(x.pub, x.bloq))}"${arrastar ? ` draggable="true" data-arrasta="${x.id}"` : ""}>
-        ${alca}${capa(x, "kg-mini")}
-        <div class="kg-ltxt"><button type="button" class="kg-nome" data-a="catx-entrar" data-id="${x.id}">${x.cardRotulo ? `<span class="cc2-tipo">${h(x.cardRotulo)}:</span> ` : ""}${h(x.nome)}</button><p class="kg-info">${info(x)}</p></div>
-        ${vis3(x)}
-        <span class="kg-acoes"><button type="button" class="al-botao kg-abrir" data-a="catx-entrar" data-id="${x.id}">Abrir ${IC_SETA_D}</button>${menu(x)}</span>
-      </article>`;
+    };
+    const tot = (t: string) => S.catsAba.filter((x) => (!q || norm(x.nome).includes(q)) && (!vis || npFiltro(vis, !x.rascunho, x.pub, x.bloq, x.libera)) && (!t || fmtCat(x) === t)).length;
+    if (!S.catsAba.length) return `
+    <section class="tela ativa npx">
+      <div class="np-v0"><h2>Ainda não há categorias</h2><p>Crie categorias para agrupar e organizar seus cursos <br>(como Vídeos, Áudios, E-books, Mentorias, etc.).</p>
+        <button type="button" class="al-botao-ouro np-criar" data-a="catx-nova-geral"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar categoria</button>
+        <div class="np-ben"><div>${IC_CUR.pasta}<span>Organize<br>seus cursos</span></div><div>${IC_CUR.camadas}<span>Facilite a navegação<br>dos alunos</span></div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6z"/></svg><span>Ganhe agilidade<br>na gestão</span></div></div></div>
+      ${ui.catxEditar ? editarCatAba() : ""}
+    </section>`;
     return `
-    <section class="tela ativa ax kc kg">
-      <div class="kg-barra">
-        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria..." aria-label="Buscar categoria" /></label>
-        <select class="campo kg-sel" data-cat-vis aria-label="Visibilidade">${[["", "Todas as visibilidades"], ["ativo", "Visíveis"], ["bloqueado", "Bloqueadas"], ["desativado", "Ocultas"], ["rascunho", "Não publicadas"]].map(([v, t]) => `<option value="${v}" ${vis === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <select class="campo kg-sel" data-catx-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"], ["cursos", "Mais cursos"], ["posicao", "Ordem do app (arrastar)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-        <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cat-vista" data-v="cards" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cat-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+    <section class="tela ativa npx kg">
+      <nav class="np-abas" role="tablist" aria-label="Formato">${[["", "Todos"], ["video", "Vídeo"], ["ebook", "E-book"], ["audio", "Áudio"]].map(([k, t]) => `<button type="button" role="tab" class="np-aba${(ui.catTipo || "") === k ? " on" : ""}" data-a="cat-tipo" data-v="${k}" aria-selected="${(ui.catTipo || "") === k}">${t}<i>${tot(k)}</i></button>`).join("")}</nav>
+      <div class="np-filtros">
+        <label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" id="catBusca" data-cat-busca value="${h(ui.catBusca || "")}" placeholder="Buscar categoria" aria-label="Buscar categoria" /></label>
+        <select class="campo np-sel" data-cat-vis aria-label="Status">${[["", "Todos os status"], ["pub", "Publicado"], ["nao", "Não publicado"], ["liberado", "Liberado"], ["bloqueado", "Bloqueado"], ["agendado", "Agendado"], ["oculto", "Oculto"]].map(([v, t]) => `<option value="${v}" ${vis === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        <span class="np-total">${p(lista.length, "categoria", "categorias")}</span>
+        <span class="np-flex"></span>
+        <select class="campo np-sel" data-catx-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["nome", "Nome (A–Z)"], ["cursos", "Mais cursos"], ["posicao", "Ordem do app (arrastar)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
+        ${npVista("cat-vista", vista === "lista", "cards")}
       </div>
-      <p class="kg-conta">${p(lista.length, "categoria", "categorias")}${q || vis ? ` de ${S.catsAba.length}` : ""}</p>
-      ${!lista.length ? `<div class="vazio">${S.catsAba.length ? "Nenhuma categoria encontrada." : "Nenhuma categoria ainda. Clique em Nova categoria."}</div>`
-        : vista === "lista" ? `<div class="kg-lista">${lista.map(linha).join("")}</div>` : `<div class="kg-grade">${lista.map(cartao).join("")}</div>`}
+      ${!lista.length ? `<div class="np-vazio">Nenhuma categoria com esses filtros.</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista.map(npCat).join("")}</div>`}
       ${ui.catxEditar ? editarCatAba() : ""}
     </section>`;
   }
@@ -3702,67 +4051,54 @@ export function montar(app: HTMLElement) {
   /** Dentro da categoria: só os cursos dela, em cartões. */
   function telaCategoriaAba() {
     const x = catAba(ui.catxSel); if (!x) { ui.tab = "layout"; return telaAbas(); }
-    const img = capaSite(x.capa), e = estado3(x.pub, x.bloq);
+    const img = capaSite(x.capa);
     const itens = itensReais(x.id).filter((y) => y.tipo === "curso");
     const daCat = itens.map((y) => curso(y.item)).filter((c): c is Curso => !!c);
     const q = norm(ui.kaBusca || "").trim(), ordem = ui.kaOrdem || "recentes", vista = ui.kaVista === "lista" ? "lista" : "grade";
     const lista = daCat.filter((c) => !q || casa(q, c.nome))
       .sort((a, b) => ordem === "nome" ? a.nome.localeCompare(b.nome) : ordem === "antigos" ? (a.criado || "").localeCompare(b.criado || "") : (b.criado || "").localeCompare(a.criado || ""));
     const fora = cursosDeVerdade().filter((c) => !daCat.some((y) => y.id === c.id)).sort((a, b) => a.nome.localeCompare(b.nome));
-    const VIS: Record<Estado3, string> = { ativo: "Visível para alunas", bloqueado: "Bloqueada (aparece com cadeado)", desativado: "Oculta para alunas" };
-    const IC_OLHO_S = IC_OLHO_C;
     // Visão geral e Editar curso à vista; o resto no ⋮.
     const menu = (c: Curso) => { const k = "kac:" + c.id, it = itens.find((y) => y.item === c.id); return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
         ${it ? `<span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-item-tirar" data-id="${it.id}">Tirar desta categoria</button>` : ""}
       </span>` : ""}</span>`; };
-    const stats = (c: Curso) => { const n = numerosCurso(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n.alunas}</b><em>${n.alunas === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
-    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa), ec = estado3(c.visivel, c.bloq); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" data-v="visao" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}${selo3(ec)}</button>`; };
-    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_S}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar curso</button>${menu(c)}`;
-    const cartao = (c: Curso) => `
-      <article class="ka-card${cls3(estado3(c.visivel, c.bloq))}">
-        ${capaC(c, "ka-capa")}
-        <div class="ka-corpo">
-          <button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>
-          ${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}
-          ${stats(c)}
-          <div class="ka-bts">${bts(c)}</div>
-        </div>
-      </article>`;
-    const linha = (c: Curso) => `
-      <article class="ka-linha${cls3(estado3(c.visivel, c.bloq))}">
-        ${capaC(c, "ka-mini")}
-        <div class="ka-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" data-v="visao" title="${h(c.nome)}">${h(c.nome)}</button>${seletorEstado("curso", c.id, estado3(c.visivel, c.bloq))}</div>
-        ${stats(c)}
-        <div class="ka-bts">${bts(c)}</div>
-      </article>`;
     const soltos = itensDe(x.id).filter((it) => it.tipo !== "curso");
     return `
-    <section class="tela ativa ax ka">
-      <nav class="ka-trilha"><button type="button" data-a="aba" data-v="layout">‹ Categorias</button><span>/</span><b>${h(x.nome)}</b></nav>
-      <div class="ka-tit"><h1>${h(x.nome)}</h1><p>Gerencie a categoria e seus cursos associados.</p></div>
-      <div class="ka-cab${cls3(e)}">
-        <span class="ka-cab-img">${img ? `<img src="${h(img)}" alt="" />` : `<span class="cur-sem-capa">Sem capa</span>`}</span>
-        <div class="ka-cab-txt">
-          <small>Categoria de cursos${x.rascunho ? ` · <em class="ka-rasc">Não publicada</em>` : ""}</small>
-          <h2>${h(x.nome)}</h2>
-          ${x.descricao ? `<p class="ka-desc">${h(x.descricao)}</p>` : ""}
-          <p class="ka-meta"><span class="ka-vis ka-vis-${e}">● ${VIS[e]}</span> · ${p(daCat.length, "curso", "cursos")}</p>
-        </div>
-        <button type="button" class="al-botao ka-editar" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button>
-      </div>
-      <div class="ka-sec">
-        <div class="ka-sec-cab"><div><h3>Cursos nesta categoria ${dicaCampo(`Os cursos que aparecem quando a aluna abre esta categoria. Um curso pode estar em várias categorias; tirar daqui não apaga o curso.`, "ka.cursos")}</h3><p>Organize e gerencie os cursos desta categoria.</p></div>
-          <span class="ka-sec-bts"><button type="button" class="al-botao" data-a="ka-add-abrir" aria-expanded="${ui.kaAdd}">${IC_ABAC.mais}Adicionar existente</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Novo curso</button></span></div>
-        ${ui.kaAdd ? `<div class="ka-add">${fora.length ? `<select class="campo" id="kaAddSel" aria-label="Curso já cadastrado">${fora.map((c) => `<option value="${c.id}">${h(c.nome)}</option>`).join("")}</select><button type="button" class="al-botao-ouro" data-a="ka-add" data-id="${x.id}">Adicionar à categoria</button>` : `<em>Todos os cursos já estão nesta categoria.</em>`}<button type="button" class="al-botao" data-a="ka-add-abrir">Cancelar</button></div>` : ""}
-        <div class="kg-barra">
-          <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" type="search" id="kaBusca" data-ka-busca value="${h(ui.kaBusca || "")}" placeholder="Buscar curso..." aria-label="Buscar curso" /></label>
-          <select class="campo kg-sel" data-ka-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select>
-          <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="ka-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="ka-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
-        </div>
-        ${!lista.length ? `<div class="vazio">${daCat.length ? "Nenhum curso encontrado." : "Nenhum curso nesta categoria ainda. Use Novo curso ou Adicionar existente."}</div>`
-          : vista === "lista" ? `<div class="ka-lista">${lista.map(linha).join("")}</div>` : `<div class="ka-grade">${lista.map(cartao).join("")}</div>`}
+    <section class="tela ativa ax ka ppx npx">
+      <div class="pp-top"><button type="button" class="pp-volta" data-a="aba" data-v="layout" aria-label="Voltar para Categorias">${IC_CURSO.voltar}</button><nav class="pp-trilha" aria-label="Você está em"><button type="button" data-a="aba" data-v="layout">Categorias</button><span aria-hidden="true">›</span><b>${h(x.nome)}</b></nav></div>
+      ${(() => {
+        const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+        const fmtN: Record<string, string> = { video: "Vídeos", ebook: "E-books", audio: "Áudios" };
+        const nTipo: Record<string, number> = {}; daCat.forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; nTipo[t] = (nTipo[t] || 0) + 1; });
+        const fmt = Object.keys(nTipo).sort((a, b) => nTipo[b] - nTipo[a])[0] || "video";
+        const seg = daCat.reduce((t, c) => t + c.modulos.reduce((u, m) => u + m.aulas.reduce((v, a) => v + (a.duracao || 0), 0), 0), 0), mi = Math.round(seg / 60);
+        const alu = new Set(daCat.flatMap((c) => alunasDoCurso(c).map((y) => y.a.id))).size;
+        const libEm = x.publicadoEm || (x.libera && new Date(x.libera).getTime() <= Date.now() ? x.libera : "");
+        const pubBt = (v: boolean) => `<button type="button" role="menuitemradio" aria-checked="${v === !x.rascunho}" data-a="${v === !x.rascunho ? "estado-menu" : "catx-pub-toggle"}" data-id="${x.id}"${v === !x.rascunho ? ` data-v="np-p:p${x.id}"` : ""}><span class="np-op ${v ? "np-pub" : "np-npub"}">${v ? NP_IC.ok : NP_IC.ponto}${v ? "Publicado" : "Não publicado"}</span></button>`;
+        const kM = "ctpm:" + x.id;
+        return `<div class="pp-painel ctp">
+          <div class="ctp-hd"><span class="ctp-h">Categoria, formato e aparência ${dicaCampo("Resumo da categoria: formato, cursos, horas e situação. Use Editar categoria para mudar nome, capa ou aparência.", "ctp.resumo")}</span><span class="ctp-h">Card da categoria ${dicaCampo("É assim que a categoria aparece para o aluno dentro do aplicativo.", "ctp.card")}</span></div>
+          <div class="ctp-res"><div class="ctp-box">
+            <div class="ctp-topo"><span class="ctp-selo">${ppI('<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.4"/>')}Categoria</span><span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${kM}" aria-haspopup="menu" aria-expanded="${ui.estMenu === kM}" aria-label="Mais opções">${IC_ABAC.pontos}</button>${ui.estMenu === kM ? `<span class="est3-menu kb-menu" role="menu"><button type="button" role="menuitem" data-a="catx-duplicar" data-id="${x.id}">Duplicar</button><span class="kb-sep"></span><button type="button" role="menuitem" class="perigo" data-a="catx-remover" data-id="${x.id}">Excluir categoria</button></span>` : ""}</span></div>
+            <h2 class="ctp-nome">${h(x.nome)}</h2>
+            <p class="ctp-linha">${ppI('<rect x="4" y="4" width="16" height="16" rx="2.5"/><path d="M10.5 9.5v5l4-2.5z"/>')}Formato: <b>${fmtN[fmt]}</b></p>
+            <p class="ctp-linha">${ppI('<path d="M5 6h14M5 10.5h14M5 15h9"/>')}Descrição: <b>${h(x.descricao || "—")}</b></p>
+            <div class="ctp-nums"><div>${ppI('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>')}<span><em>Cursos</em><b>${daCat.length}</b></span></div><div>${ppI('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>')}<span><em>Horas aula</em><b>${Math.floor(mi / 60)}h${String(mi % 60).padStart(2, "0")}</b></span></div><div>${ppI('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>')}<span><em>Alunos</em><b>${alu}</b></span></div></div>
+            <div class="ctp-datas"><div>${ppI('<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>')}<span><em>Data de criação</em><b>${x.criado ? br(diaDe(x.criado)) : "—"}</b></span></div><div>${ppI('<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4M9 15l2 2 4-4"/>')}<span><em>Liberado em</em><b>${libEm ? br(diaDe(libEm)) : "—"}</b></span></div></div>
+            <div class="ctp-pe">${npStatus("p" + x.id, !x.rascunho, x.pub, x.bloq, x.libera, pubBt, "catx:" + x.id, `<button type="button" role="menuitem" data-a="catx-editar" data-id="${x.id}"><span class="np-op np-age">${NP_IC.cal}Agendar data…</span></button>`)}<button type="button" class="al-botao-ouro ctp-ed" data-a="catx-editar" data-id="${x.id}">${IC_ABAC.lapis}Editar categoria</button></div>
+          </div>
+          <div class="ctp-card"><style>${cssKx(x)}</style><article class="kx-card"><span class="kx-capa">${img ? `<img src="${h(img)}" alt="" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem imagem</span>`}</span><div class="kx-info">${x.cardRotulo ? `<p class="kx-rot">${h(x.cardRotulo)}</p>` : ""}<b class="kx-tit">${h(x.nome)}</b>${x.descricao ? `<p class="kx-desc">${h(x.descricao)}</p>` : ""}<span class="kx-bt"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5c2.5-1 5.5-1 8 .5 2.5-1.5 5.5-1.5 8-.5V19c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z"/><path d="M12 6v13.5"/></svg><b>${h(x.botao || "Ver categoria")}</b></span></div></article></div>
+          </div></div>`;
+      })()}
+      <div class="pp-painel ctp-cur">
+        <div class="ctp-cur-cab"><div><h3 class="pp-h3">Cursos da categoria ${dicaCampo(`Os cursos que aparecem quando o aluno abre esta categoria. Um curso pode estar em várias categorias; tirar daqui não apaga o curso.`, "ka.cursos")}</h3><p class="ctp-tot">${p(daCat.length, "curso", "cursos")} · ${daCat.reduce((t, c) => t + totalAulas(c), 0)} aulas</p></div>
+          <span class="ka-sec-bts"><button type="button" class="al-botao" data-a="ka-add-abrir" aria-expanded="${ui.kaAdd}">${IC_ABAC.mais}Curso que já existe</button><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Curso novo</button></span></div>
+        ${ui.kaAdd ? `<div class="ka-add">${fora.length ? `<select class="campo" id="kaAddSel" aria-label="Curso já cadastrado">${fora.map((c) => `<option value="${c.id}">${h(c.nome)}</option>`).join("")}</select><button type="button" class="al-botao-ouro" data-a="ka-add" data-id="${x.id}">Adicionar à categoria</button>` : `<em>Todos os cursos já estão nesta categoria.</em>`}</div>` : ""}
+        ${daCat.length ? `<div class="np-filtros"><label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" id="kaBusca" data-ka-busca value="${h(ui.kaBusca || "")}" placeholder="Pesquisar curso…" aria-label="Pesquisar curso" /></label><select class="campo np-sel" data-ka-ordem aria-label="Ordenar">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"]].map(([v, t]) => `<option value="${v}" ${ordem === v ? "selected" : ""}>${t}</option>`).join("")}</select><span class="np-flex"></span>${npVista("ka-vista", vista === "lista")}</div>` : ""}
+        ${!daCat.length ? `<div class="ctp-vz"><h4>Esta categoria ainda não tem cursos</h4><p>Adicione um curso novo ou um curso que já existe para organizar esta categoria.</p><button type="button" class="al-botao-ouro" data-a="curso-novo-cat" data-id="${x.id}">${IC_ABAC.mais}Adicionar curso</button></div>`
+          : !lista.length ? `<div class="np-vazio">Nenhum curso encontrado.</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista.map((c) => npCardCurso(c, menu(c))).join("")}</div>`}
       </div>
       ${soltos.length ? `<div class="ka-sec"><h3 class="ka-h3">Módulos e aulas nesta categoria</h3><div class="cx-itens">${soltos.map((it) => `<div class="cx-item"><span class="cx-tipo">${it.tipo === "modulo" ? "Módulo" : "Aula"}</span><b>${h(nomeItem(it.tipo, it.item) || "(apagado)")}</b>${it.tipo === "aula" ? `<button type="button" class="al-botao" data-a="abrir-aula" data-id="${it.item}">Abrir</button>` : ""}<button type="button" class="cx-tirar" data-a="catx-item-tirar" data-id="${it.id}" aria-label="Tirar desta categoria">×</button></div>`).join("")}</div></div>` : ""}
       ${ui.catxEditar ? editarCatAba() : ""}
@@ -3905,65 +4241,36 @@ export function montar(app: HTMLElement) {
     // Cursos e conteúdos: busca, filtros (categoria, status, publicação), ordem e cards/lista.
     // Status = bloqueado_geral (Ativo / Bloqueado); Publicação = publicado (Publicado / Rascunho, oculto para as alunas).
     const catsDo = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
-    const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "", fPub = ui.cursoPub || "";
+    const fCat = ui.cursoCat || "", fSt = ui.cursoSt || "";
     const nAl = (c: Curso) => numerosCurso(c).alunas;
     const tipoDe = (c: Curso) => (c.tipo === "ebook" ? "ebooks" : c.tipo === "audio" ? "audios" : "cursos");
     const nTipo = (t: string) => t === "todos" ? S.cursos.length : S.cursos.filter((c) => tipoDe(c) === t).length;
     const lista2 = S.cursos.filter((c) => (ui.prodTipo === "todos" || tipoDe(c) === ui.prodTipo) && (!q || casa(q, c.nome + " " + catsDo(c).map((x) => x.nome).join(" ")))
-        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || (fSt === "ativo" ? !c.bloq && c.visivel && !c.rascunho : c.bloq)) && (!fPub || (fPub === "pub" ? !c.rascunho : c.rascunho)))
+        && (!fCat || catsDo(c).some((x) => x.id === fCat)) && (!fSt || npFiltro(fSt, !c.rascunho, c.visivel, c.bloq, c.libera)))
       .sort((x, y) => ordem === "nome" ? x.nome.localeCompare(y.nome) : ordem === "antigos" ? (x.criado || "").localeCompare(y.criado || "") : ordem === "alunas" ? nAl(y) - nAl(x) : ordem === "aulas" ? totalAulas(y) - totalAulas(x) : ordem === "categorias" ? posCat(x) - posCat(y) || S.cursos.indexOf(x) - S.cursos.indexOf(y) : (y.criado || "").localeCompare(x.criado || ""));
-    const selos = (c: Curso) => c.rascunho ? `<span class="cc2-selos"><span class="cc2-selo vm">Não publicado</span><span class="cc2-selo cz">Rascunho</span></span>`
-      : `<span class="cc2-selos"><span class="cc2-selo az">Publicado</span><span class="cc2-selo ${!c.visivel ? "vm" : c.bloq ? "am" : "vd"}">${!c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Liberado"}</span></span>`;
-    const cats = (c: Curso) => { const xs = catsDo(c); return `<p class="cc2-cat">${IC_CUR.pasta}<em>Categoria:</em><b>${h(xs.map((x) => x.nome).join(", ") || "Sem categoria")}</b></p>`; };
-    const stats = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<div class="ka-stats"><span><b>${n}</b><em>${n === 1 ? "Aluna ativa" : "Alunas ativas"}</em></span><span><b>${c.modulos.length}</b><em>${c.modulos.length === 1 ? "Módulo" : "Módulos"}</em></span><span><b>${au}</b><em>${nomeItens(c, au)}</em></span></div>`; };
-    const quando = (c: Curso) => { if (!c.criado) return ""; const d = diasEntre(diaDe(c.criado), hoje()); return `<p class="cc2-data"><span>${br(diaDe(c.criado))}</span><span>${d === 0 ? "Criado hoje" : "Criado há " + d + (d === 1 ? " dia" : " dias")}</span></p>`; };
     // Ações secundárias no ⋮ (todas já existiam no painel).
     const menu = (c: Curso) => { const k = "cc2:" + c.id; return `<span class="est3 kg-menu"><button type="button" class="kg-pts" data-a="estado-menu" data-v="${k}" aria-haspopup="menu" aria-expanded="${ui.estMenu === k}" aria-label="Mais opções de ${h(c.nome)}">${IC_ABAC.pontos}</button>${ui.estMenu === k ? `<span class="est3-menu kb-menu" role="menu">
         <button type="button" role="menuitem" data-a="abrir-curso" data-id="${c.id}" data-v="modulos">Módulos e aulas</button>
         <button type="button" role="menuitem" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button>
-        <button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.visivel ? "desativado" : c.bloq ? "bloqueado" : "ativo"}">${c.visivel ? "Despublicar (Rascunho)" : "Publicar"}</button>
-        ${c.visivel ? `<button type="button" role="menuitem" data-a="estado-set" data-v="curso:${c.id}:${c.bloq ? "ativo" : "bloqueado"}">${c.bloq ? "Desbloquear (Ativo)" : "Bloquear"}</button>` : ""}
         <span class="kb-sep"></span>
         <button type="button" role="menuitem" class="perigo" data-a="curso-remover" data-id="${c.id}">Excluir curso</button>
       </span>` : ""}</span>`; };
-    const capaC = (c: Curso, cls: string) => { const im = capaSite(c.capa); return `<button type="button" class="${cls}" data-a="abrir-curso" data-id="${c.id}" aria-label="Abrir ${h(c.nome)}">${im ? `<img src="${h(im)}" alt="" loading="lazy" onerror="this.remove()" />` : `<span class="cur-sem-capa">Sem capa</span>`}</button>`; };
-    const bts = (c: Curso) => `<button type="button" class="al-botao-ouro" data-a="abrir-curso" data-id="${c.id}" data-v="visao">${IC_OLHO_C}Visão geral</button><button type="button" class="al-botao" data-a="abrir-curso" data-id="${c.id}" data-v="config">${IC_CURSO.lapis}Editar</button>`;
-    // "Texto em cima do nome" (Sobre o curso) antes do nome: "Curso completo: …", "E-book: …", "Frequência: …".
-    const tipoNome = (c: Curso) => { const t = (c.cardRotulo || "").trim(); return t ? `<span class="cc2-tipo">${h(t)}:</span> ${h(c.nome)}` : h(c.nome); };
-    const statsTxt = (c: Curso) => { const n = nAl(c), au = totalAulas(c); return `<p class="cc2-info"><b>${n}</b> ${n === 1 ? "aluna ativa" : "alunas ativas"} · <b>${c.modulos.length}</b> ${c.modulos.length === 1 ? "módulo" : "módulos"} · <b>${au}</b> ${nomeItens(c, au).toLowerCase()}</p>`; };
-    const ultLib = (c: Curso) => { const u = ULT_LIB.get(c.id); if (!u) return ""; const d = new Date(u.quando); const dt = String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0");
-      return `<div class="cc2-ult"><h5>Última liberação</h5><p title="${h(u.titulo)}">${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</p><span>${dt} · ${p(u.alunas, "aluna", "alunas")} · ${u.avisadas} ${u.avisadas === 1 ? "avisada" : "avisadas"} no celular</span></div>`; };
-    const card2 = (c: Curso) => `
-      <article class="cc2-card${c.visivel ? "" : " cc2-rasc"}">
-        ${capaC(c, "ka-capa")}
-        <div class="cc2-corpo">
-          <div class="cc2-topo"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${menu(c)}</div>
-          ${statsTxt(c)}${cats(c)}${selos(c)}${ultLib(c)}${quando(c)}
-          <div class="cc2-bts">${bts(c)}</div>
-        </div>
-      </article>`;
-    const linha2 = (c: Curso) => `
-      <article class="cc2-linha${c.visivel ? "" : " cc2-rasc"}">
-        ${capaC(c, "ka-mini")}
-        <div class="cc2-ltxt"><button type="button" class="ka-nome" data-a="abrir-curso" data-id="${c.id}" title="${h(c.nome)}">${tipoNome(c)}</button>${cats(c)}${selos(c)}</div>
-        ${stats(c)}
-        <div class="cc2-bts">${bts(c)}${menu(c)}</div>
-      </article>`;
-    const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo kg-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    const sel = (attr: string, val: string, ops: string[][], rot: string) => `<select class="campo np-sel" ${attr} aria-label="${rot}">${ops.map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("")}</select>`;
+    const npCard = (c: Curso) => npCardCurso(c, menu(c));
+    const vazioTxt = q || fCat || fSt ? "Nenhum produto com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro em “Criar novo produto”." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda.";
     return `
-    <section class="tela ativa cur cc2">
-      <nav class="prod-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Cursos"], ["ebooks", "E-books"], ["audios", "Áudios"]] as const).map(([k, t]) => `<button type="button" role="tab" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<span>${nTipo(k)}</span></button>`).join("")}</nav>
-      <div class="kg-barra">
-        <label class="cur-busca kg-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar ${NOME_TIPO[ui.prodTipo][0]}..." aria-label="Buscar ${NOME_TIPO[ui.prodTipo][0]}" /></label>
+    <section class="tela ativa npx">
+      <nav class="np-abas" role="tablist" aria-label="Tipo de produto">${([["todos", "Todos"], ["cursos", "Vídeo"], ["ebooks", "E-book"], ["audios", "Áudio"]] as const).map(([k, t]) => `<button type="button" role="tab" class="np-aba${ui.prodTipo === k ? " on" : ""}" data-a="prod-tipo" data-v="${k}" aria-selected="${ui.prodTipo === k}">${t}<i>${nTipo(k)}</i></button>`).join("")}</nav>
+      <div class="np-filtros">
+        <label class="np-busca">${IC_CUR.lupa}<input class="campo" id="cursoBusca" data-curso-busca value="${h(ui.cursoBusca || "")}" placeholder="Buscar produto" aria-label="Buscar produto" /></label>
         ${sel("data-curso-cat", fCat, [["", "Todas as categorias"], ...S.catsAba.map((x) => [x.id, x.nome])], "Categoria")}
-        ${sel("data-curso-st", fSt, [["", "Todos os status"], ["ativo", "Ativo"], ["bloqueado", "Bloqueado"]], "Status")}
-        ${sel("data-curso-pub", fPub, [["", "Toda publicação"], ["pub", "Publicado"], ["rasc", "Rascunho"]], "Publicação")}
-        ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunas"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordem")}
-        <span class="kc-vista kg-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="cur-vista" data-v="grade" aria-pressed="${vista === "grade"}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="cur-vista" data-v="lista" aria-pressed="${vista === "lista"}" aria-label="Em lista">${IC_CUR.lista}</button></span>
+        ${sel("data-curso-st", fSt, [["", "Todos os status"], ["pub", "Publicado"], ["nao", "Não publicado"], ["liberado", "Liberado"], ["bloqueado", "Bloqueado"], ["agendado", "Agendado"], ["oculto", "Oculto"]], "Status")}
+        <span class="np-total">${lista2.length} ${lista2.length === 1 ? "produto" : "produtos"}</span>
+        <span class="np-flex"></span>
+        ${sel("data-curso-ordem", ordem, [["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["alunas", "Mais alunos"], ["aulas", "Mais aulas"], ["categorias", "Ordem da área de membros"]], "Ordenar")}
+        ${npVista("cur-vista", vista === "lista")}
       </div>
-      <p class="kg-conta">${lista2.length} ${lista2.length === 1 ? NOME_TIPO[ui.prodTipo][0] : NOME_TIPO[ui.prodTipo][1]} ${lista2.length === 1 ? "encontrado" : "encontrados"}</p>
-      ${!lista2.length ? `<div class="vazio">${q || fCat || fSt || fPub ? "Nada encontrado com esses filtros." : ui.prodTipo === "todos" ? "Nenhum produto ainda. Crie o primeiro." : "Nenhum " + NOME_TIPO[ui.prodTipo][0] + " ainda."}</div>`
-        : vista === "lista" ? `<div class="ka-lista">${lista2.map(linha2).join("")}</div>` : `<div class="cc2-grade">${lista2.map(card2).join("")}</div>`}
+      ${!lista2.length ? `<div class="np-vazio">${vazioTxt}</div>` : `<div class="np-grade${vista === "lista" ? " lista" : ""}">${lista2.map(npCard).join("")}</div>`}
     </section>`;
   }
 
@@ -5063,15 +5370,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (!c) return `<section class="tela ativa"><div class="vazio">Nenhum curso aberto. Escolha um em Cursos e conteúdos.</div></section>`;
     const mp = ui.modPagina ? acharModulo(ui.modPagina) : null;
     if (mp && mp.c.id === c.id) return paginaModulo(c, mp.m, mp.i);
-    const aba = ui.cursoAba || "visao";
+    const ABA_NOVA: Record<string, string> = { visao: "sobre", modulos: "conteudo", relatorios: "engaj", alunas: "alunos" };
+    const aba = ABA_NOVA[ui.cursoAba] || ui.cursoAba || "sobre";
     const todas = alunasDoCurso(c);
-    const ABAS_C: [string, string][] = [["visao", "Visão geral"], ["config", "Sobre o curso"], ["modulos", "Módulos e aulas"], ["alunas", "Alunas"], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : "")], ["relatorios", "Relatórios"]];
-    const conteudo = aba === "modulos" ? modulosCurso(c)
-      : aba === "alunas" ? alunasCursoAba(c, todas)
+    const conteudo = aba === "conteudo" ? conteudoProduto(c)
+      : aba === "alunos" ? alunasCursoAba(c, todas)
       : aba === "comentarios" ? comentariosCursoAba(c)
       : aba === "config" ? configCurso(c)
-      : aba === "relatorios" ? relatoriosCurso(c, todas)
-      : visaoGeralCurso(c, todas);
+      : aba === "engaj" ? relatoriosCurso(c, todas)
+      : aba === "ranking" ? rankingCurso(c, todas)
+      : sobreProduto(c, todas);
     // Visão geral: topo próprio (capa, categoria, status e publicação com menu); as outras abas mantêm a trilha.
     const cv = (() => {
       const titAba = ({ visao: ["Visão geral", "Acompanhe a estrutura, as alunas e as atividades."], config: ["Sobre o curso", "Capa, textos, onde aparece e publicação."], modulos: ["Módulos e aulas", "Organize os módulos e as aulas."], alunas: ["Alunas", "Quem tem acesso a este curso."], comentarios: ["Comentários", "Responda e modere os comentários das alunas."], relatorios: ["Relatórios", "Como o curso está indo."] } as Record<string, [string, string]>)[aba] || ["Visão geral", ""];
@@ -5097,20 +5405,108 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>
       </div>`;
     })();
+    void cv; void visaoGeralCurso;
+    const ABAS_P: [string, string, string][] = [["sobre", "Sobre o produto", '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'], ["conteudo", "Conteúdo", '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>'], ["engaj", "Engajamento", '<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>'], ["comentarios", "Comentários" + (comentariosDoCurso(c).some((k) => k.estado === "moderar") ? " (" + comentariosDoCurso(c).filter((k) => k.estado === "moderar").length + ")" : ""), '<path d="M4 5h16v11H9l-5 4z"/>'], ["alunos", "Alunos", '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>'], ["ranking", "Ranking de alunos", '<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>']];
+    const nomeAba = aba === "config" ? "Editar curso" : (ABAS_P.find((x) => x[0] === aba) || ABAS_P[0])[1];
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
     return `
-    <section class="tela ativa cs">
-      ${cv || `      <div class="cs-trilha">
-        <button type="button" class="cs-volta-ic" data-a="aba" data-v="cursos" aria-label="Voltar para Cursos e conteúdos">${IC_CURSO.voltar}</button>
-        <span><button type="button" class="link cs-link-trilha" data-a="aba" data-v="cursos">Cursos e conteúdos</button><span aria-hidden="true" class="cs-sep">›</span><b>${h(c.nome)}</b></span>
-        <span style="flex:1"></span>
-        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver na área da aluna ${IC_EXTERNO}</button>
-        <button type="button" class="al-botao" data-a="cs-duplicar" data-id="${c.id}">${IC_MOD.copiar}Duplicar curso</button>
-        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}Mais</summary><div><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
-        <button type="button" class="al-botao-ouro" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button>
-      </div>`}
-      <nav class="cs-abas" aria-label="Partes do curso">${ABAS_C.map(([v, t]) => `<button type="button" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${t}</button>`).join("")}</nav>
+    <section class="tela ativa cs ppx">
+      <div class="pp-top"><button type="button" class="pp-volta" data-a="aba" data-v="cursos" aria-label="Voltar para Produtos">${IC_CURSO.voltar}</button>
+        <nav class="pp-trilha" aria-label="Você está em"><button type="button" data-a="aba" data-v="cursos">Produtos</button><span aria-hidden="true">›</span><button type="button" data-a="curso-aba" data-v="sobre">${h(c.nome)}</button><span aria-hidden="true">›</span><b>${h(nomeAba)}</b></nav>
+        <span class="np-flex"></span>
+        <button type="button" class="al-botao" data-a="cs-ver-aluna">Ver como aluno ${IC_EXTERNO}</button>
+        <details class="ce-mais"><summary class="al-botao" aria-label="Mais ações">${IC_ABAC.pontos}</summary><div><button type="button" data-a="cs-duplicar" data-id="${c.id}">Duplicar curso</button><button type="button" data-a="cs-exportar-conteudo" data-id="${c.id}">Exportar conteúdo</button><button type="button" class="perigo" data-a="curso-remover" data-id="${c.id}">${IC_MOD.lixo}Excluir curso</button></div></details>
+      </div>
+      <nav class="pp-abas" aria-label="Partes do produto">${ABAS_P.map(([v, t, ic]) => `<button type="button" class="pp-aba${aba === v ? " on" : ""}" data-a="curso-aba" data-v="${v}" aria-current="${aba === v ? "page" : "false"}">${ppI(ic)}${t}</button>`).join("")}</nav>
       ${conteudo}
     </section>`;
+  }
+
+  /** Aba "Conteúdo" (modelo novo produto): números + Conteúdos (editor de módulos e aulas) / Estatísticas. */
+  function conteudoProduto(c: Curso) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+    const seg = aulas.reduce((t, x) => t + (x.a.duracao || 0), 0), hh = Math.floor(seg / 3600), mm = Math.round((seg % 3600) / 60);
+    const vis = ui.ctVis === "est" ? "est" : "cont";
+    const k = (ic: string, t: string, v: string | number, on = false) => `<div class="pp-tile${on ? " on" : ""}">${ppI(ic)}<span><em>${t}</em><b>${v}</b></span></div>`;
+    const IC_CAM = '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>';
+    const topo = `<div class="pp-hrow"><h2 class="pp-h">${ppI(IC_CAM)}Conteúdo</h2></div><p class="pp-sub">Gerencie módulos, aulas e todo o material do seu curso.</p>
+      <div class="pp-tiles pp-t4">${k(IC_CAM, "Módulos", c.modulos.length, true)}${k('<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>', "Aulas", aulas.length)}${k('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', "Tempo total", hh + "h " + String(mm).padStart(2, "0") + "m")}${k('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Horas aula", (seg / 3600).toFixed(1).replace(".", ",") + "h")}</div>
+      <div class="pp-seg" role="tablist" aria-label="Ver"><button type="button" role="tab" class="${vis === "cont" ? "on" : ""}" aria-selected="${vis === "cont"}" data-a="ct-vis" data-v="cont">${ppI(IC_CAM)}Conteúdos</button><button type="button" role="tab" class="${vis === "est" ? "on" : ""}" aria-selected="${vis === "est"}" data-a="ct-vis" data-v="est">${ppI('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>')}Estatísticas</button></div>`;
+    if (vis === "cont") return `<div class="pp-painel">${topo}</div><div class="pp-cont">${modulosCurso(c)}</div>`;
+    // Estatísticas com dados reais
+    const tipos: [string, number, string][] = [["Vídeo", aulas.filter((x) => x.a.tipo === "video").length, "#E2C68C"], ["Áudio", aulas.filter((x) => x.a.tipo === "audio").length, "#8FB3E0"], ["E-book", aulas.filter((x) => x.a.tipo === "pdf").length, "#7FD49B"], ["Material", aulas.reduce((t, x) => t + x.a.extras.length, 0), "#E0A070"]];
+    const totT = tipos.reduce((t, x) => t + x[1], 0) || 1;
+    const C = 2 * Math.PI * 52; let off = 0;
+    const ros = tipos.map(([, v, cor]) => { const l = (v / totT) * C, g = l ? `<circle r="52" cx="70" cy="70" fill="none" stroke="${cor}" stroke-width="18" stroke-dasharray="${Math.max(0, l - 2)} ${C - l + 2}" stroke-dashoffset="${-off}" transform="rotate(-90 70 70)"/>` : ""; off += l; return g; }).join("");
+    const coms = comentariosDoCurso(c), porAula = new Map<string, number>(); coms.forEach((x) => porAula.set(x.aula, (porAula.get(x.aula) || 0) + 1));
+    const top = aulas.filter((x) => porAula.get(x.a.id)).sort((a, b) => (porAula.get(b.a.id) || 0) - (porAula.get(a.a.id) || 0)).slice(0, 3);
+    const agora = Date.now(), agend = aulas.filter((x) => x.a.libera && new Date(x.a.libera).getTime() > agora).sort((a, b) => a.a.libera.localeCompare(b.a.libera)).slice(0, 3);
+    const u = ULT_LIB.get(c.id);
+    const nomeA = (x: { a: Aula; m: Modulo }) => `${h(x.m.rot)} ${x.m.num} · ${h(x.a.rot)} ${x.a.num} — ${h(x.a.nome)}`;
+    return `<div class="pp-painel">${topo}
+      <div class="pp-g3">
+        <div class="pp-box"><h3 class="pp-h3">Distribuição do conteúdo</h3><div class="pp-ros"><svg viewBox="0 0 140 140" class="pp-rosca" role="img" aria-label="${aulas.length} itens por tipo">${ros}<text x="70" y="70" text-anchor="middle" class="pp-rn">${aulas.length}</text><text x="70" y="90" text-anchor="middle" class="pp-rl">${nomeItens(c, aulas.length)}</text></svg><div class="pp-leg">${tipos.map(([t, v, cor]) => `<div><i style="background:${cor}"></i><span>${t}</span><b>${v} <em>(${Math.round((v / totT) * 100)}%)</em></b></div>`).join("")}</div></div></div>
+        <div class="pp-box"><h3 class="pp-h3">Aulas com mais comentários</h3>${top.length ? top.map((x, i) => `<div class="pp-rk"><b class="rk-pos rk-p${i + 1}">${i + 1}</b><span>${nomeA(x)}</span><em>${porAula.get(x.a.id)} ${porAula.get(x.a.id) === 1 ? "comentário" : "comentários"}</em></div>`).join("") : `<p class="pp-vz">Nenhum comentário ainda.</p>`}</div>
+        <div class="pp-box"><h3 class="pp-h3">Última aula liberada</h3>${u ? `<div class="pp-rk"><span>${u.mod != null ? "Módulo " + u.mod + " · " : ""}${u.num != null ? "Aula " + u.num + " — " : ""}${h(u.titulo)}</span><em class="pp-ok">Liberado</em></div>` : `<p class="pp-vz">Nenhuma liberação ainda.</p>`}
+          <h3 class="pp-h3 pp-mt">O que tem agendado</h3>${agend.length ? agend.map((x) => `<div class="pp-rk"><span>${nomeA(x)}</span><em class="pp-ag">${dataHoraCurta(x.a.libera)}</em></div>`).join("") : `<p class="pp-vz">Nada agendado.</p>`}</div>
+      </div></div>`;
+  }
+
+  /** Aba "Sobre o produto" (modelo novo produto): dados reais do curso. */
+  function sobreProduto(c: Curso, todas: AlunaCurso[]) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+    const agora = Date.now();
+    const lib = aulas.filter(({ a, m }) => !c.rascunho && !m.rascunho && m.pub && !a.rascunho && a.pub && a.acesso !== "bloqueada" && !(a.libera && new Date(a.libera).getTime() > agora));
+    const pct = aulas.length ? Math.round((lib.length / aulas.length) * 100) : 0;
+    const seg = aulas.reduce((t, x) => t + (x.a.duracao || 0), 0), hh = Math.floor(seg / 3600), mm = Math.round((seg % 3600) / 60);
+    const horas = String(hh).padStart(2, "0") + "h " + String(mm).padStart(2, "0") + "min";
+    const tipoN = c.tipo === "ebook" ? "E-book" : c.tipo === "audio" ? "Áudio" : "Vídeo";
+    const cats = S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)?.nome).filter(Boolean).join(", ") || "Sem categoria";
+    const im = capaSite(c.capa);
+    const datasLib = aulas.map((x) => x.a.liberadaEm || x.a.publicadoEm || "").concat([c.publicadoEm || ""]).filter(Boolean).sort();
+    const u = ULT_LIB.get(c.id);
+    const ult = u ? (u.mod != null ? "Módulo " + u.mod + " – " : "") + (u.num != null ? "Aula " + u.num : h(u.titulo)) : "—";
+    const eng = todas.length ? Math.round(todas.reduce((t, x) => t + x.pct, 0) / todas.length) : 0;
+    const st: [string, string] = c.rascunho ? ["Não publicado", "#A5ADB8"] : !c.visivel ? ["Oculto", "#A3BADB"] : c.bloq ? ["Bloqueado", "#DFA19F"] : c.libera && new Date(c.libera).getTime() > agora ? ["Agendado", "#E2C68C"] : ["Publicado", "#9AC7AB"];
+    const campo = (ic: string, t: string, v: string, inl = false) => `<div class="pp-campo${inl ? " pp-in" : ""}">${ppI(ic)}<div><em>${t}</em>${v}</div></div>`;
+    const tile = (ic: string, t: string, v: string | number, dica = "") => `<div class="pp-tile">${ppI(ic)}<span><em>${t}${dica}</em><b>${v}</b></span></div>`;
+    const lin = (ic: string, t: string, v: string) => `<div class="pp-lin">${ppI(ic)}<span>${t}</span><b>${v}</b></div>`;
+    const IC_TAG = '<path d="M3.5 12.5V4.5a1 1 0 0 1 1-1h8l8 8-9 9z"/><circle cx="8" cy="8" r="1.4"/>', IC_CAM = '<path d="M12 3.5l8.5 4.5L12 12.5 3.5 8z"/><path d="M3.5 12L12 16.5 20.5 12"/><path d="M3.5 16L12 20.5 20.5 16"/>', IC_CAL = '<rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/>', IC_PLAY = '<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>';
+    return `<div class="pp-painel">
+      <div class="pp-hrow"><h2 class="pp-h">${ppI('<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>')}Sobre o produto</h2><button type="button" class="al-botao-ouro pp-ed" data-a="curso-aba" data-v="config">${IC_CURSO.lapis}Editar curso</button></div>
+      <div class="pp-sobre"><div class="pp-esq"><div class="pp-capa">${im ? `<img src="${h(im)}" alt="" onerror="this.remove()" />` : `<span class="pp-capa-n">${h(c.nome)}</span>`}<span class="pp-tipo">${tipoN}</span></div>
+        ${campo(IC_TAG, "Nome", `<b class="pp-nome">${h(c.nome)}</b>`)}${campo('<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 8h7M8.5 11.5h7M8.5 15h4"/>', "Descrição", `<p>${h(c.descricao || "Sem descrição.")}</p>`)}${campo(IC_CAM, "Formato", `<span class="pp-pill">${tipoN}</span>`, true)}${campo(IC_TAG, "Categoria", `<span class="pp-pill">${h(cats)}</span>`, true)}</div>
+        <div class="pp-dir"><div class="pp-tiles">${tile(IC_CAM, "Total de módulos", c.modulos.length)}${tile(IC_PLAY, "Total de aulas", aulas.length)}${tile('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>', "Horas totais", horas)}</div>
+          <div class="pp-box pp-prog"><div class="pp-prog-c">${ppI('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>')}<b>Progresso de liberação</b><span>${pct}%</span></div><div class="pp-barra"><i style="width:${pct}%"></i></div><small>${lib.length} de ${aulas.length} ${aulas.length === 1 ? "aula liberada" : "aulas liberadas"}</small></div>
+          <div class="pp-box">${lin(IC_CAL, "Data de criação", c.criado ? br(diaDe(c.criado)) : "—")}${lin(IC_PLAY, "Data da primeira aula/módulo liberado", datasLib[0] ? br(diaDe(datasLib[0])) : "—")}${lin('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Última aula liberada", ult)}
+            <div class="pp-tiles pp-t2">${tile('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/><circle cx="17" cy="9" r="2.8"/><path d="M16 14.6c2.6.2 4.6 1.8 5.3 5.4"/>', "Total de alunos", todas.length)}${tile('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>', "Engajamento médio", eng + "%", " " + dicaCampo("Média de quanto os alunos assistem do conteúdo liberado.", "pp.eng"))}</div>
+            <div class="pp-st">${ppI(IC_CAM)}<b>Status</b><span class="pp-stp" style="--c:${st[1]}">${ppI('<path d="M5 12.5l4.5 4.5L19 7.5"/>')}${st[0]}</span></div></div></div></div>
+    </div>`;
+  }
+
+  /** Aba "Ranking de alunos": pontos provisórios = aulas concluídas × 10 + módulos concluídos × 50 (regra final a definir com o dono). */
+  function rankingCurso(c: Curso, todas: AlunaCurso[]) {
+    const ppI = (d: string) => `<svg viewBox="0 0 24 24" class="pp-ic" aria-hidden="true">${d}</svg>`;
+    const aulas = c.modulos.flatMap((m) => m.aulas);
+    const L = todas.map((x) => { const feitas = aulas.filter((a) => x.a.feitas.has(a.id)), mods = c.modulos.filter((m) => m.aulas.length && m.aulas.every((a) => x.a.feitas.has(a.id))).length, seg = feitas.reduce((t, a) => t + (a.duracao || 0), 0);
+      return { x, n: feitas.length, mods, seg, pts: feitas.length * 10 + mods * 50 }; }).sort((a, b) => b.pts - a.pts || b.x.pct - a.x.pct);
+    const q = norm(ui.rkBusca || "").trim(), F = L.filter((r) => !q || norm(r.x.a.nome).includes(q));
+    const ini = (n: string) => n.split(" ").filter(Boolean).map((x) => x[0]).slice(0, 2).join("").toUpperCase();
+    const hm = (s: number) => Math.floor(s / 3600) + "h " + String(Math.round((s % 3600) / 60)).padStart(2, "0") + "m";
+    const pod = [1, 0, 2].map((k) => { const r = L[k]; return r ? `<div class="rk-pd rk-pd${k}">${k === 0 ? `<span class="rk-coroa">${ppI('<path d="M4 17l-1-10 5 4 4-6 4 6 5-4-1 10z"/><path d="M4 20h16"/>')}</span>` : ""}<span class="rk-av">${h(ini(r.x.a.nome))}<i>${k + 1}</i></span><div class="rk-base"><b>${h(r.x.a.nome)}</b><em>${r.pts} pts</em></div></div>` : "<div></div>"; }).join("");
+    const conc = L.filter((r) => r.n > 0).length, tot = L.reduce((t, r) => t + r.n, 0), eng = todas.length ? Math.round(todas.reduce((t, x) => t + x.pct, 0) / todas.length) : 0;
+    const k4 = (ic: string, t: string, v: string | number, on = false) => `<div class="pp-tile${on ? " on" : ""}">${ppI(ic)}<span><em>${t}</em><b>${v}</b></span></div>`;
+    return `<div class="pp-painel">
+      <div class="pp-hrow"><h2 class="pp-h">${ppI('<path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/>')}Ranking de alunos</h2></div>
+      <p class="pp-sub">Desempenho e evolução dos alunos neste curso. Pontos: 10 por aula concluída e 50 por módulo concluído.</p>
+      <div class="pp-tiles pp-t4">${k4('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.8 3.4-5.5 6.5-5.5s5.7 1.7 6.5 5.5"/>', "Alunos matriculados", todas.length, true)}${k4('<path d="M3 9l9-4.5L21 9l-9 4.5z"/><path d="M7 11v4.5c1.5 1.3 3.2 2 5 2s3.5-.7 5-2V11"/>', "Concluíram aulas", conc)}${k4('<circle cx="12" cy="12" r="9"/><path d="M10.2 8.8v6.4l5-3.2z"/>', "Aulas assistidas", tot)}${k4('<path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/>', "Engajamento médio", eng + "%")}</div>
+      ${L.length ? `<div class="pp-box rk-podbox"><h3 class="pp-h3">Top 3 do curso</h3><div class="rk-podio">${pod}</div></div>` : ""}
+      <div class="pp-box"><div class="rk-tc"><h3 class="pp-h3">Ranking geral <em>(${L.length} ${L.length === 1 ? "aluno" : "alunos"})</em></h3><label class="np-busca">${IC_CUR.lupa}<input class="campo" type="search" data-rk-busca value="${h(ui.rkBusca || "")}" placeholder="Buscar aluno…" aria-label="Buscar aluno" /></label></div>
+        ${F.length ? `<div class="rk-sc"><div class="rk-tab" role="table"><div class="rk-l rk-hd" role="row"><span>#</span><span>Aluno</span><span>Pontos</span><span>Aulas concluídas</span><span>Módulos concluídos</span><span>Tempo de estudo</span><span>Progresso</span></div>${F.slice(0, 50).map((r) => { const pos = L.indexOf(r) + 1; return `<div class="rk-l" role="row"><span><b class="rk-pos${pos <= 3 ? " rk-p" + pos : ""}">${pos}</b></span><span class="rk-nm"><span class="rk-mini">${h(ini(r.x.a.nome))}</span><b>${h(r.x.a.nome)}</b></span><span><b class="rk-pts">${r.pts} pts</b></span><span>${r.n}</span><span>${r.mods} / ${c.modulos.length}</span><span>${hm(r.seg)}</span><span>${r.x.pct}%</span></div>`; }).join("")}</div></div>` : `<div class="np-vazio">${L.length ? "Nenhum aluno encontrado." : "Nenhum aluno neste curso ainda."}</div>`}
+      </div>
+    </div>`;
   }
 
   function blocoModulo(c: Curso, m: Modulo, i: number) {
@@ -7629,6 +8025,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "aula-agendar": case "aula-lib-abrir": { if (a === "aula-agendar") ui.pmModoIni = "data"; const x = acharAula(d.id!); if (!x) return; ui.estMenu = ""; ui.aula = d.id!; ui.curso = x.c.id; ui.modPagina = x.m.id; ui.tab = "aula"; ui.aulaTipo = ""; ui.pmEditar = true; window.scrollTo(0, 0); break; }
+      case "curso-pub": {
+        const c = curso(d.id!); if (!c) return; const rasc = d.v !== "1"; ui.estMenu = "";
+        if (c.rascunho === rasc) break;
+        void executar(async () => {
+          falhou(await supabase.from("produtos").update({ rascunho: rasc }).eq("id", c.id).select("id").single());
+          await registrar(null, (rasc ? "Despublicou o curso " : "Publicou o curso ") + c.nome);
+          return { msg: c.nome + (rasc ? ": não publicado. As alunas não veem." : ": publicado."), texto: "publicação do curso " + c.nome, desfazer: async () => { falhou(await supabase.from("produtos").update({ rascunho: !rasc }).eq("id", c.id).select("id").single()); } };
+        });
+        return;
+      }
       case "mod-pub": {
         const x = acharModulo(d.id!); if (!x) return; const rasc = d.v !== "1"; ui.estMenu = "";
         if (x.m.rascunho === rasc) break;
@@ -8024,6 +8430,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ce-ver": if (ui.sujo) { mostrarAviso(() => { ui.sujo = null; ui.ceEd = ""; render(); }); return; } ui.ceEd = ""; break;
       case "vg-sec": ui.vgSec = d.v === "conteudo" ? "conteudo" : d.v === "comentarios" ? "comentarios" : "alunas"; break;
       case "vg-sub": ui.vgSub[ui.vgSec] = d.v; break;
+      case "cat-tipo": ui.catTipo = d.v || ""; break;
+      case "ct-vis": ui.ctVis = d.v === "est" ? "est" : "cont"; break;
       case "prod-tipo": ui.prodTipo = d.v === "ebooks" ? "ebooks" : d.v === "audios" ? "audios" : d.v === "cursos" ? "cursos" : "todos"; break;
       case "cfg-salvar": { const f = document.querySelector<HTMLFormElement>(".cfg-form"); if (!f) { toast("Nesta aba, cada parte tem o próprio botão de salvar."); return; } f.requestSubmit(); return; }
       case "cfg-mod-ir": ui.curso = d.id; ui.tab = "curso"; window.scrollTo(0, 0); break;
@@ -9128,6 +9536,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (t.hasAttribute("data-curso-busca")) { ui.cursoBusca = t.value; render(); return; }
     if (t.hasAttribute("data-mod-busca")) { ui.modBusca = t.value; render(); return; }
     if (t.hasAttribute("data-cat-busca")) { ui.catBusca = t.value; render(); return; }
+    if (t.hasAttribute("data-rk-busca")) { ui.rkBusca = t.value; render(); return; }
     if (t.hasAttribute("data-ka-busca")) { ui.kaBusca = t.value; render(); return; }
     if (t.hasAttribute("data-eq-busca")) { ui.eqBusca = t.value; render(); return; }
     if (t.hasAttribute("data-com-busca")) { ui.comBusca = t.value; ui.comPag = 1; render(); return; }

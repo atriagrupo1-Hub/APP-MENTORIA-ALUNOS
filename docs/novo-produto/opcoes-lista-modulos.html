@@ -1,0 +1,161 @@
+<title>Modelos de módulos AIŌN</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:dark;--fundo:#101113;--sup:#191A1E;--resp:#17181B;--borda:#2B2D32;--div:#292A2F;--t1:#EEEEF0;--t2:#94979E;--t3:#7F8791;--ouro:#E2C68C;--souro:#202018;--mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--t1);font:400 13px/1.5 Manrope,system-ui,sans-serif;padding:28px 16px}
+main{max-width:1060px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+button{font:inherit;color:inherit;cursor:pointer}
+.rot{display:flex;align-items:baseline;gap:12px;margin-bottom:12px}.rot b{font:500 11px var(--mono);letter-spacing:1.4px;color:var(--ouro)}.rot span{font-size:12px;color:var(--t2)}
+.painel{background:var(--sup);border:1px solid var(--borda);border-radius:12px;padding:20px}
+.cab{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.cab h3{margin:0;font-size:15px;font-weight:650}.cab small{margin-left:10px;font:400 11px var(--mono);color:var(--t3)}
+.bt{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:7px;border:1px solid #35373D;background:#222429;font-size:12px;font-weight:600}
+.bt:hover{border-color:#5A5B60}.bt.ouro{background:var(--ouro);border-color:var(--ouro);color:var(--souro)}.bt.pq{height:30px;padding:0 11px;font-size:11px}
+.bt.fan{border-style:dashed;background:none;color:var(--ouro);border-color:#4B402B}
+.chk{width:18px;height:18px;flex:0 0 auto;border:1.5px solid #4a4d55;border-radius:4px;background:none;padding:0}.chk.on{background:var(--ouro);border-color:var(--ouro)}
+.arr{color:var(--t3);cursor:grab;letter-spacing:-2px;font-size:13px;user-select:none}
+.capa{flex:0 0 auto;border-radius:7px;background:linear-gradient(135deg,#3a3122,#16171a);border:1px solid #33363c}
+.selo{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.selo i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.pub{background:#1d2b23;color:#9AC7AB;border:1px solid #2f4a3a}.ras{background:#222429;color:#A5ADB8;border:1px solid #35373D}.agd{background:#2a2518;color:#DFC089;border:1px solid #4B402B}
+.mono{font:400 10px var(--mono);letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
+.vl{font-size:13px;font-weight:600}
+.tag{font:500 10px var(--mono);letter-spacing:.8px;padding:3px 7px;border-radius:4px}.t-v{background:#2a2518;color:#DFC089}.t-a{background:#1f2a35;color:#A3BADB}.t-p{background:#2a1f24;color:#DFA19F}
+.chev{width:30px;height:30px;display:grid;place-items:center;border:0;background:none;border-radius:6px;color:var(--t2);transition:transform .15s}.chev:hover{background:#222429}
+.chev svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+[aria-expanded="true"] .chev,.chev[aria-expanded="true"]{transform:rotate(180deg)}
+.aulas{display:none}.aberto .aulas{display:flex}
+.au{display:flex;align-items:center;gap:12px;padding:9px 12px;background:var(--resp);border:1px solid var(--borda);border-radius:8px}
+.au b{flex:1;font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.au em{font-style:normal;font-size:11px;color:var(--t3);white-space:nowrap}
+
+/* A — linha completa com colunas */
+.a-mod{border:1px solid var(--borda);border-radius:10px;background:var(--resp);margin-bottom:10px}
+.a-lin{display:grid;grid-template-columns:auto auto 150px minmax(0,1fr) 110px 110px 90px auto auto auto;align-items:center;gap:14px;padding:12px 14px}
+.a-lin .capa{width:150px;aspect-ratio:16/9}
+.a-nome b{display:block;font-size:15px;font-weight:650}.a-nome span{font-size:12px;color:var(--t2)}
+.a-col .vl{display:block;margin-top:2px}
+.a-mod .aulas{flex-direction:column;gap:6px;padding:0 14px 14px 64px}
+/* B — card com faixa de números */
+.b-mod{border:1px solid var(--borda);border-radius:12px;background:var(--resp);margin-bottom:12px;overflow:hidden}
+.b-top{display:flex;align-items:center;gap:14px;padding:14px}
+.b-top .capa{width:190px;aspect-ratio:16/9}
+.b-txt{flex:1;min-width:0}.b-txt .mono{color:var(--ouro)}.b-txt b{display:block;margin:2px 0 4px;font-size:17px;font-weight:650}.b-txt span{font-size:12px;color:var(--t2)}
+.b-acoes{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.b-acoes div{display:flex;gap:6px;align-items:center}
+.b-nums{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--div);background:#151619}
+.b-nums div{padding:10px 16px}.b-nums div+div{border-left:1px solid var(--div)}
+.b-ver{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:9px;border:0;border-top:1px solid var(--div);background:none;color:var(--t2);font-size:12px;font-weight:600}
+.b-ver:hover{color:var(--ouro)}.b-ver svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;transition:transform .15s}.b-ver[aria-expanded="true"] svg{transform:rotate(180deg)}
+.b-mod .aulas{flex-direction:column;gap:6px;padding:0 14px 14px}
+/* C — tabela compacta */
+.c-tab{border:1px solid var(--borda);border-radius:10px;overflow:hidden}
+.c-th,.c-tr{display:grid;grid-template-columns:28px 24px minmax(0,1fr) 70px 100px 100px 80px 110px 70px 32px;align-items:center;gap:10px;padding:10px 14px}
+.c-th{background:#151619;border-bottom:1px solid var(--borda)}
+.c-mod+.c-mod{border-top:1px solid var(--borda)}
+.c-tr:hover{background:#1c1d21}
+.c-nm{display:flex;align-items:center;gap:12px;min-width:0}.c-nm .capa{width:96px;aspect-ratio:16/9}.c-nm b{font-size:14px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-mod .aulas{flex-direction:column;gap:6px;padding:4px 14px 14px 76px;background:#141518}
+.sel{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 12px;background:#211f19;border:1px solid #4B402B;border-radius:8px;font-size:12px;color:var(--ouro)}
+.sel span{flex:1}
+@media(max-width:900px){.a-lin{grid-template-columns:auto auto 110px minmax(0,1fr) auto auto}.a-lin .capa{width:110px}.a-col{display:none}.c-th{display:none}.c-tr{grid-template-columns:24px 20px minmax(0,1fr) auto 32px}.c-tr>.c-x{display:none}.b-top{flex-wrap:wrap}.b-top .capa{width:120px}.b-nums{grid-template-columns:repeat(2,1fr)}.b-nums div:nth-child(3){border-left:0}}
+</style>
+<main>
+
+<section>
+  <div class="rot"><b>MODELO A</b><span>Uma linha por módulo, com as informações em colunas</span></div>
+  <div class="painel">
+    <div class="cab"><h3>Conteúdo do curso<small>2 MÓDULOS · 5 AULAS</small></h3><button class="bt ouro">+ Adicionar módulo</button></div>
+    <div class="a-mod aberto" data-ab>
+      <div class="a-lin"><button class="chk on" aria-label="Selecionar"></button><span class="arr" title="Arraste para mudar a ordem">⋮⋮</span><span class="capa"></span>
+        <span class="a-nome"><b>Módulo 1 — Atria Teste</b><span>3 aulas</span></span>
+        <span class="a-col"><span class="mono">Criado em</span><span class="vl">17/11/2026</span></span>
+        <span class="a-col"><span class="mono">Liberado em</span><span class="vl">20/11/2026</span></span>
+        <span class="a-col"><span class="mono">Assistiram</span><span class="vl">48 alunos</span></span>
+        <span class="selo pub"><i></i>Publicado</span><button class="bt pq">Editar</button><button class="chev" aria-expanded="true" aria-label="Mostrar aulas"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+      <div class="aulas">
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Aula 1 — Começando</b><em>18 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-a">ÁUDIO</span><b>2 · Oração da manhã</b><em>9 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-p">E-BOOK</span><b>3 · Guia do módulo</b><em>12 págs.</em><button class="bt pq">Editar</button></div>
+        <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+      </div>
+    </div>
+    <div class="a-mod" data-ab>
+      <div class="a-lin"><button class="chk" aria-label="Selecionar"></button><span class="arr">⋮⋮</span><span class="capa"></span>
+        <span class="a-nome"><b>Módulo 2 — Diagnóstico</b><span>2 aulas</span></span>
+        <span class="a-col"><span class="mono">Criado em</span><span class="vl">17/11/2026</span></span>
+        <span class="a-col"><span class="mono">Liberado em</span><span class="vl">—</span></span>
+        <span class="a-col"><span class="mono">Assistiram</span><span class="vl">0 alunos</span></span>
+        <span class="selo ras"><i></i>Rascunho</span><button class="bt pq">Editar</button><button class="chev" aria-expanded="false" aria-label="Mostrar aulas"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+      <div class="aulas">
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Primeiro passo</b><em>22 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>2 · Revisão</b><em>15 min</em><button class="bt pq">Editar</button></div>
+        <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rot"><b>MODELO B</b><span>Card maior com capa grande e faixa de números embaixo</span></div>
+  <div class="painel">
+    <div class="cab"><h3>Conteúdo do curso<small>2 MÓDULOS · 5 AULAS</small></h3><button class="bt ouro">+ Adicionar módulo</button></div>
+    <div class="b-mod aberto" data-ab>
+      <div class="b-top"><button class="chk" aria-label="Selecionar"></button><span class="arr">⋮⋮</span><span class="capa"></span>
+        <span class="b-txt"><span class="mono">Módulo 1</span><b>Atria Teste</b><span>Comece por aqui: o que você vai viver neste curso.</span></span>
+        <span class="b-acoes"><span class="selo pub"><i></i>Publicado</span><div><button class="bt pq">Editar</button></div></span></div>
+      <div class="b-nums"><div><span class="mono">Aulas</span><span class="vl" style="display:block">3</span></div><div><span class="mono">Criado em</span><span class="vl" style="display:block">17/11/2026</span></div><div><span class="mono">Liberado em</span><span class="vl" style="display:block">20/11/2026</span></div><div><span class="mono">Assistiram</span><span class="vl" style="display:block">48 alunos</span></div></div>
+      <button class="b-ver" aria-expanded="true">Ocultar aulas <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="aulas">
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Aula 1 — Começando</b><em>18 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-a">ÁUDIO</span><b>2 · Oração da manhã</b><em>9 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-p">E-BOOK</span><b>3 · Guia do módulo</b><em>12 págs.</em><button class="bt pq">Editar</button></div>
+        <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+      </div>
+    </div>
+    <div class="b-mod" data-ab>
+      <div class="b-top"><button class="chk" aria-label="Selecionar"></button><span class="arr">⋮⋮</span><span class="capa"></span>
+        <span class="b-txt"><span class="mono">Módulo 2</span><b>Diagnóstico</b><span>Descubra em que ponto você está.</span></span>
+        <span class="b-acoes"><span class="selo agd"><i></i>Agendado</span><div><button class="bt pq">Editar</button></div></span></div>
+      <div class="b-nums"><div><span class="mono">Aulas</span><span class="vl" style="display:block">2</span></div><div><span class="mono">Criado em</span><span class="vl" style="display:block">17/11/2026</span></div><div><span class="mono">Liberado em</span><span class="vl" style="display:block">27/11/2026</span></div><div><span class="mono">Assistiram</span><span class="vl" style="display:block">0 alunos</span></div></div>
+      <button class="b-ver" aria-expanded="false">Ver 2 aulas <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="aulas">
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Primeiro passo</b><em>22 min</em><button class="bt pq">Editar</button></div>
+        <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>2 · Revisão</b><em>15 min</em><button class="bt pq">Editar</button></div>
+        <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="rot"><b>MODELO C</b><span>Tabela compacta, com seleção em massa</span></div>
+  <div class="painel">
+    <div class="cab"><h3>Conteúdo do curso<small>2 MÓDULOS · 5 AULAS</small></h3><button class="bt ouro">+ Adicionar módulo</button></div>
+    <div class="sel"><button class="chk on" aria-label="Selecionado"></button><span>1 módulo selecionado</span><button class="bt pq">Publicar</button><button class="bt pq">Ocultar</button><button class="bt pq" style="color:#DFA19F">Excluir</button></div>
+    <div class="c-tab">
+      <div class="c-th"><span></span><span></span><span class="mono">Módulo</span><span class="mono c-x">Aulas</span><span class="mono c-x">Criado em</span><span class="mono c-x">Liberado em</span><span class="mono c-x">Assistiram</span><span class="mono c-x">Status</span><span></span><span></span></div>
+      <div class="c-mod aberto" data-ab>
+        <div class="c-tr"><button class="chk on" aria-label="Selecionar"></button><span class="arr">⋮⋮</span><span class="c-nm"><span class="capa"></span><b>Módulo 1 — Atria Teste</b></span><span class="vl c-x">3</span><span class="c-x">17/11/2026</span><span class="c-x">20/11/2026</span><span class="c-x">48</span><span class="c-x"><span class="selo pub"><i></i>Publicado</span></span><button class="bt pq">Editar</button><button class="chev" aria-expanded="true" aria-label="Mostrar aulas"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+        <div class="aulas">
+          <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Aula 1 — Começando</b><em>18 min</em><button class="bt pq">Editar</button></div>
+          <div class="au"><span class="arr">⋮⋮</span><span class="tag t-a">ÁUDIO</span><b>2 · Oração da manhã</b><em>9 min</em><button class="bt pq">Editar</button></div>
+          <div class="au"><span class="arr">⋮⋮</span><span class="tag t-p">E-BOOK</span><b>3 · Guia do módulo</b><em>12 págs.</em><button class="bt pq">Editar</button></div>
+          <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+        </div>
+      </div>
+      <div class="c-mod" data-ab>
+        <div class="c-tr"><button class="chk" aria-label="Selecionar"></button><span class="arr">⋮⋮</span><span class="c-nm"><span class="capa"></span><b>Módulo 2 — Diagnóstico</b></span><span class="vl c-x">2</span><span class="c-x">17/11/2026</span><span class="c-x">—</span><span class="c-x">0</span><span class="c-x"><span class="selo ras"><i></i>Rascunho</span></span><button class="bt pq">Editar</button><button class="chev" aria-expanded="false" aria-label="Mostrar aulas"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button></div>
+        <div class="aulas">
+          <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>1 · Primeiro passo</b><em>22 min</em><button class="bt pq">Editar</button></div>
+          <div class="au"><span class="arr">⋮⋮</span><span class="tag t-v">VÍDEO</span><b>2 · Revisão</b><em>15 min</em><button class="bt pq">Editar</button></div>
+          <button class="bt pq fan" style="align-self:flex-start">+ Adicionar aula</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<script>
+document.addEventListener("click",e=>{const b=e.target.closest(".chev,.b-ver");if(b){const m=b.closest("[data-ab]"),ab=!m.classList.contains("aberto");m.classList.toggle("aberto",ab);b.setAttribute("aria-expanded",ab);if(b.classList.contains("b-ver")){const n=m.querySelectorAll(".au").length;b.firstChild.textContent=ab?"Ocultar aulas ":"Ver "+n+" aulas "}return}
+const c=e.target.closest(".chk");if(c)c.classList.toggle("on")});
+</script>

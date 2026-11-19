@@ -47,3 +47,23 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 - O script só termina com `PRÉVIA OK` depois de conferir a versão e os arquivos.
 - **Produção:** push no branch `claude/new-session-3krqjt` publica o site (Cloudflare, 1,5 a 6+ min). Só com autorização.
 - **Banco:** prévia e produção usam o **mesmo** Supabase. No painel em prévia, salvar é "de teste" (só no navegador). Qualquer SQL, função ou upload vale para todos na hora.
+
+## Novo fluxo "Criar produto" (em desenho, modelo ilustrativo)
+
+> **Estado atual completo e atualizado: `docs/novo-produto/ESPECIFICACAO.md`** (+ `docs/novo-produto/modelo-novo-produto.html`). Ao mudar o modelo, copiar o HTML para lá e atualizar a especificação. As notas abaixo são o histórico.
+
+- Modelo: https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N (arquivo no scratchpad da sessão `novo-produto.html`). Ajustar só no modelo até o dono aprovar; depois prévia.
+- Ordem: desenhar primeiro **Vídeo-aula**; depois **E-book**; depois **Áudio**.
+- Etapas (vídeo-aula): 1 Formato (cards, nada pré-selecionado) → 2 Categoria (cards; nova categoria só existe ao salvar) → 3 Informações (texto em cima do nome, nome do curso, descrição; todos obrigatórios, sem exemplo) → 4 Capa (deitada 16:9 obrigatória + em pé 2:3 opcional) → 5 Conteúdo (vazio com "Criar módulo" centralizado) → 6 Apresentação → 7 Acesso e publicação.
+- Não avança sem preencher; avisa no rodapé. Fechar/abrir de novo zera tudo (até existir "salvar rascunho").
+- Capa: enviar (JPG/PNG/WebP até 15 MB, clicar ou arrastar), janela "Ajustar capa" (arrastar livre, zoom 0,4–3×, Centralizar, Cancelar, Salvar capa; recorta em 1920×1080 ou 1000×1500). Na migração: salvar no depósito do Supabase (no modelo fica só no navegador).
+- Etapas em 2 fases: Fase 1 Criação (1 Formato, 2 Categoria, 3 Informações [texto em cima do nome, nome, descrição, texto do botão], 4 Capa do curso) → botão "Próximo". Fase 2 Montagem (5 Aparência do curso = cria o curso; 6 Conteúdo; 7 Acesso e publicação). "Salvar rascunho" a partir da etapa 3.
+- Aparência: esquerda Informações com "Aa Estilo" (fonte, normal/negrito/itálico, alinhamento, tamanho); direita prévia do card (Celular/Computador).
+- Lista de produtos: filtros funcionais (tipo, busca, categoria, status), ordenar (recentes padrão, antigos, preço, alunas, A–Z), cards/lista.
+- Layout da criação (aprovado, opção C — substituiu a B): painel único com cabeçalho "Curso", barra de progresso "N DE 5 · %" e etapas em pílulas; à direita "Depois: Conteúdo e liberação 🔒" (vira link após criar). Antes era: coluna de etapas à esquerda — "Curso" (1 Formato, 2 Categoria, 3 Informações, 4 Capa do curso, 5 Aparência) e, separado, "Conteúdo e liberação" (Conteúdo, Liberação e publicação) com cadeado até "Criar curso" na Aparência. Rodapé: Voltar · Próximo/Criar curso · Salvar rascunho.
+- Aparência: Informações (Aa Estilo: fonte, normal/negrito/itálico, alinhamento, tamanho, cor com seletor/hex/conta-gotas/recentes, sombra do texto; ↻ padrão, ✕, Aplicar/Cancelar) + Visual (Card, Botão, Barra: cores, borda, cantos, sombra com posição X/Y, desfoque, opacidade; ↻ por barra). Prévia Celular/Tablet/Computador.
+- Fases (botões separados com "?"): "Curso, categoria e aparência" (1 Formato, 2 Categoria, 3 Informações, 4 Capa do curso, 5 Aparência → "Salvar e ir para conteúdo" com carregamento AIŌN; "Salvar rascunho" avisa que falta conteúdo e liberação) e "Conteúdo, aparência e liberação" (cria módulo com as mesmas etapas: Formato, Informações [texto em cima, número, nome, descrição, texto do botão], Capa do módulo, Aparência, Liberação e publicação → "Criar módulo"). Sem "Aa Estilo" na etapa Informações.
+- Ajustar capa: zoom e giro com flechinha de desfazer (volta ao normal), giro com clique segurado + roda ou Shift + roda.
+- Criação de módulo: Informações do módulo (Identificação com "?" e exemplo em imagem, Número, Nome, Descrição, Texto do botão) → Capa do módulo (só 16:9, mesmo ajuste da capa do curso) → Aparência do módulo (igual à do curso + botão "Copiar aparência do curso" com carregamento) → Aulas do módulo → Liberação e publicação → "Criar módulo".
+- Aula (janela): Tipo (vídeo/áudio/e-book) → conteúdo (formatos aceitos explícitos; vídeo MP4/MOV/WEBM 16:9 1920×1080; barra de % durante o envio ao Cloudflare Stream; player para testar; aviso se não for 16:9; ou link YouTube/Cloudflare) → Nome, Descrição → Material complementar (+PDF/+Áudio/+Texto abre o campo; clicar no campo escolhe o arquivo).
+- "?" só aparece com o mouse em cima.

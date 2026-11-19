@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Status no card</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{color-scheme:dark;--fundo:#101113;--sup:#17181B;--borda:#2B2D32;--div:#26272c;--t1:#EEEEF0;--t2:#94979E;--t3:#7F8791;--ouro:#E2C68C;--mono:"IBM Plex Mono",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fundo);color:var(--t1);font:400 14px/1.5 Manrope,system-ui,sans-serif;padding:28px 16px}
+h1{max-width:1180px;margin:0 auto 6px;font-size:20px;font-weight:650}
+.intro{max-width:1180px;margin:0 auto 22px;color:var(--t2);font-size:14px}
+.leg{max-width:1180px;margin:0 auto 26px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.leg div{padding:14px 16px;border:1px solid var(--borda);border-radius:12px;background:var(--sup)}
+.leg b{display:block;font:500 11px var(--mono);letter-spacing:1.4px;color:var(--ouro);margin-bottom:8px}
+.leg p{margin:0;display:flex;flex-wrap:wrap;gap:6px}
+main{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+@media(max-width:860px){main,.leg{grid-template-columns:1fr}}
+.rot b{display:block;font:500 12px var(--mono);letter-spacing:1.4px;color:var(--ouro)}.rot span{display:block;margin:4px 0 14px;font-size:13px;color:var(--t2)}
+.par{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media(max-width:520px){.par{grid-template-columns:1fr}}
+.card{background:var(--sup);border:1px solid var(--borda);border-radius:14px;overflow:hidden;min-width:0}
+.capa{position:relative;height:150px;background:#1d1e22;display:grid;place-items:center;color:var(--t3);font:500 10px var(--mono);letter-spacing:1.4px;border-bottom:1px solid var(--borda)}
+.capa svg{display:block;margin:0 auto 6px;width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.6}
+.tag{position:absolute;left:12px;bottom:10px;font:600 10px var(--mono);letter-spacing:1.2px;color:var(--ouro);background:#2b2618;padding:3px 8px;border-radius:4px}
+.corpo{padding:12px 14px 14px}
+.k{font:500 10px var(--mono);letter-spacing:1.4px;color:var(--t3)}
+.nome{font-size:14px;font-weight:700;text-transform:uppercase;margin:2px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat{font-size:12px;color:var(--t2);margin-bottom:10px}.cat .k{margin-right:6px}
+.nums{display:flex;gap:6px;margin-bottom:10px}.nums span{flex:1;padding:5px 6px;border:1px solid var(--borda);border-radius:7px;font:500 9px var(--mono);letter-spacing:.8px;color:var(--t2);text-align:center;white-space:nowrap}.nums b{color:var(--ouro);font:700 13px Manrope;margin-right:3px}
+.lin{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-top:1px solid var(--div);font-size:12px}.lin .k{display:flex;align-items:center;gap:6px}.lin b{font-weight:650}
+.pe{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
+.bt{border:1px solid #6d5a38;color:var(--t1);background:transparent;border-radius:8px;padding:7px 10px;font:650 12px Manrope;white-space:nowrap}
+/* selos */
+.s{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.s i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.s svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2}
+.pub{background:#173524;color:#7FD49B}.npub{background:#232429;color:#A5ADB8;border-color:#35373D}
+.lib{background:#2b2618;color:#E2C68C}.blo{background:#3a1f1f;color:#E39B98}.ocu{background:#232429;color:#A5ADB8}.age{background:#25223a;color:#B9A8F0}
+/* opção A: dupla junta no rodapé */
+.dupla{display:inline-flex;border:1px solid var(--borda);border-radius:999px;overflow:hidden}.dupla .s{border-radius:0;border:0}.dupla .s+.s{border-left:1px solid var(--borda)}
+/* opção B: faixa própria */
+.faixa{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:8px 10px;margin-top:10px;border:1px solid var(--borda);border-radius:9px;background:#141518}
+.faixa div{display:flex;flex-direction:column;gap:3px}.faixa .k{font-size:9px}
+.nota{margin-top:12px;font-size:13px;color:var(--t2)}.nota b{color:var(--t1)}
+</style></head><body>
+<h1>Dois status no card do produto</h1>
+<p class="intro">Publicação diz se o produto existe para o aluno. Liberação diz se o aluno consegue abrir. Os dois ficam sempre lado a lado.</p>
+<section class="leg">
+  <div><b>PUBLICAÇÃO (2)</b><p><span class="s pub"><i></i>Publicado</span><span class="s npub"><i></i>Não publicado</span></p></div>
+  <div><b>LIBERAÇÃO (4)</b><p>
+    <span class="s lib"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>Liberado</span>
+    <span class="s blo"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Bloqueado</span>
+    <span class="s age"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Agendado</span>
+    <span class="s ocu"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.5 7.6C4.6 8.9 3.2 10.8 2.5 12c1 1.5 4.5 6 9.5 6 1.5 0 2.9-.4 4.1-1"/></svg>Oculto</span></p></div>
+</section>
+<main>
+<section>
+  <div class="rot"><b>OPÇÃO A — DUPLA NO RODAPÉ</b><span>Os dois selos colados num único bloco, no lugar onde hoje fica "Não publicado".</span></div>
+  <div class="par">
+    <article class="card"><div class="capa"><div><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>CAPA DO PRODUTO</div><span class="tag">VÍDEO</span></div>
+      <div class="corpo"><div class="k">NOME</div><div class="nome">Rodrigo Cleonir de Azevedo Moro</div><div class="cat"><span class="k">CATEGORIA</span>Mentoria</div>
+      <div class="nums"><span><b>1</b>MÓDULOS</span><span><b>1</b>AULAS</span><span><b>0</b>ALUNOS</span></div>
+      <div class="lin"><span class="k">CRIADO EM</span><b>18/11/2026</b></div><div class="lin"><span class="k">LIBERADO EM</span><b>—</b></div>
+      <div class="pe"><span class="dupla"><span class="s npub"><i></i>Não publicado</span><span class="s blo"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Bloqueado</span></span><button class="bt">Continuar →</button></div></div></article>
+    <article class="card"><div class="capa"><div><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>CAPA DO PRODUTO</div><span class="tag">VÍDEO</span></div>
+      <div class="corpo"><div class="k">NOME</div><div class="nome">Orações para dormir</div><div class="cat"><span class="k">CATEGORIA</span>Presentes</div>
+      <div class="nums"><span><b>4</b>MÓDULOS</span><span><b>28</b>AULAS</span><span><b>247</b>ALUNOS</span></div>
+      <div class="lin"><span class="k">CRIADO EM</span><b>28/10/2026</b></div><div class="lin"><span class="k">LIBERADO EM</span><b>29/10/2026</b></div>
+      <div class="pe"><span class="dupla"><span class="s pub"><i></i>Publicado</span><span class="s lib"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/></svg>Liberado</span></span><button class="bt">Abrir →</button></div></div></article>
+  </div>
+  <p class="nota"><b>Vantagem:</b> não aumenta o card. <b>Cuidado:</b> o botão fica mais curto ("Continuar →", "Abrir →").</p>
+</section>
+<section>
+  <div class="rot"><b>OPÇÃO B — FAIXA DE STATUS</b><span>Uma faixa própria acima do botão, com "Publicação" e "Liberação" escritos em cima de cada selo.</span></div>
+  <div class="par">
+    <article class="card"><div class="capa"><div><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>CAPA DO PRODUTO</div><span class="tag">VÍDEO</span></div>
+      <div class="corpo"><div class="k">NOME</div><div class="nome">Rodrigo Cleonir de Azevedo Moro</div><div class="cat"><span class="k">CATEGORIA</span>Mentoria</div>
+      <div class="nums"><span><b>1</b>MÓDULOS</span><span><b>1</b>AULAS</span><span><b>0</b>ALUNOS</span></div>
+      <div class="lin"><span class="k">CRIADO EM</span><b>18/11/2026</b></div><div class="lin"><span class="k">LIBERADO EM</span><b>—</b></div>
+      <div class="faixa"><div><span class="k">PUBLICAÇÃO</span><span class="s npub"><i></i>Não publicado</span></div><div><span class="k">LIBERAÇÃO</span><span class="s age"><svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Agendado</span></div></div>
+      <div class="pe" style="justify-content:flex-end"><button class="bt">Continuar edição →</button></div></div></article>
+    <article class="card"><div class="capa"><div><svg viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5.5-5.5L5 19.5"/></svg>CAPA DO PRODUTO</div><span class="tag">VÍDEO</span></div>
+      <div class="corpo"><div class="k">NOME</div><div class="nome">Orações para dormir</div><div class="cat"><span class="k">CATEGORIA</span>Presentes</div>
+      <div class="nums"><span><b>4</b>MÓDULOS</span><span><b>28</b>AULAS</span><span><b>247</b>ALUNOS</span></div>
+      <div class="lin"><span class="k">CRIADO EM</span><b>28/10/2026</b></div><div class="lin"><span class="k">LIBERADO EM</span><b>29/10/2026</b></div>
+      <div class="faixa"><div><span class="k">PUBLICAÇÃO</span><span class="s pub"><i></i>Publicado</span></div><div><span class="k">LIBERAÇÃO</span><span class="s ocu"><svg viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 8.5 4.5 9.5 6-.5.8-1.6 2.3-3.2 3.6M6.5 7.6C4.6 8.9 3.2 10.8 2.5 12c1 1.5 4.5 6 9.5 6 1.5 0 2.9-.4 4.1-1"/></svg>Oculto</span></div></div>
+      <div class="pe" style="justify-content:flex-end"><button class="bt">Abrir produto →</button></div></div></article>
+  </div>
+  <p class="nota"><b>Vantagem:</b> fica claro o que é cada selo e o botão mantém o texto inteiro. <b>Cuidado:</b> o card fica cerca de 40 px mais alto.</p>
+</section>
+</main>
+</body></html>
