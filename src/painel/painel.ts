@@ -21,6 +21,7 @@ import { editarCapa } from "./editorCapa";
 import { notifDe, popNotif, INTERVALOS, SINO, type NotifCfg } from "@/data/notif";
 import { chaveMenu, comModulosDaBase, cssDaTela, cssVisual, cssFundo, ehChaveModulo, FONTES_APP, limparEstilo, partesMenu, type Visual, PARTES_AULA, PARTES_INICIO, PARTES_PERFIL, PARTES_NOTIF, type Estilo, type ParteTela } from "@/data/estilo";
 import { abrirSeletorEstilo } from "./seletor-estilo";
+import { npSincronizar, type NpAcao } from "./np/ponte";
 import { NOVIDADES } from "./novidades";
 import { abrirListaFontes, abrirQuadroCor, fecharFlutuante, hexParaHsv, hsvParaHex } from "./flutuante";
 import { TEMAS, FONTES_TITULO, FONTES_TEXTO, coresDe, carregarFonte, carregarFontes, type Aparencia, type Cores } from "@/data/aparencia";
@@ -1013,6 +1014,7 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => { const t = rolagem.get(x.dataset.rolagem!); if (t) x.scrollTop = t; });
     ajustarCfgAltura();
     if (cfgId) { const cf = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"); if (cf && cf.id === cfgId && cfgTop) cf.scrollTop = cfgTop; if (janTop && window.scrollY !== janTop) window.scrollTo(0, janTop); }
+    npSincronizar(!!eu && !carregando && (ui.tab === "cursos" || ui.tab === "layout"), ui.tab === "layout" ? "categorias" : "lista", npDados, npAgir);
     posicionarCel(); mandarPreviaCfg(); codigosDeCor(document); pintarPassosCurso(); pintarPassosCat(); pintarPassosMod(); pintarPubMod();
     aplicarAjudas(app);
     const alvo = ui.focar || fid; const veioDeFora = !!ui.focar; ui.focar = null;
@@ -1097,7 +1099,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: telaCategorias, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: telaCursos, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: telaAlunas, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -1145,7 +1147,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha">${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -3615,6 +3617,76 @@ export function montar(app: HTMLElement) {
         <div class="np-pe">${menuHtml}<button type="button" class="np-abrir" data-a="abrir-curso" data-id="${c.id}" data-v="${c.rascunho ? "config" : "visao"}">${c.rascunho ? "Continuar edição" : "Abrir produto"} <span aria-hidden="true">→</span></button></div>
       </div>
     </article>`;
+  }
+  /** Produtos e Categorias: o modelo aprovado embutido (np/ponte.ts). */
+  const npTela = () => { void telaCursos; void telaCategorias; return `<section class="tela ativa npx-tela"><div id="npAlvo" class="np-alvo"></div></section>`; };
+  function npDados(): Record<string, unknown> {
+    const agora = Date.now();
+    const libSt = (vis: boolean, bloq: boolean, libera: string) => !vis ? "Oculto" : bloq ? "Bloqueado" : libera && new Date(libera).getTime() > agora ? "Agendado" : "Liberado";
+    const catsDe = (c: Curso) => S.catItens.filter((x) => x.tipo === "curso" && x.item === c.id).map((x) => catAba(x.cat)).filter((x): x is CatAba => !!x);
+    const stAula = (rasc: boolean, pub: boolean, bloq: boolean, libera: string) => rasc ? "nao" : !pub ? "ocu" : bloq ? "blo" : libera && new Date(libera).getTime() > agora ? "agend" : "pub";
+    const mods: Record<string, unknown[]> = {};
+    const prods = S.cursos.map((c) => {
+      const aulas = c.modulos.flatMap((m) => m.aulas), seg = aulas.reduce((t, a) => t + (a.duracao || 0), 0);
+      const lib = aulas.filter((a) => !a.rascunho && a.pub && a.acesso !== "bloqueada" && !(a.libera && new Date(a.libera).getTime() > agora)).length;
+      const u = ULT_LIB.get(c.id), al = alunasDoCurso(c);
+      mods[c.nome] = c.modulos.map((m) => ({ id: m.id, rot: m.rot, num: String(m.num), nome: m.nome, desc: m.intro, bt: m.botao || "Ver aulas", capa: capaSite(m.capaH || m.capa) || null, capaOrig: null, criado: m.criado ? br(diaDe(m.criado)) : "", st: stAula(m.rascunho, m.pub, !m.ativo, m.libera), lib: m.libera ? br(diaDe(m.libera)) : (m.publicadoEm ? br(diaDe(m.publicadoEm)) : ""), libCfg: m.liberaModo ? { tipo: m.liberaModo === "dias" ? "dias" : m.liberaModo === "data" ? "data" : "imediata", dias: m.liberaDias ?? 0, data: m.libera ? diaDe(m.libera) : "", hora: "09:00" } : null,
+        aulas: m.aulas.map((a) => ({ id: a.id, t: a.tipo === "pdf" ? "ebook" : a.tipo, nome: a.nome, desc: a.texto || "", mats: a.extras.map((x) => ({ t: x.tipo, nome: x.nome || x.tipo })), url: "", link: a.video || "", prog: 0, dim: "", st: stAula(a.rascunho, a.pub, a.acesso === "bloqueada", a.libera), dur: Math.round((a.duracao || 0) / 60), lib: a.libera ? br(diaDe(a.libera)) : (a.liberadaEm ? br(diaDe(a.liberadaEm)) : ""), capa: capaSite(a.capa) || "" })) }));
+      return { id: c.id, tipo: npTipo(c.tipo), nome: c.nome, cat: catsDe(c)[0]?.nome || "", mod: c.modulos.length, aul: aulas.length, alu: al.length, cri: c.criado ? br(diaDe(c.criado)) : "—", lib: c.publicadoEm ? br(diaDe(c.publicadoEm)) : "—", st: c.rascunho ? "Não publicado" : !c.visivel ? "Oculto" : c.bloq ? "Bloqueado" : "Publicado", preco: 0,
+        pub: c.rascunho ? "Não publicado" : "Publicado", libSt: libSt(c.visivel, c.bloq, c.libera), capaUrl: capaSite(c.capa) || "", hrs: String(Math.floor(seg / 3600)).padStart(2, "0") + "h " + String(Math.round((seg % 3600) / 60)).padStart(2, "0") + "min", libQ: lib,
+        ult: u ? (u.mod != null ? "Módulo " + u.mod + " – " : "") + (u.num != null ? "Aula " + u.num : u.titulo) : "", eng: al.length ? Math.round(al.reduce((t, x) => t + x.pct, 0) / al.length) : 0, desc: c.descricao || "" };
+    });
+    const cats = S.catsAba.map((x) => {
+      const cs = S.catItens.filter((i) => i.cat === x.id && i.tipo === "curso").map((i) => curso(i.item)).filter((c): c is Curso => !!c);
+      const n: Record<string, number> = {}; cs.forEach((c) => { const t = c.tipo === "ebook" ? "ebook" : c.tipo === "audio" ? "audio" : "video"; n[t] = (n[t] || 0) + 1; });
+      return { n: x.nome, q: cs.length, meta: { id: x.id, fmt: Object.keys(n).sort((a, b) => n[b] - n[a])[0] || "video", ic: "men", d: x.descricao, rot: x.cardRotulo, bt: x.botao, pub: x.rascunho ? "Não publicado" : "Publicado", lib: libSt(x.pub, x.bloq, x.libera), capa: capaSite(x.capa) || "", cri: x.criado ? br(diaDe(x.criado)) : "" } };
+    });
+    const alunos: Record<string, unknown[]> = {}, coms: Record<string, unknown[]> = {}, eng: Record<string, unknown> = {}, top: Record<string, unknown> = {};
+    const dias = (iso: string) => iso ? Math.max(0, diasEntre(diaDe(iso), hoje())) : 999;
+    const mmss = (sg: number) => Math.floor(sg / 60) + ":" + String(Math.round(sg % 60)).padStart(2, "0");
+    const hmin = (sg: number) => Math.floor(sg / 3600) + "h " + String(Math.round((sg % 3600) / 60)).padStart(2, "0") + "min";
+    for (const c of S.cursos) {
+      const todasA = c.modulos.flatMap((m) => m.aulas.map((a) => ({ a, m })));
+      const al = alunasDoCurso(c).map((x) => { const feitas = todasA.filter((y) => x.a.feitas.has(y.a.id)), mo = c.modulos.filter((m) => m.aulas.length && m.aulas.every((a) => x.a.feitas.has(a.id))).length, sg = feitas.reduce((t, y) => t + (y.a.duracao || 0), 0);
+        return { nome: x.a.nome, email: x.a.email || x.a.login || "", cod: x.a.codigo || "", st: x.a.bloqueada ? "bloq" : vencida(x.a) ? "desat" : "ativos", prog: x.pct, ult: dias(x.a.ultimoAcessoEm || x.a.ultimoAcesso), cad: dias(x.incluida), aul: feitas.length, mod: mo, min: Math.round(sg / 60), pts: feitas.length * 10 + mo * 50, com: x.a.nComentarios || 0, sg }; });
+      alunos[c.nome] = al;
+      const nomeAu = (a: Aula, m: Modulo) => m.rot + " " + m.num + " · " + a.rot + " " + a.num + " — " + a.nome;
+      const cms = comentariosDoCurso(c);
+      coms[c.nome] = cms.map((k) => { const y = todasA.find((z) => z.a.id === k.aula), d = new Date(k.criado || k.quando); const z = (n: number) => String(n).padStart(2, "0");
+        return { id: k.id, n: k.autora, dias: dias(k.criado || k.quando), dt: isNaN(+d) ? "" : z(d.getDate()) + "/" + z(d.getMonth() + 1) + ", " + z(d.getHours()) + ":" + z(d.getMinutes()), ts: +d || 0, t: k.texto, m: y ? y.m.rot + " " + y.m.num : "", a: y ? y.a.rot + " " + y.a.num : "", st: k.estado === "moderar" ? "pend" : k.estado === "oculto" ? "ocu" : k.estado === "removido" ? "apag" : k.resposta ? "resp" : "pub", resp: k.resposta || "" }; });
+      const n = al.length, ativos = al.filter((x) => x.ult <= 7).length, pouco = al.filter((x) => x.ult > 7 && x.ult <= 30).length;
+      const engM = n ? Math.round(al.reduce((t, x) => t + x.prog, 0) / n) : 0, totAul = al.reduce((t, x) => t + x.aul, 0), totSg = al.reduce((t, x) => t + x.sg, 0), conc = n ? Math.round((al.filter((x) => x.prog === 100).length / n) * 100) : 0;
+      const mods6 = c.modulos.slice(0, 6), mPct = mods6.map((m) => { const ids = m.aulas.map((a) => a.id); const lst = alunasDoCurso(c); return lst.length && ids.length ? Math.round((lst.reduce((t, x) => t + ids.filter((i) => x.a.feitas.has(i)).length / ids.length, 0) / lst.length) * 100) : 0; });
+      const pv = { e: [engM, engM], x: ["", ""], k: [engM + "%", "0%", totAul.toLocaleString("pt-BR"), "0%", hmin(totSg), "0%", conc + "%", "0%"] };
+      eng[c.nome] = { per: { "7": pv, "30": pv, "90": pv }, nA: n, ativos, pouco, mods: mods6.map((m) => m.rot + " " + m.num + " – " + m.nome), mPct, ind: [(n ? Math.round((al.filter((x) => x.aul > 0).length / n) * 100) : 0) + "%", (n ? (totAul / n).toFixed(1).replace(".", ",") : "0"), hmin(n ? totSg / n : 0), conc + "%", String(ativos)] };
+      const vist = todasA.map((y) => ({ y, v: alunasDoCurso(c).filter((x) => x.a.feitas.has(y.a.id)).length })).filter((x) => x.v).sort((a2, b2) => b2.v - a2.v).slice(0, 3);
+      const porA = new Map<string, number>(); cms.forEach((k) => porA.set(k.aula, (porA.get(k.aula) || 0) + 1));
+      const tc = todasA.filter((y) => porA.get(y.a.id)).sort((a2, b2) => (porA.get(b2.a.id) || 0) - (porA.get(a2.a.id) || 0)).slice(0, 3);
+      const meses = [...new Set(todasA.map((y) => (y.a.criado || "").slice(0, 7)).filter(Boolean))].sort();
+      const ev = meses.map((mm) => todasA.filter((y) => (y.a.criado || "").slice(0, 7) <= mm).length);
+      const u = ULT_LIB.get(c.id), agora2 = Date.now(), ag = todasA.filter((y) => y.a.libera && new Date(y.a.libera).getTime() > agora2).sort((a2, b2) => a2.a.libera.localeCompare(b2.a.libera))[0];
+      top[c.nome] = { vistas: vist.map((x) => [nomeAu(x.y.a, x.y.m), x.v, mmss(x.y.a.duracao || 0)]), coms: tc.map((y) => [nomeAu(y.a, y.m), porA.get(y.a.id) || 0, mmss(y.a.duracao || 0)]), ev,
+        ult: u ? { mod: u.mod != null ? "Módulo " + u.mod : c.nome, aula: (u.num != null ? "Aula " + u.num + " – " : "") + u.titulo, quando: dataHoraCurta(u.quando) } : null,
+        ag: ag ? { mod: ag.m.rot + " " + ag.m.num + " – " + ag.m.nome, aula: ag.a.rot + " " + ag.a.num + " – " + ag.a.nome, quando: dataHoraCurta(ag.a.libera) } : null };
+    }
+    return { prods, cats, mods, alunos, coms, eng, top };
+  }
+  function npAgir(m: NpAcao) {
+    const el = document.body;
+    const v = String(m.v || ""), id = String(m.id || "");
+    const est = v === "Liberado" ? "ativo" : v === "Bloqueado" ? "bloqueado" : v === "Oculto" ? "desativado" : "";
+    if (m.tipo === "curso-status") {
+      if (m.campo === "pub") acao("curso-pub", { id, v: v === "Publicado" ? "1" : "0" }, el, el);
+      else if (est) acao("estado-set", { v: "curso:" + id + ":" + est }, el, el);
+      else if (v === "Agendado") { ui.curso = id; ui.cursoAba = "config"; ui.tab = "curso"; render(); }
+      return;
+    }
+    if (m.tipo === "cat-status") {
+      const x = catAba(id); if (!x) return;
+      if (m.campo === "pub") { if ((v === "Publicado") === x.rascunho) acao("catx-pub-toggle", { id }, el, el); }
+      else if (est) acao("estado-set", { v: "catx:" + id + ":" + est }, el, el);
+      else if (v === "Agendado") acao("catx-editar", { id }, el, el);
+    }
   }
   const npTipo = (t: string) => t === "ebook" ? "E-BOOK" : t === "audio" ? "ÁUDIO" : "VÍDEO";
 

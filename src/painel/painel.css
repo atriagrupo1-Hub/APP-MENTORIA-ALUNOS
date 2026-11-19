@@ -6432,3 +6432,6 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .ppx .ctp-vz p { margin: 0 0 16px; font-size: 14px; color: var(--t2); }
 @media (max-width: 900px) { .ppx .ctp-res { grid-template-columns: minmax(0, 1fr); } .ppx .ctp-card { max-width: 420px; } }
 @media (max-width: 640px) { .ppx .ctp-nums, .ppx .ctp-datas { grid-template-columns: 1fr; } .ppx .ctp-hd { padding: 14px 16px; } .ppx .ctp-res { padding: 16px; } }
+
+/* Produtos e Categorias: área do modelo embutido (np/ponte.ts) */
+.np-alvo { min-height: calc(100vh - 150px); }
