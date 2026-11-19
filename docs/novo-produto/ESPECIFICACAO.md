@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 303,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 304,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -364,3 +364,8 @@ Pedido do dono: **tudo que for feito no modelo ilustrativo a partir daqui** (a p
 - v301 — aba Alunos (4 ilustrativos) · + Aluno: Aluno existente | Novo aluno · 5 etapas (Dados, Acesso, Conteúdos liberados com card grande, Forma de liberação, Resumo + mensagem para copiar) · Forma de liberação: Tudo agora / 1 aula a cada X dias (regra do Módulo 1 para todos ou por módulo) / Manual · cronograma "Como o aluno vai receber".
 - v302 — escolhida a opção, a outra some (fica só a escolhida + Trocar).
 - v303 — Forma de liberação: "Tudo liberado agora" libera só o que já está liberado para os alunos. Embaixo: card do curso (capa, formato, nome, Publicação e Liberação atuais, "N aulas entram agora · N agendadas · N ficam de fora") e Módulos e aulas separados (cada módulo abre/fecha, com o status dele e das aulas: ✓ Liberada no cadastro · Libera em [data] · Fica de fora). "Uma aula a cada X dias" e "Manual" também só usam as aulas já liberadas.
+- v304 — Forma de liberação com os **cards de módulo e aula** (mesmo modelo da lista de conteúdo: capa, "Módulo N — NOME", status para todos e "liberado em", "Aulas do módulo (n)" com as aulas, tipo e duração) e a **data deste aluno** em cada módulo e cada aula.
+  - Tudo liberado agora: datas fixas (hoje). Uma aula a cada X dias: 1º módulo **Imediato** ou **Depois de X dias do cadastro**; as datas saem pela regra (primeira aula no início, regra do 1º módulo em todos, ou um intervalo por módulo) e **qualquer data de módulo ou aula pode ser editada** (↺ volta ao automático; as seguintes seguem a partir da editada). Manual: você escolhe o dia de cada módulo e de cada aula; sem data = você libera depois; "Liberar a primeira aula agora".
+  - Aula agendada para todos mostra a data de todos; aula não publicada/oculta/bloqueada: "Fica de fora". Trocar a opção limpa as datas editadas.
+  - O cronograma "Como o aluno vai receber" saiu desta etapa e foi para o **Resumo**.
+  - A janela de Adicionar/Cadastrar aluno **continua aberta no mesmo ponto** depois de recarregar a página.

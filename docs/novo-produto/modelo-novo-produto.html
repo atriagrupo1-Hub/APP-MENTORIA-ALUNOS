@@ -2259,7 +2259,26 @@ filtrar();
 .cx-cron{display:flex;flex-direction:column;border:1px solid var(--div);border-radius:10px;overflow:hidden}
 .cx-cron div{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;font-size:12.5px;border-top:1px solid var(--div)}.cx-cron div:first-child{border-top:0}
 .cx-cron div span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cx-cron div b{flex:none;font-weight:600;color:var(--ouro);font-variant-numeric:tabular-nums}.cx-cron div.man b{color:var(--t2)}
-.cx-cron-t{font-size:12px;font-weight:650;color:var(--t2)}
+.cx-cron-t{display:block;margin:16px 0 8px;font-size:12px;font-weight:650;color:var(--t2)}
+.cx-sec{margin-top:14px}
+.cx-mlist{display:flex;flex-direction:column;gap:10px}
+.cx-mc{border:1px solid #6d5a38;border-radius:14px;background:#141518;padding:12px 14px}
+.cx-mh,.cx-ar{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:14px}
+.cx-ar{grid-template-columns:auto minmax(0,1fr) auto auto;padding:10px 12px;border:1px solid var(--borda);border-radius:12px;background:#17181B;margin-top:8px}
+.cx-ar.vz{display:block;color:var(--t2);font-size:12.5px}
+.cx-th{position:relative;display:grid;place-items:center;flex:none;width:92px;aspect-ratio:16/9;border-radius:8px;border:1px solid #4B402B;background:radial-gradient(circle at 50% 40%,#3a3122,#141518 80%) center/cover;color:#E2C68C}
+.cx-th.a{width:72px}.cx-th svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;filter:drop-shadow(0 1px 2px #000)}
+.cx-mt{min-width:0;display:flex;flex-direction:column;gap:5px}.cx-mt b{font-size:14.5px;font-weight:650;line-height:1.35;overflow-wrap:anywhere}.cx-ar .cx-mt b{font-size:13.5px}.cx-mt small{font-size:12px;color:var(--t2)}
+.cx-mst{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.cx-mst small{font-size:11.5px;color:var(--t2)}.cx-ar .cx-mst{flex-direction:column;align-items:flex-end;gap:4px}
+.cx-q{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:170px}.cx-q em{font-style:normal;font-size:11px;color:var(--t2)}.cx-q b{font-size:14px;font-weight:700}.cx-q small{font-size:11px;color:var(--t2)}
+.cx-q.ok b{color:#7FD49B}.cx-q.ag b{color:var(--ouro)}.cx-q.fora{opacity:.65}
+.cx-qin{display:flex;align-items:center;gap:6px}.cx-dt{height:36px!important;width:150px!important;padding:0 10px;font-size:12.5px!important;color-scheme:dark}
+.cx-desf{width:30px;height:30px;border:1px solid var(--bcampo);border-radius:7px;background:var(--campo);color:var(--ouro);font-size:14px}
+.cx-m1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:10px;background:#1d1a14;border:1px dashed #6d5a38;font-size:12.5px;font-weight:600}
+.cx-seg.mini{display:inline-grid;grid-template-columns:auto auto}.cx-seg.mini button{height:32px;padding:0 12px;font-size:12px}
+.cx-ma{margin-top:10px}.cx-ma summary{display:inline-flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font-size:13px;font-weight:650}.cx-ma summary::-webkit-details-marker{display:none}
+.cx-ma summary svg{width:16px;height:16px;fill:none;stroke:var(--t2);stroke-width:1.6}.cx-ma summary:after{content:"⌃";transform:rotate(180deg);color:var(--t2);font-size:12px}.cx-ma[open] summary:after{transform:none}
+@media(max-width:760px){.cx-mh{grid-template-columns:auto minmax(0,1fr)}.cx-mh .cx-q{grid-column:1/-1}.cx-ar{grid-template-columns:auto minmax(0,1fr)}.cx-ar .cx-mst{align-items:flex-start}.cx-ar .cx-mst,.cx-ar .cx-q{grid-column:1/-1}.cx-th{width:72px}.cx-th.a{width:56px}}
 .cx-lc{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:center;padding:12px;border:1px solid var(--borda);border-radius:12px;background:#141518}
 .cx-lc b{display:block;font-size:16px;font-weight:700}.cx-lc small{display:block;margin-top:6px;font-size:12px;color:var(--t2)}.cx-lc small b{display:inline;font-size:12px}.cx-lc .ok{color:#7FD49B}
 .cx-lc-st{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;margin-top:8px;font-size:11.5px;color:var(--t2)}
@@ -2335,16 +2354,30 @@ function abrirCad(curso){const hj=isoHoje();cx={curso:curso||"",modo:curso?"":"n
   let m=document.getElementById("cxModal");if(!m){m=document.createElement("div");m.id="cxModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharCx()}
 const cxPassos=()=>cx.modo==="existente"?[["esc","Escolher aluno"],["lib","Forma de liberação"],["res","Resumo"]]:[["dados","Dados do aluno"],["acesso","Acesso"],["cont","Conteúdos liberados"],["lib","Forma de liberação"],["res","Resumo"]];
 const cxLoginAuto=()=>{const a=tiraAc(cx.pn.trim().split(/\s+/)[0]||"").toLowerCase().replace(/[^a-z0-9]/g,""),b=tiraAc(cx.sn.trim()).toLowerCase().replace(/[^a-z]/g,"");return a?a+(b?"."+b[0]:""):""};
-function libDe(nome){return cx.lib[nome]||(cx.lib[nome]={tipo:"",dias:7,ini:isoHoje(),prim:true,rep:true,porMod:{}})}
+function libDe(nome){return cx.lib[nome]||(cx.lib[nome]={tipo:"",dias:7,prim:true,rep:true,porMod:{},m1:"imed",m1n:7,datas:{}})}
 function modsCurso(nome){const d=PRODS.find(x=>x.nome===nome);return d?modsDe(d):[]}
-// Situação de cada aula para o aluno: entra (já liberada), agendada (entra na data) ou fica de fora
+// Situação de cada aula para o aluno: entra (já liberada), agendada (entra na data de todos) ou fica de fora
 function sitAula(m,a){const sm=stDe(m),sa=stDe(a);if(sm==="pub"&&sa==="pub")return "entra";if((sm==="agend"||sm==="pub")&&(sa==="agend"||sa==="pub")&&(sm==="agend"||sa==="agend"))return "agend";return "fora"}
-function cronDe(nome){const L=libDe(nome),out=[];let prev="",k=0;modsCurso(nome).forEach((m,mi)=>{const X=Math.max(1,+(L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias))||1);(m.aulas||[]).filter(a=>sitAula(m,a)==="entra").forEach((a,ai)=>{let q;
-  if(L.tipo==="imediata")q=isoHoje();else if(L.tipo==="manual")q=k===0&&L.prim?isoHoje():"";else q=k===0?(L.prim?L.ini:isoMais(L.ini,X)):isoMais(prev,X);
-  prev=q||prev;out.push({m:idMod(m),a:a.nome||"Aula "+(ai+1),q});k++})});return out}
-function libResumo(nome){const L=libDe(nome),C=cronDe(nome),n=C.length;if(L.tipo==="imediata")return "Tudo o que já está liberado, no cadastro ("+n+(n===1?" aula":" aulas")+")";
-  if(L.tipo==="manual")return (L.prim?"Primeira aula liberada agora; ":"")+"as outras você libera manualmente";
-  if(L.tipo==="dias"){const ult=C.filter(x=>x.q).pop();return "1 aula a cada "+(L.rep?L.dias+" dias em todos os módulos":"X dias por módulo")+", a partir de "+dataBR(L.ini)+(ult?" · última aula em "+dataBR(ult.q):"")}return "—"}
+// Datas deste aluno: automáticas pela regra escolhida; o que for editado à mão (módulo ou aula) vale por cima
+function planoDe(nome){const L=libDe(nome),cad=cx.ent||isoHoje(),D=L.datas||(L.datas={}),tem=k=>Object.prototype.hasOwnProperty.call(D,k);let prev="";
+  return modsCurso(nome).map((m,mi)=>{const X=Math.max(1,+(L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias))||1);let dm="";
+    if(L.tipo==="imediata")dm=cad;
+    else if(L.tipo==="dias")dm=tem(mi)?D[mi]:(mi===0?(L.m1==="dias"?isoMais(cad,+L.m1n||0):cad):(prev?isoMais(prev,X):cad));
+    else if(L.tipo==="manual")dm=tem(mi)?D[mi]:(mi===0&&L.prim?cad:"");
+    let pri=true;
+    const aulas=(m.aulas||[]).map((a,ai)=>{const sit=sitAula(m,a),k=mi+":"+ai;let q="";
+      if(sit==="entra"){
+        if(L.tipo==="imediata")q=cad;
+        else if(L.tipo==="dias"){q=tem(k)?D[k]:(pri?(mi>0||L.prim?dm:isoMais(dm,X)):isoMais(prev,X));if(q)prev=q}
+        else if(L.tipo==="manual")q=tem(k)?D[k]:(pri&&mi===0&&L.prim?cad:(tem(mi)?D[mi]:""));
+        pri=false}
+      return {a,ai,sit,q}});
+    return {m,mi,dm,X,aulas}})}
+function cronDe(nome){const out=[];planoDe(nome).forEach(p=>p.aulas.forEach(x=>{if(x.sit==="entra")out.push({m:idMod(p.m),a:x.a.nome||"Aula "+(x.ai+1),q:x.q});else if(x.sit==="agend")out.push({m:idMod(p.m),a:x.a.nome||"Aula "+(x.ai+1),q:"",ag:x.a.lib||p.m.lib||""})}));return out}
+function libResumo(nome){const L=libDe(nome),C=cronDe(nome).filter(x=>!x.ag),n=C.length,com=C.filter(x=>x.q).length;
+  if(L.tipo==="imediata")return "Tudo o que já está liberado, no cadastro ("+n+(n===1?" aula":" aulas")+")";
+  if(L.tipo==="manual")return "Manual: "+com+(com===1?" aula com data":" aulas com data")+(n-com?", "+(n-com)+" você libera depois":"");
+  if(L.tipo==="dias"){const ult=C.filter(x=>x.q).sort((a,b)=>a.q.localeCompare(b.q)).pop();return "1 aula a cada "+(L.rep?L.dias+" dias":"X dias por módulo")+", começando "+(L.m1==="dias"?(+L.m1n||0)+" dias após o cadastro":"no cadastro")+(ult?" · última aula em "+dataBR(ult.q):"")}return "—"}
 function cxMsg(){const pn=cx.modo==="existente"?"":cx.pn.trim(),cs=[...cx.cursos];
   if(cx.modo==="existente")return "Olá! O curso "+(cx.curso||cs.join(", "))+" foi liberado para você no aplicativo AIŌN.\n\nEntre com o seu login e código de sempre: "+cx.link+"\n\n"+cs.map(c=>"Como você vai receber: "+libResumo(c).toLowerCase()+".").join("\n");
   return "Olá, "+(pn||"nome")+"! Aqui abaixo está o seu acesso ao aplicativo.\n\nLink do aplicativo: "+cx.link+"\nLogin: "+(cx.login||cxLoginAuto()||"login")+"\nCódigo: "+(cx.cod||"····")+"\n\n"+(cs.length?"Curso liberado: "+cs.join(", ")+"\n"+cs.map(c=>"Como você vai receber: "+libResumo(c).toLowerCase()+".").join("\n"):"")+(cx.apar?"\n\nVídeo de como instalar no "+(cx.apar==="iphone"?"iPhone":"Android")+": (link do vídeo)":"")}
@@ -2353,36 +2386,44 @@ function cxConferir(k){
   if(k==="acesso"){const lg=(cx.login||cxLoginAuto());if(ALX.some(a=>a.login===lg))return["login","Já existe um aluno com o login "+lg+"."];if(!/^\d{4}$/.test(cx.cod))return["cod","O código precisa ter 4 números."];if(!cx.ent||!cx.val)return["val","Preencha o cadastro e o acesso até."];if(cx.val<cx.ent)return["val","O acesso até precisa ser depois do cadastro."];if(!cx.apar)return["apar","Escolha o celular do aluno: Android ou iPhone."]}
   if(k==="cont"&&!cx.cursos.size)return["cont","Marque pelo menos um curso."];
   if(k==="esc"&&!cx.sel.size)return["esc","Marque pelo menos um aluno."];
-  if(k==="lib"){for(const c of cx.cursos){const L=libDe(c);if(!L.tipo)return["lib","Escolha a forma de liberação de "+c+"."];if(L.tipo==="dias"&&!(+L.dias>=1&&+L.dias<=365))return["lib","Os dias precisam ficar entre 1 e 365."];if(L.tipo==="dias"&&!L.ini)return["lib","Escolha o dia de início."]}}
+  if(k==="lib"){for(const c of cx.cursos){const L=libDe(c);if(!L.tipo)return["lib","Escolha a forma de liberação de "+c+"."];if(L.tipo==="dias"&&!(+L.dias>=1&&+L.dias<=365))return["lib","Os dias precisam ficar entre 1 e 365."];if(L.tipo==="dias"&&L.m1==="dias"&&!(+L.m1n>=0&&+L.m1n<=365))return["lib","Os dias após o cadastro precisam ficar entre 0 e 365."]}}
   return null}
-function cxIr(i){const P=cxPassos();for(let k=0;k<i;k++){const e=cxConferir(P[k][0]);if(e){cx.passo=k;cx.erro=e[1];cx.campo=e[0];desenharCx();return}cx.feitos.add(P[k][0])}cx.passo=i;cx.erro="";cx.campo="";desenharCx();const j=document.querySelector("#cxModal .aj-jan");if(j)j.scrollTop=0}
+function cxIr(i){const P=cxPassos();for(let k=0;k<i;k++){const e=cxConferir(P[k][0]);if(e){cx.passo=k;cx.erro=e[1];cx.campo=e[0];desenharCx();return}cx.feitos.add(P[k][0])}cx.passo=i;cx.erro="";cx.campo="";cx.yIni=0;desenharCx();cxGuardar()}
 function cxCampo(id,rot,html,obr,dica){return '<label class="cx-c'+(cx.campo===id?" erro":"")+'"><span>'+rot+(obr?' <i>*</i>':'')+'</span>'+html+(dica?'<small>'+dica+'</small>':'')+'</label>'}
 const cxIn=(id,v,extra)=>'<input class="campo" data-cxf="'+id+'" value="'+esc(v)+'" autocomplete="off" '+(extra||"")+'>';
 function cxCursoCard(nome,fixo){const d=PRODS.find(x=>x.nome===nome)||{tipo:"VÍDEO",mod:0,aul:0},ms=modsCurso(nome),na=ms.reduce((t,m)=>t+(m.aulas||[]).length,0),on=cx.cursos.has(nome);
   return '<button type="button" class="cx-curso'+(on?" on":"")+(fixo?" fixo um":"")+'" '+(fixo?"":'data-cxcurso="'+esc(nome)+'"')+'><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo)+'</em></span><span><b>'+esc(nome)+'</b><small>'+(ms.length||d.mod||0)+(ms.length===1?" módulo":" módulos")+' · '+(na||d.aul||0)+((na||d.aul)===1?" aula":" aulas")+(d.cat?' · '+esc(d.cat):'')+'</small>'+(fixo?'<small>Liberado para o aluno ao '+(cx.modo==="existente"?"adicionar":"cadastrar")+'.</small>':'')+'</span><span class="cx-chk">'+(on?svgAx("chk"):"")+'</span></button>'}
-function cxCron(nome){const C=cronDe(nome);if(!C.length)return '<p class="cx-dica">Este curso ainda não tem aulas.</p>';const mostra=C.length>7?[...C.slice(0,5),null,C[C.length-1]]:C;
-  return '<span class="cx-cron-t">Como o aluno vai receber</span><div class="cx-cron">'+mostra.map(x=>x?'<div class="'+(x.q?"":"man")+'"><span>'+esc(x.m+" · "+x.a)+'</span><b>'+(x.q?(x.q===isoHoje()?"Hoje":dataBR(x.q)):"Manual")+'</b></div>':'<div class="man"><span>… mais '+(C.length-6)+' aulas</span><b></b></div>').join("")+'</div>'}
-// "Tudo liberado agora": mostra o curso e, por módulo, o que entra, o que está agendado e o que fica de fora
-function cxLiberado(nome){const d=PRODS.find(x=>x.nome===nome)||{tipo:"",pub:"",libSt:""},ms=modsCurso(nome);let ent=0,ag=0,fo=0;
-  const kPub=d.pub==="Não publicado"?"nao":"pub",kLib={Liberado:"pub",Bloqueado:"blo",Agendado:"agend",Oculto:"ocu"}[d.libSt]||"pub";
-  const pill=(k,t)=>'<span class="mc-st mc-'+k+'"><i></i>'+t+'</span>';
-  const mods=ms.map((m,mi)=>{const as=(m.aulas||[]).map((a,ai)=>{const s=sitAula(m,a);s==="entra"?ent++:s==="agend"?ag++:fo++;
-      return '<div class="cx-la '+s+'"><span>'+esc((a.rot||"Aula")+" "+(ai+1)+" · "+(a.nome||""))+'</span>'+seloC(a)+'<b>'+(s==="entra"?"✓ Liberada no cadastro":s==="agend"?"Libera em "+esc(a.lib||m.lib||"data marcada"):"Fica de fora")+'</b></div>'}).join("");
-    const nE=(m.aulas||[]).filter(a=>sitAula(m,a)==="entra").length;
-    return '<details class="cx-lm"'+(mi<2?" open":"")+'><summary><span class="cx-lm-n">'+esc(idMod(m))+'</span><b>'+esc(m.nome||"")+'</b>'+seloC(m)+'<em>'+nE+' de '+(m.aulas||[]).length+(nE===1?" aula entra":" aulas entram")+'</em></summary><div class="cx-lm-as">'+(as||'<div class="cx-la fora"><span>Sem aulas</span></div>')+'</div></details>'}).join("");
-  return '<div class="cx-lc"><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo||"CURSO")+'</em></span><div><b>'+esc(nome)+'</b><span class="cx-lc-st"><span>Publicação</span>'+pill(kPub,kPub==="pub"?"Publicado":"Não publicado")+'<span>Liberação</span>'+pill(kLib,d.libSt||"Liberado")+'</span><small><b class="ok">'+ent+(ent===1?" aula entra":" aulas entram")+' agora</b>'+(ag?' · '+ag+(ag===1?" agendada":" agendadas"):'')+(fo?' · '+fo+(fo===1?" fica de fora":" ficam de fora")+' (não publicada, oculta ou bloqueada)':'')+'</small></div></div>'+
-   '<span class="cx-cron-t">Módulos e aulas</span><div class="cx-lms">'+(mods||'<p class="cx-dica">Este curso ainda não tem módulos.</p>')+'</div>'}
-function cxLib(nome){const L=libDe(nome),ms=modsCurso(nome),d=PRODS.find(x=>x.nome===nome)||{tipo:""};
-  const op=(v,t,ds)=>'<button type="button" class="cx-op'+(L.tipo===v?" on":"")+'" data-cxlib="'+esc(nome)+'" data-cxv="'+v+'"><b>'+t+'</b><em>'+ds+'</em></button>';
+function cxCron(nome){const C=cronDe(nome);if(!C.length)return '<p class="cx-dica">Este curso ainda não tem aulas liberadas.</p>';const mostra=C.length>9?[...C.slice(0,7),null,C[C.length-1]]:C;
+  return '<div class="cx-cron">'+mostra.map(x=>x?'<div class="'+(x.q?"":"man")+'"><span>'+esc(x.m+" · "+x.a)+'</span><b>'+(x.ag?"Agendada: "+esc(x.ag):x.q?(x.q===isoHoje()?"Hoje":dataBR(x.q)):"Você libera depois")+'</b></div>':'<div class="man"><span>… mais '+(C.length-8)+' aulas</span><b></b></div>').join("")+'</div>'}
+// Card do curso: capa, formato, nome, status atual e quantas aulas entram
+function cxLiberado(nome){const d=PRODS.find(x=>x.nome===nome)||{tipo:"",pub:"",libSt:""};let ent=0,ag=0,fo=0;modsCurso(nome).forEach(m=>(m.aulas||[]).forEach(a=>{const s=sitAula(m,a);s==="entra"?ent++:s==="agend"?ag++:fo++}));
+  const kPub=d.pub==="Não publicado"?"nao":"pub",kLib={Liberado:"pub",Bloqueado:"blo",Agendado:"agend",Oculto:"ocu"}[d.libSt]||"pub",pill=(k,t)=>'<span class="mc-st mc-'+k+'"><i></i>'+t+'</span>';
+  return '<div class="cx-lc"><span class="cx-capa"'+(d.capaUrl?' style="background-image:url(\''+esc(d.capaUrl)+'\')"':'')+'><em>'+esc(d.tipo||"CURSO")+'</em></span><div><b>'+esc(nome)+'</b><span class="cx-lc-st"><span>Publicação</span>'+pill(kPub,kPub==="pub"?"Publicado":"Não publicado")+'<span>Liberação</span>'+pill(kLib,d.libSt||"Liberado")+'</span><small><b class="ok">'+ent+(ent===1?" aula liberada":" aulas liberadas")+' para os alunos</b>'+(ag?' · '+ag+(ag===1?" agendada":" agendadas"):'')+(fo?' · '+fo+(fo===1?" fica de fora":" ficam de fora")+' (não publicada, oculta ou bloqueada)':'')+'</small></div></div>'}
+const TIPO_TX={video:"Vídeo",audio:"Áudio",ebook:"E-book",pdf:"PDF"};
+// Módulos e aulas no mesmo modelo da lista de conteúdo, com a data deste aluno
+function cxModsLib(nome){const L=libDe(nome),P=planoDe(nome),ed=L.tipo==="dias"||L.tipo==="manual",c=esc(nome);
+  const th=(src,cl)=>'<span class="cx-th '+cl+'"'+(typeof src==="string"&&src?' style="background-image:url(\''+esc(src)+'\')"':'')+'>'+(cl==="a"?'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M10.5 9v6l4.5-3z"/></svg>':'')+'</span>';
+  const quando=(q,key,sit,glob)=>{if(sit==="fora")return '<span class="cx-q fora"><em>Este aluno</em><b>Fica de fora</b></span>';if(sit==="agend")return '<span class="cx-q ag"><em>Agendado para todos</em><b>'+esc(glob||"Data marcada")+'</b></span>';
+    if(!ed)return '<span class="cx-q ok"><em>Este aluno</em><b>'+(q===isoHoje()?"Hoje":dataBR(q))+'</b></span>';
+    const mx=Object.prototype.hasOwnProperty.call(L.datas,key);
+    return '<span class="cx-q"><em>Este aluno'+(mx?' · editado':'')+'</em><span class="cx-qin"><input class="campo cx-dt" type="date" data-cxd="'+key+'" data-c="'+c+'" value="'+esc(q||"")+'" aria-label="Data de liberação para este aluno">'+(mx?'<button type="button" class="cx-desf" data-cxdesf="'+key+'" data-c="'+c+'" title="Voltar ao automático" aria-label="Voltar ao automático">↺</button>':'')+'</span>'+(!q?'<small>Você libera depois</small>':'')+'</span>'};
+  return '<div class="cx-mlist">'+P.map(p=>{const m=p.m,n=(m.aulas||[]).length,sm=stDe(m),sitM=sm==="pub"?"entra":sm==="agend"?"agend":"fora";
+    const m1=L.tipo==="dias"&&p.mi===0?'<div class="cx-m1"><span>Liberar o '+esc(idMod(m))+'</span><div class="cx-seg mini"><button type="button" class="'+(L.m1!=="dias"?"on":"")+'" data-cxm1="imed" data-c="'+c+'">Imediato</button><button type="button" class="'+(L.m1==="dias"?"on":"")+'" data-cxm1="dias" data-c="'+c+'">Depois de X dias do cadastro</button></div>'+(L.m1==="dias"?'<span class="cx-frase"><input class="campo" type="number" min="0" max="365" data-cxl="m1n" data-c="'+c+'" value="'+esc(String(L.m1n))+'"> dias após o cadastro</span>':'')+'</div>':
+      L.tipo==="dias"&&!L.rep?'<div class="cx-m1"><span>Neste módulo: 1 aula a cada</span><span class="cx-frase"><input class="campo" type="number" min="1" max="365" data-cxl="mod" data-mi="'+p.mi+'" data-c="'+c+'" value="'+esc(String(L.porMod[p.mi]!=null?L.porMod[p.mi]:L.dias))+'"> dias</span></div>':'';
+    return '<div class="cx-mc"><div class="cx-mh">'+th(m.capa,"m")+'<div class="cx-mt"><b>'+esc(idMod(m)+" — "+(m.nome||""))+'</b><span class="cx-mst">'+seloC(m)+'<small>Para todos: '+(m.lib?"liberado em "+esc(m.lib):sm==="agend"?"agendado":"—")+'</small></span></div>'+quando(p.dm,String(p.mi),sitM,m.lib)+'</div>'+m1+
+      '<details class="cx-ma"'+(L.tipo==="manual"||p.mi===0?" open":"")+'><summary><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M10.5 9v6l4.5-3z"/></svg>Aulas do módulo ('+n+')</summary>'+(p.aulas.map(x=>'<div class="cx-ar">'+th(x.a.capa,"a")+'<div class="cx-mt"><b>'+esc((x.a.rot||"Aula")+" "+(x.ai+1)+" — "+(x.a.nome||""))+'</b><small>'+(TIPO_TX[x.a.t]||"Vídeo")+(x.a.dur?' · '+x.a.dur+' min':'')+'</small></div><span class="cx-mst">'+seloC(x.a)+'<small>Para todos: '+(x.a.lib?esc(x.a.lib):"—")+'</small></span>'+quando(x.q,p.mi+":"+x.ai,x.sit,x.a.lib)+'</div>').join("")||'<div class="cx-ar vz">Sem aulas</div>')+'</details></div>'}).join("")+'</div>'}
+function cxLib(nome){const L=libDe(nome),c=esc(nome);
+  const op=(v,t,ds)=>'<button type="button" class="cx-op'+(L.tipo===v?" on":"")+'" data-cxlib="'+c+'" data-cxv="'+v+'"><b>'+t+'</b><em>'+ds+'</em></button>';
   let cfg="";
-  if(L.tipo==="imediata")cfg='<p class="cx-dica" style="margin:0">O aluno recebe no dia do cadastro tudo o que já está liberado para os alunos neste curso. O que está agendado chega na data; o que não está publicado fica de fora.</p>'+cxLiberado(nome);
-  if(L.tipo==="dias")cfg='<div class="cx-frase">Liberar 1 aula a cada <input class="campo" type="number" min="1" max="365" data-cxl="dias" data-c="'+esc(nome)+'" value="'+esc(String(L.dias))+'"> dias, começando em <input class="campo" type="date" data-cxl="ini" data-c="'+esc(nome)+'" value="'+esc(L.ini)+'"></div>'+
-    '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+esc(nome)+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula no dia do início<small>Desmarcado: a primeira aula chega depois do primeiro intervalo.</small></span></label>'+
-    '<label class="cx-tg"><input type="checkbox" data-cxl="rep" data-c="'+esc(nome)+'"'+(L.rep?" checked":"")+'><span>Usar a regra do '+esc(ms[0]?idMod(ms[0]):"Módulo 1")+' em todos os módulos<small>Configure no primeiro módulo e a mesma regra vale para o curso inteiro. Desmarque para mudar módulo por módulo.</small></span></label>'+
-    (ms.length?'<div class="cx-mods">'+ms.map((m,mi)=>'<div class="cx-mod'+(L.rep&&mi>0?" rep":"")+'"><span><b>'+esc(idMod(m)+" – "+m.nome)+'</b><small>'+(m.aulas||[]).length+((m.aulas||[]).length===1?" aula":" aulas")+'</small></span><span class="cx-frase">a cada <input class="campo" type="number" min="1" max="365" '+(mi===0?'data-cxl="dias"':'data-cxl="mod" data-mi="'+mi+'"')+' data-c="'+esc(nome)+'" value="'+esc(String(mi===0?L.dias:L.rep?L.dias:(L.porMod[mi]!=null?L.porMod[mi]:L.dias)))+'"'+(L.rep&&mi>0?" disabled":"")+'> dias</span></div>').join("")+'</div>':'')+cxCron(nome);
-  if(L.tipo==="manual")cfg='<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+esc(nome)+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula agora<small>As outras ficam fechadas: você libera uma a uma na ficha do aluno, quando quiser.</small></span></label>'+cxCron(nome);
-  return '<div class="cx-fl"><div class="cx-flt"><span>'+esc(d.tipo||"CURSO")+'</span>'+esc(nome)+'</div><div class="cx-ops">'+op("imediata","Tudo liberado agora","O aluno recebe agora tudo o que já está liberado no curso.")+op("dias","Uma aula a cada X dias","As aulas chegam uma por vez, no intervalo que você escolher.")+op("manual","Manual","Você libera as aulas quando quiser.")+'</div>'+(cfg?'<div class="cx-cfg">'+cfg+'</div>':'')+'</div>'}
-function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden||!cx)return;const P=cxPassos(),i=Math.min(cx.passo,P.length-1),k=P[i][0],ultimo=i===P.length-1,ctx=!!cx.curso;
+  if(L.tipo==="imediata")cfg='<p class="cx-dica" style="margin:0">O aluno recebe no dia do cadastro tudo o que já está liberado para os alunos. O que está agendado chega na data; o que não está publicado fica de fora.</p>';
+  if(L.tipo==="dias")cfg='<div class="cx-frase">Liberar 1 aula a cada <input class="campo" type="number" min="1" max="365" data-cxl="dias" data-c="'+c+'" value="'+esc(String(L.dias))+'"> dias</div>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula no dia do início<small>Desmarcado: a primeira aula chega depois do primeiro intervalo.</small></span></label>'+
+    '<label class="cx-tg"><input type="checkbox" data-cxl="rep" data-c="'+c+'"'+(L.rep?" checked":"")+'><span>Usar a regra do primeiro módulo em todos os módulos<small>As datas de cada módulo e de cada aula aparecem abaixo e dá para editar qualquer uma.</small></span></label>';
+  if(L.tipo==="manual")cfg='<label class="cx-tg"><input type="checkbox" data-cxl="prim" data-c="'+c+'"'+(L.prim?" checked":"")+'><span>Liberar a primeira aula agora<small>Escolha abaixo o dia de cada módulo e de cada aula para este aluno. Sem data, você libera depois.</small></span></label>';
+  return '<div class="cx-fl"><div class="cx-ops">'+op("imediata","Tudo liberado agora","O aluno recebe agora tudo o que já está liberado no curso.")+op("dias","Uma aula a cada X dias","As aulas chegam uma por vez; dá para editar a data de cada uma.")+op("manual","Manual","Você escolhe o dia de cada módulo e de cada aula.")+'</div>'+(cfg?'<div class="cx-cfg">'+cfg+'</div>':'')+
+    '<div class="cx-sec">'+cxLiberado(nome)+(L.tipo?'<span class="cx-cron-t">Módulos e aulas</span>'+cxModsLib(nome):'')+'</div></div>'}
+function cxGuardar(){try{if(!cx){sessionStorage.removeItem("aion-modelo-cx");localStorage.removeItem("aion-modelo-cx");return}const j=document.querySelector("#cxModal .aj-jan"),o=JSON.stringify({...cx,cursos:[...cx.cursos],sel:[...cx.sel],feitos:[...cx.feitos],foco:"",y:j?j.scrollTop:0,t:Date.now()});sessionStorage.setItem("aion-modelo-cx",o);localStorage.setItem("aion-modelo-cx",o)}catch(e){}}
+function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden||!cx)return;const jv=m.querySelector(".aj-jan"),yv=cx.yIni!=null?cx.yIni:jv?jv.scrollTop:0;cx.yIni=null;const P=cxPassos(),i=Math.min(cx.passo,P.length-1),k=P[i][0],ultimo=i===P.length-1,ctx=!!cx.curso;
   let corpo="";
   if(ctx&&!cx.modo)corpo='<p class="cx-dica">Aluno existente: escolha na lista de quem já tem cadastro. Novo aluno: preencha os dados e o acesso; o curso já vem marcado.</p>';
   else if(k==="dados")corpo='<div class="cx-g">'+cxCampo("pn","Nome",cxIn("pn",cx.pn,'id="cxPn"'),1)+cxCampo("sn","Sobrenome",cxIn("sn",cx.sn),1)+cxCampo("cel","Celular (WhatsApp)",cxIn("cel",celFmt(cx.cel),'inputmode="numeric" placeholder="(11) 98765-4321"'),1,"Usado para enviar o acesso.")+cxCampo("email","E-mail",cxIn("email",cx.email,'type="email" placeholder="opcional"'),0)+'</div>';
@@ -2398,7 +2439,7 @@ function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden
   else if(k==="res"){const ed=(p,t)=>'<button type="button" data-cxpasso="'+P.findIndex(x=>x[0]===p)+'">'+(t||"Editar")+'</button>';
     const al=cx.modo==="existente"?'<div class="cx-rb"><h4>Alunos '+ed("esc","Trocar")+'</h4><dl>'+[...cx.sel].map(id=>{const a=ALX.find(x=>x.id===id)||{};return '<dt>'+esc(a.login||"")+'</dt><dd>'+esc(a.nome||"")+'</dd>'}).join("")+'</dl></div>'
       :'<div class="cx-rb"><h4>Dados do aluno '+ed("dados")+'</h4><dl><dt>Nome</dt><dd>'+esc((cx.pn+" "+cx.sn).trim())+'</dd><dt>Celular</dt><dd>'+esc(celFmt(cx.cel))+'</dd><dt>E-mail</dt><dd>'+esc(cx.email||"—")+'</dd></dl></div><div class="cx-rb"><h4>Acesso '+ed("acesso")+'</h4><dl><dt>Login</dt><dd>'+esc(cx.login||cxLoginAuto())+'</dd><dt>Código</dt><dd>'+esc(cx.cod)+'</dd><dt>Cadastro</dt><dd>'+dataBR(cx.ent)+'</dd><dt>Acesso até</dt><dd>'+dataBR(cx.val)+'</dd><dt>Celular</dt><dd>'+(cx.apar==="iphone"?"iPhone":"Android")+'</dd></dl></div>';
-    corpo='<div class="cx-res">'+al+'<div class="cx-rb"><h4>Conteúdos liberados '+(ctx?"":ed("cont"))+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>Curso</dt><dd>'+esc(c)+'</dd>').join("")+'</dl></div><div class="cx-rb"><h4>Forma de liberação '+ed("lib")+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>'+esc(c)+'</dt><dd>'+esc(libResumo(c))+'</dd>').join("")+'</dl></div>'+
+    corpo='<div class="cx-res">'+al+'<div class="cx-rb"><h4>Conteúdos liberados '+(ctx?"":ed("cont"))+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>Curso</dt><dd>'+esc(c)+'</dd>').join("")+'</dl></div><div class="cx-rb"><h4>Forma de liberação '+ed("lib")+'</h4><dl>'+[...cx.cursos].map(c=>'<dt>'+esc(c)+'</dt><dd>'+esc(libResumo(c))+'</dd>').join("")+'</dl></div>'+[...cx.cursos].map(c=>'<div class="cx-rb cx-msg"><h4>Como o aluno vai receber · '+esc(c)+' '+ed("lib","Editar datas")+'</h4>'+cxCron(c)+'</div>').join("")+
       '<div class="cx-rb cx-msg"><h4>Mensagem de acesso</h4><div class="cx-msgt" id="cxMsg">'+esc(cxMsg())+'</div><button type="button" class="bt ouro cx-copiar" data-cxcopiar="1">Copiar mensagem</button></div></div>'}
   const titulo=ctx?"Adicionar aluno":"Cadastrar aluno",sub=ctx?esc(cx.curso)+" · "+(cx.modo?"preencha por partes. Nada é salvo até clicar em "+(cx.modo==="existente"?"Adicionar":"Cadastrar")+".":"escolha se é um aluno que já tem cadastro ou um aluno novo."):"Preencha por partes. Nada é salvo até clicar em Cadastrar.";
   const seg=ctx&&cx.modo?'<div class="cx-modo um"><span class="on">'+(cx.modo==="novo"?"Novo aluno":"Aluno existente")+'</span><button type="button" class="cx-trocar" data-cxtrocar="1">Trocar</button></div>':ctx?'<div class="cx-modo"><button type="button" class="'+(cx.modo==="existente"?"on":"")+'" data-cxmodo="existente">Aluno existente</button><button type="button" class="'+(cx.modo==="novo"?"on":"")+'" data-cxmodo="novo">Novo aluno</button></div>':"";
@@ -2407,6 +2448,7 @@ function desenharCx(){const m=document.getElementById("cxModal");if(!m||m.hidden
   m.innerHTML='<div class="aj-jan cx-jan" role="dialog" aria-modal="true" aria-labelledby="cxH"><div class="cx-cab"><div><h3 id="cxH">'+titulo+'</h3><p>'+sub+'</p></div><button type="button" class="est-icb" data-cxfechar="1" aria-label="Fechar"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="cx-corpo">'+seg+abas+corpo+'</div>'+
    '<div class="cx-pe">'+(cx.modo&&i>0?'<button type="button" class="bt" data-cxvoltar="1">← Voltar</button>':'')+'<button type="button" class="bt" data-cxfechar="1">Cancelar</button><span style="flex:1"></span>'+(cx.erro?'<span class="aviso-esc" role="alert">'+esc(cx.erro)+'</span>':'')+
    (cx.modo?(ultimo?'<button type="button" class="bt ouro" data-cxfim="1">'+fim+'</button>':'<button type="button" class="bt ouro" data-cxprox="1">Próximo: '+P[i+1][1]+' →</button>'):'')+'</div></div>';
+  const jn=m.querySelector(".aj-jan");if(jn)jn.scrollTop=yv;cxGuardar();
   if(cx.foco){const f=m.querySelector(cx.foco);if(f){f.focus();try{const n=f.value.length;f.setSelectionRange&&f.type!=="date"&&f.type!=="number"&&f.setSelectionRange(n,n)}catch(e){}}cx.foco=""}}
 function cxFinal(){const P=cxPassos();for(let j=0;j<P.length-1;j++){const e=cxConferir(P[j][0]);if(e){cx.passo=j;cx.erro=e[1];cx.campo=e[0];desenharCx();return}}
   const libs=Object.fromEntries([...cx.cursos].map(c=>[c,{...libDe(c)}])),cs=[...cx.cursos];let nomes=[];
@@ -2414,7 +2456,7 @@ function cxFinal(){const P=cxPassos();for(let j=0;j<P.length-1;j++){const e=cxCo
   else{const nome=(cx.pn.trim()+" "+cx.sn.trim()).trim(),a={id:"a"+Date.now(),nome,login:cx.login||cxLoginAuto(),email:cx.email,cel:cx.cel.replace(/\D/g,""),cod:cx.cod,ent:cx.ent,val:cx.val,apar:cx.apar,st:"ativos",cursos:cs,lib:libs};ALX.unshift(a);nomes.push({nome,email:a.email||a.login})}
   salvarAlx();
   if(cx.curso){const S=alunosAdd[cx.curso]||(alunosAdd[cx.curso]=new Set());nomes.forEach(x=>S.add(x.email));const LA=alunosDe[cx.curso];if(LA){let n=LA.reduce((m,a)=>Math.max(m,a.i),0);nomes.forEach(x=>{n++;LA.unshift({i:n,nome:x.nome,email:x.email,cod:"AL"+(1000+n),st:"ativos",prog:0,ult:0,cad:0})})}}
-  const curso=cx.curso,qtos=nomes.length;document.getElementById("cxModal").hidden=true;cx=null;
+  const curso=cx.curso,qtos=nomes.length;document.getElementById("cxModal").hidden=true;cx=null;cxGuardar();
   if(vista==="produto"){const y=scrollY;desenharProduto();scrollTo(0,y)}if(vista==="alunos")desenharAlx();if(typeof filtrar==="function")filtrar();
   toast(curso?(qtos===1?nomes[0].nome+" foi adicionado ao "+curso+".":qtos+" alunos adicionados ao "+curso+"."):nomes[0].nome+" foi cadastrado.",true)}
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
@@ -2425,28 +2467,33 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
     if(k==="rem"){perguntarApagar("Remover "+a.nome+"? A ficha e as liberações saem do aplicativo.",()=>{ALX=ALX.filter(x=>x.id!==id);salvarAlx();desenharAlx();toast("Aluno removido.")});return}
     if(k==="reat"){a.st="ativos";a.val=isoMais(isoHoje(),0,12)}else a.st=k;salvarAlx();desenharAlx();toast(a.nome+": "+AX_ST[a.st][0].toLowerCase()+".");return}
   if(!cx||!b.closest("#cxModal"))return;
-  if(b.dataset.cxfechar){document.getElementById("cxModal").hidden=true;cx=null;return}
+  if(b.dataset.cxfechar){document.getElementById("cxModal").hidden=true;cx=null;cxGuardar();return}
   if(b.dataset.cxtrocar){cx.modo="";cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();desenharCx();return}
   if(b.dataset.cxmodo){if(cx.modo!==b.dataset.cxmodo){cx.modo=b.dataset.cxmodo;cx.passo=0;cx.erro="";cx.campo="";cx.feitos.clear();cx.foco=cx.modo==="novo"?"#cxPn":"#cxBusca"}desenharCx();return}
   if(b.dataset.cxpasso!==undefined){cxIr(+b.dataset.cxpasso);return}
   if(b.dataset.cxprox){cxIr(cx.passo+1);return}
-  if(b.dataset.cxvoltar){cx.passo=Math.max(0,cx.passo-1);cx.erro="";cx.campo="";desenharCx();return}
+  if(b.dataset.cxvoltar){cx.passo=Math.max(0,cx.passo-1);cx.erro="";cx.campo="";cx.yIni=0;desenharCx();return}
   if(b.dataset.cxfim){cxFinal();return}
   if(b.dataset.cxcod){cx.cod=String(1000+Math.floor(Math.random()*9000));desenharCx();return}
   if(b.dataset.cxval){cx.val=isoMais(cx.ent,0,+b.dataset.cxval);cx.campo="";cx.erro="";desenharCx();return}
   if(b.dataset.cxapar){cx.apar=b.dataset.cxapar;if(cx.campo==="apar"){cx.campo="";cx.erro=""}desenharCx();return}
   if(b.dataset.cxcurso){const n=b.dataset.cxcurso;cx.cursos.has(n)?cx.cursos.delete(n):cx.cursos.add(n);if(cx.campo==="cont"){cx.campo="";cx.erro=""}desenharCx();return}
   if(b.dataset.cxsel){const id=b.dataset.cxsel;cx.sel.has(id)?cx.sel.delete(id):cx.sel.add(id);if(cx.campo==="esc"){cx.campo="";cx.erro=""}desenharCx();return}
-  if(b.dataset.cxlib){libDe(b.dataset.cxlib).tipo=b.dataset.cxv;if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
+  if(b.dataset.cxdesf!==undefined){delete libDe(b.dataset.c).datas[b.dataset.cxdesf];desenharCx();return}
+  if(b.dataset.cxm1){libDe(b.dataset.c).m1=b.dataset.cxm1;desenharCx();return}
+  if(b.dataset.cxlib){const L=libDe(b.dataset.cxlib);if(L.tipo!==b.dataset.cxv)L.datas={};L.tipo=b.dataset.cxv;if(cx.campo==="lib"){cx.campo="";cx.erro=""}desenharCx();return}
   if(b.dataset.cxcopiar){const t=cxMsg();const ok=()=>toast("Mensagem copiada. É só colar no WhatsApp do aluno.",true);(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t).then(ok):Promise.reject()).catch(()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");ok()}catch(x){toast("Selecione a mensagem e copie.")}ta.remove()});return}});
 document.addEventListener("input",e=>{if(!cx)return;const t=e.target;
   if(t.id==="cxBusca"){cx.q=t.value;cx.foco="#cxBusca";desenharCx();return}
   const f=t.dataset&&t.dataset.cxf;if(f){let v=t.value;if(f==="cel"){v=v.replace(/\D/g,"").slice(0,11);t.value=celFmt(v)}if(f==="cod"){v=v.replace(/\D/g,"").slice(0,4);t.value=v}if(f==="login"){cx.loginMx=true;v=v.toLowerCase().replace(/\s+/g,"")}cx[f]=v;if(!cx.loginMx&&(f==="pn"||f==="sn"))cx.login="";if(cx.campo===f){cx.campo="";cx.erro="";const c=t.closest(".cx-c");if(c)c.classList.remove("erro");const av=document.querySelector("#cxModal .cx-pe .aviso-esc");if(av)av.remove()}return}
   const l=t.dataset&&t.dataset.cxl;if(l){const L=libDe(t.dataset.c);if(l==="prim"||l==="rep")return;if(l==="mod")L.porMod[t.dataset.mi]=t.value;else L[l]=t.value;clearTimeout(window._cxT);window._cxT=setTimeout(()=>{const sel='[data-cxl="'+l+'"][data-c="'+CSS.escape(t.dataset.c)+'"]'+(l==="mod"?'[data-mi="'+t.dataset.mi+'"]':'');cx.foco=sel;desenharCx()},450)}});
-document.addEventListener("change",e=>{if(!cx)return;const t=e.target,l=t.dataset&&t.dataset.cxl;if(l==="prim"||l==="rep"){libDe(t.dataset.c)[l]=t.checked;desenharCx()}if(t.dataset&&(t.dataset.cxf==="ent")){cx.ent=t.value;desenharCx()}});
+document.addEventListener("change",e=>{if(!cx)return;const t=e.target;if(t.dataset&&t.dataset.cxd!==undefined){libDe(t.dataset.c).datas[t.dataset.cxd]=t.value;desenharCx();return}const l=t.dataset&&t.dataset.cxl;if(l==="prim"||l==="rep"){libDe(t.dataset.c)[l]=t.checked;desenharCx()}if(t.dataset&&(t.dataset.cxf==="ent")){cx.ent=t.value;desenharCx()}});
 
 // ---------- ligações com o resto do modelo ----------
 views.alunos="Alunos";
 {const ir0=ir;ir=function(v){ir0(v);if(v==="alunos"){trilhaProd.hidden=true;desenharAlx()}document.querySelectorAll(".lado .li").forEach(x=>x.classList.toggle("on",x.dataset.ir===(v==="alunos"?"alunos":v==="categorias"?"categorias":"lista")))}}
 if(vista==="alunos")ir("alunos");
+(()=>{let o=null;try{o=JSON.parse(sessionStorage.getItem("aion-modelo-cx")||localStorage.getItem("aion-modelo-cx")||"null")}catch(e){}if(!o||!o.t||Date.now()-o.t>864e5)return;
+  if(o.curso&&!PRODS.some(x=>x.nome===o.curso))return;cx={...o,cursos:new Set(o.cursos||[]),sel:new Set(o.sel||[]),feitos:new Set(o.feitos||[]),yIni:o.y||0};
+  let m=document.getElementById("cxModal");if(!m){m=document.createElement("div");m.id="cxModal";m.className="aj-fundo"}document.body.appendChild(m);m.hidden=false;desenharCx()})();
 </script>
