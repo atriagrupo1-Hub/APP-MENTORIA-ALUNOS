@@ -275,6 +275,8 @@ const LINKS = { geral: "", aluna: new Map<string, string>() };
 const VIDEOS_ACESSO: { android?: string; iphone?: string } = {};
 /** Celular de cada aluna (0129): escolhe o vídeo de instalação que vai junto com o acesso. */
 const APARELHO = new Map<string, "android" | "iphone">();
+/** Equipe: nome e foto para responder comentários (0136), por pessoa. */
+const PERFIL_COM = new Map<string, { nome: string; foto: string }>();
 /** Última aula liberada de cada produto (0130). */
 type UltLib = { aula: string; titulo: string; mod: number | null; num: number | null; quando: string; alunas: number; avisadas: number };
 const ULT_LIB = new Map<string, UltLib>();
@@ -7133,16 +7135,23 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <div class="eqn-ccab"><span class="eqn-cic">${ICP[pp]}</span><div><h3>${nomeP}</h3><p>As opções desta função vão ser escolhidas em breve.</p></div></div>
         </section>`;
       const fotoAtual = e ? S.fotos[e.id] : "";
+      const pc = e ? PERFIL_COM.get(e.id) : undefined, fotoCom = pc?.foto || "";
+      const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
+      const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Comentários"]];
       corpo = `
-      <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}">
-        ${cabModal(nova ? IC_PF.add : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha os dados do novo colaborador para dar acesso ao painel." : "Atualize as informações do membro da equipe.")}
+      <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
+        ${cabModal(nova ? IC_PF.add : IC_EQ.lapis, nova ? "Adicionar membro" : "Editar " + e!.nome, nova ? "Preencha por partes. Nada é salvo até clicar em Salvar." : "Atualize as informações do membro da equipe.")}
+        <div class="cad-abas eqn-abas" role="tablist">${abasEq.map(([k, t], n) => `<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
+        <div class="eqn-pn" data-eqn-p="perfil">
+          <div class="eq-campo"><span>Foto do perfil <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece aqui dentro da administração.")}</span>
+            <div class="eqn-foto"><span class="eqn-circ" id="eqnFoto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span>
+              <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2MB.</small></div></div></div>
+          <label class="eq-campo"><span>Seu nome oficial ${ajuda("É como a pessoa acessa e se identifica aqui dentro da administração.")}</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>Acesso bloqueado.</small>` : ""}</label>
+        </div>
+        <div class="eqn-pn" data-eqn-p="acesso" hidden>
         <div class="eqn-corpo">
           <div class="eqn-esq">
-            <div class="eq-campo"><span>Foto do perfil <i class="eqn-opc">(opcional)</i></span>
-              <div class="eqn-foto"><span class="eqn-circ" id="eqnFoto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span>
-                <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2MB.</small></div></div></div>
-            <label class="eq-campo"><span>Nome completo</span><input class="campo" name="nome" value="${h(e?.nome ?? "")}" placeholder="Ex.: Joana Silva" autocomplete="off" required ${semNome ? "readonly" : ""} />${semNome ? `<small>Acesso bloqueado.</small>` : ""}</label>
-            <label class="eq-campo"><span>Login</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar no painel.</small></label>
+            <label class="eq-campo"><span>Seu nome para login ${ajuda("É o que a pessoa digita, junto com o código de acesso, para entrar na administração.")}</span><input class="campo" name="login" value="${h(e?.login ?? "")}" placeholder="Ex.: joana" autocomplete="off" required ${semNome ? "readonly" : ""} /><small>Será o que a pessoa digita para entrar no painel.</small></label>
             ${semCodigo ? "" : `<div class="eq-campo"><span>Código de acesso</span><span class="eqn-cod"><input class="campo" name="codigo" inputmode="numeric" maxlength="6" value="${h(e?.codigo ?? "")}" placeholder="${nova ? "4 a 6 números" : "vazio mantém o atual"}" autocomplete="off" ${nova ? "required" : ""} aria-label="Código de acesso" /><button type="button" class="eqn-dado" data-a="eqn-sortear" title="Gerar um código" aria-label="Gerar um código">${IC_PF.dado}</button></span><small>Código numérico de acesso ao painel.${nova ? "" : " Vazio continua o mesmo."}</small></div>`}
             ${comPapel ? `<label class="eq-campo"><span>Função</span><span class="eq-sel eqn-sel">${papeis.map((x) => `<i data-ic="${x}">${ICP[x]}</i>`).join("")}<select class="campo" name="papel">${papeis.map((x) => `<option value="${x}" ${e && x === e.papel ? "selected" : ""}>${x === "Administrador" ? "Administração" : x}</option>`).join("")}</select></span><small>Define o nível de acesso no painel.</small></label>` : ""}
           </div>
@@ -7152,7 +7161,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             ${permSup}
           </div>
         </div>
-        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
+        </div>
+        <div class="eqn-pn" data-eqn-p="coment" hidden>
+          <p class="eqn-expl">Quando esta pessoa responde um comentário, os alunos veem este nome e esta foto no aplicativo, na área de membros. Vazio usa o nome oficial e a foto do perfil.</p>
+          <label class="eq-campo"><span>Seu nome para comentários ${ajuda("É o nome que aparece no aplicativo dos alunos, na área de membros, quando a pessoa responde um comentário.")}</span><input class="campo" name="nomeCom" value="${h(pc?.nome || "")}" maxlength="60" placeholder="${h(e?.nome || "Ex.: Pastora Joana")}" autocomplete="off" /></label>
+          <div class="eq-campo"><span>Foto para comentários <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece ao lado das respostas dos comentários, no aplicativo dos alunos.")}</span>
+            <div class="eqn-foto"><span class="eqn-circ" id="eqnFotoCom">${fotoCom ? `<img src="${fotoCom}" alt="" />` : IC_EQ.pessoa}</span>
+              <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada.</small></div></div>
+            <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
+        </div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "vers") {
       const novo = m.id === "novo", x = novo ? null : S.versiculos.find((y) => y.id === m.id);
@@ -8793,6 +8811,24 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "eqn-foto": fotoPara = "eqn"; arquivoFoto.click(); return;
+      case "eqn-aba": case "eqn-prox": {
+        const f = el.closest("form") as HTMLFormElement | null; if (!f) return;
+        const ks = [...f.querySelectorAll<HTMLElement>("[data-eqn-p]")].map((x) => x.dataset.eqnP!), atual = ks.find((k) => !f.querySelector<HTMLElement>(`[data-eqn-p="${k}"]`)!.hidden) || ks[0];
+        const alvo = a === "eqn-prox" ? ks[Math.min(ks.length - 1, ks.indexOf(atual) + 1)] : d.v;
+        f.querySelectorAll<HTMLElement>("[data-eqn-p]").forEach((x) => { x.hidden = x.dataset.eqnP !== alvo; });
+        f.querySelectorAll<HTMLElement>('[data-a="eqn-aba"]').forEach((x) => x.setAttribute("aria-selected", String(x.dataset.v === alvo)));
+        const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
+        return;
+      }
+      case "eqn-foto-com": {
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/jpeg,image/png,image/webp";
+        inp.onchange = () => { const fl = inp.files?.[0]; if (!fl) return; if (fl.size > 8 * 1024 * 1024) { toast("Escolha uma imagem de até 8MB."); return; }
+          const im = new Image(); im.onload = () => { const L = 320, cv = document.createElement("canvas"); cv.width = cv.height = L; const lado = Math.min(im.width, im.height); cv.getContext("2d")!.drawImage(im, (im.width - lado) / 2, (im.height - lado) / 2, lado, lado, 0, 0, L, L); const url = cv.toDataURL("image/jpeg", 0.85); URL.revokeObjectURL(im.src);
+            const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = url; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = `<img src="${url}" alt="" />`; el.innerHTML = IC_PF.up + "Trocar foto"; };
+          im.onerror = () => toast("Não consegui abrir essa imagem."); im.src = URL.createObjectURL(fl); };
+        inp.click(); return;
+      }
+      case "eqn-foto-com-tirar": { const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = ""; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = IC_EQ.pessoa; el.remove(); return; }
       case "eqn-sortear": {
         const inp = el.closest("form")?.querySelector<HTMLInputElement>('input[name="codigo"]'); if (!inp) return;
         const n = new Uint32Array(1); crypto.getRandomValues(n); inp.value = String(1000 + (n[0] % 9000)); return;
@@ -9438,6 +9474,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const antes = { nome: e.nome, login: e.login, papel: e.papel === "Administrador" ? "admin" : e.papel === "Dono" ? "dono" : "suporte", codigo: e.codigo ?? "" };
         void executar(async () => {
           await rpc("editar_colaborador", { p_id: e.id, p_nome: nome, p_login: login, p_papel: papel, p_codigo: codigo });
+          { const nc = v("nomeCom").trim(), fc = v("fotoCom"), pa = PERFIL_COM.get(e.id); if (nc !== (pa?.nome || "") || fc !== (pa?.foto || "")) { await rpc("salvar_perfil_comentario", { p_id: e.id, p_nome: nc, p_foto: fc || null }); PERFIL_COM.set(e.id, { nome: nc, foto: fc }); } }
           if (fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: e.id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[e.id] = fp.foto; }
           if (papel === "dono" && perms && souPrincipal()) await rpc("definir_permissoes_dono", { p_id: e.id, p_adicionar: perms.adicionar, p_remover: perms.remover, p_codigo: perms.codigo, p_nome: perms.nome, p_abas_bloqueadas: perms.abas });
           if (papel === "suporte" && permsSup) await rpc("definir_permissoes_suporte", { p_id: e.id, p_permissoes: permsSup.lista, p_abas_bloqueadas: permsSup.abas });
@@ -9449,6 +9486,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "equipe-add": {
         const login = v("login").trim().toLowerCase();
+        if (v("nome").trim().length < 2) { toast("Preencha o nome oficial (etapa Perfil)."); return; }
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
         if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
         // O código é quem cadastra que escolhe — nunca sorteado.
@@ -9459,6 +9497,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         void executar(async () => {
           const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo, permissoes });
           if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
+          if (r.id && (v("nomeCom").trim() || v("fotoCom"))) { try { await rpc("salvar_perfil_comentario", { p_id: String(r.id), p_nome: v("nomeCom").trim(), p_foto: v("fotoCom") || null }); PERFIL_COM.set(String(r.id), { nome: v("nomeCom").trim(), foto: v("fotoCom") }); } catch { toast("Membro criado, mas não consegui salvar o nome/foto de comentários. Edite o membro para tentar de novo."); } }
           await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
           if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
           const cod = String(r.codigo ?? codigo), linkPainel = location.origin + "/admin", funcao = v("papel") || (papel === "dono" ? "Dono" : papel === "admin" ? "Administrador" : "Suporte");
@@ -10161,6 +10200,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       // Criar novo curso aberto antes do F5: volta com o que foi digitado e os arquivos.
       try { if (ui.tab === "cursoNovo" || sessionStorage.getItem("aion-cn-aberto") === "1") await voltarRascCn(); } catch { /* ignora */ }
       cnPronto = true;
+      void supabase.rpc("perfis_comentario_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; nome_comentario: string | null; foto_comentario: string | null }[]) PERFIL_COM.set(x.id, { nome: x.nome_comentario || "", foto: x.foto_comentario || "" }); });
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
