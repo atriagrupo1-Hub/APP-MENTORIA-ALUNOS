@@ -1,7 +1,7 @@
 # Novo produto — especificação para implementar de verdade
 
 Fonte da verdade do desenho: `modelo-novo-produto.html` (cópia do modelo
-ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 312,
+ilustrativo https://claude.ai/artifact/RRBW66hGuHEDfQekbE9z1N, versão 313,
 18/11/2026). Abra no navegador para ver o comportamento. Tudo aqui foi
 pedido e aprovado pelo dono no modelo; a implementação real vai para o
 painel (`src/painel/painel.ts` + `painel.css`) e para o app do aluno
@@ -385,3 +385,4 @@ Levado ao painel real tudo de v301 a v312 (`src/painel/np/modelo.html` + `painel
 - Gravação: novo aluno pela Edge Function `cadastrar-aluna`; liberação com `salvar_liberacao` (curso inteiro em "Tudo liberado agora"; nas outras, aula por aula) e `salvar_cronograma` (data de cada aula futura para o aluno).
 - Limites do banco hoje: "Ao concluir a anterior" libera só a primeira aula (o resto fica para liberar na ficha); a hora do "Dia fixo da semana" não é gravada (só o dia); aula nova criada depois no curso não entra sozinha para quem foi liberado aula a aula.
 Novo marco: o que mudar no ilustrativo daqui em diante volta a ser anotado abaixo.
+- v313 — Cards de Alunos menores (Total, Ativos, Bloqueados, Desativados, Adicionados recentes) e a tabela mostra 50 alunos por página (antes 10). Painel e ilustrativo.
