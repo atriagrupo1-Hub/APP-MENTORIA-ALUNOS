@@ -6435,3 +6435,6 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 
 /* Produtos e Categorias: área do modelo embutido (np/ponte.ts) */
 .np-alvo { min-height: calc(100vh - 150px); }
+/* Produtos e Categorias: a margem é a do próprio modelo (sem a do painel). */
+.casca2 .principal .conteudo:has(> .npx-tela) { padding: 0; max-width: none; }
+.casca2 .tp-trilha[hidden] { display: none; }
