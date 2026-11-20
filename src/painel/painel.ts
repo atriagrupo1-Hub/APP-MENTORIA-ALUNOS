@@ -180,7 +180,7 @@ const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : v
 /** Prévia do comentário (equipe): nome para comentários ou o oficial; foto para comentários ou a do perfil. */
 function eqnPvCom(f: HTMLFormElement): void {
   const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
-  const nome = v("nomeCom") || [v("pnome"), v("snome")].join(" ").trim() || v("nome") || "Nome do membro";
+  const nome = v("nomeCom") || "Nome para comentários";
   const foto = v("fotoCom") || f.querySelector<HTMLImageElement>("#eqnFoto img")?.getAttribute("src") || "";
   const n = f.querySelector("[data-eqn-pcn]"); if (n) n.textContent = nome;
   const ft = f.querySelector<HTMLElement>("[data-eqn-pcf]"); if (ft) { const atual = ft.querySelector("img")?.getAttribute("src") || ""; if (atual !== foto) { if (foto) { const im = document.createElement("img"); im.src = foto; im.alt = ""; ft.replaceChildren(im); } else ft.innerHTML = IC_PESSOA_PC; } }
@@ -7162,7 +7162,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
       const IC_PF_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
       const SUG_COM = ["Instrutor", "Cardeal", "Missionário", "Teólogo", "Bispo", "Pastor", "Mentor", "Professor", "Doutor", "Especialista"];
-      const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Comentários"]];
+      const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Perfil dos comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
         ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe." : "Atualize as informações do membro da equipe.")}
@@ -7212,7 +7212,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
                 <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
             </div>
             <div class="eqn-pc"><div class="eqn-pc-t"><span class="eqn-pc-i">${IC_PF_OLHO}</span><div><b>Prévia no comentário</b><small>Veja como ficará para os alunos.</small></div></div>
-              <div class="eqn-pc-c"><span class="eqn-circ eqn-pc-f" data-eqn-pcf>${(fotoCom || fotoAtual) ? `<img src="${fotoCom || fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><div class="eqn-pc-x"><div class="eqn-pc-h"><b data-eqn-pcn>${h(pc?.nome || e?.nome || "Nome do membro")}</b><em>Agora</em></div><small>Resposta da equipe</small><i></i><i></i></div></div></div>
+              <div class="eqn-pc-c"><span class="eqn-circ eqn-pc-f" data-eqn-pcf>${(fotoCom || fotoAtual) ? `<img src="${fotoCom || fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><div class="eqn-pc-x"><div class="eqn-pc-h"><b data-eqn-pcn>${h(pc?.nome || "Nome para comentários")}</b><em>Agora</em></div><small>Resposta da equipe</small><i></i><i></i></div></div></div>
           </div>
         </div>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}Salvar</button></div>
@@ -8876,7 +8876,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           im.onerror = () => toast("Não consegui abrir essa imagem."); im.src = URL.createObjectURL(fl); };
         inp.click(); return;
       }
-      case "eqn-sug": { const f = el.closest("form") as HTMLFormElement | null; if (!f) return; const pn = ((f.elements.namedItem("pnome") as HTMLInputElement | null)?.value || "").trim() || (((f.elements.namedItem("nome") as HTMLInputElement | null)?.value || "").trim().split(/\s+/)[0] || ""); const inp = f.elements.namedItem("nomeCom") as HTMLInputElement; inp.value = (d.v + " " + pn).trim(); eqnPvCom(f); inp.focus(); return; }
+      case "eqn-sug": { const f = el.closest("form") as HTMLFormElement | null; if (!f) return; const inp = f.elements.namedItem("nomeCom") as HTMLInputElement; inp.value = d.v!; eqnPvCom(f); inp.focus(); return; }
       case "eqn-foto-com-tirar": { const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = ""; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = IC_EQ.pessoa; el.remove(); if (f) eqnPvCom(f); return; }
       case "eqn-sortear": {
         const inp = el.closest("form")?.querySelector<HTMLInputElement>('input[name="codigo"]'); if (!inp) return;
