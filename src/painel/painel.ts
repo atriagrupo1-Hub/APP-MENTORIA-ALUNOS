@@ -177,6 +177,16 @@ const maisDias = (s: string, n: number) => { const d = new Date(s + "T12:00:00")
 const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(r); return String(1000 + (r[0] % 9000)); };
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
 /** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
+/** Etapa Perfil do novo membro da equipe: só a foto é opcional. */
+function eqnPerfilErro(f: HTMLFormElement): string {
+  const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
+  if (!v("pnome") || !v("snome")) return "Preencha o nome e o sobrenome.";
+  const cl = v("celEq").replace(/\D/g, "");
+  if (cl.length < 10 || cl.length > 11) return "Preencha o celular / WhatsApp: (00) 00000-0000.";
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("emailEq"))) return "Preencha o e-mail profissional.";
+  return "";
+}
+
 function formatarCelular(valor: string): string {
   const d = valor.replace(/\D/g, "").slice(0, 11);
   if (d.length === 0) return "";
@@ -7140,22 +7150,29 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const fotoAtual = e ? S.fotos[e.id] : "";
       const pc = e ? PERFIL_COM.get(e.id) : undefined, fotoCom = pc?.foto || "", ct = e ? CONTATO_EQ.get(e.id) : undefined;
       const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
+      const IC_PF_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
       const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
-        ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe e defina o acesso." : "Atualize as informações do membro da equipe.")}
-        <div class="cad-abas eqn-abas" role="tablist">${abasEq.map(([k, t], n) => `<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
+        ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe." : "Atualize as informações do membro da equipe.")}
+        <div class="eqn-passos" role="tablist">${abasEq.map(([k, t], n) => `${n ? `<span class="eqn-passo-l" aria-hidden="true"></span>` : ""}<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         <div class="eqn-pn eqn-perfil" data-eqn-p="perfil">
           <div class="eqn-pf-foto"><span class="eqn-pf-rot">Foto do perfil <i class="eqn-opc">(opcional)</i></span>
-            <div class="eqn-foto"><button type="button" class="eqn-circ eqn-circ2" id="eqnFoto" data-a="eqn-foto" aria-label="Enviar foto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}<span class="eqn-cam" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8.5h3l1.5-2h7l1.5 2h3v10H4z"/><circle cx="12" cy="13" r="3.2"/></svg></span></button>
-              <div><button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}${fotoAtual ? "Trocar foto" : "Enviar foto"}</button><small>JPG, PNG ou WEBP. Máximo de 2 MB.</small><small>Dá para dar zoom, mover e centralizar.</small></div></div></div>
+            <button type="button" class="eqn-circ eqn-circ2" id="eqnFoto" data-a="eqn-foto" aria-label="Adicionar ou alterar foto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</button>
+            <button type="button" class="eqn-enviar" data-a="eqn-foto">${IC_PF.up}Adicionar / Alterar foto</button>
+            <small>JPG, PNG ou WEBP. Máximo de 2 MB.</small>
+            <small class="eqn-pf-mov"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5M3 12l2.5-2.5M3 12l2.5 2.5M21 12l-2.5-2.5M21 12l-2.5 2.5"/></svg>Dá para dar zoom, mover e centralizar.</small></div>
+          <div class="eqn-pf-dir">
           <div class="eqn-pf-campos">
-            <label class="eq-campo"><span>Nome <b class="eqn-obr">*</b> ${ajuda("O nome oficial: é como a pessoa se identifica aqui dentro da administração.")}</span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="pnome" data-eqn-nome value="${h((e?.nome ?? "").trim().split(/\s+/)[0] || "")}" placeholder="Ex.: João" autocomplete="off" ${semNome ? "readonly" : ""} /></span></label>
+            <label class="eq-campo"><span>Nome <b class="eqn-obr">*</b></span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="pnome" data-eqn-nome value="${h((e?.nome ?? "").trim().split(/\s+/)[0] || "")}" placeholder="Ex.: Joana" autocomplete="off" ${semNome ? "readonly" : ""} /></span></label>
             <label class="eq-campo"><span>Sobrenome <b class="eqn-obr">*</b></span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="snome" data-eqn-nome value="${h((e?.nome ?? "").trim().split(/\s+/).slice(1).join(" "))}" placeholder="Ex.: Silva" autocomplete="off" ${semNome ? "readonly" : ""} /></span></label>
-            <label class="eq-campo"><span>Celular (WhatsApp)</span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.6 18.6z"/><path d="M9 8.8c.2-.6.7-.7 1-.6l.6 1.5-.6.8c.5 1 1.3 1.8 2.4 2.4l.8-.6 1.5.6c.1.4 0 .9-.6 1.1-2.7.6-5.7-2.4-5.1-5.2z"/></svg><input class="campo" name="celEq" data-i="celular" type="tel" inputmode="numeric" maxlength="15" value="${h(ct?.cel ? formatarCelular(ct.cel) : "")}" placeholder="(00) 00000-0000" autocomplete="off" /></span></label>
-            <label class="eq-campo"><span>E-mail</span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg><input class="campo" name="emailEq" type="email" inputmode="email" value="${h(ct?.email || "")}" placeholder="Ex.: joao@aion.com" autocomplete="off" /></span></label>
+            <label class="eq-campo"><span>Celular / WhatsApp <b class="eqn-obr">*</b></span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 19.5l1.2-3.6A8 8 0 1 1 8.6 18.6z"/><path d="M9 8.8c.2-.6.7-.7 1-.6l.6 1.5-.6.8c.5 1 1.3 1.8 2.4 2.4l.8-.6 1.5.6c.1.4 0 .9-.6 1.1-2.7.6-5.7-2.4-5.1-5.2z"/></svg><input class="campo" name="celEq" data-i="celular" type="tel" inputmode="numeric" maxlength="15" value="${h(ct?.cel ? formatarCelular(ct.cel) : "")}" placeholder="(00) 00000-0000" autocomplete="off" /></span></label>
+            <label class="eq-campo"><span>E-mail profissional <b class="eqn-obr">*</b></span><span class="eqn-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg><input class="campo" name="emailEq" type="email" inputmode="email" data-eqn-nome value="${h(ct?.email || "")}" placeholder="Ex.: joana@aion.com.br" autocomplete="off" /></span></label>
           </div>
-          <label class="eq-campo eqn-pf-obs"><span>Observações <i class="eqn-opc">(opcional)</i></span><span class="eqn-ic eqn-ic-ta"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 11h16M4 16h9M15.5 19l4-4"/></svg><textarea class="campo" name="obsEq" maxlength="300" rows="3" data-eqn-obs placeholder="Ex.: Função, setor ou outras informações relevantes...">${h(ct?.obs || "")}</textarea></span><small class="eqn-cont" data-eqn-cont>${(ct?.obs || "").length}/300</small></label>
+          <div class="eqn-pv"><span class="eqn-pv-t">${IC_PF_OLHO}Prévia do perfil</span>
+            <div class="eqn-pv-c"><span class="eqn-circ eqn-pv-f" data-eqn-pvf>${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><span class="eqn-pv-s"></span><div><b data-eqn-pvn>${h(e?.nome || "Nome do membro")}</b><em><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg><span data-eqn-pve>${h(ct?.email || "e-mail profissional")}</span></em></div></div></div>
+          </div>
+          <input type="hidden" name="obsEq" value="${h(ct?.obs || "")}" />
           <input type="hidden" name="nome" value="${h(e?.nome ?? "")}" />
         </div>
         <div class="eqn-pn" data-eqn-p="acesso" hidden>
@@ -7180,7 +7197,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
               <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada.</small></div></div>
             <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
         </div>
-        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro">${IC_EQ.mais}Salvar</button></div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}Salvar</button></div>
       </form>`;
     } else if (m.tipo === "vers") {
       const novo = m.id === "novo", x = novo ? null : S.versiculos.find((y) => y.id === m.id);
@@ -8825,9 +8842,11 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const f = el.closest("form") as HTMLFormElement | null; if (!f) return;
         const ks = [...f.querySelectorAll<HTMLElement>("[data-eqn-p]")].map((x) => x.dataset.eqnP!), atual = ks.find((k) => !f.querySelector<HTMLElement>(`[data-eqn-p="${k}"]`)!.hidden) || ks[0];
         const alvo = a === "eqn-prox" ? ks[Math.min(ks.length - 1, ks.indexOf(atual) + 1)] : d.v;
+        if (f.dataset.f === "equipe-add" && atual === "perfil" && alvo !== "perfil") { const erro = eqnPerfilErro(f); if (erro) { toast(erro); return; } }
         f.querySelectorAll<HTMLElement>("[data-eqn-p]").forEach((x) => { x.hidden = x.dataset.eqnP !== alvo; });
         f.querySelectorAll<HTMLElement>('[data-a="eqn-aba"]').forEach((x) => x.setAttribute("aria-selected", String(x.dataset.v === alvo)));
         const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
+        const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv && f.dataset.f === "equipe-add") sv.hidden = alvo !== ks[ks.length - 1];
         return;
       }
       case "eqn-foto-com": {
@@ -9498,8 +9517,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "equipe-add": {
         const login = v("login").trim().toLowerCase();
-        if (!v("pnome") || !v("snome")) { toast("Preencha o nome e o sobrenome (etapa Perfil)."); return; }
-        { const cl = v("celEq").replace(/\D/g, ""); if (cl && (cl.length < 10 || cl.length > 11)) { toast("Confira o celular: (00) 00000-0000."); return; } const em = v("emailEq"); if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { toast("Confira o e-mail."); return; } }
+        { const erro = eqnPerfilErro(form); if (erro) { toast(erro + " (etapa Perfil)"); return; } }
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
         if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
         // O código é quem cadastra que escolhe — nunca sorteado.
@@ -9678,7 +9696,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   });
   document.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement, f = t.closest?.("form.eqn") as HTMLFormElement | null; if (!f) return;
-    if (t.dataset?.eqnNome !== undefined) { const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim(); (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim(); }
+    if (t.dataset?.eqnNome !== undefined) { const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim(); (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim(); const pvn = f.querySelector("[data-eqn-pvn]"), pve = f.querySelector("[data-eqn-pve]"), em = (f.elements.namedItem("emailEq") as HTMLInputElement | null)?.value.trim(); if (pvn) pvn.textContent = (pn + " " + sn).trim() || "Nome do membro"; if (pve) pve.textContent = em || "e-mail profissional"; }
     if (t.dataset?.eqnObs !== undefined) { const c = f.querySelector("[data-eqn-cont]"); if (c) c.textContent = t.value.length + "/300"; }
   });
   app.addEventListener("input", (e) => {
@@ -10009,7 +10027,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const pronta = await editarFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 }, "nova foto", () => { fotoPara = "eqn"; arquivoFoto.click(); });
         if (!pronta) return;
         fotoNova = pronta;
-        const c = document.getElementById("eqnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const bt = document.querySelector('[data-a="eqn-foto"]'); if (bt) bt.innerHTML = IC_PF.up + "Trocar foto";
+        const c = document.getElementById("eqnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const pvf = document.querySelector("[data-eqn-pvf]"); if (pvf) pvf.innerHTML = `<img src="${pronta.foto}" alt="" />`;
       }).catch((e) => toast(motivo(e)));
       return;
     }

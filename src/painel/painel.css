@@ -6513,3 +6513,34 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .eqn-pf-obs { grid-column: 1 / -1; }
 .eqn-cont { align-self: flex-end; text-align: right; font-size: 12px; color: #94979E; }
 @media (max-width: 760px) { .eqn-perfil, .eqn-pf-campos { grid-template-columns: 1fr; } .eqn-pf-foto { padding-right: 0; border-right: 0; } }
+
+/* Equipe — etapa Perfil no formato aprovado (foto | campos + prévia do perfil) */
+.eqn-passos { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 4px 0 18px; padding-bottom: 0; border-bottom: 1px solid #292A2F; }
+.eqn-passos > button { position: relative; display: inline-flex; align-items: center; gap: 12px; padding: 10px 18px 16px; border: 0; background: none; color: #94979E; font: inherit; font-size: 15px; font-weight: 650; white-space: nowrap; cursor: pointer; }
+.eqn-passos > button i { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid #4a4d55; font-style: normal; font-size: 14px; font-weight: 700; }
+.eqn-passos > button[aria-selected="true"] { color: #F3F4F6; }
+.eqn-passos > button[aria-selected="true"] i { background: #E2C68C; border-color: #E2C68C; color: #1a1408; box-shadow: 0 0 14px rgba(226,198,140,.35); }
+.eqn-passos > button[aria-selected="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 3px; background: #E2C68C; box-shadow: 0 0 12px rgba(226,198,140,.6); }
+.eqn-passo-l { flex: 0 1 90px; height: 1px; background: #3D4048; margin-bottom: 6px; }
+.eqn-perfil { grid-template-columns: 290px minmax(0, 1fr); gap: 18px; }
+.eqn-perfil .eqn-pf-foto { display: flex; flex-direction: column; align-items: center; padding: 20px 20px 22px; border: 1px solid #292A2F; border-radius: 14px; background: #141518; text-align: center; }
+.eqn-perfil .eqn-pf-rot { align-self: flex-start; margin-bottom: 18px; font-size: 15px; }
+.eqn-perfil .eqn-circ2 { width: 168px !important; height: 168px !important; margin-bottom: 20px; border: 2px solid #E2C68C; box-shadow: 0 0 0 4px rgba(226,198,140,.08); }
+.eqn-perfil .eqn-pf-foto .eqn-enviar { color: #E2C68C; background: rgba(226,198,140,.08); border-color: #E2C68C; }
+.eqn-perfil .eqn-pf-foto small { margin-top: 12px; }
+.eqn-pf-mov { display: inline-flex !important; align-items: center; gap: 8px; }
+.eqn-pf-mov svg { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.eqn-pf-dir { display: flex; flex-direction: column; gap: 22px; padding: 20px 22px 22px; border: 1px solid #292A2F; border-radius: 14px; background: #141518; }
+.eqn-pf-dir .eqn-obr { color: #E2C68C; }
+.eqn-pv { padding: 16px 18px 18px; border: 1px solid #E2C68C; border-radius: 12px; background: linear-gradient(135deg, rgba(226,198,140,.14), rgba(226,198,140,.03)); }
+.eqn-pv-t { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 650; color: #E2C68C; }
+.eqn-pv-t svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.eqn-pv-c { display: flex; align-items: center; gap: 22px; margin-top: 14px; padding-left: 14px; }
+.eqn-pv-f { width: 70px !important; height: 70px !important; border: 2px solid #E2C68C; }
+.eqn-pv-f svg { width: 28px; height: 28px; }
+.eqn-pv-s { align-self: stretch; width: 1px; background: rgba(226,198,140,.45); }
+.eqn-pv-c b { display: block; font-size: 20px; font-weight: 700; color: #F3F4F6; overflow-wrap: anywhere; }
+.eqn-pv-c em { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-style: normal; font-size: 14px; color: #C9CCD2; overflow-wrap: anywhere; }
+.eqn-pv-c em svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.eqn .eq-mbts [hidden] { display: none !important; }
+@media (max-width: 760px) { .eqn-perfil { grid-template-columns: 1fr; } .eqn-passos { justify-content: flex-start; overflow-x: auto; gap: 6px; } .eqn-passo-l { display: none; } .eqn-passos > button { padding: 8px 10px 14px; font-size: 13.5px; } }
