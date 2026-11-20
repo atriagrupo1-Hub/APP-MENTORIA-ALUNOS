@@ -241,6 +241,22 @@ Deno.serve(async (req) => {
     return resposta({ erro: "indisponivel" }, 503, origem);
   }
 
+  // 2b. Equipe que já criou e-mail e senha (0138) não entra mais por código:
+  //     o código sozinho não pode abrir uma conta da equipe.
+  if (!email.endsWith("@alunas.mentoria-aion.invalid")) {
+    const { data: conta } = await admin.auth.admin.getUserById(alunaId);
+    if (conta?.user?.app_metadata?.senha_propria === true) {
+      return resposta(
+        {
+          erro: "use_email_senha",
+          mensagem: "Sua conta da equipe agora entra com e-mail e senha.",
+        },
+        403,
+        origem,
+      );
+    }
+  }
+
   // 3. Sessão. O Auth não tem login por código, então a sessão é emitida
   //    por um token de uso único, gerado e consumido aqui mesmo — nunca
   //    enviado por e-mail, nunca exposto ao navegador.

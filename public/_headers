@@ -1,0 +1,11 @@
+# Cloudflare Pages: cabeçalhos de segurança em todas as páginas.
+# O site só pode ser aberto dentro de outra página do próprio souaion.com
+# (a prévia do celular no painel usa isso). Outro site não consegue
+# "esconder" o painel numa moldura para enganar cliques.
+/*
+  X-Frame-Options: SAMEORIGIN
+  Content-Security-Policy: frame-ancestors 'self'
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

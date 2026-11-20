@@ -12,6 +12,7 @@
  * escolha do tema.
  */
 import "./painel.css";
+import * as seg from "./seguranca";
 import { supabase } from "@/data/supabase";
 import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
@@ -686,6 +687,10 @@ export function montar(app: HTMLElement) {
   let S: Dados = { geralRaw: {}, cats: [], catsAba: [], catItens: [], cursos: [], alunas: [], comentarios: [], removidos: [], equipe: [], historico: [], sessoes: [], sugestoes: [], ajudas: {}, fotos: {}, config: { novidades: false, marcaTitulo: "", marcaSub: "", marcaTipo: "texto", marcaLogo: "", topoSaud: "Bem-vindo(a), {nome_completo}", topoEstilo: {}, fraseRetorno: "", saudacao: "Bem-vindo(a), {nome}", comece: "Comece por aqui", exibirDestaques: true, jornada: "", banner: "card", bannerImg: "", bannerVideo: "", estilo: "padrao", telas: {}, perfBotoes: [], menu: { botoes: null, estilo: "padrao", cores: null, tamanho: "medio" }, aparencia: null, notif: notifDe(null), capaGuia: "", estiloAula: null, estiloInicio: null, estiloPerfil: null, estiloNotif: null, divisor: divisorDe(null) }, versiculos: [], destaques: [] };
   let carregando = true;
   let ocupado = false;
+  /** Tela de entrada da equipe (0138): e-mail e senha, código antigo, esqueci a senha, 2FA, nova senha. */
+  const acesso = { modo: "email" as seg.ModoLogin, aviso: "", depois2fa: "" as "" | "novaSenha" };
+  /** Janela "Minha segurança". */
+  let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string }) = null;
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
@@ -1032,7 +1037,10 @@ export function montar(app: HTMLElement) {
     app.querySelectorAll<HTMLElement>("[data-rolagem]").forEach((x) => rolagem.set(x.dataset.rolagem!, x.scrollTop));
     // Configurações: o formulário rola por dentro; redesenhar (abrir um menu de ícones, trocar uma opção) não o devolve ao topo.
     const cfgAntes = app.querySelector<HTMLElement>(".cfg-grade > .cfg-form"), cfgId = cfgAntes?.id || "", cfgTop = cfgAntes?.scrollTop || 0, janTop = window.scrollY;
+    // Tela de entrada: redesenhar não pode apagar o que a pessoa já digitou.
+    const digitado = !eu ? [...app.querySelectorAll<HTMLInputElement>("form[data-f] input.campo")].map((x) => [x.closest("form")!.dataset.f + ":" + x.name, x.value] as const).filter(([, val]) => val) : [];
     app.innerHTML = carregando ? carregandoTela() : eu ? painel() : login();
+    for (const [k, val] of digitado) { const [fm, nm] = k.split(":"); const x = app.querySelector<HTMLInputElement>(`form[data-f="${fm}"] input[name="${nm}"]`); if (x && !x.value) x.value = val; }
     document.body.classList.toggle("aa-trava", !!app.querySelector(".aa-painel"));
     ajustarListaLateral();
     ajustarArvore();
@@ -1097,19 +1105,61 @@ export function montar(app: HTMLElement) {
   const loginSalvo = () => lerLocal("aion-painel-login");
 
   function login() {
-    return `
-    ${marca(botaoTema())}
-    <div class="conteudo" style="max-width:460px;margin:48px auto 0">
-      <form data-f="entrar" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu login e o seu código.</p>
-        <label class="grupo" style="margin-bottom:14px"><span class="rotulo">Login</span><input id="loginCampo" class="campo" name="login" autocomplete="username" value="${h(loginSalvo())}" required /></label>
+    const m = acesso.modo;
+    const erro = ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : "";
+    const aviso = acesso.aviso ? `<p class="explica" style="margin:12px 0 0;color:var(--texto-1)">${h(acesso.aviso)}</p>` : "";
+    const bt = (t: string) => `<button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>${t}</button>`;
+    const link = (modo: string, t: string) => `<button type="button" class="botao-link" data-a="login-modo" data-v="${modo}" style="background:none;border:0;padding:0;color:var(--dourado,#d4b170);font-size:14px;cursor:pointer;text-decoration:underline">${t}</button>`;
+    const campo = (rot: string, attrs: string) => `<label class="grupo" style="margin-bottom:14px"><span class="rotulo">${rot}</span><input class="campo" ${attrs} required /></label>`;
+    let corpo = "";
+    if (m === "codigo") {
+      corpo = `<form data-f="entrar" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar com login e código</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Para quem da equipe ainda não criou e-mail e senha.</p>
+        ${campo("Login", `id="loginCampo" name="login" autocomplete="username" value="${h(loginSalvo())}"`)}
         <label class="grupo"><span class="rotulo">Código</span><input id="codigoCampo" class="campo" name="codigo" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required /></label>
         <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;cursor:pointer"><input type="checkbox" name="salvar" ${loginSalvo() || !lerLocal("aion-painel-login-off") ? "checked" : ""} style="width:18px;height:18px" />Salvar login</label>
-        ${ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : ""}
-        <button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>Entrar</button>
-      </form>
-    </div>`;
+        ${erro}${bt("Entrar")}
+        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("email", "Entrar com e-mail e senha")}</p>
+      </form>`;
+    } else if (m === "esqueci") {
+      corpo = `<form data-f="esqueci-senha" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Esqueci minha senha</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Digite o e-mail da sua conta. Enviamos um link para você criar uma senha nova.</p>
+        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="username" value="${h(lerLocal("aion-painel-email"))}"`)}
+        ${erro}${aviso}${bt("Enviar link")}
+        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("email", "Voltar para entrar")}</p>
+      </form>`;
+    } else if (m === "2fa") {
+      corpo = `<form data-f="confirmar-2fa" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Verificação em duas etapas</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Abra o aplicativo autenticador no seu celular e digite o código de 6 números.</p>
+        ${campo("Código", `id="doisFaCampo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7"`)}
+        ${erro}${bt("Confirmar")}
+        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("sair", "Cancelar e sair")}</p>
+      </form>`;
+    } else if (m === "novaSenha") {
+      corpo = `<form data-f="nova-senha" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Criar nova senha</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use pelo menos 8 caracteres, com letras e números.</p>
+        ${campo("Nova senha", `id="novaSenhaCampo" name="senha" type="password" autocomplete="new-password" minlength="8"`)}
+        ${campo("Repita a nova senha", `name="senha2" type="password" autocomplete="new-password" minlength="8"`)}
+        ${erro}${bt("Salvar e entrar")}
+      </form>`;
+    } else {
+      corpo = `<form data-f="entrar-email" class="cartao" style="padding:22px">
+        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
+        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu e-mail e sua senha.</p>
+        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="username" value="${h(lerLocal("aion-painel-email"))}"`)}
+        <label class="grupo"><span class="rotulo">Senha</span><input id="senhaCampo" class="campo" name="senha" type="password" autocomplete="current-password" required /></label>
+        <p style="margin:10px 0 0;font-size:14px;text-align:right">${link("esqueci", "Esqueci minha senha")}</p>
+        ${erro}${aviso}${bt("Entrar")}
+        <p style="margin:16px 0 0;font-size:13px;text-align:center;color:var(--texto-2)">Ainda não criou seu e-mail e senha? ${link("codigo", "Entrar com login e código")}</p>
+      </form>`;
+    }
+    return `
+    ${marca(botaoTema())}
+    <div class="conteudo" style="max-width:460px;margin:48px auto 0">${corpo}</div>`;
   }
 
   /** Topo do painel: os quatro grupos do menu e as telas de cada um. */
@@ -1148,6 +1198,7 @@ export function montar(app: HTMLElement) {
           <span class="est3 topo-perfil"><button type="button" class="topo-av-bt" data-a="estado-menu" data-v="perfil" aria-haspopup="menu" aria-expanded="${ui.estMenu === "perfil"}" aria-label="Meu perfil">${avatarEq(eu!.id, eu!.nome, eu!.cor, "topo-av")}</button>${ui.estMenu === "perfil" ? `<span class="pf-pop" role="menu">
             <span class="pf-quem">${avatarEq(eu!.id, eu!.nome, eu!.cor, "pf-av")}<span><b>${h(eu!.nome)}</b><span>${h(eu!.papel)}</span></span></span>
             <button type="button" role="menuitem" data-a="perfil-abrir">${IC_EQ.pessoa}Perfil</button>
+            <button type="button" role="menuitem" data-a="seguranca"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>Minha segurança</button>
             <button type="button" role="menuitem" data-a="atualizar-dados"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>Atualizar dados</button>
             <button type="button" role="menuitem" data-a="tema"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>Tema ${tema === "claro" ? "escuro" : "claro"}</button>
             <button type="button" role="menuitem" data-a="sugestoes">${ICONE_MENU.ideia}Sugestões${S.sugestoes.length ? ` <span class="bolinha">${S.sugestoes.length}</span>` : ""}</button>
@@ -7094,6 +7145,41 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           ${pilha.length ? `<button type="button" class="botao" data-a="desfazer-confirmar">Desfazer: ${h(pilha[0].texto)}</button>` : ""}
           <button type="button" class="botao-neutro grande" data-a="fechar">Cancelar</button>
         </div>`;
+    } else if (m.tipo === "seguranca") {
+      const x = segInfo;
+      const senhaCampos = `<label class="grupo" style="margin-top:10px"><span class="rotulo">Senha</span><input class="campo" name="senha" type="password" autocomplete="new-password" minlength="8" required /></label>
+        <label class="grupo" style="margin-top:10px"><span class="rotulo">Repita a senha</span><input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="8" required /></label>`;
+      corpo = !x ? `<h2 class="titulo">Minha segurança</h2><div class="vazio">Carregando…</div>` : `
+      <h2 class="titulo">Minha segurança</h2>
+      ${!x.senhaPropria ? `
+      <form data-f="criar-login" novalidate>
+        <p class="explica">Crie seu e-mail e senha para entrar no painel. Depois disso, o login com código deixa de funcionar para você, e, se esquecer a senha, recebe um link no e-mail.</p>
+        <label class="grupo" style="margin-top:10px"><span class="rotulo">E-mail</span><input id="segEmail" class="campo" name="email" type="email" autocomplete="username" value="${h(x.email)}" required /></label>
+        ${senhaCampos}
+        <p class="explica" style="margin-top:8px">Pelo menos 8 caracteres, com letras e números.</p>
+        <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Criar e-mail e senha</button><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>
+      </form>` : `
+      <p class="explica">Você entra com <b>${h(x.email)}</b> e sua senha.</p>
+      <form data-f="trocar-senha" novalidate style="margin-top:14px">
+        <h3 style="margin:0;font-size:16px">Trocar senha</h3>
+        ${senhaCampos}
+        <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Trocar senha</button></div>
+      </form>
+      <div style="margin-top:22px">
+        <h3 style="margin:0;font-size:16px">Verificação em duas etapas</h3>
+        ${x.fator2fa ? `<p class="explica"><b>Ativada.</b> Ao entrar, o painel pede o código do aplicativo autenticador do seu celular.</p>
+          <div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao-neutro grande" data-a="seg-2fa-desligar">Desligar</button></div>`
+        : x.novoFator ? `<form data-f="ativar-2fa" novalidate>
+          <p class="explica">1. Abra um aplicativo autenticador no celular (Google Authenticator, Microsoft Authenticator ou Authy) e leia este QR code.</p>
+          <img src="${h(x.qr || "")}" alt="QR code da verificação em duas etapas" style="width:180px;height:180px;background:#fff;border-radius:8px;padding:6px;margin:8px 0" />
+          <p class="explica">Não dá para ler? Digite esta chave no aplicativo: <code style="user-select:all">${h(x.segredo || "")}</code></p>
+          <label class="grupo" style="margin-top:10px"><span class="rotulo">2. Digite o código de 6 números que aparece no aplicativo</span><input id="seg2faCodigo" class="campo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required /></label>
+          <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Ativar</button></div>
+        </form>`
+        : `<p class="explica">Além da senha, pede um código do seu celular para entrar. Recomendado para quem é dono ou administrador.</p>
+          <div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao" data-a="seg-2fa-iniciar" ${ocupado ? "disabled" : ""}>Ativar</button></div>`}
+      </div>
+      <div class="rodape-modal" style="margin-top:18px"><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>`}`;
     } else if (m.tipo === "sugestoes") {
       corpo = `
       <form data-f="sugestao">
@@ -7337,8 +7423,31 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         else trocar();
         return;
       }
+      case "login-modo":
+        ui.erroLogin = ""; acesso.aviso = "";
+        if (d.v === "sair") { acesso.depois2fa = ""; acesso.modo = "email"; void api.sair().finally(() => render()); return; }
+        acesso.modo = d.v as seg.ModoLogin; ui.focar = d.v === "codigo" ? "loginCampo" : "emailCampo";
+        break;
+      case "seguranca":
+        ui.estMenu = ""; segInfo = null; ui.modal = { tipo: "seguranca" };
+        void seg.situacao().then((x) => { segInfo = x; ui.focar = x && !x.senhaPropria ? "segEmail" : null; render(); });
+        break;
+      case "seg-2fa-iniciar":
+        if (ocupado) return;
+        ocupado = true; render();
+        void seg.iniciar2fa().then((r) => { ocupado = false; if (typeof r === "string") toast(r); else if (segInfo) { segInfo = { ...segInfo, qr: r.qr, segredo: r.segredo, novoFator: r.id }; ui.focar = "seg2faCodigo"; } render(); });
+        return;
+      case "seg-2fa-desligar":
+        confirmar({ titulo: "Desligar a verificação em duas etapas?", texto: "Sua conta volta a abrir só com e-mail e senha.", palavra: "DESLIGAR", rotulo: "Desligar" }, async () => {
+          const erro = await seg.desligar2fa(segInfo?.fator2fa ?? "");
+          if (erro) throw new Error(erro);
+          segInfo = await seg.situacao(); ui.modal = { tipo: "seguranca" }; return "Verificação em duas etapas desligada.";
+        });
+        break;
       case "sair":
-        void api.sair().finally(() => { eu = null; ui.focar = loginSalvo() ? "codigoCampo" : "loginCampo"; render(); });
+        // O menu do perfil fica "aberto" na memória: sem fechar aqui, o primeiro clique em Entrar só fechava o menu.
+        acesso.modo = "email"; acesso.depois2fa = ""; ui.estMenu = ""; ui.modal = null;
+        void api.sair().finally(() => { eu = null; ui.focar = "emailCampo"; render(); });
         return;
       case "fechar": case "fechar-esc": ui.modal = null; pend = null; break;
       case "fechar-fundo": if (alvo !== el) return; ui.modal = null; pend = null; break;
@@ -8965,6 +9074,62 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const v = (n: string) => { const el = form.elements.namedItem(n) as HTMLInputElement | null; return el ? el.value.trim() : ""; };
     const id = form.dataset.id ?? "";
     switch (f) {
+      case "entrar-email": case "esqueci-senha": case "confirmar-2fa": case "nova-senha": {
+        if (ocupado) return;
+        ocupado = true; ui.erroLogin = ""; acesso.aviso = ""; render();
+        void (async () => {
+          let erro: string | null = null;
+          if (f === "entrar-email") {
+            erro = await seg.entrarComEmail(v("email"), (form.elements.namedItem("senha") as HTMLInputElement).value);
+            if (!erro) {
+              gravarLocal("aion-painel-email", v("email").toLowerCase());
+              if (await seg.falta2fa()) { acesso.modo = "2fa"; ui.focar = "doisFaCampo"; }
+              else await abrirSessao(true);
+            }
+          } else if (f === "esqueci-senha") {
+            erro = await seg.enviarLinkDeSenha(v("email"));
+            if (!erro) acesso.aviso = "Se este e-mail for de alguém da equipe, o link chega em alguns minutos. Confira também a caixa de spam.";
+          } else if (f === "confirmar-2fa") {
+            erro = await seg.confirmar2fa(v("codigo"));
+            if (!erro) {
+              if (acesso.depois2fa === "novaSenha") { acesso.modo = "novaSenha"; ui.focar = "novaSenhaCampo"; }
+              else await abrirSessao(true);
+            }
+          } else {
+            const senha = (form.elements.namedItem("senha") as HTMLInputElement).value;
+            erro = seg.problemaDaSenha(senha, (form.elements.namedItem("senha2") as HTMLInputElement).value) ?? await seg.trocarSenha(senha);
+            if (!erro) {
+              acesso.depois2fa = ""; acesso.modo = "email";
+              try { history.replaceState(null, "", location.pathname + location.search); } catch { /* ignora */ }
+              await abrirSessao(true);
+              if (eu) toast("Senha nova salva.");
+            }
+          }
+          if (erro) ui.erroLogin = erro;
+          ocupado = false; render();
+        })();
+        return;
+      }
+      case "criar-login": case "trocar-senha": case "ativar-2fa": {
+        if (ocupado) return;
+        const senha = (form.elements.namedItem("senha") as HTMLInputElement | null)?.value ?? "";
+        const repetida = (form.elements.namedItem("senha2") as HTMLInputElement | null)?.value ?? "";
+        if (f !== "ativar-2fa") { const pr = seg.problemaDaSenha(senha, repetida); if (pr) { toast(pr); return; } }
+        if (f === "criar-login" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("email"))) { toast("Confira o e-mail."); return; }
+        ocupado = true; render();
+        void (async () => {
+          const erro = f === "criar-login" ? await seg.criarLogin(v("email"), senha)
+            : f === "trocar-senha" ? await seg.trocarSenha(senha)
+            : await seg.ativar2fa(segInfo?.novoFator ?? "", v("codigo"));
+          ocupado = false;
+          if (erro) { toast(erro); render(); return; }
+          if (f === "criar-login") gravarLocal("aion-painel-email", v("email").toLowerCase());
+          segInfo = await seg.situacao();
+          toast(f === "criar-login" ? "Pronto! A partir de agora você entra com e-mail e senha." : f === "trocar-senha" ? "Senha trocada." : "Verificação em duas etapas ativada.");
+          render();
+        })();
+        return;
+      }
       case "entrar": {
         if (ocupado) return;
         ocupado = true; ui.erroLogin = ""; render();
@@ -8976,6 +9141,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           gravarLocal("aion-painel-login-off", salvar ? null : "1");
           await abrirSessao(true);
           ocupado = false; render();
+          if (eu) void seg.situacao().then((x) => { if (x && !x.senhaPropria) toast("Crie seu e-mail e senha em Minha segurança (menu do seu perfil)."); });
         })();
         return;
       }
@@ -10240,6 +10406,8 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
   async function abrirSessao(acabouDeEntrar: boolean) {
     try {
+      // Com 2FA ativo, a sessão só vale depois do código (o banco também confere).
+      if (await seg.falta2fa()) { eu = null; acesso.modo = "2fa"; ui.focar = "doisFaCampo"; return; }
       // Quem é e os dados saem juntos; se não for da equipe, os dados são descartados.
       const euP = quemSouEu();
       const dadosP = lerTudo(euP);
@@ -10275,9 +10443,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   render();
   void (async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session) await abrirSessao(false);
+    if (data.session && seg.veioDoLinkDeSenha) {
+      // Veio do link "Esqueci minha senha": primeiro a senha nova (e o 2FA, se tiver).
+      acesso.depois2fa = "novaSenha";
+      acesso.modo = (await seg.falta2fa()) ? "2fa" : "novaSenha";
+    } else if (data.session) await abrirSessao(false);
     carregando = false;
-    ui.focar = eu ? null : "loginCampo";
+    ui.focar = eu ? null : acesso.modo === "novaSenha" ? "novaSenhaCampo" : acesso.modo === "2fa" ? "doisFaCampo" : "emailCampo";
     render();
   })();
 }
