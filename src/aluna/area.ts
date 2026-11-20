@@ -1750,7 +1750,12 @@ export function montar(raiz: HTMLElement) {
       const doc = fr && fr.contentDocument; if (!doc || !doc.documentElement) return;
       let st = doc.getElementById("zoom-leitor");
       if (!st) { st = doc.createElement("style"); st.id = "zoom-leitor"; (doc.head || doc.documentElement).appendChild(st); }
+      // Zoom centralizado: guarda o ponto do meio da tela e volta para ele depois de mudar o tamanho
+      const w = doc.defaultView, se = doc.scrollingElement || doc.documentElement;
+      const rx = se.scrollWidth > se.clientWidth ? (se.scrollLeft + se.clientWidth / 2) / se.scrollWidth : 0.5;
+      const ry = se.scrollHeight > se.clientHeight ? (se.scrollTop + se.clientHeight / 2) / se.scrollHeight : 0;
       st.textContent = "html{zoom:" + z + "}";
+      if (w && ry > 0) w.requestAnimationFrame(() => { se.scrollTop = ry * se.scrollHeight - se.clientHeight / 2; if (se.scrollWidth > se.clientWidth) se.scrollLeft = rx * se.scrollWidth - se.clientWidth / 2; });
     } catch { /* outro domínio */ }
   }
   window.__zoomLeitor = aplicarZoomLeitor;
@@ -1981,13 +1986,24 @@ export function montar(raiz: HTMLElement) {
     if (pct) pct.textContent = Math.round(k * 100) + "%";
     document.querySelectorAll('[data-a="pdf-zoom"]').forEach((b) => { b.disabled = (+b.dataset.v < 0 && pdfZ <= 0) || (+b.dataset.v > 0 && pdfZ >= PDF_ZOOMS.length - 1); });
     const larg = Math.max(260, box.clientWidth - 24) * k, dpr = Math.min(2, window.devicePixelRatio || 1);
-    box.innerHTML = "";
+    // Zoom centralizado: o ponto que estava no meio da tela continua no meio depois do zoom
+    const primeira = !box.childElementCount;
+    const rx = box.scrollWidth > box.clientWidth ? (box.scrollLeft + box.clientWidth / 2) / box.scrollWidth : 0.5;
+    const ry = box.scrollHeight > box.clientHeight ? (box.scrollTop + box.clientHeight / 2) / box.scrollHeight : 0;
+    const pags: [any, HTMLCanvasElement, any][] = [];
     for (let n = 1; n <= doc.numPages; n++) {
       if (pdfDoc !== doc) return;
       const pg = await doc.getPage(n), v0 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: (larg / v0.width) * dpr });
       const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height; c.style.width = vp.width / dpr + "px"; c.style.height = vp.height / dpr + "px";
       c.setAttribute("aria-label", "Página " + n + " de " + doc.numPages);
-      box.appendChild(c);
+      pags.push([pg, c, vp]);
+    }
+    if (pdfDoc !== doc) return;
+    box.replaceChildren(...pags.map((x) => x[1]));
+    if (!primeira) { box.scrollTop = Math.max(0, ry * box.scrollHeight - box.clientHeight / 2); }
+    box.scrollLeft = Math.max(0, (primeira ? 0.5 : rx) * box.scrollWidth - box.clientWidth / 2);
+    for (const [pg, c, vp] of pags) {
+      if (pdfDoc !== doc) return;
       await pg.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
     }
   }
