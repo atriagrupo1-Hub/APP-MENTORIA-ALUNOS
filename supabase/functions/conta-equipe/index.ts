@@ -131,6 +131,33 @@ Deno.serve(async (req) => {
     return resposta({ ok: true }, 200, origem);
   }
 
+  // Trocar o e-mail de entrada: só com a senha atual (quem pegou uma sessão
+  // aberta não consegue desviar o "Esqueci minha senha" para outro e-mail).
+  if (acao === "trocar_email") {
+    const email = String(corpo?.email ?? "").trim().toLowerCase();
+    const senhaAtual = String(corpo?.senha_atual ?? "");
+    if (!EMAIL.test(email) || email.endsWith(".invalid")) {
+      return resposta({ erro: "email_invalido", mensagem: "Confira o e-mail." }, 400, origem);
+    }
+    if (!eu.app_metadata?.senha_propria || !eu.email) {
+      return resposta({ erro: "sem_login", mensagem: "Crie primeiro seu e-mail e senha." }, 400, origem);
+    }
+    const teste = await fetch(`${URL_SUPABASE}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: CHAVE_ANONIMA, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: eu.email, password: senhaAtual }),
+    });
+    if (!teste.ok) return resposta({ erro: "senha_errada", mensagem: "Senha atual incorreta." }, 400, origem);
+    const { error } = await admin.auth.admin.updateUserById(eu.id, { email, email_confirm: true });
+    if (error) {
+      if (/already|registered|exists/i.test(error.message ?? "")) {
+        return resposta({ erro: "email_em_uso", mensagem: "Este e-mail já está em uso." }, 400, origem);
+      }
+      return resposta({ erro: "indisponivel", mensagem: "Não foi possível salvar agora. Tente de novo." }, 503, origem);
+    }
+    return resposta({ ok: true }, 200, origem);
+  }
+
   if (acao === "zerar_2fa") {
     const alvo = String(corpo?.id ?? "");
     if (!/^[0-9a-f-]{36}$/.test(alvo)) return resposta({ erro: "id_invalido" }, 400, origem);

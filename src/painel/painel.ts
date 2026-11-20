@@ -690,7 +690,10 @@ export function montar(app: HTMLElement) {
   /** Tela de entrada da equipe (0138): e-mail e senha, código antigo, esqueci a senha, 2FA, nova senha. */
   const acesso = { modo: "email" as seg.ModoLogin, aviso: "", depois2fa: "" as "" | "novaSenha" };
   /** Janela "Minha segurança". */
-  let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string }) = null;
+  let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string; etapa?: "intro" | "qr" | "pronto"; prefs?: boolean; exigir?: string[] }) = null;
+  /** Segurança de cada pessoa da equipe (e-mail e senha, 2FA), para a tela Equipe. */
+  let SEG_EQ = new Map<string, seg.SegEquipe>();
+  const lerSegEq = () => void seg.segurancaDaEquipe().then((m) => { SEG_EQ = m; if (eu && ui.tab === "equipe") render(); });
   /** Os quadros do Início que a pessoa abriu. Começam todos fechados. */
   const inicioAberto = new Set<string>();
   const ui = {
@@ -1107,54 +1110,51 @@ export function montar(app: HTMLElement) {
   function login() {
     const m = acesso.modo;
     const erro = ui.erroLogin ? `<p class="erro">${h(ui.erroLogin)}</p>` : "";
-    const aviso = acesso.aviso ? `<p class="explica" style="margin:12px 0 0;color:var(--texto-1)">${h(acesso.aviso)}</p>` : "";
-    const bt = (t: string) => `<button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>${t}</button>`;
-    const link = (modo: string, t: string) => `<button type="button" class="botao-link" data-a="login-modo" data-v="${modo}" style="background:none;border:0;padding:0;color:var(--dourado,#d4b170);font-size:14px;cursor:pointer;text-decoration:underline">${t}</button>`;
+    const aviso = acesso.aviso ? `<p class="seg-ok">${h(acesso.aviso)}</p>` : "";
+    const bt = (t: string, t2: string) => `<button class="botao" style="width:100%;margin-top:20px" ${ocupado ? "disabled" : ""}>${ocupado ? t2 : t}</button>`;
+    const link = (modo: string, t: string) => `<button type="button" class="seg-link" data-a="login-modo" data-v="${modo}">${t}</button>`;
     const campo = (rot: string, attrs: string) => `<label class="grupo" style="margin-bottom:14px"><span class="rotulo">${rot}</span><input class="campo" ${attrs} required /></label>`;
+    const senha = (rot: string, attrs: string, mb = 14) => `<label class="grupo" style="margin-bottom:${mb}px"><span class="rotulo">${rot}</span>${seg.campoSenha(attrs + " required")}</label>`;
+    const topo = (t: string, sub: string) => `<h1 style="margin:0 0 4px;font-size:24px;font-weight:700">${t}</h1><p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">${sub}</p>`;
     let corpo = "";
     if (m === "codigo") {
       corpo = `<form data-f="entrar" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar com login e código</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Para quem da equipe ainda não criou e-mail e senha.</p>
+        ${topo("Entrar com login e código", "Para quem da equipe ainda não criou e-mail e senha.")}
         ${campo("Login", `id="loginCampo" name="login" autocomplete="username" value="${h(loginSalvo())}"`)}
-        <label class="grupo"><span class="rotulo">Código</span><input id="codigoCampo" class="campo" name="codigo" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required /></label>
+        ${senha("Código", `id="codigoCampo" name="codigo" inputmode="numeric" maxlength="6" autocomplete="current-password"`, 0)}
         <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:14px;cursor:pointer"><input type="checkbox" name="salvar" ${loginSalvo() || !lerLocal("aion-painel-login-off") ? "checked" : ""} style="width:18px;height:18px" />Salvar login</label>
-        ${erro}${bt("Entrar")}
-        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("email", "Entrar com e-mail e senha")}</p>
+        ${erro}${bt("Entrar", "Entrando…")}
+        <p class="seg-rodape">${link("email", "Entrar com e-mail e senha")}</p>
       </form>`;
     } else if (m === "esqueci") {
       corpo = `<form data-f="esqueci-senha" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Esqueci minha senha</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Digite o e-mail da sua conta. Enviamos um link para você criar uma senha nova.</p>
-        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="username" value="${h(lerLocal("aion-painel-email"))}"`)}
-        ${erro}${aviso}${bt("Enviar link")}
-        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("email", "Voltar para entrar")}</p>
+        ${topo("Esqueci a senha", "Informe seu e-mail para receber o link de nova senha.")}
+        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="email" value="${h(lerLocal("aion-painel-email"))}"`)}
+        ${erro}${aviso}${bt("Enviar link", "Enviando…")}
+        <p class="seg-rodape">${link("email", "Voltar para o login")}</p>
       </form>`;
     } else if (m === "2fa") {
       corpo = `<form data-f="confirmar-2fa" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Verificação em duas etapas</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Abra o aplicativo autenticador no seu celular e digite o código de 6 números.</p>
-        ${campo("Código", `id="doisFaCampo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7"`)}
-        ${erro}${bt("Confirmar")}
-        <p style="margin:16px 0 0;font-size:14px;text-align:center">${link("sair", "Cancelar e sair")}</p>
+        ${topo("Verificação em duas etapas", "Abra o aplicativo autenticador do seu celular e digite o código de 6 números.")}
+        ${campo("Código", `id="doisFaCampo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" data-so-numeros`)}
+        ${erro}${bt("Confirmar", "Verificando…")}
+        <p class="seg-rodape">${link("sair", "Cancelar e sair")}</p>
       </form>`;
     } else if (m === "novaSenha") {
       corpo = `<form data-f="nova-senha" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Criar nova senha</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use pelo menos 8 caracteres, com letras e números.</p>
-        ${campo("Nova senha", `id="novaSenhaCampo" name="senha" type="password" autocomplete="new-password" minlength="8"`)}
-        ${campo("Repita a nova senha", `name="senha2" type="password" autocomplete="new-password" minlength="8"`)}
-        ${erro}${bt("Salvar e entrar")}
+        ${topo("Defina uma nova senha", "Escolha a senha que você vai usar para entrar no painel. Pelo menos 8 caracteres, com letras e números.")}
+        ${senha("Nova senha", `id="novaSenhaCampo" name="senha" autocomplete="new-password" minlength="8"`)}
+        ${senha("Repita a nova senha", `name="senha2" autocomplete="new-password" minlength="8"`, 0)}
+        ${erro}${bt("Salvar senha e entrar", "Salvando…")}
       </form>`;
     } else {
       corpo = `<form data-f="entrar-email" class="cartao" style="padding:22px">
-        <h1 style="margin:0 0 4px;font-size:24px;font-weight:700">Entrar no painel</h1>
-        <p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">Use seu e-mail e sua senha.</p>
-        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="username" value="${h(lerLocal("aion-painel-email"))}"`)}
-        <label class="grupo"><span class="rotulo">Senha</span><input id="senhaCampo" class="campo" name="senha" type="password" autocomplete="current-password" required /></label>
-        <p style="margin:10px 0 0;font-size:14px;text-align:right">${link("esqueci", "Esqueci minha senha")}</p>
-        ${erro}${aviso}${bt("Entrar")}
-        <p style="margin:16px 0 0;font-size:13px;text-align:center;color:var(--texto-2)">Ainda não criou seu e-mail e senha? ${link("codigo", "Entrar com login e código")}</p>
+        ${topo("Entrar no painel", "Use seu e-mail e sua senha.")}
+        ${campo("E-mail", `id="emailCampo" name="email" type="email" autocomplete="email" value="${h(lerLocal("aion-painel-email"))}"`)}
+        ${senha("Senha", `id="senhaCampo" name="senha" autocomplete="current-password"`, 0)}
+        ${erro}${aviso}${bt("Entrar", "Entrando…")}
+        <p class="seg-rodape">${link("esqueci", "Esqueci a senha")}</p>
+        <p class="seg-rodape" style="font-size:13px;color:var(--texto-2)">Ainda não criou seu e-mail e senha? ${link("codigo", "Entrar com login e código")}</p>
       </form>`;
     }
     return `
@@ -6116,10 +6116,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           ${avatarEq(e.id, e.nome, e.cor, "eq-av " + papelCls, `<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i>`)}
           <div class="eq-info">
             <div class="eq-col"><small>Nome</small><b>${h(e.nome)}</b></div>
-            <div class="eq-col"><small>Login</small><b>${h(e.login)}</b></div>
+            <div class="eq-col"><small>Login</small><b>${h(SEG_EQ.get(e.id)?.senhaPropria ? SEG_EQ.get(e.id)!.email : e.login)}</b>${SEG_EQ.has(e.id) ? `<small class="eq-sub">${SEG_EQ.get(e.id)!.senhaPropria ? "E-mail e senha" : "Ainda entra com código"}</small>` : ""}</div>
             <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">••••</b></div>
             <div class="eq-col"><small>Função</small><span>${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
-            <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span></div>
+            <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span>${SEG_EQ.get(e.id)?.tem2fa ? ` <span class="seg-selo on" title="Verificação em duas etapas ativa">2FA</span>` : ""}</div>
             <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
           </div>
           <div class="eq-acoes">
@@ -6128,8 +6128,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             ${!pode ? "" : e.bloqueada
               ? `<button type="button" class="al-botao eq-desb" data-a="equipe-desbloquear" data-id="${e.id}">${IC_EQ.aberto}Desbloquear</button>`
               : `<button type="button" class="al-botao eq-bloq" data-a="equipe-bloquear" data-id="${e.id}">${IC_EQ.cad}Bloquear</button>`}
-            ${pode && (euPode("codigo") || euPode("remover")) ? `<span class="est3 kb"><button type="button" class="eq-pts" data-a="estado-menu" data-v="kb-eq:${e.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-eq:" + e.id}" aria-label="Mais opções de ${h(e.nome)}">${IC_EQ.pontos}</button>${ui.estMenu === "kb-eq:" + e.id ? `<span class="est3-menu kb-menu" role="menu">
-                ${euPode("codigo") ? `<button type="button" role="menuitem" data-a="trocar-codigo" data-id="${e.id}">Gerar código novo</button>` : ""}
+            ${pode && (euPode("codigo") || euPode("remover") || SEG_EQ.get(e.id)?.tem2fa || SEG_EQ.get(e.id)?.senhaPropria) ? `<span class="est3 kb"><button type="button" class="eq-pts" data-a="estado-menu" data-v="kb-eq:${e.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-eq:" + e.id}" aria-label="Mais opções de ${h(e.nome)}">${IC_EQ.pontos}</button>${ui.estMenu === "kb-eq:" + e.id ? `<span class="est3-menu kb-menu" role="menu">
+                ${euPode("codigo") && !SEG_EQ.get(e.id)?.senhaPropria ? `<button type="button" role="menuitem" data-a="trocar-codigo" data-id="${e.id}">Gerar código novo</button>` : ""}
+                ${SEG_EQ.get(e.id)?.senhaPropria && SEG_EQ.get(e.id)?.email ? `<button type="button" role="menuitem" data-a="seg-link-membro" data-id="${e.id}">Enviar link de nova senha</button>` : ""}
+                ${SEG_EQ.get(e.id)?.tem2fa ? `<button type="button" role="menuitem" data-a="seg-zerar-2fa" data-id="${e.id}">Desligar 2FA</button>` : ""}
                 ${euPode("codigo") && euPode("remover") ? `<span class="kb-sep"></span>` : ""}
                 ${euPode("remover") ? `<button type="button" role="menuitem" class="perigo" data-a="equipe-remover" data-id="${e.id}">Remover da equipe</button>` : ""}
               </span>` : ""}</span>` : `<span class="eq-pts-vazio"></span>`}
@@ -7147,39 +7149,71 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         </div>`;
     } else if (m.tipo === "seguranca") {
       const x = segInfo;
-      const senhaCampos = `<label class="grupo" style="margin-top:10px"><span class="rotulo">Senha</span><input class="campo" name="senha" type="password" autocomplete="new-password" minlength="8" required /></label>
-        <label class="grupo" style="margin-top:10px"><span class="rotulo">Repita a senha</span><input class="campo" name="senha2" type="password" autocomplete="new-password" minlength="8" required /></label>`;
-      corpo = !x ? `<h2 class="titulo">Minha segurança</h2><div class="vazio">Carregando…</div>` : `
-      <h2 class="titulo">Minha segurança</h2>
-      ${!x.senhaPropria ? `
-      <form data-f="criar-login" novalidate>
-        <p class="explica">Crie seu e-mail e senha para entrar no painel. Depois disso, o login com código deixa de funcionar para você, e, se esquecer a senha, recebe um link no e-mail.</p>
-        <label class="grupo" style="margin-top:10px"><span class="rotulo">E-mail</span><input id="segEmail" class="campo" name="email" type="email" autocomplete="username" value="${h(x.email)}" required /></label>
-        ${senhaCampos}
-        <p class="explica" style="margin-top:8px">Pelo menos 8 caracteres, com letras e números.</p>
-        <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Criar e-mail e senha</button><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>
-      </form>` : `
-      <p class="explica">Você entra com <b>${h(x.email)}</b> e sua senha.</p>
-      <form data-f="trocar-senha" novalidate style="margin-top:14px">
-        <h3 style="margin:0;font-size:16px">Trocar senha</h3>
-        ${senhaCampos}
-        <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Trocar senha</button></div>
-      </form>
-      <div style="margin-top:22px">
-        <h3 style="margin:0;font-size:16px">Verificação em duas etapas</h3>
-        ${x.fator2fa ? `<p class="explica"><b>Ativada.</b> Ao entrar, o painel pede o código do aplicativo autenticador do seu celular.</p>
-          <div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao-neutro grande" data-a="seg-2fa-desligar">Desligar</button></div>`
-        : x.novoFator ? `<form data-f="ativar-2fa" novalidate>
-          <p class="explica">1. Abra um aplicativo autenticador no celular (Google Authenticator, Microsoft Authenticator ou Authy) e leia este QR code.</p>
-          <img src="${h(x.qr || "")}" alt="QR code da verificação em duas etapas" style="width:180px;height:180px;background:#fff;border-radius:8px;padding:6px;margin:8px 0" />
-          <p class="explica">Não dá para ler? Digite esta chave no aplicativo: <code style="user-select:all">${h(x.segredo || "")}</code></p>
-          <label class="grupo" style="margin-top:10px"><span class="rotulo">2. Digite o código de 6 números que aparece no aplicativo</span><input id="seg2faCodigo" class="campo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required /></label>
-          <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Ativar</button></div>
-        </form>`
-        : `<p class="explica">Além da senha, pede um código do seu celular para entrar. Recomendado para quem é dono ou administrador.</p>
-          <div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao" data-a="seg-2fa-iniciar" ${ocupado ? "disabled" : ""}>Ativar</button></div>`}
-      </div>
-      <div class="rodape-modal" style="margin-top:18px"><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>`}`;
+      const senhaDupla = (rot1: string, rot2: string) => `<div class="seg-duas">
+          <label class="grupo"><span class="rotulo">${rot1}</span>${seg.campoSenha('name="senha" autocomplete="new-password" minlength="8" required')}</label>
+          <label class="grupo"><span class="rotulo">${rot2}</span>${seg.campoSenha('name="senha2" autocomplete="new-password" minlength="8" required')}</label></div>`;
+      const cartao = (tit: string, dir: string, corpo2: string) => `<section class="seg-cartao"><header><h3>${tit}</h3>${dir}</header>${corpo2}</section>`;
+      const selo = (on: boolean, t1: string, t2: string) => `<span class="seg-selo${on ? " on" : ""}">${on ? t1 : t2}</span>`;
+      const cont = (CONTATO_EQ.get(eu!.id)?.email || "");
+      if (!x) corpo = `<h2 class="titulo">Minha segurança</h2><div class="vazio">Carregando…</div>`;
+      else if (x.etapa) {
+        // Ativar 2FA, em três passos, como no Atria Track.
+        corpo = x.etapa === "intro" ? `
+          <h2 class="titulo">Autenticação em dois fatores</h2>
+          <p class="seg-grande">Sua conta mais segura</p>
+          <p class="explica">Uma camada <b>extra</b> de segurança para manter seus dados protegidos: além da senha, o login pede um código do aplicativo autenticador do seu celular (Google Authenticator, Microsoft Authenticator, Authy…).</p>
+          <div class="rodape-modal" style="margin-top:16px"><button type="button" class="botao" data-a="seg-2fa-iniciar" ${ocupado ? "disabled" : ""}>${ocupado ? "Gerando…" : "Ativar agora"}</button><button type="button" class="botao-neutro grande" data-a="seg-2fa-voltar">Pular</button></div>`
+        : x.etapa === "qr" ? `
+          <form data-f="ativar-2fa" novalidate>
+          <h2 class="titulo">Autenticação em dois fatores</h2>
+          <ol class="seg-passos"><li>1. Abra o aplicativo <b>autenticador</b> no seu celular.</li><li>2. No aplicativo, escolha <b>Adicionar conta</b> e a opção <b>Ler QR code</b>.</li><li>3. Aponte a câmera do celular para o QR code abaixo.</li></ol>
+          <div class="seg-qr"><img src="${h(x.qr || "")}" alt="QR code para o aplicativo autenticador" /></div>
+          <div class="seg-chave"><code>${h(x.segredo || "")}</code><button type="button" class="botao-neutro" data-a="seg-copiar-chave">Copiar código</button></div>
+          <p class="explica" style="font-size:12px">Sem câmera? Digite este código no aplicativo. Ele é usado para gerar os códigos de verificação.</p>
+          <label class="grupo" style="margin-top:10px"><span class="rotulo">Código de 6 números</span><input id="seg2faCodigo" class="campo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" data-so-numeros required /></label>
+          <div class="rodape-modal" style="margin-top:14px"><button class="botao" ${ocupado ? "disabled" : ""}>${ocupado ? "Verificando…" : "Verificar código"}</button><button type="button" class="botao-neutro grande" data-a="seg-2fa-voltar">Cancelar</button></div>
+          </form>`
+        : `
+          <h2 class="titulo">Tudo pronto</h2>
+          <p class="explica">Sua conta agora está protegida com a autenticação em dois fatores.</p>
+          <p class="explica" style="font-size:12px">Você adicionou uma camada extra de segurança aos seus dados. Nos próximos logins, o código será pedido.</p>
+          <div class="rodape-modal" style="margin-top:16px"><button type="button" class="botao-neutro grande" data-a="seg-prefs-abrir">Escolher ações protegidas</button><button type="button" class="botao" data-a="seg-2fa-voltar">Fechar</button></div>`;
+      } else if (x.prefs) {
+        const sel = x.exigir ?? [];
+        corpo = `<form data-f="seg-prefs" novalidate>
+          <h2 class="titulo">Também exigir 2FA para:</h2>
+          <p class="explica">Marque ou desmarque as ações que vão pedir o código 2FA.</p>
+          <div class="seg-prefs">${seg.ACOES_2FA.map((a) => `<label><input type="checkbox" name="acao" value="${a.value}" ${sel.includes(a.value) ? "checked" : ""} /> ${a.label}</label>`).join("")}</div>
+          <div class="rodape-modal" style="margin-top:14px"><button class="botao" ${ocupado ? "disabled" : ""}>${ocupado ? "Salvando…" : "Salvar"}</button><button type="button" class="botao-neutro grande" data-a="seg-2fa-voltar">Cancelar</button></div>
+        </form>`;
+      } else if (!x.senhaPropria) {
+        corpo = `<h2 class="titulo">Minha segurança</h2>
+        ${cartao("Criar e-mail e senha", selo(false, "", "Ainda com código"), `<form data-f="criar-login" novalidate>
+          <p class="explica">Crie seu e-mail e senha para entrar no painel. Depois disso, o login com código deixa de funcionar para você e, se esquecer a senha, recebe um link no e-mail.</p>
+          <label class="grupo" style="margin-top:10px"><span class="rotulo">E-mail</span><input id="segEmail" class="campo" name="email" type="email" autocomplete="email" value="${h(x.email || cont)}" required /></label>
+          ${senhaDupla("Senha", "Repita a senha")}
+          <p class="explica" style="font-size:12px;margin-top:6px">Pelo menos 8 caracteres, com letras e números.</p>
+          <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>${ocupado ? "Salvando…" : "Criar e-mail e senha"}</button></div>
+        </form>`)}
+        ${cartao("Sessões", "", `<p class="explica">Encerre o acesso em todos os computadores e celulares conectados a esta conta (por exemplo, se esqueceu a sessão aberta em outro lugar).</p><div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao-neutro grande seg-perigo" data-a="seg-sair-todos">Sair de todos os dispositivos</button></div>`)}
+        <div class="rodape-modal" style="margin-top:14px"><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>`;
+      } else {
+        const prefs = (x.exigir ?? []).filter((v) => seg.ACOES_2FA.some((a) => a.value === v));
+        corpo = `<h2 class="titulo">Minha segurança</h2>
+        ${cartao("Detalhes da conta", "", `<form data-f="trocar-email" novalidate>
+          <label class="grupo"><span class="rotulo">E-mail de entrada</span><input class="campo" name="email" type="email" autocomplete="email" value="${h(x.email)}" required /></label>
+          <label class="grupo" style="margin-top:10px"><span class="rotulo">Senha atual (para trocar o e-mail)</span>${seg.campoSenha('name="senha_atual" autocomplete="current-password"')}</label>
+          <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>Salvar e-mail</button></div>
+        </form>`)}
+        ${cartao("Alterar senha", "", `<form data-f="trocar-senha" novalidate>${senhaDupla("Nova senha", "Repita a nova senha")}
+          <div class="rodape-modal" style="margin-top:12px"><button class="botao" ${ocupado ? "disabled" : ""}>${ocupado ? "Salvando…" : "Alterar senha"}</button></div></form>`)}
+        ${cartao("Autenticação em dois fatores (2FA)", selo(!!x.fator2fa, "Ativada", "Desativada"), `
+          <p class="explica">${x.fator2fa ? "Sua conta está com a autenticação em dois fatores ativada." : "A autenticação em dois fatores está desativada. Ative para aumentar a segurança da sua conta."}</p>
+          ${x.fator2fa && prefs.length ? `<p class="explica" style="font-size:12px">Também exige o código para: ${seg.ACOES_2FA.filter((a) => prefs.includes(a.value)).map((a) => a.label.toLowerCase()).join("; ")}.</p>` : ""}
+          <div class="rodape-modal" style="margin-top:10px">${x.fator2fa ? `<button type="button" class="botao-neutro grande" data-a="seg-prefs-abrir">Editar 2FA</button><button type="button" class="botao-neutro grande seg-perigo" data-a="seg-2fa-desligar">Desativar 2FA</button>` : `<button type="button" class="botao" data-a="seg-2fa-intro">Ativar 2FA</button>`}</div>`)}
+        ${cartao("Sessões", "", `<p class="explica">Encerre o acesso em todos os computadores e celulares conectados a esta conta (por exemplo, se esqueceu a sessão aberta em outro lugar).</p><div class="rodape-modal" style="margin-top:10px"><button type="button" class="botao-neutro grande seg-perigo" data-a="seg-sair-todos">Sair de todos os dispositivos</button></div>`)}
+        <div class="rodape-modal" style="margin-top:14px"><button type="button" class="botao-neutro grande" data-a="fechar">Fechar</button></div>`;
+      }
     } else if (m.tipo === "sugestoes") {
       corpo = `
       <form data-f="sugestao">
@@ -7432,18 +7466,48 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         ui.estMenu = ""; segInfo = null; ui.modal = { tipo: "seguranca" };
         void seg.situacao().then((x) => { segInfo = x; ui.focar = x && !x.senhaPropria ? "segEmail" : null; render(); });
         break;
+      case "seg-2fa-intro": if (segInfo) segInfo = { ...segInfo, etapa: "intro" }; break;
+      case "seg-prefs-abrir": if (segInfo) segInfo = { ...segInfo, etapa: undefined, prefs: true }; break;
+      case "seg-2fa-voltar":
+        if (segInfo) segInfo = { ...segInfo, etapa: undefined, prefs: false, qr: undefined, segredo: undefined, novoFator: undefined };
+        void seg.situacao().then((x) => { if (x && ui.modal?.tipo === "seguranca") { segInfo = x; render(); } });
+        break;
+      case "seg-copiar-chave":
+        void navigator.clipboard?.writeText(segInfo?.segredo || "").then(() => toast("Código copiado.")).catch(() => toast("Não deu para copiar. Selecione o código e copie."));
+        return;
       case "seg-2fa-iniciar":
         if (ocupado) return;
         ocupado = true; render();
-        void seg.iniciar2fa().then((r) => { ocupado = false; if (typeof r === "string") toast(r); else if (segInfo) { segInfo = { ...segInfo, qr: r.qr, segredo: r.segredo, novoFator: r.id }; ui.focar = "seg2faCodigo"; } render(); });
+        void seg.iniciar2fa().then((r) => { ocupado = false; if (typeof r === "string") toast(r); else if (segInfo) { segInfo = { ...segInfo, etapa: "qr", qr: r.qr, segredo: r.segredo, novoFator: r.id }; ui.focar = "seg2faCodigo"; } render(); });
         return;
       case "seg-2fa-desligar":
-        confirmar({ titulo: "Desligar a verificação em duas etapas?", texto: "Sua conta volta a abrir só com e-mail e senha.", palavra: "DESLIGAR", rotulo: "Desligar" }, async () => {
-          const erro = await seg.desligar2fa(segInfo?.fator2fa ?? "");
+        void seg.desativar2fa(segInfo?.fator2fa ?? "").then(async (r) => {
+          if (r === false) return;
+          if (r) { toast(r); return; }
+          seg.esquecerPrefs(); segInfo = await seg.situacao(); toast("Autenticação 2FA desativada com sucesso!"); render();
+        });
+        return;
+      case "seg-sair-todos":
+        confirmar({ titulo: "Sair de todos os dispositivos?", texto: "Todas as sessões abertas desta conta (inclusive esta) serão encerradas. Você vai precisar entrar de novo.", palavra: "SAIR", rotulo: "Sair de todos" }, async () => {
+          const erro = await seg.sairDeTodos();
           if (erro) throw new Error(erro);
-          segInfo = await seg.situacao(); ui.modal = { tipo: "seguranca" }; return "Verificação em duas etapas desligada.";
+          eu = null; ui.modal = null; acesso.modo = "email"; return "Você saiu de todos os dispositivos.";
         });
         break;
+      case "seg-zerar-2fa": {
+        const alvo = S.equipe.find((x) => x.id === d.id); if (!alvo) return;
+        confirmar({ titulo: "Desligar o 2FA de " + alvo.nome + "?", texto: "Use quando a pessoa perdeu o celular. Ela volta a entrar só com e-mail e senha e pode ativar de novo depois.", palavra: "DESLIGAR", rotulo: "Desligar 2FA" }, async () => {
+          const erro = await seg.zerar2faDe(alvo.id);
+          if (erro) throw new Error(erro);
+          lerSegEq(); return "2FA de " + primeiroNome(alvo.nome) + " desligado.";
+        });
+        break;
+      }
+      case "seg-link-membro": {
+        const sg = SEG_EQ.get(d.id); if (!sg?.email) return;
+        void seg.enviarLinkDeSenha(sg.email).then((erro) => toast(erro || "Link de nova senha enviado para " + sg.email + "."));
+        return;
+      }
       case "sair":
         // O menu do perfil fica "aberto" na memória: sem fechar aqui, o primeiro clique em Entrar só fechava o menu.
         acesso.modo = "email"; acesso.depois2fa = ""; ui.estMenu = ""; ui.modal = null;
@@ -9110,22 +9174,30 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         })();
         return;
       }
-      case "criar-login": case "trocar-senha": case "ativar-2fa": {
+      case "criar-login": case "trocar-senha": case "ativar-2fa": case "trocar-email": case "seg-prefs": {
         if (ocupado) return;
-        const senha = (form.elements.namedItem("senha") as HTMLInputElement | null)?.value ?? "";
-        const repetida = (form.elements.namedItem("senha2") as HTMLInputElement | null)?.value ?? "";
-        if (f !== "ativar-2fa") { const pr = seg.problemaDaSenha(senha, repetida); if (pr) { toast(pr); return; } }
-        if (f === "criar-login" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("email"))) { toast("Confira o e-mail."); return; }
-        ocupado = true; render();
+        const campoV = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
+        const senha = campoV("senha"), repetida = campoV("senha2");
+        if (f === "criar-login" || f === "trocar-senha") { const pr = seg.problemaDaSenha(senha, repetida); if (pr) { toast(pr); return; } }
+        if ((f === "criar-login" || f === "trocar-email") && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v("email"))) { toast("O e-mail deve ser válido."); return; }
+        if (f === "trocar-email" && v("email").toLowerCase() === (segInfo?.email || "").toLowerCase()) { toast("Este já é o seu e-mail de entrada."); return; }
+        if (f === "trocar-email" && !campoV("senha_atual")) { toast("Digite sua senha atual para trocar o e-mail."); return; }
+        if (f === "ativar-2fa" && v("codigo").length !== 6) { toast("Digite os 6 números do aplicativo."); return; }
+        const marcadas = [...form.querySelectorAll<HTMLInputElement>('input[name="acao"]:checked')].map((x) => x.value);
+        // Sem redesenhar enquanto salva: se der erro, o que a pessoa digitou continua nos campos.
+        ocupado = true; const btSalvar = form.querySelector<HTMLButtonElement>("button.botao"); if (btSalvar) btSalvar.disabled = true;
         void (async () => {
           const erro = f === "criar-login" ? await seg.criarLogin(v("email"), senha)
             : f === "trocar-senha" ? await seg.trocarSenha(senha)
+            : f === "trocar-email" ? await seg.trocarEmail(v("email"), campoV("senha_atual"))
+            : f === "seg-prefs" ? await seg.salvarPrefs2fa(marcadas)
             : await seg.ativar2fa(segInfo?.novoFator ?? "", v("codigo"));
           ocupado = false;
-          if (erro) { toast(erro); render(); return; }
-          if (f === "criar-login") gravarLocal("aion-painel-email", v("email").toLowerCase());
+          if (erro) { toast(erro); if (btSalvar) btSalvar.disabled = false; return; }
+          if (f === "criar-login" || f === "trocar-email") gravarLocal("aion-painel-email", v("email").toLowerCase());
           segInfo = await seg.situacao();
-          toast(f === "criar-login" ? "Pronto! A partir de agora você entra com e-mail e senha." : f === "trocar-senha" ? "Senha trocada." : "Verificação em duas etapas ativada.");
+          if (f === "ativar-2fa" && segInfo) segInfo = { ...segInfo, etapa: "pronto" };
+              toast(f === "criar-login" ? "Pronto! A partir de agora você entra com e-mail e senha." : f === "trocar-senha" ? "Senha alterada com sucesso!" : f === "trocar-email" ? "E-mail de entrada atualizado." : f === "seg-prefs" ? "Preferências atualizadas com sucesso." : "Código correto! Autenticação em dois fatores ativada.");
           render();
         })();
         return;
@@ -9817,8 +9889,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     div.querySelector<HTMLElement>('[data-sujo="ficar"]')!.focus();
   }
   /** Antes de cada clique: se há um formulário mexido e o clique sai dele, pergunta. */
-  function guardado(a: string, d: Record<string, string>, el: HTMLElement | null, alvo: EventTarget | null) {
+  function guardado(a: string, d: Record<string, string>, el: HTMLElement | null, alvo: EventTarget | null, jaConfirmou = false) {
     if (a === "fechar-fundo" && alvo !== el) return;
+    // Ações que a pessoa marcou em "Também exigir 2FA para" pedem o código antes (como no Atria Track).
+    if (!jaConfirmou && eu && seg.acaoProtegivel(a)) {
+      void seg.precisaCodigo(a).then(async (fator) => {
+        if (!fator) return guardado(a, d, el, alvo, true);
+        if (await seg.pedirCodigo(fator)) guardado(a, d, el, alvo, true);
+      });
+      return;
+    }
     if (ui.sujo && !LIVRE.has(a)) {
       const fd = formSujo();
       if (!fd || CANCELA.has(a)) ui.sujo = null;
@@ -10430,6 +10510,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       void supabase.rpc("perfis_comentario_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; nome_comentario: string | null; foto_comentario: string | null }[]) PERFIL_COM.set(x.id, { nome: x.nome_comentario || "", foto: x.foto_comentario || "" }); });
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
+      seg.esquecerPrefs(); lerSegEq();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
@@ -10440,6 +10521,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     }
   }
 
+  seg.ligarOlhos(document);
+  // Campos de código (2FA): só números.
+  document.addEventListener("input", (e) => { const t = e.target as HTMLInputElement; if (t?.dataset && "soNumeros" in t.dataset) t.value = t.value.replace(/\D/g, "").slice(0, 6); });
   render();
   void (async () => {
     const { data } = await supabase.auth.getSession();

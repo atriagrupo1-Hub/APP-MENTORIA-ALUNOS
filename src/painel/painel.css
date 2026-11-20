@@ -6577,3 +6577,32 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .eqn-pc-x i { display: block; height: 9px; margin-top: 14px; border-radius: 9px; background: #4a4d55; }
 .eqn-pc-x i + i { width: 75%; margin-top: 10px; }
 @media (max-width: 900px) { .eqn-com-g { grid-template-columns: 1fr; gap: 22px; } .eqn-com-esq { padding-right: 0; border-right: 0; } }
+
+/* ---------- Login da equipe e Minha segurança (0138) ---------- */
+.seg-senha { position: relative; display: block; }
+.seg-senha > .campo { width: 100%; padding-right: 44px; }
+.seg-olho { position: absolute; top: 0; right: 0; bottom: 0; width: 42px; display: grid; place-items: center; background: none; border: 0; color: var(--texto-2); cursor: pointer; border-radius: 0 10px 10px 0; }
+.seg-olho:hover, .seg-olho:focus-visible { color: var(--texto); outline: none; }
+.seg-link { background: none; border: 0; padding: 0; color: var(--texto-2); font: inherit; font-size: 14px; cursor: pointer; }
+.seg-link:hover { color: var(--texto); text-decoration: underline; }
+.seg-rodape { margin: 14px 0 0; font-size: 14px; text-align: center; }
+.seg-ok { margin: 12px 0 0; padding: 8px 12px; font-size: 14px; color: #a7f3d0; background: rgba(6, 78, 59, .45); border: 1px solid #065f46; border-radius: 10px; }
+.seg-cartao { margin-top: 14px; padding: 14px 16px; border: 1px solid var(--linha); border-radius: 12px; }
+.seg-cartao > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.seg-cartao h3 { margin: 0; font-size: 15px; font-weight: 700; }
+.seg-selo { display: inline-block; padding: 2px 8px; font-size: 11.5px; font-weight: 700; border-radius: 999px; color: var(--texto-2); background: rgba(127,127,127,.15); vertical-align: middle; }
+.seg-selo.on { color: #a7f3d0; background: rgba(16,185,129,.18); }
+.seg-duas { display: grid; gap: 10px; margin-top: 10px; }
+@media (min-width: 560px) { .seg-duas { grid-template-columns: 1fr 1fr; } }
+.seg-grande { margin: 4px 0 6px; font-size: 18px; font-weight: 700; }
+.seg-passos { margin: 8px 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.6; color: var(--texto-2); }
+.seg-passos b { color: var(--texto); }
+.seg-qr { display: flex; justify-content: center; margin: 10px 0; }
+.seg-qr img { width: 192px; height: 192px; padding: 8px; background: #fff; border-radius: 10px; }
+.seg-chave { display: flex; align-items: center; gap: 8px; }
+.seg-chave code { flex: 1; min-width: 0; padding: 6px 8px; font-size: 12px; word-break: break-all; border-radius: 6px; background: rgba(0,0,0,.35); user-select: all; }
+.seg-prefs { display: grid; gap: 10px; margin-top: 10px; font-size: 14px; }
+.seg-prefs label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.seg-prefs input { width: 18px; height: 18px; }
+.seg-perigo { color: #f87171 !important; }
+.seg-fundo { z-index: 100000; }
