@@ -40,10 +40,10 @@ export function editarFoto(src: string, a: Ajuste, nome: string, trocar: () => v
     fundo.innerHTML = `
       <div class="ef-caixa" role="dialog" aria-modal="true" aria-label="Ajustar a foto de ${nome.replace(/[<>&"]/g, "")}">
         <h2>Ajustar foto</h2>
-        <p>Arraste a foto para centralizar o rosto. Use a barra para aproximar.</p>
+        <p>Arraste a foto para os lados, para cima ou para baixo. Use a barra (ou a roda do mouse) para aproximar ou afastar.</p>
         <div class="ef-janela"><img class="ef-img" alt="" draggable="false" /></div>
-        <div class="ef-zoom"><span aria-hidden="true">−</span><input type="range" min="1" max="3" step="0.01" aria-label="Aproximar a foto" /><span aria-hidden="true">+</span></div>
-        <button type="button" class="ef-trocar">Escolher outra foto</button>
+        <div class="ef-zoom"><span aria-hidden="true">−</span><input type="range" min="0.5" max="4" step="0.01" aria-label="Aproximar ou afastar a foto" /><span aria-hidden="true">+</span></div>
+        <div class="ef-acoes"><button type="button" class="botao-neutro ef-centro">Centralizar</button><button type="button" class="ef-trocar">Escolher outra foto</button></div>
         <div class="ef-botoes"><button type="button" class="botao-neutro grande ef-cancelar">Cancelar</button><button type="button" class="al-botao-ouro ef-salvar">Salvar foto</button></div>
       </div>`;
     document.body.append(fundo);
@@ -51,7 +51,7 @@ export function editarFoto(src: string, a: Ajuste, nome: string, trocar: () => v
     const jan = fundo.querySelector<HTMLElement>(".ef-janela")!;
     const zoom = fundo.querySelector<HTMLInputElement>('input[type="range"]')!;
     const limitar = () => {
-      const sc = base() * F.z, mx = Math.max(0, (F.w * sc - V) / 2), my = Math.max(0, (F.h * sc - V) / 2);
+      const sc = base() * F.z, mx = Math.max(0, (F.w * sc - V) / 2) + V * 0.4, my = Math.max(0, (F.h * sc - V) / 2) + V * 0.4;
       F.x = Math.max(-mx, Math.min(mx, F.x)); F.y = Math.max(-my, Math.min(my, F.y));
     };
     const desenhar = () => {
@@ -68,15 +68,17 @@ export function editarFoto(src: string, a: Ajuste, nome: string, trocar: () => v
     jan.addEventListener("pointerdown", (e) => { arr = { px: e.clientX, py: e.clientY, x: F.x, y: F.y }; jan.setPointerCapture(e.pointerId); });
     jan.addEventListener("pointermove", (e) => { if (!arr) return; F.x = arr.x + (e.clientX - arr.px); F.y = arr.y + (e.clientY - arr.py); desenhar(); });
     jan.addEventListener("pointerup", () => { arr = null; }); jan.addEventListener("pointercancel", () => { arr = null; });
-    jan.addEventListener("wheel", (e) => { e.preventDefault(); F.z = Math.max(1, Math.min(3, F.z - e.deltaY * 0.002)); desenhar(); }, { passive: false });
+    jan.addEventListener("wheel", (e) => { e.preventDefault(); F.z = Math.max(0.5, Math.min(4, F.z - e.deltaY * 0.002)); desenhar(); }, { passive: false });
     zoom.addEventListener("input", () => { F.z = +zoom.value; desenhar(); });
     fundo.addEventListener("click", (e) => { if (e.target === fundo) fechar(null); });
+    fundo.querySelector(".ef-centro")!.addEventListener("click", () => { F.z = 1; F.x = 0; F.y = 0; desenhar(); });
     fundo.querySelector(".ef-cancelar")!.addEventListener("click", () => fechar(null));
     fundo.querySelector(".ef-trocar")!.addEventListener("click", () => { fechar(null); trocar(); });
     fundo.querySelector(".ef-salvar")!.addEventListener("click", () => {
       const t = 320, sc = base() * F.z, k = t / V, dw = F.w * sc * k, dh = F.h * sc * k;
       const c = document.createElement("canvas"); c.width = t; c.height = t;
-      c.getContext("2d")!.drawImage(im, t / 2 - dw / 2 + F.x * k, t / 2 - dh / 2 + F.y * k, dw, dh);
+      const g = c.getContext("2d")!; g.fillStyle = "#111"; g.fillRect(0, 0, t, t); g.imageSmoothingQuality = "high";
+      g.drawImage(im, t / 2 - dw / 2 + F.x * k, t / 2 - dh / 2 + F.y * k, dw, dh);
       fechar({ foto: c.toDataURL("image/jpeg", 0.88), original: src, ajuste: { ...F } });
     });
   });

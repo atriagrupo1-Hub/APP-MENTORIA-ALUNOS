@@ -177,12 +177,15 @@ const maisDias = (s: string, n: number) => { const d = new Date(s + "T12:00:00")
 const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(r); return String(1000 + (r[0] % 9000)); };
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
 /** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
+/** Busca de imagens no Google para o nome escolhido nos comentários. */
+function googleFotos(nome: string): string { return "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent((nome.trim() || "foto de perfil") + " foto de perfil"); }
 /** Prévia do comentário (equipe): nome para comentários ou o oficial; foto para comentários ou a do perfil. */
 function eqnPvCom(f: HTMLFormElement): void {
   const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
   const nome = v("nomeCom") || "Nome para comentários";
   const foto = v("fotoCom") || f.querySelector<HTMLImageElement>("#eqnFoto img")?.getAttribute("src") || "";
   const n = f.querySelector("[data-eqn-pcn]"); if (n) n.textContent = nome;
+  const gl = f.querySelector<HTMLAnchorElement>("[data-eqn-google]"); if (gl) { gl.href = googleFotos(v("nomeCom")); const tx = gl.querySelector("[data-eqn-gtx]"); if (tx) tx.textContent = v("nomeCom") ? `Ver fotos no Google para “${v("nomeCom")}”` : "Ver fotos no Google para o nome escolhido"; }
   const ft = f.querySelector<HTMLElement>("[data-eqn-pcf]"); if (ft) { const atual = ft.querySelector("img")?.getAttribute("src") || ""; if (atual !== foto) { if (foto) { const im = document.createElement("img"); im.src = foto; im.alt = ""; ft.replaceChildren(im); } else ft.innerHTML = IC_PESSOA_PC; } }
 }
 const IC_PESSOA_PC = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1-3.6 3.8-5.5 7-5.5s6 1.9 7 5.5"/></svg>`;
@@ -194,6 +197,7 @@ function eqnFalta(f: HTMLFormElement): { etapa: string; msg: string } | null {
   if (!/^[a-z0-9._-]{2,40}$/.test(v("login").toLowerCase())) return { etapa: "acesso", msg: "Preencha o nome para login: letras sem acento, números, ponto e hífen (etapa Acesso ao painel)." };
   if (f.elements.namedItem("codigo") && !/^\d{4,6}$/.test(v("codigo"))) return { etapa: "acesso", msg: "Escolha um código de 4 a 6 números (etapa Acesso ao painel)." };
   if (!v("nomeCom")) return { etapa: "coment", msg: "Preencha o nome para comentários (etapa Perfil dos comentários)." };
+  if (!v("fotoCom")) return { etapa: "coment", msg: "Envie a foto para comentários (etapa Perfil dos comentários)." };
   return null;
 }
 /** Mostra uma etapa da janela da equipe. */
@@ -755,9 +759,11 @@ export function montar(app: HTMLElement) {
   arquivoOp.addEventListener("change", () => {
     const file = arquivoOp.files?.[0]; arquivoOp.value = ""; const alvo = paraOp; paraOp = null;
     const x = ui.aula ? acharAula(ui.aula) : null; if (!file || !alvo || !x) return;
-    toast("Enviando o arquivo…");
     void (async () => {
-      try { const caminho = await enviarArquivo(alvo.deposito, x.c.id, file); alvo.pronto(caminho, file.name.replace(/\.[^.]+$/, "")); if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Arquivo enviado. Clique em Salvar aula para guardar."); }
+      let arq: File = file;
+      if (alvo.deposito === "capas" && file.type.startsWith("image/")) { const r = await editarCapa(file, 16 / 9, file.name); if (!r) return; arq = r; }
+      toast("Enviando o arquivo…");
+      try { const caminho = await enviarArquivo(alvo.deposito, x.c.id, arq); alvo.pronto(caminho, file.name.replace(/\.[^.]+$/, "")); if (ui.aula) ui.sujo = { f: "aula", id: ui.aula }; toast("Arquivo enviado. Clique em Salvar aula para guardar."); }
       catch (e) { toast(motivo(e)); }
     })();
   });
@@ -7225,9 +7231,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
             <div class="eqn-com-esq">
               <label class="eq-campo"><span>Nome para comentários ${ajuda("É o nome que aparece no aplicativo dos alunos, na área de membros, quando a pessoa responde um comentário.")}</span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="nomeCom" data-eqn-com value="${h(pc?.nome || "")}" maxlength="60" placeholder="Ex.: Instrutor João" autocomplete="off" /></span></label>
               <div class="eqn-sug"><span>Sugestões de nomes:</span><div>${SUG_COM.map((x) => `<button type="button" data-a="eqn-sug" data-v="${x}">${x}</button>`).join("")}</div></div>
-              <div class="eqn-com-foto"><span class="eqn-com-rot">Foto para comentários <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece ao lado das respostas dos comentários, no aplicativo dos alunos.")}</span>
+              <div class="eqn-com-foto"><span class="eqn-com-rot">Foto para comentários <b class="eqn-obr">*</b> ${ajuda("A foto que aparece ao lado das respostas dos comentários, no aplicativo dos alunos.")}</span>
                 <div class="eqn-foto"><span class="eqn-circ" id="eqnFotoCom">${fotoCom ? `<img src="${fotoCom}" alt="" />` : IC_EQ.pessoa}</span>
-                  <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada (1:1).</small></div></div>
+                  <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada (1:1). Dá para dar zoom, mover e centralizar.</small></div></div>
+                <a class="eqn-google" data-eqn-google href="${h(googleFotos(pc?.nome || ""))}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span data-eqn-gtx>${pc?.nome ? `Ver fotos no Google para “${h(pc.nome)}”` : "Ver fotos no Google para o nome escolhido"}</span></a>
                 <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
             </div>
             <div class="eqn-pc"><div class="eqn-pc-t"><span class="eqn-pc-i">${IC_PF_OLHO}</span><div><b>Prévia no comentário</b><small>Veja como ficará para os alunos.</small></div></div>
@@ -8885,10 +8892,15 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "eqn-foto-com": {
         const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/jpeg,image/png,image/webp";
+        const f = el.closest("form") as HTMLFormElement | null;
         inp.onchange = () => { const fl = inp.files?.[0]; if (!fl) return; if (fl.size > 8 * 1024 * 1024) { toast("Escolha uma imagem de até 8MB."); return; }
-          const im = new Image(); im.onload = () => { const L = 320, cv = document.createElement("canvas"); cv.width = cv.height = L; const lado = Math.min(im.width, im.height); cv.getContext("2d")!.drawImage(im, (im.width - lado) / 2, (im.height - lado) / 2, lado, lado, 0, 0, L, L); const url = cv.toDataURL("image/jpeg", 0.85); URL.revokeObjectURL(im.src);
-            const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = url; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = `<img src="${url}" alt="" />`; el.innerHTML = IC_PF.up + "Trocar foto"; if (f) eqnPvCom(f); };
-          im.onerror = () => toast("Não consegui abrir essa imagem."); im.src = URL.createObjectURL(fl); };
+          void lerImagem(fl).then(async (im) => {
+            const pronta = await editarFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 }, "foto para comentários", () => el.click());
+            if (!pronta) return;
+            const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = pronta.foto;
+            const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = `<img src="${pronta.foto}" alt="" />`;
+            el.innerHTML = IC_PF.up + "Trocar foto"; if (f) { ui.sujo = { f: f.dataset.f!, id: f.dataset.id || "" }; eqnPvCom(f); }
+          }).catch((e) => toast(motivo(e))); };
         inp.click(); return;
       }
       case "eqn-sug": { const f = el.closest("form") as HTMLFormElement | null; if (!f) return; const inp = f.elements.namedItem("nomeCom") as HTMLInputElement; inp.value = d.v!; eqnPvCom(f); inp.focus(); return; }
@@ -9830,6 +9842,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     marcarSujo(t);
     if (t.name === "catx") pintarChips();
     if (t.hasAttribute("data-kn-modo")) { const bx = t.form?.querySelector<HTMLElement>(".kn-cursos"); if (bx) bx.hidden = t.value !== "agora"; }
+    if (t.hasAttribute("data-kn-arq") && t.files?.[0] && !t.dataset.recortado) { const f0 = t.files[0]; t.value = ""; void editarCapa(f0, 16 / 9, f0.name).then((r) => { if (!r) return; const dt = new DataTransfer(); dt.items.add(r); t.files = dt.files; t.dataset.recortado = "1"; t.dispatchEvent(new Event("change", { bubbles: true })); delete t.dataset.recortado; }); return; }
     if (t.hasAttribute("data-kn-arq")) { const f = t.files?.[0], bx = t.closest<HTMLElement>("[data-kn-capa]"); if (bx) { const im = bx.querySelector("img")!; if (im.src) URL.revokeObjectURL(im.src); im.hidden = !f; im.src = f ? URL.createObjectURL(f) : ""; bx.querySelector(".kn-capa")!.classList.toggle("tem", !!f); bx.querySelector<HTMLElement>(".kn-capa-tirar")!.hidden = !f; } }
     if (t.hasAttribute("data-lib-modo")) { const i = (t.form?.elements.namedItem("libera") as HTMLInputElement | null) ?? null; if (i) { i.hidden = t.value !== "data"; if (t.value !== "data") i.value = ""; else i.focus(); } }
     if (t.hasAttribute("data-vis-est")) { acao("estado-set", { v: t.dataset.visEst + ":" + t.value }, t, t); return; }

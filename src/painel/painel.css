@@ -6577,3 +6577,10 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .eqn-pc-x i { display: block; height: 9px; margin-top: 14px; border-radius: 9px; background: #4a4d55; }
 .eqn-pc-x i + i { width: 75%; margin-top: 10px; }
 @media (max-width: 900px) { .eqn-com-g { grid-template-columns: 1fr; gap: 22px; } .eqn-com-esq { padding-right: 0; border-right: 0; } }
+
+/* Editor de foto: Centralizar + Escolher outra foto; link de fotos no Google (comentários) */
+.ef-acoes { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; }
+.ef-acoes .ef-centro { min-height: 38px; padding: 0 16px; }
+.eqn-google { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; color: #E2C68C; font-size: 13.5px; font-weight: 650; text-decoration: none; }
+.eqn-google:hover { text-decoration: underline; }
+.eqn-google svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
