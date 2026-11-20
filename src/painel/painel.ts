@@ -177,6 +177,16 @@ const maisDias = (s: string, n: number) => { const d = new Date(s + "T12:00:00")
 const novoCodigo = () => { const r = new Uint32Array(1); crypto.getRandomValues(r); return String(1000 + (r[0] % 9000)); };
 const p = (n: number, um: string, varios: string) => n + " " + (n === 1 ? um : varios);
 /** Celular no formato (11) 98765-4321, enquanto digita. Só números entram. */
+/** Prévia do comentário (equipe): nome para comentários ou o oficial; foto para comentários ou a do perfil. */
+function eqnPvCom(f: HTMLFormElement): void {
+  const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
+  const nome = v("nomeCom") || [v("pnome"), v("snome")].join(" ").trim() || v("nome") || "Nome do membro";
+  const foto = v("fotoCom") || f.querySelector<HTMLImageElement>("#eqnFoto img")?.getAttribute("src") || "";
+  const n = f.querySelector("[data-eqn-pcn]"); if (n) n.textContent = nome;
+  const ft = f.querySelector<HTMLElement>("[data-eqn-pcf]"); if (ft) { const atual = ft.querySelector("img")?.getAttribute("src") || ""; if (atual !== foto) { if (foto) { const im = document.createElement("img"); im.src = foto; im.alt = ""; ft.replaceChildren(im); } else ft.innerHTML = IC_PESSOA_PC; } }
+}
+const IC_PESSOA_PC = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1-3.6 3.8-5.5 7-5.5s6 1.9 7 5.5"/></svg>`;
+
 /** Etapa Perfil do novo membro da equipe: só a foto é opcional. */
 function eqnPerfilErro(f: HTMLFormElement): string {
   const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
@@ -7151,6 +7161,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const pc = e ? PERFIL_COM.get(e.id) : undefined, fotoCom = pc?.foto || "", ct = e ? CONTATO_EQ.get(e.id) : undefined;
       const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
       const IC_PF_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
+      const SUG_COM = ["Instrutor", "Cardeal", "Missionário", "Teólogo", "Bispo", "Pastor", "Mentor", "Professor", "Doutor", "Especialista"];
       const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
@@ -7189,13 +7200,20 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           </div>
         </div>
         </div>
-        <div class="eqn-pn" data-eqn-p="coment" hidden>
-          <p class="eqn-expl">Quando esta pessoa responde um comentário, os alunos veem este nome e esta foto no aplicativo, na área de membros. Vazio usa o nome oficial e a foto do perfil.</p>
-          <label class="eq-campo"><span>Seu nome para comentários ${ajuda("É o nome que aparece no aplicativo dos alunos, na área de membros, quando a pessoa responde um comentário.")}</span><input class="campo" name="nomeCom" value="${h(pc?.nome || "")}" maxlength="60" placeholder="${h(e?.nome || "Ex.: Pastora Joana")}" autocomplete="off" /></label>
-          <div class="eq-campo"><span>Foto para comentários <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece ao lado das respostas dos comentários, no aplicativo dos alunos.")}</span>
-            <div class="eqn-foto"><span class="eqn-circ" id="eqnFotoCom">${fotoCom ? `<img src="${fotoCom}" alt="" />` : IC_EQ.pessoa}</span>
-              <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada.</small></div></div>
-            <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
+        <div class="eqn-pn eqn-com" data-eqn-p="coment" hidden>
+          <div class="eqn-com-av"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M8 10h.01M12 10h.01M16 10h.01M8.5 13.5h7"/></svg><p>Quando esta pessoa responde um comentário, os alunos veem este nome e esta foto no aplicativo, na área de membros. Vazio usa o nome oficial e a foto do perfil.</p></div>
+          <div class="eqn-com-g">
+            <div class="eqn-com-esq">
+              <label class="eq-campo"><span>Nome para comentários ${ajuda("É o nome que aparece no aplicativo dos alunos, na área de membros, quando a pessoa responde um comentário.")}</span><span class="eqn-ic">${IC_EQ.pessoa}<input class="campo" name="nomeCom" data-eqn-com value="${h(pc?.nome || "")}" maxlength="60" placeholder="Ex.: Instrutor João" autocomplete="off" /></span></label>
+              <div class="eqn-sug"><span>Sugestões de nomes:</span><div>${SUG_COM.map((x) => `<button type="button" data-a="eqn-sug" data-v="${x}">${x}</button>`).join("")}</div></div>
+              <div class="eqn-com-foto"><span class="eqn-com-rot">Foto para comentários <i class="eqn-opc">(opcional)</i> ${ajuda("A foto que aparece ao lado das respostas dos comentários, no aplicativo dos alunos.")}</span>
+                <div class="eqn-foto"><span class="eqn-circ" id="eqnFotoCom">${fotoCom ? `<img src="${fotoCom}" alt="" />` : IC_EQ.pessoa}</span>
+                  <div><button type="button" class="eqn-enviar" data-a="eqn-foto-com">${IC_PF.up}${fotoCom ? "Trocar foto" : "Enviar foto"}</button>${fotoCom ? `<button type="button" class="eqn-tirar" data-a="eqn-foto-com-tirar">Tirar foto</button>` : ""}<small>JPG, PNG ou WEBP. Fica quadrada (1:1).</small></div></div>
+                <input type="hidden" name="fotoCom" value="${h(fotoCom)}" /></div>
+            </div>
+            <div class="eqn-pc"><div class="eqn-pc-t"><span class="eqn-pc-i">${IC_PF_OLHO}</span><div><b>Prévia no comentário</b><small>Veja como ficará para os alunos.</small></div></div>
+              <div class="eqn-pc-c"><span class="eqn-circ eqn-pc-f" data-eqn-pcf>${(fotoCom || fotoAtual) ? `<img src="${fotoCom || fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><div class="eqn-pc-x"><div class="eqn-pc-h"><b data-eqn-pcn>${h(pc?.nome || e?.nome || "Nome do membro")}</b><em>Agora</em></div><small>Resposta da equipe</small><i></i><i></i></div></div></div>
+          </div>
         </div>
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}Salvar</button></div>
       </form>`;
@@ -8847,17 +8865,19 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         f.querySelectorAll<HTMLElement>('[data-a="eqn-aba"]').forEach((x) => x.setAttribute("aria-selected", String(x.dataset.v === alvo)));
         const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
         const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv && f.dataset.f === "equipe-add") sv.hidden = alvo !== ks[ks.length - 1];
+        if (alvo === "coment") eqnPvCom(f);
         return;
       }
       case "eqn-foto-com": {
         const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/jpeg,image/png,image/webp";
         inp.onchange = () => { const fl = inp.files?.[0]; if (!fl) return; if (fl.size > 8 * 1024 * 1024) { toast("Escolha uma imagem de até 8MB."); return; }
           const im = new Image(); im.onload = () => { const L = 320, cv = document.createElement("canvas"); cv.width = cv.height = L; const lado = Math.min(im.width, im.height); cv.getContext("2d")!.drawImage(im, (im.width - lado) / 2, (im.height - lado) / 2, lado, lado, 0, 0, L, L); const url = cv.toDataURL("image/jpeg", 0.85); URL.revokeObjectURL(im.src);
-            const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = url; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = `<img src="${url}" alt="" />`; el.innerHTML = IC_PF.up + "Trocar foto"; };
+            const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = url; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = `<img src="${url}" alt="" />`; el.innerHTML = IC_PF.up + "Trocar foto"; if (f) eqnPvCom(f); };
           im.onerror = () => toast("Não consegui abrir essa imagem."); im.src = URL.createObjectURL(fl); };
         inp.click(); return;
       }
-      case "eqn-foto-com-tirar": { const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = ""; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = IC_EQ.pessoa; el.remove(); return; }
+      case "eqn-sug": { const f = el.closest("form") as HTMLFormElement | null; if (!f) return; const pn = ((f.elements.namedItem("pnome") as HTMLInputElement | null)?.value || "").trim() || (((f.elements.namedItem("nome") as HTMLInputElement | null)?.value || "").trim().split(/\s+/)[0] || ""); const inp = f.elements.namedItem("nomeCom") as HTMLInputElement; inp.value = (d.v + " " + pn).trim(); eqnPvCom(f); inp.focus(); return; }
+      case "eqn-foto-com-tirar": { const f = el.closest("form") as HTMLFormElement | null; const hid = f?.querySelector<HTMLInputElement>('input[name="fotoCom"]'); if (hid) hid.value = ""; const pv = document.getElementById("eqnFotoCom"); if (pv) pv.innerHTML = IC_EQ.pessoa; el.remove(); if (f) eqnPvCom(f); return; }
       case "eqn-sortear": {
         const inp = el.closest("form")?.querySelector<HTMLInputElement>('input[name="codigo"]'); if (!inp) return;
         const n = new Uint32Array(1); crypto.getRandomValues(n); inp.value = String(1000 + (n[0] % 9000)); return;
@@ -9697,6 +9717,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   document.addEventListener("input", (e) => {
     const t = e.target as HTMLInputElement, f = t.closest?.("form.eqn") as HTMLFormElement | null; if (!f) return;
     if (t.dataset?.eqnNome !== undefined) { const pn = (f.elements.namedItem("pnome") as HTMLInputElement).value.trim(), sn = (f.elements.namedItem("snome") as HTMLInputElement).value.trim(); (f.elements.namedItem("nome") as HTMLInputElement).value = (pn + " " + sn).trim(); const pvn = f.querySelector("[data-eqn-pvn]"), pve = f.querySelector("[data-eqn-pve]"), em = (f.elements.namedItem("emailEq") as HTMLInputElement | null)?.value.trim(); if (pvn) pvn.textContent = (pn + " " + sn).trim() || "Nome do membro"; if (pve) pve.textContent = em || "e-mail profissional"; }
+    if (t.dataset?.eqnCom !== undefined || t.dataset?.eqnNome !== undefined) eqnPvCom(f);
     if (t.dataset?.eqnObs !== undefined) { const c = f.querySelector("[data-eqn-cont]"); if (c) c.textContent = t.value.length + "/300"; }
   });
   app.addEventListener("input", (e) => {
@@ -10027,7 +10048,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const pronta = await editarFoto(im.src, { w: im.w, h: im.h, z: 1, x: 0, y: 0 }, "nova foto", () => { fotoPara = "eqn"; arquivoFoto.click(); });
         if (!pronta) return;
         fotoNova = pronta;
-        const c = document.getElementById("eqnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const pvf = document.querySelector("[data-eqn-pvf]"); if (pvf) pvf.innerHTML = `<img src="${pronta.foto}" alt="" />`;
+        const c = document.getElementById("eqnFoto"); if (c) c.innerHTML = `<img src="${pronta.foto}" alt="" />`; const pvf = document.querySelector("[data-eqn-pvf]"); if (pvf) pvf.innerHTML = `<img src="${pronta.foto}" alt="" />`; const fq = document.querySelector<HTMLFormElement>("form.eqn"); if (fq) eqnPvCom(fq);
       }).catch((e) => toast(motivo(e)));
       return;
     }
