@@ -187,6 +187,25 @@ function eqnPvCom(f: HTMLFormElement): void {
 }
 const IC_PESSOA_PC = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 19.5c1-3.6 3.8-5.5 7-5.5s6 1.9 7 5.5"/></svg>`;
 
+/** Novo membro da equipe: primeira etapa incompleta (só salva com as três completas). */
+function eqnFalta(f: HTMLFormElement): { etapa: string; msg: string } | null {
+  const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
+  const ep = eqnPerfilErro(f); if (ep) return { etapa: "perfil", msg: ep + " (etapa Perfil)" };
+  if (!/^[a-z0-9._-]{2,40}$/.test(v("login").toLowerCase())) return { etapa: "acesso", msg: "Preencha o nome para login: letras sem acento, números, ponto e hífen (etapa Acesso ao painel)." };
+  if (f.elements.namedItem("codigo") && !/^\d{4,6}$/.test(v("codigo"))) return { etapa: "acesso", msg: "Escolha um código de 4 a 6 números (etapa Acesso ao painel)." };
+  if (!v("nomeCom")) return { etapa: "coment", msg: "Preencha o nome para comentários (etapa Perfil dos comentários)." };
+  return null;
+}
+/** Mostra uma etapa da janela da equipe. */
+function eqnIr(f: HTMLFormElement, alvo: string): void {
+  const ks = [...f.querySelectorAll<HTMLElement>("[data-eqn-p]")].map((x) => x.dataset.eqnP!);
+  f.querySelectorAll<HTMLElement>("[data-eqn-p]").forEach((x) => { x.hidden = x.dataset.eqnP !== alvo; });
+  f.querySelectorAll<HTMLElement>('[data-a="eqn-aba"]').forEach((x) => x.setAttribute("aria-selected", String(x.dataset.v === alvo)));
+  const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
+  const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv && f.dataset.f === "equipe-add") sv.hidden = alvo !== ks[ks.length - 1];
+  if (alvo === "coment") eqnPvCom(f);
+}
+
 /** Etapa Perfil do novo membro da equipe: só a foto é opcional. */
 function eqnPerfilErro(f: HTMLFormElement): string {
   const v = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim();
@@ -8861,11 +8880,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const ks = [...f.querySelectorAll<HTMLElement>("[data-eqn-p]")].map((x) => x.dataset.eqnP!), atual = ks.find((k) => !f.querySelector<HTMLElement>(`[data-eqn-p="${k}"]`)!.hidden) || ks[0];
         const alvo = a === "eqn-prox" ? ks[Math.min(ks.length - 1, ks.indexOf(atual) + 1)] : d.v;
         if (f.dataset.f === "equipe-add" && atual === "perfil" && alvo !== "perfil") { const erro = eqnPerfilErro(f); if (erro) { toast(erro); return; } }
-        f.querySelectorAll<HTMLElement>("[data-eqn-p]").forEach((x) => { x.hidden = x.dataset.eqnP !== alvo; });
-        f.querySelectorAll<HTMLElement>('[data-a="eqn-aba"]').forEach((x) => x.setAttribute("aria-selected", String(x.dataset.v === alvo)));
-        const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
-        const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv && f.dataset.f === "equipe-add") sv.hidden = alvo !== ks[ks.length - 1];
-        if (alvo === "coment") eqnPvCom(f);
+        eqnIr(f, alvo);
         return;
       }
       case "eqn-foto-com": {
@@ -9537,7 +9552,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "equipe-add": {
         const login = v("login").trim().toLowerCase();
-        { const erro = eqnPerfilErro(form); if (erro) { toast(erro + " (etapa Perfil)"); return; } }
+        { const fa = eqnFalta(form); if (fa) { toast(fa.msg); eqnIr(form, fa.etapa); return; } }
         if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
         if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
         // O código é quem cadastra que escolhe — nunca sorteado.
@@ -9627,7 +9642,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (!ui.sujo) return null;
     return document.querySelector<HTMLFormElement>('form[data-f="' + ui.sujo.f + '"]' + (ui.sujo.id ? '[data-id="' + ui.sujo.id + '"]' : ""));
   }
-  function mostrarAviso(seguir: () => void) {
+  function mostrarAviso(seguir: () => void, salvar?: () => void) {
     if (document.getElementById("avisoSujo")) return;
     const div = document.createElement("div");
     div.className = "modal-fundo topo"; div.id = "avisoSujo";
@@ -9636,6 +9651,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       <p class="explica">Você começou a editar e ainda não salvou. Se sair agora, o que mudou se perde.</p>
       <div class="rodape-modal">
         <button type="button" class="botao" data-sujo="ficar">Continuar editando</button>
+        ${salvar ? `<button type="button" class="botao" data-sujo="salvar">Salvar</button>` : ""}
         <button type="button" class="botao-neutro grande botao-remover" data-sujo="sair">Sair sem salvar</button>
       </div>
     </div>`;
@@ -9645,6 +9661,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       if (!b) { if (ev.target === div) div.remove(); return; }
       div.remove();
       if (b.dataset.sujo === "sair") { ui.sujo = null; seguir(); }
+      else if (b.dataset.sujo === "salvar" && salvar) salvar();
       else { const c = formSujo()?.querySelector<HTMLElement>("input:not([type=hidden]), textarea, select"); c?.focus(); }
     });
     document.body.appendChild(div);
@@ -9653,6 +9670,17 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   /** Antes de cada clique: se há um formulário mexido e o clique sai dele, pergunta. */
   function guardado(a: string, d: Record<string, string>, el: HTMLElement | null, alvo: EventTarget | null) {
     if (a === "fechar-fundo" && alvo !== el) return;
+    if (ui.sujo && (a === "fechar" || a === "fechar-fundo" || a === "fechar-esc")) {
+      const fe = formSujo();
+      if (fe && fe.classList.contains("eqn")) {
+        mostrarAviso(() => acao(a, d, el!, alvo), () => {
+          const fa = fe.dataset.f === "equipe-add" ? eqnFalta(fe) : null;
+          if (fa) { toast("Para salvar, complete todas as etapas. " + fa.msg); eqnIr(fe, fa.etapa); return; }
+          fe.requestSubmit(fe.querySelector<HTMLButtonElement>("[data-eqn-salvar]") || undefined);
+        });
+        return;
+      }
+    }
     if (ui.sujo && !LIVRE.has(a)) {
       const fd = formSujo();
       if (!fd || CANCELA.has(a)) ui.sujo = null;
