@@ -6665,3 +6665,15 @@ html[data-tema="claro"] .vgx-saude-it, html[data-tema="claro"] .ct-abas button {
 html[data-tema="claro"] .vgx-saude-it span, html[data-tema="claro"] .ct-abas button[aria-pressed="true"] { color: #8a6420; }
 html[data-tema="claro"] .ct-abas button[aria-pressed="true"] { background: #fbf5e9; border-color: #e6d3ad; }
 @media (max-width: 640px) { .vgx-prod .vgx-prog { flex-basis: 60px; } .ct-acoes { width: 100%; } }
+
+/* ---------- Aviso de versão nova (como no Atria Track) ---------- */
+.versao-aviso { position: fixed; left: 16px; right: 16px; bottom: 24px; z-index: 100001; display: flex; align-items: center; gap: 12px; max-width: 460px; margin: 0 auto; padding: 12px 16px; font-family: "Manrope", sans-serif; font-size: 13px; color: #EEEEF0; background: #191A1E; border: 1px solid #4B402B; border-radius: 10px; box-shadow: 0 14px 40px rgba(0, 0, 0, .45); }
+.versao-ponto { flex: 0 0 8px; width: 8px; height: 8px; background: #E2C68C; border-radius: 50%; box-shadow: 0 0 0 4px rgba(226, 198, 140, .16); }
+.versao-txt { flex: 1 1 auto; }
+.versao-bt { flex: 0 0 auto; min-height: 34px; padding: 6px 12px; font: inherit; font-size: 12px; font-weight: 700; color: #202018; background: #E2C68C; border: 1px solid #E2C68C; border-radius: 6px; cursor: pointer; }
+.versao-bt:hover { background: #EED9AD; }
+.versao-bt:disabled { opacity: .6; cursor: default; }
+.versao-x { flex: 0 0 auto; padding: 4px; font-size: 14px; color: #868D97; background: none; border: 0; cursor: pointer; }
+.versao-x:hover { color: #EEEEF0; }
+html[data-tema="claro"] .versao-aviso { color: var(--texto); background: #fff; border-color: #e6d3ad; }
+@media (max-width: 640px) { .versao-aviso { bottom: 84px; } }

@@ -13,6 +13,7 @@
  */
 import "./painel.css";
 import * as seg from "./seguranca";
+import { vigiarVersao } from "./versao";
 import { supabase } from "@/data/supabase";
 import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
@@ -5274,7 +5275,7 @@ ${ehModTeste(m) ? blocoPubMod(c, m) : `      <footer class="cs-ed-pe">
   const TELA_KEY = "aion-painel-tela";
   // Modo prévia: antes de recarregar com a versão nova, guarda onde a pessoa está (inclusive o que digitou em Criar novo curso).
   (window as unknown as { __aionGuardar?: () => void }).__aionGuardar = () => {
-    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY, silencioso: true })); } catch { /* ignora */ }
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, cn: ui.cn ? { ...ui.cn, doc: null, ebook: null, capa: null, capaPe: null, ia: null, gerando: false, reduzindo: false, etapa: "" } : null, y: window.scrollY })); } catch { /* ignora */ }
   };
   /* ---------- Lixeira (0122): o que foi apagado fica 30 dias e pode voltar ---------- */
   type ItemLixo = { lote: number; tipo: string; titulo: string; apagado_em: string; autor: string | null; itens: number };
@@ -10687,6 +10688,11 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   }
 
   seg.ligarOlhos(document);
+  // Versão nova no ar: aviso "Nova versão disponível – atualizar"; recarrega na mesma tela.
+  vigiarVersao(() => {
+    try { sessionStorage.setItem(VOLTA_KEY, JSON.stringify({ tab: ui.tab, curso: ui.curso, cursoAba: ui.cursoAba, modPagina: ui.modPagina, aula: ui.aula, catxSel: ui.catxSel, catxEditar: ui.catxEditar, cfgAba: ui.cfgAba, y: window.scrollY })); } catch { /* sem armazenamento: recarrega mesmo assim */ }
+    location.reload();
+  });
   // Campos de código (2FA): só números.
   document.addEventListener("input", (e) => { const t = e.target as HTMLInputElement; if (t?.dataset && "soNumeros" in t.dataset) t.value = t.value.replace(/\D/g, "").slice(0, 6); });
   render();
