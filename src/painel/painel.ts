@@ -1401,7 +1401,7 @@ export function montar(app: HTMLElement) {
       <div class="ini-met m2 m2-total" data-a="ini-lista" data-v="total" role="button" tabindex="0">
         <span class="m2-topo"><span class="m2-rot">Total de alunos(as)</span><span class="m2-ic">${IC_INI.pessoas}</span></span>
         <span class="m2-meio"><span class="ini-met-val">${doG.length}</span></span>
-        <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Alunos mentoria"], ["geral", "Alunos geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
+        <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Mentoria"], ["geral", "Geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
       </div>`;
     const concl = atv ? atv.filter((x) => x.tipo === "concluiu") : null;
     const inic = atv ? new Set(atv.filter((x) => x.tipo === "assistiu" || x.tipo === "concluiu").map((x) => x.aluna + "|" + x.aula)).size : 0;

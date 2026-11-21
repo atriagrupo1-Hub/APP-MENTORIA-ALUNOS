@@ -6707,3 +6707,18 @@ html[data-tema="claro"] .vgx-et { color: #8a6420; background: #fbf5e9; border-co
 html[data-tema="claro"] .vgx-seg, html[data-tema="claro"] .vgx-seg button + button { border-color: var(--linha-suave); }
 html[data-tema="claro"] .vgx-ag-l { border-bottom-color: var(--linha-suave); }
 html[data-tema="claro"] .ct-fila { color: var(--texto); background: #fbf5e9; border-color: #e6d3ad; }
+
+/* ---------- Números da Visão geral: seis cartões menores, numa linha só (21/11/2026) ---------- */
+.casca2 .ini-mets { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .casca2 .ini-mets { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .casca2 .ini-mets { grid-template-columns: 1fr; } }
+.casca2 .m2-grupo button { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.casca2 .ini-met.m2 { padding: 14px 14px 12px; }
+@media (min-width: 1550px) { .casca2 .ini-met.m2 { padding: 16px 16px 14px; } }
+.casca2 .m2-rot { font-size: 12px; }
+.casca2 .m2-ic svg { width: 13px; height: 13px; }
+.casca2 .m2 .ini-met-val { margin: 8px 0 6px; font-size: 24px; }
+.casca2 .m2-sub { font-size: 9px; line-height: 1.4; }
+.casca2 .m2 .ini-spark { right: 14px; bottom: 30px; width: 52px; height: 20px; }
+.casca2 .m2-grupo { gap: 2px; }
+.casca2 .m2-grupo button { min-height: 22px; padding: 2px 6px; font-size: 9px; }
