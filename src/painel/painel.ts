@@ -697,6 +697,10 @@ export function montar(app: HTMLElement) {
   const lerNotif = () => void supabase.rpc("alunos_com_notificacao").then((r) => { if (r.error) return; COM_NOTIF = new Set(((r.data ?? []) as string[]).map(String)); if (eu && (ui.tab === "inicio" || ui.tab === "central")) render(); });
   /** Aba da Central de atenção. */
   let centralAba = "tudo";
+  /** Envio em sequência da Central (um WhatsApp por clique, porque o navegador só abre uma janela por clique). */
+  let filaEnvio: { acao: string; ids: string[]; i: number; titulo: string } | null = null;
+  /** Ordem de "Alunos por produto": mais alunos ou mais concluído. */
+  let prodOrd: "alunos" | "conclusao" = "alunos";
   /** Segurança de cada pessoa da equipe (e-mail e senha, 2FA), para a tela Equipe. */
   let SEG_EQ = new Map<string, seg.SegEquipe>();
   const lerSegEq = () => void seg.segurancaDaEquipe().then((m) => { SEG_EQ = m; if (eu && ui.tab === "equipe") render(); });
@@ -1399,12 +1403,21 @@ export function montar(app: HTMLElement) {
         <span class="m2-meio"><span class="ini-met-val">${doG.length}</span></span>
         <span class="m2-grupo" role="group" aria-label="Grupo">${[["mentoria", "Alunos mentoria"], ["geral", "Alunos geral"]].map(([v, n]) => `<button type="button" data-a="vgx-grupo" data-v="${v}" aria-pressed="${gTot === v}">${n}</button>`).join("")}</span>
       </div>`;
+    const concl = atv ? atv.filter((x) => x.tipo === "concluiu") : null;
+    const inic = atv ? new Set(atv.filter((x) => x.tipo === "assistiu" || x.tipo === "concluiu").map((x) => x.aluna + "|" + x.aula)).size : 0;
+    const comPer = S.comentarios.filter((k) => entre(k.criado, de, ate));
+    const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
+    const ativosB = S.alunas.filter((a) => !a.bloqueada && !vencida(a));
+    const comApp = COM_NOTIF ? ativosB.filter((a) => COM_NOTIF!.has(a.id)).length : null;
+    const onlineHoje = S.alunas.filter((a) => a.ultimoAcesso === hoje()).length;
     const metricas = totalCard + [
-      metrica(IC_INI.pessoas, "Alunas ativas", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluna com acesso", "alunas com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
-      metrica(IC_INI.onda, "Atividades dos alunos", atv ? String(atv.length) : carregando, "acessos, aulas, e-books, comentários e curtidas", atv ? variacao(atv.length, atvAnt, true) : "", linha(atv ? porDia(atv.map((x) => x.quando)) : []), "ini-ativ-abrir"),
-      metrica(IC_CAL_AG, "Conteúdo liberado", String(lib.length), "itens liberados para as alunas", "", linha(porDia(concPer)), "ini-conteudo"),
-      metrica(IC_INI.pessoa, "Novas alunas", String(novas.length), "cadastradas no período", variacao(novas.length, novasAnt, true), linha(porDia(novas.map((a) => a.criadaEm))), "ini-lista", "novas"),
+      metrica(IC_INI.pessoas, "Alunos ativos", r ? String(r.ativas) : carregando, r ? "de " + p(r.total, "aluno com acesso", "alunos com acesso") : "Carregando…", r ? variacao(r.ativas, r.ativas_ant, true) : "", linha(diasPer.map((d) => diaR.get(d)?.ativas || 0)), "ini-lista", "ativas"),
+      metrica(IC_INI.pessoa, "Online hoje", String(onlineHoje), "entraram desde 0h", "", "", "ini-ativ-abrir"),
+      metrica(IC_INI.play, "Aulas concluídas", concl ? String(concl.length) : carregando, concl ? "no período · " + p(inic, "aula iniciada", "aulas iniciadas") : "Carregando…", "", linha(concl ? porDia(concl.map((x) => x.quando)) : []), "ini-ativ-abrir"),
+      metrica(IC_INI.balao, "Comentários", String(comPer.length), moderar ? "no período · " + moderar + " aguardando" : "no período · nenhum aguardando", "", linha(porDia(comPer.map((k) => k.criado))), "ir-comentarios"),
+      metrica(IC_INI.onda, "Com app e avisos", comApp === null ? carregando : String(comApp), "de " + ativosB.length + " recebem notificação", "", "", "central-ir", "notif"),
     ].join("");
+    void lib; void concPer; void novasAnt; void atvAnt; void novas;
 
     // Fila única de tarefas, cada uma com a ação direta.
     const ls = listasAcessos(), coms = paraResponder();
@@ -1476,7 +1489,7 @@ export function montar(app: HTMLElement) {
     <section class="tela ativa ini ini2">
       <div class="vgx-cab">
         <div><span class="vgx-sobre">Painel de controle</span><h1>Visão geral</h1><p>Tudo o que você precisa acompanhar, em um só lugar.</p></div>
-        <div class="vgx-dir">${seletorPeriodo()}<span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cri-fundo" data-a="criar-fechar"></span><span class="cri-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
+        <div class="vgx-dir">${segPeriodo()}${seletorPeriodo()}<button type="button" class="vgx-bt" data-a="aba" data-v="alunas">Liberar acesso</button><span class="est3 vgx-criar"><button type="button" class="al-botao-ouro" data-a="estado-menu" data-v="criar" aria-haspopup="menu" aria-expanded="${ui.estMenu === "criar"}"><span aria-hidden="true">+</span> Criar novo</button>${ui.estMenu === "criar" ? `<span class="cri-fundo" data-a="criar-fechar"></span><span class="cri-modal" role="dialog" aria-modal="true" aria-label="O que deseja criar?">
           <span class="cri-cab"><b>O que deseja criar?</b><button type="button" class="cri-x" data-a="criar-fechar" aria-label="Fechar">${xis}</button></span>
           <span class="cri-opcoes">
             <button type="button" data-a="curso-novo">${ICONE_MENU.cursos || IC_INI.play}<b>Produto</b><span>Curso, e-book ou áudio</span></button>
@@ -1485,7 +1498,7 @@ export function montar(app: HTMLElement) {
           </span>
         </span>` : ""}</span></div>
       </div>
-      ${(() => { const n = pendencias().total; return `<button type="button" class="vgx-atencao${n ? "" : " ok"}" data-a="aba" data-v="central"><i aria-hidden="true"></i><span>${n ? `<b>${p(n, "pendência", "pendências")} para resolver.</b> Comentários, alunos que não entraram ou pararam, avisos no celular e rascunhos.` : "<b>Tudo em dia na operação.</b> Nada pedindo uma ação sua agora."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>`; })()}
+      ${(() => { const g = pendencias(), n = g.total; const et = (v: string, q: number, t1: string, t2: string) => q ? `<button type="button" class="vgx-et" data-a="central-ir" data-v="${v}">${p(q, t1, t2)}</button>` : ""; return `<div class="vgx-atencao vgx-faixa${n ? "" : " ok"}"><i aria-hidden="true"></i><span class="vgx-faixa-txt">${n ? `<b>${p(n, "pendência", "pendências")} para resolver.</b>` : "<b>Tudo em dia na operação.</b> Nada pedindo uma ação sua agora."}</span>${n ? `<span class="vgx-ets">${et("comentarios", g.comentarios.length, "comentário para moderar", "comentários para moderar")}${et("nunca", g.nunca.length, "aluno nunca entrou", "alunos nunca entraram")}${et("parados", g.parados.length, "aluno parado há 14+ dias", "alunos parados há 14+ dias")}${et("vencem", g.vencem.length, "acesso vencendo", "acessos vencendo")}${et("notif", g.semNotif.length, "aluno sem avisos no celular", "alunos sem avisos no celular")}${et("conteudo", g.rascunhos.length, "produto em rascunho", "produtos em rascunho")}</span>` : ""}<button type="button" class="vgx-abrir" data-a="aba" data-v="central">${IC_INI.seta}Abrir central</button></div>`; })()}
       ${INI_EXTRA ? `<div class="ini-boas">
         <div class="ini-boas-txt">
           <span class="ini-boas-data">${h(dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))}</span>
@@ -1602,26 +1615,38 @@ export function montar(app: HTMLElement) {
           <svg class="vgx-anel" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52" class="fundo"/><circle cx="60" cy="60" r="52" class="val" stroke-dasharray="${((eng / 100) * C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/><text x="60" y="62" text-anchor="middle" class="n">${eng}<tspan>%</tspan></text><text x="60" y="80" text-anchor="middle" class="r">ENGAJAMENTO</text></svg>
           <ul class="vgx-leg">${[["Constantes", cons, "c1"], ["Retomando", ret, "c2"], ["Distantes", dist, "c3"]].map(([n, v, c]) => `<li><i class="${c}"></i>${n}<b>${pc(v as number)}%</b></li>`).join("")}</ul>
         </div>
+        ${dist ? `<footer class="vgx-cpe"><span>${p(dist, "aluno distante", "alunos distantes")}</span><button type="button" class="vgx-link" data-a="central-ir" data-v="parados">${IC_INI.seta}Chamar de volta</button></footer>` : ""}
       </section>`;
     // Conteúdo agendado: o que tem data de liberação no futuro (curso, módulo, aula ou liberação marcada para alunas).
     const agoraIso = new Date().toISOString();
     const futuro = (d: string) => !!d && (d.includes("T") ? d > agoraIso : d > hoje());
-    const ag = new Map<string, { titulo: string; curso: string; quando: string }>();
-    const poe = (id: string, titulo: string, curso: string, quando: string) => { const x = ag.get(id); if (!x || quando < x.quando) ag.set(id, { titulo, curso, quando }); };
+    const ag = new Map<string, { titulo: string; curso: string; quando: string; tipo: string; id: string }>();
+    const poe = (tipo: string, id: string, titulo: string, curso: string, quando: string) => { const x = ag.get(tipo + id); if (!x || quando < x.quando) ag.set(tipo + id, { titulo, curso, quando, tipo, id }); };
     for (const c of S.cursos) {
-      if (futuro(c.libera)) poe(c.id, c.nome, c.nome, c.libera);
+      if (futuro(c.libera)) poe("curso", c.id, c.nome, c.nome, c.libera);
       for (const m of c.modulos) {
-        if (futuro(m.libera)) poe(m.id, m.nome, c.nome, m.libera);
-        for (const x of m.aulas) if (futuro(x.libera)) poe(x.id, x.nome, c.nome, x.libera);
+        if (futuro(m.libera)) poe("modulo", m.id, m.nome, c.nome, m.libera);
+        for (const x of m.aulas) if (futuro(x.libera)) poe("aula", x.id, x.nome, c.nome, x.libera);
       }
     }
-    for (const al of S.alunas) for (const k of al.concessoes) if (k.abre && k.abre > agoraIso) { const x = acharAula(k.alvo); if (x) poe(x.a.id, x.a.nome, x.c.nome, k.abre); }
+    for (const al of S.alunas) for (const k of al.concessoes) if (k.abre && k.abre > agoraIso) { const x = acharAula(k.alvo); if (x) poe("acesso", x.a.id, x.a.nome, x.c.nome, k.abre); }
     const agendados = [...ag.values()].sort((x, y) => x.quando.localeCompare(y.quando)).slice(0, 4);
+    const vivos = S.cursos.flatMap((c) => c.modulos.filter((m) => m.vivo && m.vivo.data && futuro(m.vivo.data)).map((m) => ({ c, m, quando: m.vivo!.data }))).sort((x, y) => x.quando.localeCompare(y.quando)).slice(0, 3);
+    const lim30 = diaDe(new Date(Date.now() + 30 * 864e5));
+    const venc30 = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje() && a.validade <= lim30).sort((x, y) => x.validade.localeCompare(y.validade));
     const quandoLib = (d: string) => { const dia = br(diaDe(d.includes("T") ? d : d + "T12:00:00")); return d.includes("T") ? dia + " às " + new Date(d).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" }) : dia; };
+    const vazioAg = (t: string) => `<p class="vgx-ag-vazio">${t}</p>`;
     const recente = `
-      <section class="vgx-card vgx-recente">
-        <header class="vgx-scab"><h3>Conteúdo agendado</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></header>
-        <ol class="vgx-tl">${agendados.map((x) => `<li><b>${h(x.curso)}</b><span>${x.titulo !== x.curso ? h(x.titulo) + " · " : ""}Libera em ${quandoLib(x.quando)}</span></li>`).join("") || `<li class="vazio">Nenhum conteúdo agendado para liberação.</li>`}</ol>
+      <section class="vgx-card vgx-recente vgx-agenda">
+        <header class="vgx-scab"><h3>Agenda</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver produtos</button></header>
+        <div class="vgx-ag">
+          <p class="vgx-ag-rot">Próximas aulas ao vivo</p>
+          ${vivos.map((x) => `<div class="vgx-ag-l"><span><b>${h(x.m.nome)}</b><small>${h(x.c.nome)} · ${quandoLib(x.quando)}</small></span></div>`).join("") || vazioAg("Nenhuma aula ao vivo marcada.")}
+          <p class="vgx-ag-rot">Liberações programadas</p>
+          ${agendados.map((x) => `<div class="vgx-ag-l"><span><b>${h(x.titulo)}</b><small>${x.titulo !== x.curso ? h(x.curso) + " · " : ""}${x.tipo === "acesso" ? "para alunos, " : ""}libera em ${quandoLib(x.quando)}</small></span><button type="button" class="vgx-bt" data-a="agenda-abrir" data-v="${x.tipo}" data-id="${x.id}">Abrir agora</button></div>`).join("") || vazioAg("Nada com data para abrir.")}
+          <p class="vgx-ag-rot">Acessos que vencem em 30 dias</p>
+          ${venc30.slice(0, 4).map((a) => `<div class="vgx-ag-l"><span><b>${h(a.nome)}</b><small>vence em ${br(a.validade)}</small></span><button type="button" class="vgx-bt" data-a="renovar" data-id="${a.id}">Renovar</button></div>`).join("") || vazioAg("Nenhum acesso vence nos próximos 30 dias.")}
+        </div>
       </section>`;
     const venc = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje()).sort((x, y) => x.validade.localeCompare(y.validade)).slice(0, 5);
     const tabela = `
@@ -1705,7 +1730,7 @@ export function montar(app: HTMLElement) {
       const pct = com.length && ids.length ? Math.round((com.reduce((t, a) => t + ids.filter((id) => a.feitas.has(id)).length / ids.length, 0) / com.length) * 100) : 0;
       const parados = com.filter((a) => !ids.some((id) => a.feitas.has(id))).length;
       return { c, n: com.length, pct, parados };
-    }).sort((x, y) => y.n - x.n || x.c.nome.localeCompare(y.c.nome, "pt"));
+    }).sort((x, y) => (prodOrd === "conclusao" ? y.pct - x.pct : 0) || y.n - x.n || x.c.nome.localeCompare(y.c.nome, "pt"));
     const vis = linhas.slice(0, 6), resto = linhas.slice(6);
     // Aulas mais assistidas no período (alunos diferentes que assistiram, concluíram ou abriram).
     const { de, ate, chave } = periodoIni();
@@ -1719,7 +1744,7 @@ export function montar(app: HTMLElement) {
     return `
       <div class="vgx-meio">
         <section class="vgx-card">
-          <header class="vgx-scab"><h3>Alunos por produto</h3><span>Com acesso hoje · conclusão média</span></header>
+          <header class="vgx-scab"><h3>Alunos por produto</h3><span class="vgx-seg" role="group" aria-label="Ordenar">${[["alunos", "Mais alunos"], ["conclusao", "Mais concluído"]].map(([v, n]) => `<button type="button" data-a="vgx-prod-ord" data-v="${v}" aria-pressed="${prodOrd === v}">${n}</button>`).join("")}</span></header>
           ${vis.map((l) => `<button type="button" class="vgx-prod" data-a="abrir-curso" data-id="${l.c.id}"><span class="vgx-prod-nome"><b>${h(l.c.nome)}</b><small>${tipoProduto(l.c)}${l.n && l.parados ? " · " + p(l.parados, "sem começar", "sem começar") : ""}</small></span><span class="vgx-num">${l.n}</span><span class="vgx-prog"><i style="width:${l.pct}%"></i></span><span class="vgx-pct">${l.pct}%</span></button>`).join("") || `<p class="vgx-vazio">Nenhum produto publicado.</p>`}
           ${resto.length ? `<footer class="vgx-cpe"><span>+ ${p(resto.length, "produto", "produtos")} com ${p(resto.reduce((t, l) => t + l.n, 0), "acesso", "acessos")} no total</span><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></footer>` : ""}
         </section>
@@ -1743,6 +1768,10 @@ export function montar(app: HTMLElement) {
           <header class="vgx-scab"><h3>Últimos conteúdos publicados</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></header>
           ${conteudos.map((x) => `<button type="button" class="vgx-rec" data-a="abrir-aula" data-id="${x.a.id}"><span class="vgx-lic ouro">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="vgx-rec-txt"><b>${h(x.a.nome)}</b><small>${h(x.c.nome)}</small></span><span class="vgx-rec-q">${quando(x.q)}</span></button>`).join("") || `<p class="vgx-vazio">Nada publicado ainda.</p>`}
         </section>
+        <section class="vgx-card vgx-agora">
+          <header class="vgx-scab"><h3>Acontecendo agora</h3><button type="button" class="vgx-link" data-a="ini-ativ-abrir">${IC_INI.seta}Ver todas</button></header>
+          <div class="ini-lista">${!ativ ? `<p class="vgx-vazio">Carregando…</p>` : [...ativ.lista].sort((x, y) => y.quando.localeCompare(x.quando)).slice(0, 6).map(linhaAtividade).join("") || `<p class="vgx-vazio">Nenhuma atividade ainda.</p>`}</div>
+        </section>
       </div>`;
   }
   function vgxSaude() {
@@ -1765,10 +1794,14 @@ export function montar(app: HTMLElement) {
   /** Central de atenção: cada pendência com a ação para resolver na própria linha. */
   function telaCentral() {
     const g = pendencias();
-    const abas: [string, string, number][] = [["tudo", "Tudo", g.total], ["comentarios", "Comentários", g.comentarios.length], ["nunca", "Nunca entraram", g.nunca.length], ["vencem", "Vencendo", g.vencem.length], ["parados", "Parados", g.parados.length], ["notif", "Sem avisos no celular", g.semNotif.length], ["conteudo", "Conteúdo", g.rascunhos.length]];
+    // Resolvidos hoje: o histórico da equipe e os contatos registrados com alunos hoje.
+    const contHoje = S.alunas.flatMap((al) => al.contatos.filter((k) => k.quando && diaDe(k.quando) === hoje()).map((k) => ({ texto: k.resultado + " · " + al.nome, quem: k.quem, quando: k.quando })));
+    const resolvidos = [...S.historico.filter((x) => x.quando && diaDe(x.quando) === hoje()).map((x) => ({ texto: x.texto, quem: x.quem, quando: x.quando })), ...contHoje].sort((x, y) => y.quando.localeCompare(x.quando));
+    const lote = (acao: string, grupo: string, lista: Aluna[], rotulo: string) => { const com = lista.filter((a) => a.celular).length; return com > 1 ? `<button type="button" class="vgx-bt ouro" data-a="fila-iniciar" data-v="${acao}" data-g="${grupo}">${rotulo} ${com}</button>` : ""; };
+    const abas: [string, string, number][] = [["tudo", "Tudo", g.total], ["comentarios", "Comentários", g.comentarios.length], ["nunca", "Nunca entraram", g.nunca.length], ["vencem", "Vencendo", g.vencem.length], ["parados", "Parados", g.parados.length], ["notif", "Sem avisos no celular", g.semNotif.length], ["conteudo", "Conteúdo", g.rascunhos.length], ["resolvidos", "Resolvidos hoje", resolvidos.length]];
     const ab = centralAba;
     const ver = (id: string) => ab === "tudo" || ab === id;
-    const grupo = (id: string, titulo: string, sub: string, n: number, lote: string, corpo: string) => !ver(id) || (ab === "tudo" && !n) ? "" : `
+    const grupo = (id: string, titulo: string, sub: string, n: number, lote: string, corpo: string) => !ver(id) || ab === "resolvidos" || (ab === "tudo" && !n) ? "" : `
       <section class="vgx-card ct-grupo" id="central-${id}">
         <header class="vgx-scab"><div><h3>${titulo} <span class="vgx-cont">${n}</span></h3><p class="ct-sub">${sub}</p></div>${n && lote ? lote : ""}</header>
         ${n ? corpo : `<p class="vgx-vazio">✓ Nada aqui. Tudo em dia.</p>`}
@@ -1778,13 +1811,13 @@ export function montar(app: HTMLElement) {
     const linhas = [
       grupo("comentarios", "Comentários aguardando moderação", "Aprove para aparecer para os alunos, responda ou oculte.", g.comentarios.length, `<button type="button" class="vgx-link" data-a="ir-comentarios">${IC_INI.seta}Moderação completa</button>`,
         g.comentarios.map((k) => `<div class="ct-linha">${avatarDe(k.autoraId, k.autora)}<span class="ct-txt"><b>${h(k.autora)} · ${haTempo(k.criado)}</b><small>${h(ctxAula(k.aula))}</small><span class="ct-cit">“${h(k.texto)}”</span></span><span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="com-publicar" data-id="${k.id}">Aprovar</button><button type="button" class="vgx-bt" data-a="ini-moderar" data-id="${k.id}">Responder</button><button type="button" class="vgx-bt" data-a="com-ocultar" data-id="${k.id}">Ocultar</button></span></div>`).join("")),
-      grupo("nunca", "Nunca entraram no app", "Receberam login e código, mas ainda não abriram. Normalmente a mensagem não chegou.", g.nunca.length, "",
+      grupo("nunca", "Nunca entraram no app", "Receberam login e código, mas ainda não abriram. Normalmente a mensagem não chegou.", g.nunca.length, lote("whatsapp", "nunca", g.nunca, "Reenviar acesso para os"),
         g.nunca.map((a) => `<div class="ct-linha">${quem(a, "cadastrado em " + br(cadastroDe(a)) + (a.criadaEm ? " · há " + p(dias(a.criadaEm), "dia", "dias") : ""))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="whatsapp" data-id="${a.id}">Enviar acesso no WhatsApp</button><button type="button" class="vgx-bt" data-a="copiar-acesso" data-id="${a.id}">Copiar acesso</button></span></div>`).join("")),
       grupo("vencem", "Acessos que vencem em 15 dias", "Renove antes de a pessoa perder o acesso.", g.vencem.length, "",
         g.vencem.map((a) => `<div class="ct-linha">${quem(a, "vence em " + br(a.validade))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="renovar" data-id="${a.id}">Renovar</button><button type="button" class="vgx-bt" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button></span></div>`).join("")),
-      grupo("parados", "Sem entrar há mais de 14 dias", "O contato registrado fica na ficha do aluno.", g.parados.length, "",
+      grupo("parados", "Sem entrar há mais de 14 dias", "O contato registrado fica na ficha do aluno.", g.parados.length, lote("whatsapp-volta", "parados", g.parados, "Mandar lembrete para os"),
         g.parados.map((a) => `<div class="ct-linha">${quem(a, "último acesso " + br(a.ultimoAcesso) + " · há " + p(diasEntre(a.ultimoAcesso, hoje()), "dia", "dias"))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="whatsapp-volta" data-id="${a.id}">Chamar no WhatsApp</button><button type="button" class="vgx-bt" data-a="contato" data-id="${a.id}">Registrar contato</button></span></div>`).join("")),
-      grupo("notif", "Não recebem avisos no celular", "Não instalaram o app ou não aceitaram as notificações: não ficam sabendo de aula nova.", g.semNotif.length, "",
+      grupo("notif", "Não recebem avisos no celular", "Não instalaram o app ou não aceitaram as notificações: não ficam sabendo de aula nova.", g.semNotif.length, lote("central-app", "notif", g.semNotif, "Enviar link do app para os"),
         !COM_NOTIF ? `<p class="vgx-vazio">Carregando…</p>` : g.semNotif.map((a) => `<div class="ct-linha">${quem(a, a.celular ? "WhatsApp " + fone(a.celular) : "sem WhatsApp cadastrado")}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="central-app" data-id="${a.id}">Enviar link do app</button></span></div>`).join("")),
       grupo("conteudo", "Conteúdo esperando você", "Produtos em rascunho: os alunos ainda não veem.", g.rascunhos.length, "",
         g.rascunhos.map((c) => `<div class="ct-linha"><span class="vgx-lic ouro">${ICONE_MENU.cursos || IC_INI.play}</span><span class="ct-txt"><b>${h(c.nome)}</b><small>${tipoProduto(c)} · ${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</small></span><span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="abrir-curso" data-id="${c.id}">Continuar editando</button></span></div>`).join("")),
@@ -1796,8 +1829,9 @@ export function montar(app: HTMLElement) {
         <div><span class="vgx-sobre">Visão geral</span><h1>Central de atenção</h1><p>Tudo que pede uma ação sua, com o botão para resolver na própria linha. O que for resolvido sai da lista.</p></div>
         <div class="vgx-dir"><span class="vgx-pill">${p(g.total, "pendência", "pendências")}</span></div>
       </div>
+      ${filaEnvio ? (() => { const f = filaEnvio!, prox = S.alunas.find((x) => x.id === f.ids[f.i]); return `<div class="ct-fila" role="status"><span><b>${h(f.titulo)}</b> · ${f.i} de ${f.ids.length} enviados.${prox ? " Próximo: " + h(prox.nome) + "." : ""}</span>${prox ? `<button type="button" class="vgx-bt ouro" data-a="fila-proximo">Enviar para ${h(primeiroNome(prox.nome))}</button>` : ""}<button type="button" class="vgx-bt" data-a="fila-parar">${prox ? "Parar" : "Concluir"}</button></div>`; })() : ""}
       <nav class="ct-abas" aria-label="Filtrar pendências">${abas.map(([v, n, c]) => `<button type="button" data-a="central-aba" data-v="${v}" aria-pressed="${ab === v}">${n}<span class="vgx-cont">${c}</span></button>`).join("")}</nav>
-      ${linhas || `<section class="vgx-card"><p class="vgx-vazio">✓ Tudo em dia. Nada pedindo uma ação sua agora.</p></section>`}
+      ${ab === "resolvidos" ? `<section class="vgx-card ct-grupo"><header class="vgx-scab"><div><h3>Resolvidos hoje <span class="vgx-cont">${resolvidos.length}</span></h3><p class="ct-sub">O que a equipe fez hoje no painel (envios, contatos, moderação, liberações).</p></div></header>${resolvidos.map((x) => `<div class="ct-linha"><span class="ct-txt"><b>${h(x.texto)}</b><small>${h(x.quem)} · ${new Date(x.quando).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" })}</small></span></div>`).join("") || `<p class="vgx-vazio">Nada resolvido ainda hoje.</p>`}</section>` : linhas || `<section class="vgx-card"><p class="vgx-vazio">✓ Tudo em dia. Nada pedindo uma ação sua agora.</p></section>`}
     </section>`;
   }
   const GRUPO_ATV: Record<Atividade["tipo"], string> = { acessou: "acessou", assistiu: "aulas", concluiu: "aulas", abriu_ebook: "ebooks", comentou: "comentarios", respondeu: "comentarios", curtiu: "curtidas", curtiu_comentario: "curtidas" };
@@ -1861,6 +1895,12 @@ export function montar(app: HTMLElement) {
   }
   /** O seletor de período, no alto do Início. */
   const diaCurto = (d: string) => { const [a, m, dd] = d.split("-"); return Number(dd) + " " + ["jan.", "fev.", "mar.", "abr.", "mai.", "jun.", "jul.", "ago.", "set.", "out.", "nov.", "dez."][Number(m) - 1] + " " + a; };
+  /** Atalhos do período (Hoje, 7 dias, 30 dias); "Personalizado" é o seletor ao lado. */
+  function segPeriodo() {
+    const { de, ate } = periodoIni(), hj = hoje(), menos = (n: number) => diaDe(new Date(Date.now() - n * 864e5));
+    const atual = ate !== hj ? "" : de === hj ? "hoje" : de === menos(6) ? "7" : de === menos(29) ? "30" : "";
+    return `<span class="vgx-seg" role="group" aria-label="Período">${[["hoje", "Hoje"], ["7", "7 dias"], ["30", "30 dias"]].map(([v, n]) => `<button type="button" data-a="ini-periodo-rapido" data-v="${v}" aria-pressed="${atual === v}">${n}</button>`).join("")}</span>`;
+  }
   function seletorPeriodo() {
     const { de, ate } = periodoIni();
     return `<span class="ini-periodo">
@@ -8135,6 +8175,34 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
       case "central-aba": centralAba = d.v; break;
+      case "vgx-prod-ord": prodOrd = d.v === "conclusao" ? "conclusao" : "alunos"; break;
+      case "fila-iniciar": {
+        const g2 = pendencias() as unknown as Record<string, Aluna[]>;
+        const ids = (g2[d.g === "nunca" ? "nunca" : d.g === "parados" ? "parados" : "semNotif"] || []).filter((x) => x.celular).map((x) => x.id);
+        if (!ids.length) return;
+        filaEnvio = { acao: d.v, ids, i: 1, titulo: d.v === "whatsapp" ? "Reenviando acessos" : d.v === "central-app" ? "Enviando o link do app" : "Mandando lembretes" };
+        acao(d.v, { id: ids[0] }, el, null);
+        render(); return;
+      }
+      case "fila-proximo": {
+        if (!filaEnvio) return;
+        const id = filaEnvio.ids[filaEnvio.i]; if (!id) { filaEnvio = null; break; }
+        filaEnvio.i++;
+        acao(filaEnvio.acao, { id }, el, null);
+        render(); return;
+      }
+      case "fila-parar": filaEnvio = null; break;
+      case "agenda-abrir": {
+        const tipo = d.v, id = d.id;
+        const nome = tipo === "curso" ? S.cursos.find((c) => c.id === id)?.nome : tipo === "modulo" ? S.cursos.flatMap((c) => c.modulos).find((m) => m.id === id)?.nome : acharAula(id)?.a.nome;
+        confirmar({ titulo: "Abrir “" + (nome || "este conteúdo") + "” agora?", texto: tipo === "acesso" ? "Os alunos com essa aula programada passam a ver agora, em vez de esperar a data." : "Deixa de esperar a data marcada e fica disponível agora para quem tem acesso.", rotulo: "Abrir agora" }, async () => {
+          if (tipo === "acesso") falhou(await supabase.from("acessos").update({ abre_em: new Date().toISOString() }).eq("aula_id", id).gt("abre_em", new Date().toISOString()).select("id"));
+          else falhou(await supabase.from(tipo === "curso" ? "produtos" : tipo === "modulo" ? "modulos" : "aulas").update({ libera_modo: "imediato", libera_em: null }).eq("id", id).select("id").single());
+          await registrar(null, "Abriu agora: " + (nome || "conteúdo programado"));
+          return "Aberto agora: " + (nome || "conteúdo") + ".";
+        });
+        break;
+      }
       case "central-ir": ui.tab = "central"; centralAba = d.v; window.scrollTo(0, 0); break;
       case "central-app": {
         const al2 = S.alunas.find((x) => x.id === d.id); if (!al2) return;

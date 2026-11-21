@@ -6677,3 +6677,33 @@ html[data-tema="claro"] .ct-abas button[aria-pressed="true"] { background: #fbf5
 .versao-x:hover { color: #EEEEF0; }
 html[data-tema="claro"] .versao-aviso { color: var(--texto); background: #fff; border-color: #e6d3ad; }
 @media (max-width: 640px) { .versao-aviso { bottom: 84px; } }
+
+/* ---------- Visão geral: faixa com etiquetas, atalhos de período, Agenda e envio em sequência (21/11/2026) ---------- */
+.vgx-faixa { flex-wrap: wrap; cursor: default; }
+.vgx-faixa-txt { flex: 0 1 auto; }
+.vgx-ets { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 320px; }
+.vgx-et { padding: 4px 8px; font-family: "Manrope", sans-serif; font-size: 11px; font-weight: 600; color: #DFC089; background: #342D22; border: 1px solid #4B402B; border-radius: 4px; cursor: pointer; }
+.vgx-et:hover { border-color: #E2C68C; }
+button.vgx-abrir { display: inline-flex; align-items: center; gap: 8px; padding: 0; font: inherit; font-size: 14px; font-weight: 700; color: #E2C68C; background: none; border: 0; cursor: pointer; }
+button.vgx-abrir svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vgx-seg { display: inline-flex; border: 1px solid #35373D; border-radius: 6px; overflow: hidden; }
+.vgx-seg button { min-height: 36px; padding: 0 12px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; color: #A5AAB3; background: transparent; border: 0; cursor: pointer; }
+.vgx-scab .vgx-seg button { min-height: 28px; padding: 0 10px; font-size: 11px; }
+.vgx-seg button + button { border-left: 1px solid #35373D; }
+.vgx-seg button[aria-pressed="true"] { color: #202018; background: #E2C68C; }
+.vgx-ag { padding: 6px 20px 16px; }
+.vgx-ag-rot { margin: 14px 0 6px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #868D97; }
+.vgx-ag-l { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #292A30; }
+.vgx-ag-l:last-child { border-bottom: 0; }
+.vgx-ag-l > span { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vgx-ag-l b { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.vgx-ag-l small { font-size: 10px; color: #868D97; }
+.vgx-ag-l .vgx-bt { min-height: 28px; padding: 4px 10px; font-size: 11px; }
+.vgx-ag-vazio { margin: 0; padding: 10px 12px; font-size: 11px; color: #868D97; border: 1px dashed #35373D; border-radius: 6px; }
+.vgx-agora .ini-lista { padding: 4px 8px 10px; }
+.ct-fila { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0 0; padding: 12px 16px; font-size: 12px; color: #E8D4AC; background: #1F1C17; border: 1px solid #4B402B; border-radius: 8px; }
+.ct-fila > span { flex: 1 1 240px; }
+html[data-tema="claro"] .vgx-et { color: #8a6420; background: #fbf5e9; border-color: #e6d3ad; }
+html[data-tema="claro"] .vgx-seg, html[data-tema="claro"] .vgx-seg button + button { border-color: var(--linha-suave); }
+html[data-tema="claro"] .vgx-ag-l { border-bottom-color: var(--linha-suave); }
+html[data-tema="claro"] .ct-fila { color: var(--texto); background: #fbf5e9; border-color: #e6d3ad; }
