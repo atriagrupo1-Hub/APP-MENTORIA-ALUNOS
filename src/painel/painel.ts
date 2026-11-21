@@ -695,6 +695,9 @@ export function montar(app: HTMLElement) {
   /** Alunos que recebem notificação no celular (têm inscrição de push); null = ainda não carregou. */
   let COM_NOTIF: Set<string> | null = null;
   const lerNotif = () => void supabase.rpc("alunos_com_notificacao").then((r) => { if (r.error) return; COM_NOTIF = new Set(((r.data ?? []) as string[]).map(String)); if (eu && (ui.tab === "inicio" || ui.tab === "central")) render(); });
+  /** Etiquetas de cada aluno (0142). */
+  let ETQ = new Map<string, string[]>();
+  const lerEtq = () => void supabase.from("etiquetas_aluna").select("aluna_id, etiqueta").order("etiqueta").then((r) => { if (r.error) return; const m = new Map<string, string[]>(); for (const x of (r.data ?? []) as { aluna_id: string; etiqueta: string }[]) { const l = m.get(x.aluna_id) || []; l.push(x.etiqueta); m.set(x.aluna_id, l); } ETQ = m; if (eu) render(); });
   /** Aba da Central de atenção. */
   let centralAba = "tudo";
   /** Envio em sequência da Central (um WhatsApp por clique, porque o navegador só abre uma janela por clique). */
@@ -3941,7 +3944,7 @@ export function montar(app: HTMLElement) {
     for (const c of S.cursos) for (const x of alunasDoCurso(c)) { let st = cursosDe.get(x.a.id); if (!st) cursosDe.set(x.a.id, st = new Set()); st.add(c.nome); }
     const todos = S.alunas.map((a) => ({ id: a.id, nome: a.nome, login: a.login, email: a.email || "", cel: a.celular || "", cod: a.codigo || "", ent: (a.entrada || "").slice(0, 10), val: (a.validade || "").slice(0, 10), apar: APARELHO.get(a.id) || "", st: a.bloqueada ? "bloq" : vencida(a) ? "desat" : "ativos", cursos: [...(cursosDe.get(a.id) || [])], tipo: daMentoria(a) ? "mentoria" : "geral", ult: (a.ultimoAcesso || "").slice(0, 10), eng: a.nota || 0,
       // As mesmas informações da lista de antes
-      foto: S.fotos[a.id] || "", cadBR: br(cadastroDe(a)), ultTxt: ultimoAcessoTxt(a), niv: nivel(a)[2], nota: a.nota || 0,
+      foto: S.fotos[a.id] || "", cadBR: br(cadastroDe(a)), ultTxt: ultimoAcessoTxt(a), niv: nivel(a)[2], nota: a.nota || 0, etq: ETQ.get(a.id) || [],
       prods: (() => { const libs = new Set(aulasDaLiberacao(a)); return S.cursos.filter((c) => c.modulos.some((m) => m.aulas.some((x) => libs.has(x.id)))).map((c) => c.nome); })(),
       // Liberação atual: cursos inteiros e cada aula liberada (com a data deste aluno, se houver)
       lib: { inteiros: S.cursos.filter((c) => a.acesso.cursos.includes(c.id)).map((c) => c.nome), aulas: Object.fromEntries(S.cursos.filter((c) => !a.acesso.cursos.includes(c.id)).flatMap((c) => c.modulos.flatMap((m) => m.aulas.filter((x) => a.acesso.modulos.includes(m.id) || a.acesso.aulas.includes(x.id)).map((x) => [x.id, a.datas[x.id] || ""])))) } }));
@@ -4250,6 +4253,49 @@ export function montar(app: HTMLElement) {
           await registrar(al.id, st === "bloq" ? "Aluno bloqueado" : st === "ativos" ? "Aluno reativado" : st === "desat" ? "Aluno desativado (acesso encerrado)" : "Removido do curso " + (c?.nome || ""));
         }
       });
+      return;
+    }
+    // Ações em lote da aba Alunos (21/11/2026)
+    if (m.tipo === "alunos-liberar") {
+      const ids = ((m.ids || []) as string[]).filter((i) => aluna(i)), prods = ((m.prods || []) as string[]).filter((i) => curso(i));
+      if (!ids.length || !prods.length) return;
+      npExec(async () => {
+        for (const id of ids) { const al = aluna(id)!; const novos = prods.filter((c) => !al.acesso.cursos.includes(c)); if (!novos.length) continue; await rpc("salvar_liberacao", { p_aluna: al.id, p_produtos: [...al.acesso.cursos, ...novos], p_modulos: al.acesso.modulos, p_aulas: al.acesso.aulas }); await registrar(al.id, "Liberou " + novos.map((c) => curso(c)!.nome).join(", ")); }
+      });
+      return;
+    }
+    if (m.tipo === "alunos-renovar") {
+      const ids = ((m.ids || []) as string[]).filter((i) => aluna(i)), meses = Number(m.meses) || 0, anos = Number(m.anos) || 0;
+      if (!ids.length || (!meses && !anos)) return;
+      npExec(async () => { for (const id of ids) { await rpc("renovar_acesso", { p_aluna: id, p_dias: 0, p_meses: meses, p_anos: anos }); await registrar(id, "Acesso renovado por " + (anos ? p(anos, "ano", "anos") : p(meses, "mês", "meses"))); } });
+      return;
+    }
+    if (m.tipo === "alunos-whats") {
+      const id = String(m.id || ""), modo = m.modo === "app" ? "central-app" : "whatsapp";
+      if (!aluna(id)) return;
+      acao(modo, { id }, document.body, null);
+      return;
+    }
+    if (m.tipo === "alunos-etiqueta") {
+      const ids = ((m.ids || []) as string[]).filter((i) => aluna(i)), et = String(m.etiqueta || "").trim().slice(0, 40), tirar = !!m.tirar;
+      if (!ids.length || !et) return;
+      npExec(async () => {
+        if (tirar) falhou(await supabase.from("etiquetas_aluna").delete().in("aluna_id", ids).eq("etiqueta", et).select("aluna_id"));
+        else falhou(await supabase.from("etiquetas_aluna").upsert(ids.map((i) => ({ aluna_id: i, etiqueta: et })), { onConflict: "aluna_id,etiqueta", ignoreDuplicates: true }).select("aluna_id"));
+        await registrar(null, (tirar ? "Tirou a etiqueta " : "Pôs a etiqueta ") + "“" + et + "” em " + p(ids.length, "aluno", "alunos"));
+        lerEtq();
+      });
+      return;
+    }
+    if (m.tipo === "alunos-exportar") {
+      const ids = new Set((m.ids || []) as string[]);
+      const L = S.alunas.filter((a) => ids.has(a.id));
+      const cel = (c: string) => (c ? fone(c) : "");
+      const linhas = [["Nome", "Login", "WhatsApp", "E-mail", "Modalidade", "Produtos", "Entrada", "Acesso até", "Último acesso", "Situação", "Etiquetas"]].concat(L.map((a) => [a.nome, a.login, cel(a.celular), a.email || "", daMentoria(a) ? "Mentoria" : "Geral", cursoPrincipal(a), br(cadastroDe(a)), a.validade ? br(a.validade) : "", a.ultimoAcesso ? br(a.ultimoAcesso) : "nunca", a.bloqueada ? "Bloqueado" : vencida(a) ? "Desativado" : "Ativo", (ETQ.get(a.id) || []).join(", ")]));
+      const csv = "\ufeff" + linhas.map((l) => l.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(";")).join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const lk = document.createElement("a"); lk.href = url; lk.download = "alunos-" + hoje() + ".csv"; document.body.appendChild(lk); lk.click(); lk.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast(p(L.length, "aluno exportado", "alunos exportados") + " em CSV.");
       return;
     }
     if (m.tipo === "alunos-add") {
@@ -10744,7 +10790,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       void supabase.rpc("perfis_comentario_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; nome_comentario: string | null; foto_comentario: string | null }[]) PERFIL_COM.set(x.id, { nome: x.nome_comentario || "", foto: x.foto_comentario || "" }); });
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
-      seg.esquecerPrefs(); lerSegEq(); lerNotif();
+      seg.esquecerPrefs(); lerSegEq(); lerNotif(); lerEtq();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
