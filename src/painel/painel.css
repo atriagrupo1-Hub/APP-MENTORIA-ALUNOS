@@ -6606,3 +6606,62 @@ html[data-tema="claro"] .cm-conf .rodape-modal .botao-neutro { color: var(--text
 .seg-prefs input { width: 18px; height: 18px; }
 .seg-perigo { color: #f87171 !important; }
 .seg-fundo { z-index: 100000; }
+
+/* ---------- Visão geral: biblioteca, alunos por produto, mais assistidas, recentes, saúde e Central (21/11/2026) ----------
+   Mesmo padrão dos cartões da Visão geral (casca2): títulos 14px Manrope 650, item 12px 650, apoio 10px, dourado #E2C68C. */
+.vgx-bib, .casca2 .vgx-bib { margin-bottom: 20px; }
+.vgx-bib-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 4px; padding: 14px; }
+.vgx-bib-it { display: flex; align-items: center; gap: 12px; padding: 10px; font: inherit; text-align: left; color: inherit; background: none; border: 1px solid transparent; border-radius: 8px; cursor: pointer; }
+.vgx-bib-it:hover { border-color: #4B4230; }
+.vgx-bib-it b { display: block; font-family: "Manrope", sans-serif; font-size: 20px; font-weight: 600; line-height: 1.1; color: var(--texto); }
+.vgx-bib-it small { display: block; margin-top: 3px; font-size: 10px; color: #868D97; }
+.vgx-prod { display: flex; align-items: center; gap: 14px; width: 100%; padding: 14px 20px; font: inherit; text-align: left; color: inherit; background: none; border: 0; border-bottom: 1px solid #292A30; cursor: pointer; }
+.vgx-prod:hover { background: rgba(226, 198, 140, .04); }
+.vgx-prod-nome { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.vgx-prod-nome b, .vgx-rec-txt b, .vgx-top-txt b, .ct-txt b, .ct-quem b { overflow: hidden; font-size: 12px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; color: var(--texto); }
+.vgx-prod-nome small, .vgx-rec-txt small, .vgx-top-txt small, .ct-txt small, .ct-quem small, .ct-sub { font-size: 10px; color: #868D97; }
+.vgx-prod .vgx-prog { flex: 0 0 110px; }
+.vgx-prod .vgx-pct { flex: 0 0 38px; font-size: 10px; color: #A5AAB3; text-align: right; }
+.vgx-top { margin: 0; padding: 6px 20px 12px; list-style: none; }
+.vgx-top li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #292A30; }
+.vgx-top li:last-child { border-bottom: 0; }
+.vgx-top li.vazio { justify-content: center; font-size: 12px; color: #868D97; }
+.vgx-top-n { flex: 0 0 24px; height: 24px; display: grid; place-items: center; font-family: var(--vg-mono, monospace); font-size: 11px; color: #DFC089; background: #342D22; border: 1px solid #4B402B; border-radius: 6px; }
+.vgx-top-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; padding: 0; font: inherit; text-align: left; color: inherit; background: none; border: 0; cursor: pointer; }
+.vgx-top-q { flex: 0 0 auto; font-size: 10px; color: #A5AAB3; }
+.vgx-duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 20px; }
+.vgx-rec { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 20px; font: inherit; text-align: left; color: inherit; background: none; border: 0; border-bottom: 1px solid #292A30; cursor: pointer; }
+.vgx-rec:last-child { border-bottom: 0; }
+.vgx-rec:hover { background: rgba(226, 198, 140, .04); }
+.vgx-rec-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.vgx-rec-q { flex: 0 0 auto; font-family: var(--vg-mono, monospace); font-size: 10px; color: #868D97; }
+.vgx-saude { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 14px; }
+.vgx-saude-it { display: flex; flex-direction: column; gap: 4px; padding: 12px; font: inherit; text-align: left; color: inherit; background: none; border: 1px solid #2B2D32; border-radius: 8px; cursor: pointer; }
+.vgx-saude-it:hover { border-color: #4B4230; }
+.vgx-saude-it small { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #868D97; }
+.vgx-saude-it b { font-family: "Manrope", sans-serif; font-size: 24px; font-weight: 600; color: var(--texto); }
+.vgx-saude-it span { font-size: 10px; font-weight: 700; color: #E2C68C; }
+.casca2 .vgx-meio + .vgx-meio, .vgx-duas + .vgx-card, .vgx-meio + .vgx-duas { margin-top: 20px; }
+.vgx-duas + .vgx-card { margin-top: 20px; }
+.casca2 .vgx-bt.ouro, .vgx-bt.ouro { color: #202018; background: #E2C68C; border-color: #E2C68C; }
+.casca2 .vgx-bt.ouro:hover, .vgx-bt.ouro:hover { background: #EED9AD; }
+/* Central de atenção */
+.ct-abas { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 20px; }
+.ct-abas button { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 6px 12px; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; color: #A5AAB3; background: transparent; border: 1px solid #35373D; border-radius: 6px; cursor: pointer; }
+.ct-abas button[aria-pressed="true"] { color: #E2C68C; background: #342D22; border-color: #4B402B; }
+.ct-grupo { margin-bottom: 20px; }
+.ct-grupo .vgx-scab h3 { margin: 0; }
+.ct-sub { margin: 4px 0 0; }
+.ct-linha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 20px; border-bottom: 1px solid #292A30; }
+.ct-linha:last-child { border-bottom: 0; }
+.ct-quem { flex: 1 1 240px; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 0; font: inherit; text-align: left; color: inherit; background: none; border: 0; cursor: pointer; }
+.ct-quem > span { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ct-txt { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.ct-cit { margin-top: 4px; font-size: 12px; line-height: 1.5; color: var(--texto-2); }
+.ct-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ct-acoes .vgx-bt { min-height: 32px; padding: 6px 12px; font-size: 11px; }
+html[data-tema="claro"] .vgx-prod, html[data-tema="claro"] .vgx-rec, html[data-tema="claro"] .vgx-top li, html[data-tema="claro"] .ct-linha { border-bottom-color: var(--linha-suave); }
+html[data-tema="claro"] .vgx-saude-it, html[data-tema="claro"] .ct-abas button { border-color: var(--linha-suave); }
+html[data-tema="claro"] .vgx-saude-it span, html[data-tema="claro"] .ct-abas button[aria-pressed="true"] { color: #8a6420; }
+html[data-tema="claro"] .ct-abas button[aria-pressed="true"] { background: #fbf5e9; border-color: #e6d3ad; }
+@media (max-width: 640px) { .vgx-prod .vgx-prog { flex-basis: 60px; } .ct-acoes { width: 100%; } }

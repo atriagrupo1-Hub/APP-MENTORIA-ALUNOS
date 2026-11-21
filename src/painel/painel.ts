@@ -691,6 +691,11 @@ export function montar(app: HTMLElement) {
   const acesso = { modo: "email" as seg.ModoLogin, aviso: "", depois2fa: "" as "" | "novaSenha" };
   /** Janela "Minha segurança". */
   let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string; etapa?: "intro" | "qr" | "pronto"; prefs?: boolean; exigir?: string[] }) = null;
+  /** Alunos que recebem notificação no celular (têm inscrição de push); null = ainda não carregou. */
+  let COM_NOTIF: Set<string> | null = null;
+  const lerNotif = () => void supabase.rpc("alunos_com_notificacao").then((r) => { if (r.error) return; COM_NOTIF = new Set(((r.data ?? []) as string[]).map(String)); if (eu && (ui.tab === "inicio" || ui.tab === "central")) render(); });
+  /** Aba da Central de atenção. */
+  let centralAba = "tudo";
   /** Segurança de cada pessoa da equipe (e-mail e senha, 2FA), para a tela Equipe. */
   let SEG_EQ = new Map<string, seg.SegEquipe>();
   const lerSegEq = () => void seg.segurancaDaEquipe().then((m) => { SEG_EQ = m; if (eu && ui.tab === "equipe") render(); });
@@ -822,7 +827,7 @@ export function montar(app: HTMLElement) {
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
   const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
   /** A aba do menu a que cada tela pertence. */
-  const abaDaTela = (t: string) => t === "ficha" ? "alunas" : t === "curso" || t === "aula" ? "cursos" : t === "catAba" ? "layout" : t;
+  const abaDaTela = (t: string) => t === "central" ? "inicio" : t === "ficha" ? "alunas" : t === "curso" || t === "aula" ? "cursos" : t === "catAba" ? "layout" : t;
   const souPrincipal = () => eu?.papel === "Dono" && !!euEq()?.principal;
   /** Posso fazer isto na equipe? Dono principal: tudo; dono secundário: o que o principal marcou; administrador: o de sempre. */
   const euPode = (o: "adicionar" | "remover" | "codigo" | "nome") => eu?.papel !== "Dono" ? o !== "remover" : souPrincipal() || !!euEq()?.pode[o];
@@ -945,6 +950,7 @@ export function montar(app: HTMLElement) {
     const moderar = S.comentarios.filter((k) => k.estado === "moderar").length;
     switch (ui.tab) {
       case "inicio": return ["Visão geral", "o que pede atenção hoje"];
+      case "central": return ["Central de atenção", "o que pede uma ação sua"];
       case "reduzir": return ["Reduzir PDF", ""];
       case "lixeira": return ["Lixeira", lixo ? p(lixo.length, "item", "itens") : ""];
       case "ficha": { const fa = S.alunas.find((x) => x.id === ui.ficha); return fa ? [fa.nome, "Ficha da aluna"] : ["Ficha", "aluna não encontrada"]; }
@@ -1174,7 +1180,7 @@ export function montar(app: HTMLElement) {
     const [t, cont] = titulo();
     const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
+    const telas: Record<string, () => string> = { inicio: telaInicio, central: telaCentral, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
     if (restrita(ui.tab)) ui.tab = "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
@@ -1218,7 +1224,7 @@ export function montar(app: HTMLElement) {
       <div class="principal">
         <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
-          ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "central" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
@@ -1478,7 +1484,7 @@ export function montar(app: HTMLElement) {
           </span>
         </span>` : ""}</span></div>
       </div>
-      <button type="button" class="vgx-atencao${nTarefas ? "" : " ok"}" data-a="estado-menu" data-v="sino"><i aria-hidden="true"></i><span>${nTarefas ? `<b>${p(nTarefas, "ponto de atenção", "pontos de atenção")} na operação.</b> Priorize comentários pendentes e acessos próximos do vencimento.` : "<b>Tudo em dia na operação.</b> Nenhum comentário ou acesso pedindo atenção."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>
+      ${(() => { const n = pendencias().total; return `<button type="button" class="vgx-atencao${n ? "" : " ok"}" data-a="aba" data-v="central"><i aria-hidden="true"></i><span>${n ? `<b>${p(n, "pendência", "pendências")} para resolver.</b> Comentários, alunos que não entraram ou pararam, avisos no celular e rascunhos.` : "<b>Tudo em dia na operação.</b> Nada pedindo uma ação sua agora."}</span><span class="vgx-abrir">${IC_INI.seta}Abrir central</span></button>`; })()}
       ${INI_EXTRA ? `<div class="ini-boas">
         <div class="ini-boas-txt">
           <span class="ini-boas-data">${h(dataLonga.charAt(0).toUpperCase() + dataLonga.slice(1))}</span>
@@ -1639,10 +1645,159 @@ export function montar(app: HTMLElement) {
         <section class="vgx-card vgx-novo"><span class="vgx-sobre">Próximo conteúdo</span><h3>Crie uma nova jornada.</h3><p>Cursos, e-books ou áudios, com uma etapa para cada decisão.</p><button type="button" class="al-botao-ouro" data-a="curso-novo"><span aria-hidden="true">+</span> Criar produto</button></section>
       </div>`;
     return `
+      ${vgxBiblioteca()}
       <div class="vgx-meio">${central}<div class="vgx-col">${ritmo}${recente}</div></div>
+      ${vgxProdutos()}
+      ${vgxRecentes()}
+      ${vgxSaude()}
       ${tabela}
       ${rascunhos}
       <footer class="vgx-rodape"><span>AIŌN · Administração</span></footer>`;
+  }
+  /* ---------- Visão geral: biblioteca, alunos por produto, mais assistidas, recentes e saúde (21/11/2026) ---------- */
+  const tipoProduto = (c: Curso) => (c.tipo === "ebook" ? "E-book" : c.tipo === "audio" ? "Áudio" : "Vídeo");
+  const alunosAtivos = () => S.alunas.filter((a) => !a.bloqueada && !vencida(a));
+  /** Tudo o que a Central de atenção lista, por grupo. */
+  function pendencias() {
+    const ls = listasAcessos();
+    const g = {
+      comentarios: paraResponder(),
+      nunca: ls.find((l) => l.id === "comecar")!.lista,
+      vencem: ls.find((l) => l.id === "vencem")!.lista,
+      parados: ls.find((l) => l.id === "parada")!.lista,
+      semNotif: COM_NOTIF ? alunosAtivos().filter((a) => a.ultimoAcesso && !COM_NOTIF!.has(a.id)) : [],
+      rascunhos: S.cursos.filter((c) => c.rascunho),
+    };
+    return { ...g, total: g.comentarios.length + g.nunca.length + g.vencem.length + g.parados.length + g.semNotif.length + g.rascunhos.length };
+  }
+  function vgxBiblioteca() {
+    const pub = S.cursos.filter((c) => !c.rascunho);
+    const nTipo = (t: string) => pub.filter((c) => tipoProduto(c) === t).length;
+    const mods = pub.reduce((n, c) => n + c.modulos.length, 0);
+    const aulas = pub.flatMap((c) => c.modulos.flatMap((m) => m.aulas));
+    const aulasPub = aulas.filter((a) => a.pub && !a.rascunho).length;
+    const pdfs = aulas.filter((a) => a.tipo === "pdf").length;
+    const vivos = pub.reduce((n, c) => n + c.modulos.filter((m) => m.vivo).length, 0);
+    const item = (ic: string, n: number, rot: string, acao = "aba", v = "cursos") => `<button type="button" class="vgx-bib-it" data-a="${acao}" data-v="${v}"><span class="vgx-lic ouro">${ic}</span><span><b>${n}</b><small>${rot}</small></span></button>`;
+    return `
+      <section class="vgx-card vgx-bib">
+        <header class="vgx-scab"><h3>Sua biblioteca</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver produtos</button></header>
+        <div class="vgx-bib-grade">
+          ${item(IC_INI.play, nTipo("Vídeo"), nTipo("Vídeo") === 1 ? "Curso em vídeo" : "Cursos em vídeo")}
+          ${item(ICONE_MENU.layout, nTipo("E-book"), "E-books")}
+          ${item(IC_INI.onda, nTipo("Áudio"), "Áudios")}
+          ${item(ICONE_MENU.cursos || IC_INI.play, mods, "Módulos")}
+          ${item(IC_INI.play, aulasPub, "Aulas publicadas")}
+          ${item(ICONE_MENU.layout, pdfs, "Conteúdos em PDF")}
+          ${item(IC_INI.balao, vivos, "Aulas ao vivo")}
+          ${item(IC_INI.seta, S.cursos.length - pub.length, "Em rascunho")}
+        </div>
+      </section>`;
+  }
+  function vgxProdutos() {
+    // Alunos com acesso a cada produto e quanto concluíram em média.
+    const ativos = alunosAtivos();
+    const libs = new Map(ativos.map((a) => [a.id, new Set(aulasDaLiberacao(a))]));
+    const linhas = S.cursos.filter((c) => !c.rascunho).map((c) => {
+      const ids = c.modulos.flatMap((m) => m.aulas.filter((x) => x.pub && !x.rascunho).map((x) => x.id));
+      const com = ativos.filter((a) => ids.some((id) => libs.get(a.id)!.has(id)));
+      const pct = com.length && ids.length ? Math.round((com.reduce((t, a) => t + ids.filter((id) => a.feitas.has(id)).length / ids.length, 0) / com.length) * 100) : 0;
+      const parados = com.filter((a) => !ids.some((id) => a.feitas.has(id))).length;
+      return { c, n: com.length, pct, parados };
+    }).sort((x, y) => y.n - x.n || x.c.nome.localeCompare(y.c.nome, "pt"));
+    const vis = linhas.slice(0, 6), resto = linhas.slice(6);
+    // Aulas mais assistidas no período (alunos diferentes que assistiram, concluíram ou abriram).
+    const { de, ate, chave } = periodoIni();
+    const atv = ativ && ativ.chave === chave ? ativ.lista.filter((x) => { const d = diaDe(x.quando); return d >= de && d <= ate && (x.tipo === "assistiu" || x.tipo === "concluiu" || x.tipo === "abriu_ebook") && x.aula; }) : null;
+    const porAula = new Map<string, Set<string>>();
+    for (const x of atv || []) { if (!porAula.has(x.aula)) porAula.set(x.aula, new Set()); porAula.get(x.aula)!.add(x.aluna); }
+    // A atividade traz o título da aula (não o id): acha a aula pelo nome para abrir ao clicar.
+    const porNome = new Map<string, { a: Aula; c: Curso }>();
+    for (const c of S.cursos) for (const m of c.modulos) for (const a of m.aulas) if (!porNome.has(a.nome)) porNome.set(a.nome, { a, c });
+    const top = [...porAula.entries()].map(([nome, q]) => ({ nome, x: porNome.get(nome) || null, n: q.size })).sort((a, b) => b.n - a.n).slice(0, 5);
+    return `
+      <div class="vgx-meio">
+        <section class="vgx-card">
+          <header class="vgx-scab"><h3>Alunos por produto</h3><span>Com acesso hoje · conclusão média</span></header>
+          ${vis.map((l) => `<button type="button" class="vgx-prod" data-a="abrir-curso" data-id="${l.c.id}"><span class="vgx-prod-nome"><b>${h(l.c.nome)}</b><small>${tipoProduto(l.c)}${l.n && l.parados ? " · " + p(l.parados, "sem começar", "sem começar") : ""}</small></span><span class="vgx-num">${l.n}</span><span class="vgx-prog"><i style="width:${l.pct}%"></i></span><span class="vgx-pct">${l.pct}%</span></button>`).join("") || `<p class="vgx-vazio">Nenhum produto publicado.</p>`}
+          ${resto.length ? `<footer class="vgx-cpe"><span>+ ${p(resto.length, "produto", "produtos")} com ${p(resto.reduce((t, l) => t + l.n, 0), "acesso", "acessos")} no total</span><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></footer>` : ""}
+        </section>
+        <section class="vgx-card">
+          <header class="vgx-scab"><h3>Mais assistidas no período</h3><button type="button" class="vgx-link" data-a="aba" data-v="engajamento">${IC_INI.seta}Engajamento</button></header>
+          <ol class="vgx-top">${!atv ? `<li class="vazio">Carregando…</li>` : top.map((t, i) => `<li><span class="vgx-top-n">${i + 1}</span><button type="button" class="vgx-top-txt"${t.x ? ` data-a="abrir-aula" data-id="${t.x.a.id}"` : ""}><b>${h(t.nome)}</b><small>${h(t.x ? t.x.c.nome : "")}</small></button><span class="vgx-top-q">${p(t.n, "aluno", "alunos")}</span></li>`).join("") || `<li class="vazio">Ninguém assistiu aulas no período.</li>`}</ol>
+        </section>
+      </div>`;
+  }
+  function vgxRecentes() {
+    const alunos = [...S.alunas].sort((x, y) => (y.criadaEm || "").localeCompare(x.criadaEm || "")).slice(0, 5);
+    const conteudos = S.cursos.flatMap((c) => c.modulos.flatMap((m) => m.aulas.filter((a) => a.pub && !a.rascunho).map((a) => ({ a, c, q: a.publicadoEm || a.criado })))).sort((x, y) => (y.q || "").localeCompare(x.q || "")).slice(0, 5);
+    const quando = (iso: string) => (iso ? br(diaDe(iso)) : "—");
+    return `
+      <div class="vgx-duas">
+        <section class="vgx-card">
+          <header class="vgx-scab"><h3>Últimos alunos</h3><button type="button" class="vgx-link" data-a="ir-alunas-recentes">${IC_INI.seta}Ver todos</button></header>
+          ${alunos.map((a) => `<button type="button" class="vgx-rec" data-a="ini-abrir-aluna" data-id="${a.id}">${aaAvatar(a)}<span class="vgx-rec-txt"><b>${h(a.nome)}</b><small>${h(cursoPrincipal(a))}</small></span>${a.ultimoAcesso ? "" : `<span class="vgx-pill">nunca entrou</span>`}<span class="vgx-rec-q">${quando(a.criadaEm)}</span></button>`).join("") || `<p class="vgx-vazio">Nenhum aluno ainda.</p>`}
+        </section>
+        <section class="vgx-card">
+          <header class="vgx-scab"><h3>Últimos conteúdos publicados</h3><button type="button" class="vgx-link" data-a="aba" data-v="cursos">${IC_INI.seta}Ver todos</button></header>
+          ${conteudos.map((x) => `<button type="button" class="vgx-rec" data-a="abrir-aula" data-id="${x.a.id}"><span class="vgx-lic ouro">${x.a.tipo === "pdf" ? ICONE_MENU.layout : IC_INI.play}</span><span class="vgx-rec-txt"><b>${h(x.a.nome)}</b><small>${h(x.c.nome)}</small></span><span class="vgx-rec-q">${quando(x.q)}</span></button>`).join("") || `<p class="vgx-vazio">Nada publicado ainda.</p>`}
+        </section>
+      </div>`;
+  }
+  function vgxSaude() {
+    const g = pendencias();
+    const nomesEq = S.equipe.filter((e) => e.ultimo && diaDe(e.ultimo) === hoje()).map((e) => primeiroNome(e.nome));
+    const item = (rot: string, n: number | string, sub: string, acao: string, v: string) => `<button type="button" class="vgx-saude-it" data-a="${acao}" data-v="${v}"><small>${rot}</small><b>${n}</b><span>${sub}</span></button>`;
+    return `
+      <section class="vgx-card">
+        <header class="vgx-scab"><h3>Saúde da operação</h3><button type="button" class="vgx-link" data-a="aba" data-v="central">${IC_INI.seta}Abrir central</button></header>
+        <div class="vgx-saude">
+          ${item("Nunca entraram", g.nunca.length, g.nunca.length ? "Reenviar acesso" : "Todos já entraram", "central-ir", "nunca")}
+          ${item("Sem avisos no celular", COM_NOTIF ? g.semNotif.length : "…", g.semNotif.length ? "Enviar link do app" : "Todos recebem", "central-ir", "notif")}
+          ${item("Parados há 14+ dias", g.parados.length, g.parados.length ? "Chamar de volta" : "Ninguém parado", "central-ir", "parados")}
+          ${item("Acessos vencendo", g.vencem.length, "nos próximos 15 dias", "central-ir", "vencem")}
+          ${item("Rascunhos", g.rascunhos.length, g.rascunhos.length ? "Continuar editando" : "Nada pendente", "central-ir", "conteudo")}
+          ${S.equipe.length ? item("Equipe no painel hoje", nomesEq.length, nomesEq.join(", ") || "ninguém ainda", "aba", eu?.papel === "Dono" ? "registro" : "equipe") : ""}
+        </div>
+      </section>`;
+  }
+  /** Central de atenção: cada pendência com a ação para resolver na própria linha. */
+  function telaCentral() {
+    const g = pendencias();
+    const abas: [string, string, number][] = [["tudo", "Tudo", g.total], ["comentarios", "Comentários", g.comentarios.length], ["nunca", "Nunca entraram", g.nunca.length], ["vencem", "Vencendo", g.vencem.length], ["parados", "Parados", g.parados.length], ["notif", "Sem avisos no celular", g.semNotif.length], ["conteudo", "Conteúdo", g.rascunhos.length]];
+    const ab = centralAba;
+    const ver = (id: string) => ab === "tudo" || ab === id;
+    const grupo = (id: string, titulo: string, sub: string, n: number, lote: string, corpo: string) => !ver(id) || (ab === "tudo" && !n) ? "" : `
+      <section class="vgx-card ct-grupo" id="central-${id}">
+        <header class="vgx-scab"><div><h3>${titulo} <span class="vgx-cont">${n}</span></h3><p class="ct-sub">${sub}</p></div>${n && lote ? lote : ""}</header>
+        ${n ? corpo : `<p class="vgx-vazio">✓ Nada aqui. Tudo em dia.</p>`}
+      </section>`;
+    const quem = (a: Aluna, sub: string) => `<button type="button" class="ct-quem" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><small>${sub}</small></span></button>`;
+    const dias = (iso: string) => diasEntre(diaDe(iso), hoje());
+    const linhas = [
+      grupo("comentarios", "Comentários aguardando moderação", "Aprove para aparecer para os alunos, responda ou oculte.", g.comentarios.length, `<button type="button" class="vgx-link" data-a="ir-comentarios">${IC_INI.seta}Moderação completa</button>`,
+        g.comentarios.map((k) => `<div class="ct-linha">${avatarDe(k.autoraId, k.autora)}<span class="ct-txt"><b>${h(k.autora)} · ${haTempo(k.criado)}</b><small>${h(ctxAula(k.aula))}</small><span class="ct-cit">“${h(k.texto)}”</span></span><span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="com-publicar" data-id="${k.id}">Aprovar</button><button type="button" class="vgx-bt" data-a="ini-moderar" data-id="${k.id}">Responder</button><button type="button" class="vgx-bt" data-a="com-ocultar" data-id="${k.id}">Ocultar</button></span></div>`).join("")),
+      grupo("nunca", "Nunca entraram no app", "Receberam login e código, mas ainda não abriram. Normalmente a mensagem não chegou.", g.nunca.length, "",
+        g.nunca.map((a) => `<div class="ct-linha">${quem(a, "cadastrado em " + br(cadastroDe(a)) + (a.criadaEm ? " · há " + p(dias(a.criadaEm), "dia", "dias") : ""))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="whatsapp" data-id="${a.id}">Enviar acesso no WhatsApp</button><button type="button" class="vgx-bt" data-a="copiar-acesso" data-id="${a.id}">Copiar acesso</button></span></div>`).join("")),
+      grupo("vencem", "Acessos que vencem em 15 dias", "Renove antes de a pessoa perder o acesso.", g.vencem.length, "",
+        g.vencem.map((a) => `<div class="ct-linha">${quem(a, "vence em " + br(a.validade))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="renovar" data-id="${a.id}">Renovar</button><button type="button" class="vgx-bt" data-a="whatsapp-volta" data-id="${a.id}">WhatsApp</button></span></div>`).join("")),
+      grupo("parados", "Sem entrar há mais de 14 dias", "O contato registrado fica na ficha do aluno.", g.parados.length, "",
+        g.parados.map((a) => `<div class="ct-linha">${quem(a, "último acesso " + br(a.ultimoAcesso) + " · há " + p(diasEntre(a.ultimoAcesso, hoje()), "dia", "dias"))}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="whatsapp-volta" data-id="${a.id}">Chamar no WhatsApp</button><button type="button" class="vgx-bt" data-a="contato" data-id="${a.id}">Registrar contato</button></span></div>`).join("")),
+      grupo("notif", "Não recebem avisos no celular", "Não instalaram o app ou não aceitaram as notificações: não ficam sabendo de aula nova.", g.semNotif.length, "",
+        !COM_NOTIF ? `<p class="vgx-vazio">Carregando…</p>` : g.semNotif.map((a) => `<div class="ct-linha">${quem(a, a.celular ? "WhatsApp " + fone(a.celular) : "sem WhatsApp cadastrado")}<span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="central-app" data-id="${a.id}">Enviar link do app</button></span></div>`).join("")),
+      grupo("conteudo", "Conteúdo esperando você", "Produtos em rascunho: os alunos ainda não veem.", g.rascunhos.length, "",
+        g.rascunhos.map((c) => `<div class="ct-linha"><span class="vgx-lic ouro">${ICONE_MENU.cursos || IC_INI.play}</span><span class="ct-txt"><b>${h(c.nome)}</b><small>${tipoProduto(c)} · ${p(c.modulos.length, "módulo", "módulos")} · ${p(totalAulas(c), "aula", "aulas")}</small></span><span class="ct-acoes"><button type="button" class="vgx-bt ouro" data-a="abrir-curso" data-id="${c.id}">Continuar editando</button></span></div>`).join("")),
+    ].join("");
+    return `
+    <section class="tela ativa ini ini2">
+      <button type="button" class="vgx-link fraco" data-a="aba" data-v="inicio">← Voltar para a Visão geral</button>
+      <div class="vgx-cab">
+        <div><span class="vgx-sobre">Visão geral</span><h1>Central de atenção</h1><p>Tudo que pede uma ação sua, com o botão para resolver na própria linha. O que for resolvido sai da lista.</p></div>
+        <div class="vgx-dir"><span class="vgx-pill">${p(g.total, "pendência", "pendências")}</span></div>
+      </div>
+      <nav class="ct-abas" aria-label="Filtrar pendências">${abas.map(([v, n, c]) => `<button type="button" data-a="central-aba" data-v="${v}" aria-pressed="${ab === v}">${n}<span class="vgx-cont">${c}</span></button>`).join("")}</nav>
+      ${linhas || `<section class="vgx-card"><p class="vgx-vazio">✓ Tudo em dia. Nada pedindo uma ação sua agora.</p></section>`}
+    </section>`;
   }
   const GRUPO_ATV: Record<Atividade["tipo"], string> = { acessou: "acessou", assistiu: "aulas", concluiu: "aulas", abriu_ebook: "ebooks", comentou: "comentarios", respondeu: "comentarios", curtiu: "curtidas", curtiu_comentario: "curtidas" };
   /** Cada aula/e-book liberado hoje para pelo menos uma aluna ativa, com quantas têm. */
@@ -7978,6 +8133,16 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       case "ini-ativ-tipo": ui.iniTipo = d.v || ""; break;
       case "ajuda-geral": ui.ajuda = ui.ajuda === ui.tab ? null : ui.tab; break;
       case "vgx-aba": ui.vgxAba = d.v; break;
+      case "central-aba": centralAba = d.v; break;
+      case "central-ir": ui.tab = "central"; centralAba = d.v; window.scrollTo(0, 0); break;
+      case "central-app": {
+        const al2 = S.alunas.find((x) => x.id === d.id); if (!al2) return;
+        if (!al2.celular) { toast("Cadastre o WhatsApp do aluno em Editar dados."); return; }
+        const msg = "Olá, " + primeiroNome(al2.nome) + "! Para não perder nenhuma aula nova, instale o aplicativo da mentoria no seu celular e aceite as notificações:\n\n" + linkDe(al2.id) + "\n\nNo iPhone: abra o link no Safari, toque em Compartilhar e depois em \u201cAdicionar à Tela de Início\u201d. No Android: abra no Chrome e toque em \u201cInstalar\u201d. Depois, entre e toque em \u201cPermitir\u201d quando aparecer o aviso.";
+        window.open("https://wa.me/55" + al2.celular.replace(/\D/g, "") + "?text=" + encodeURIComponent(msg), "_blank", "noopener");
+        void executar(async () => { await registrar(al2.id, "Link do app enviado pelo WhatsApp"); return "Mensagem aberta no WhatsApp."; });
+        return;
+      }
       case "copiar-cel": { const n = fone(al!.celular); const ok = () => toast("WhatsApp de " + primeiroNome(al!.nome) + " copiado: " + n); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(n).then(ok, () => toast(n)); else toast(n); return; }
       case "al-lote": document.querySelector(".lote")?.scrollIntoView({ block: "center", behavior: "smooth" }); (document.querySelector(".lote select") as HTMLElement | null)?.focus(); return;
       case "criar-fechar": if (alvo !== el && el.classList.contains("cri-fundo")) return; ui.estMenu = ""; break;
@@ -10510,7 +10675,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       void supabase.rpc("perfis_comentario_equipe").then((r) => { if (r.error) return; for (const x of (r.data ?? []) as { id: string; nome_comentario: string | null; foto_comentario: string | null }[]) PERFIL_COM.set(x.id, { nome: x.nome_comentario || "", foto: x.foto_comentario || "" }); });
       void supabase.from("profiles").select("cor_perfil").eq("id", eu.id).maybeSingle().then((r) => { if (eu && r.data?.cor_perfil) { eu.cor = r.data.cor_perfil; render(); } });
       ligarSinal();
-      seg.esquecerPrefs(); lerSegEq();
+      seg.esquecerPrefs(); lerSegEq(); lerNotif();
       void carregarFotos().then((ok) => { if (ok && eu) { S.fotos = fotosCache; render(); } });
       if (ui.primeiraVez) {
         ui.primeiraVez = false;
