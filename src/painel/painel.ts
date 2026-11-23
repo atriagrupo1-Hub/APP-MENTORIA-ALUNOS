@@ -13,7 +13,7 @@
  */
 import "./painel.css";
 import * as seg from "./seguranca";
-import { vigiarVersao } from "./versao";
+import { vigiarVersao, fimDaCarga } from "./versao";
 import { supabase } from "@/data/supabase";
 import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
@@ -10820,5 +10820,6 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     carregando = false;
     ui.focar = eu ? null : acesso.modo === "novaSenha" ? "novaSenhaCampo" : acesso.modo === "2fa" ? "doisFaCampo" : "emailCampo";
     render();
+    fimDaCarga();
   })();
 }

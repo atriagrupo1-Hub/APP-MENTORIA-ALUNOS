@@ -7,6 +7,28 @@
  */
 
 const PADRAO = /assets\/index-[\w-]+\.js/;
+const CARGA_KEY = "aion-atualizando";
+
+/** Tela de carga com a logo AIŌN girando: cobre a troca de versão para não piscar. */
+function mostrarCarga() {
+  if (document.querySelector(".versao-carga")) return;
+  const el = document.createElement("div");
+  el.className = "versao-carga";
+  el.setAttribute("role", "status");
+  el.innerHTML = `<div class="versao-carga-centro"><span class="versao-carga-anel" aria-hidden="true"></span><img src="/marca/logo-aion.png" alt="" class="versao-carga-logo" /></div><p class="versao-carga-txt">Atualizando o painel…</p>`;
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add("on"));
+}
+
+/** Chamado quando o painel terminou de abrir: some com a tela de carga suavemente. */
+export function fimDaCarga() {
+  const el = document.querySelector<HTMLElement>(".versao-carga");
+  if (!el) return;
+  setTimeout(() => { el.classList.remove("on"); setTimeout(() => el.remove(), 450); }, 350);
+}
+
+// Voltando de uma atualização: a tela de carga já aparece antes do painel montar.
+try { if (sessionStorage.getItem(CARGA_KEY)) { sessionStorage.removeItem(CARGA_KEY); mostrarCarga(); setTimeout(fimDaCarga, 12_000); } } catch { /* sem armazenamento */ }
 let avisoAberto = false;
 let ocultoAte = 0;
 
@@ -31,7 +53,13 @@ function mostrar(recarregar: () => void) {
   el.setAttribute("role", "status");
   el.innerHTML = `<span class="versao-ponto" aria-hidden="true"></span><span class="versao-txt">Nova versão disponível – atualizar</span><button type="button" class="versao-bt">Atualizar agora</button><button type="button" class="versao-x" aria-label="Fechar aviso">✕</button>`;
   const bt = el.querySelector<HTMLButtonElement>(".versao-bt")!;
-  bt.addEventListener("click", () => { bt.disabled = true; bt.textContent = "Atualizando…"; recarregar(); });
+  bt.addEventListener("click", () => {
+    bt.disabled = true;
+    try { sessionStorage.setItem(CARGA_KEY, "1"); } catch { /* segue sem */ }
+    el.remove();
+    mostrarCarga();
+    setTimeout(recarregar, 700);
+  });
   el.querySelector(".versao-x")!.addEventListener("click", () => {
     // Fechou: volta a avisar daqui a 30 minutos, se ainda não tiver atualizado.
     el.remove(); avisoAberto = false; ocultoAte = Date.now() + 30 * 60_000;

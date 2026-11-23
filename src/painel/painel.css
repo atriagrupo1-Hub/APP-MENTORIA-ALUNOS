@@ -6722,3 +6722,14 @@ html[data-tema="claro"] .ct-fila { color: var(--texto); background: #fbf5e9; bor
 .casca2 .m2 .ini-spark { right: 14px; bottom: 30px; width: 52px; height: 20px; }
 .casca2 .m2-grupo { gap: 2px; }
 .casca2 .m2-grupo button { min-height: 22px; padding: 2px 6px; font-size: 9px; }
+
+/* Tela de carga ao atualizar a versão: logo AIŌN com anel dourado girando (sem piscar) */
+.versao-carga { position: fixed; inset: 0; z-index: 100002; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #0B0B0C; opacity: 0; transition: opacity .4s ease; }
+.versao-carga.on { opacity: 1; }
+.versao-carga-centro { position: relative; width: 132px; height: 132px; display: grid; place-items: center; }
+.versao-carga-anel { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(226, 198, 140, .14); border-top-color: #E2C68C; border-right-color: rgba(226, 198, 140, .55); animation: versao-gira 1.1s linear infinite; }
+.versao-carga-logo { width: 84px; height: auto; mix-blend-mode: lighten; animation: versao-pulsa 1.6s ease-in-out infinite; }
+.versao-carga-txt { margin: 0; font-family: "Manrope", sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: #A7ADB6; }
+@keyframes versao-gira { to { transform: rotate(360deg); } }
+@keyframes versao-pulsa { 0%, 100% { opacity: .78; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
+@media (prefers-reduced-motion: reduce) { .versao-carga-anel, .versao-carga-logo { animation-duration: 3s; } }
