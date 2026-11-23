@@ -14,7 +14,7 @@ Prefixo = começo das classes CSS da tela. **Antes de criar/usar uma classe:**
 | Alunas e acessos | `telaAlunas`, `linhaAluna`, `barraLote` | `al2-`, `al-modal-` | `.al-mods` é da ficha (Progresso por módulo) — não reutilizar |
 | Ficha da aluna (painel lateral) | `cadastroAluna` | `aa-` (`.aa-painel.largo`) | Abas usam a regra única de abas (`.aa-abas > button`, com `!important`) |
 | Cadastrar / editar aluna (janela) | `modal()` → `m.tipo === "aluna"` | `cad-` | Desfazer: `cadHist`; login automático: `loginAuto` |
-| Engajamento | `telaEngajamento` | `eng-` | Dados do Supabase: `resumo_engajamento` |
+| Engajamento | `telaEngajamento` (sub-abas `engResumo`, `engAlunos`, `engProdutos`, `engVendas`, `engApp`, `engRanking`, `engMentoria`) | `eng-`, `egx-` | Supabase: `resumo_engajamento` (0058) e `painel_engajamento` (0143) |
 | Todos os produtos | `telaCursos` | `prod-`, `kc-` | |
 | Página do produto (abas) | `telaCurso` → `visaoGeralCurso`, `configCurso` (Sobre o curso), `modulosCurso` | `vg-`, `ce-`/`cs-`, `ma2-` | `fichaCurso` (`cf-`) está guardada, sem uso |
 | Criar novo curso | `telaCursoNovo` | `cn-` | Não usar `cn-` em outra tela |

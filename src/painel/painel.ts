@@ -727,7 +727,7 @@ export function montar(app: HTMLElement) {
     buscaGeral: "", buscaAberta: false, inicioVista: "",
     acessoLista: "", acessoAluna: null as string | null, acessoAba: "geral", aaAnima: "", filtroEng: "todas", guiaEng: true, ajuda: null as string | null,
     sujo: null as null | { f: string; id: string },
-    engDias: 7, engMenu: "" as string,
+    engDias: 7, engMenu: "" as string, engAba: "resumo" as string, engRank: "mais" as string, engPag: 1, engProd: "" as string,
     ceEd: "" as string, pmModoIni: "" as string, vgSec: "alunas" as "conteudo" | "alunas" | "comentarios", vgSub: {} as Record<string, string>, csComFiltro: "moderar", csComPer: "hoje", csComMod: "", csAddMod: false, novaAula: "", novoMod: "", estMenu: "", catxPrevia: "celular", versAberta: false, modOrdemAberta: false, prevEst: { cat: {} as Record<string, Estilo | null>, mod: {} as Record<string, Estilo | null>, aula: undefined as Estilo | null | undefined, inicio: undefined as Estilo | null | undefined, perfil: undefined as Estilo | null | undefined, notif: undefined as Estilo | null | undefined, foco: "" }, modBusca: "", aulaTipo: "", op2Tipo: "", modPagina: null as string | null, aulaMais: null as string | null, csAddAluna: false, csSit: "todas", csPag: 1, csPorPag: 10, relPer: "7", relDe: "", relAte: "",
     cursoAba: "visao", curAlBusca: "", curAlFiltro: "", curAlDe: "", curAlAte: "", curAlMenu: "",
     curMenu: "" as string, prodTipo: "todos" as "todos" | "cursos" | "ebooks" | "audios", pmEditar: false, modSel: new Set<string>(), catVis: "", catTipo: "", rkBusca: "", ctVis: "cont", cursoSt: "", cursoPub: "", kaBusca: "", kaOrdem: "recentes", kaVista: "grade", kaAdd: false, cursoBusca: "", cursoOrdem: "recentes", cursoVista: "grade", cursoCat: "",
@@ -2430,9 +2430,9 @@ export function montar(app: HTMLElement) {
       empurrao: q("empurrao", "Precisam de um empurrão", "pararam ou quase não começaram", "Ninguém precisa agora", guia("empurrao"), "Nenhuma aluna precisa de um empurrão agora."),
       ritmo: q("ritmo", "No ritmo", "assistem, mas devagar ou com intervalos", "Ninguém neste grupo", guia("ritmo"), "Nenhuma aluna neste grupo."),
       avancando: q("avancando", "Avançando", "assistem e voltam com frequência", "Ninguém neste grupo ainda", guia("avancando"), "Nenhuma aluna neste grupo."),
-      recem: q("recem", "Recém-chegadas", "cadastradas há até 7 dias, sem o primeiro acesso", "Nenhuma recém-chegada", guia("recem"), "Nenhuma recém-chegada."),
+      recem: q("recem", "Recém-chegados", "cadastradas há até 7 dias, sem o primeiro acesso", "Nenhum recém-chegado", guia("recem"), "Nenhum recém-chegado."),
       semcontato: q("semcontato", "Sem contato há 7 dias", "ninguém da equipe falou com elas na semana", "Todas tiveram contato", "Ninguém da equipe registrou contato com elas nos últimos 7 dias. Ligue ou mande recado e clique em Registrar contato.", "Todas tiveram contato nos últimos 7 dias."),
-      todas: q("todas", "Todas as alunas", "ranking pela nota · média " + media, "Nenhuma aluna ativa ainda", "Da maior para a menor nota. A nota vai de 0 a 100: aulas concluídas, último acesso e comentários. Bloqueadas ou com acesso vencido ficam fora.", "Nenhuma aluna ativa ainda."),
+      todas: q("todas", "Todos os alunos", "ranking pela nota · média " + media, "Nenhum aluno ativo ainda", "Da maior para a menor nota. A nota vai de 0 a 100: aulas concluídas, último acesso e comentários. Bloqueadas ou com acesso vencido ficam fora.", "Nenhum aluno ativo ainda."),
     };
     quadros.empurrao.ajuda = ajudaDe("empurrao");
     quadros.ritmo.ajuda = ajudaDe("ritmo");
@@ -2471,7 +2471,7 @@ export function montar(app: HTMLElement) {
     const bom = (v > 0) === subirEhBom;
     return `<span class="eng-var ${bom ? "bom" : "ruim"}">${v > 0 ? "↑" : "↓"} ${Math.abs(v)}%</span>`;
   };
-  function telaEngajamento() {
+  function engBase() {
     carregarResumoEng();
     const { ate, chave } = periodoIni();
     const r = resEng && resEng.chave === chave ? resEng.r : null;
@@ -2479,7 +2479,7 @@ export function montar(app: HTMLElement) {
     const media = base.length ? Math.round(base.reduce((s, x) => s + x.nota, 0) / base.length) : 0;
     const semContato = (x: Aluna) => !x.contatos.some((c) => diasEntre(diaDe(c.quando), hoje()) <= 7);
     const grupo = (g: string) => (x: Aluna) => nivel(x)[2] === g;
-    const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegadas", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
+    const FIL: [string, string, (x: Aluna) => boolean][] = [["todas", "Todas", () => true], ["avancando", "Avançando", grupo("avancando")], ["ritmo", "No ritmo", grupo("ritmo")], ["empurrao", "Precisa de um empurrão", grupo("empurrao")], ["recem", "Recém-chegados", grupo("recem")], ["semcontato", "Sem contato há 7 dias", semContato]];
     const Q = quadrosEng(base, FIL, media);
     // Período terminando hoje: os números são as próprias listas. Antes disso, como estavam no fim do período.
     const atual = ate >= hoje();
@@ -2502,7 +2502,7 @@ export function montar(app: HTMLElement) {
     // Evolução: % das alunas que tiveram atividade (abriram o app, assistiram ou comentaram) em cada dia.
     const nDias = ui.engDias || 7;
     const dias = r ? r.dias.slice(-nDias) : [];
-    const barras = dias.map((d) => { const v = d.total ? Math.round((d.ativas / d.total) * 100) : 0; return `<span class="eng-barra" title="${br(d.dia)}: ${d.ativas} de ${d.total} alunas (${v}%)"><i style="height:${v}%"></i><em>${br(d.dia).slice(0, 5)}</em></span>`; }).join("");
+    const barras = dias.map((d) => { const v = d.total ? Math.round((d.ativas / d.total) * 100) : 0; return `<span class="eng-barra" title="${br(d.dia)}: ${d.ativas} de ${d.total} alunos (${v}%)"><i style="height:${v}%"></i><em>${br(d.dia).slice(0, 5)}</em></span>`; }).join("");
     // Distribuição: os três grupos.
     const nAv = conta("avancando"), nRi = conta("ritmo"), nEm = conta("empurrao"), soma = nAv + nRi + nEm;
     const fat = (n: number) => (soma ? (n / soma) * 100 : 0);
@@ -2513,7 +2513,7 @@ export function montar(app: HTMLElement) {
       const l = Q[id].lista.slice(0, 5);
       return `
         <section class="eng-lista">
-          <header><span class="eng-lista-ic">${ic}</span><span class="eng-lista-tit"><b>${titulo}</b><span>${sub}</span></span><button class="al-botao pequeno" data-a="aa-lista" data-v="${id}">Ver todas ${IC_INI.seta}</button></header>
+          <header><span class="eng-lista-ic">${ic}</span><span class="eng-lista-tit"><b>${titulo}</b><span>${sub}</span></span><button class="al-botao pequeno" data-a="aa-lista" data-v="${id}">Ver todos ${IC_INI.seta}</button></header>
           ${l.map((a) => `
           <div class="eng-linha">
             <button type="button" class="eng-linha-abre" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<span class="eng-linha-txt"><b>${h(a.nome)}</b><span>${a.ultimoAcessoEm ? (id === "empurrao" ? "Último acesso " : "Acessou ") + haTempo(a.ultimoAcessoEm) : "Ainda não acessou"}</span></span></button>
@@ -2526,18 +2526,14 @@ export function montar(app: HTMLElement) {
           </div>`).join("") || `<p class="ini-vazio">${Q[id].vazio}</p>`}
         </section>`;
     };
-    return `
-    <section class="tela ativa aa eng">
-      <div class="vgx-cab eng-cab">
-        <div><span class="vgx-sobre">Acompanhamento</span><h1>Engajamento</h1><p>Acompanhe a atividade das alunas e identifique quem precisa de atenção.</p></div>
-        <div class="vgx-dir">${seletorPeriodo()}</div>
-      </div>
+    return {
+      topo: `
       <div class="eng-topo">
         <div class="eng-geral">
           <span class="eng-anel" style="--p:${geral ?? 0}"><b>${geral == null ? "–" : geral + "%"}</b></span>
           <span class="eng-geral-txt">
-            <b>Engajamento geral${ajudaQuadro("geral", ["Engajamento geral", "Quantas alunas ativas tiveram alguma atividade no período: abriram o app, assistiram ou comentaram.", "compare com o período anterior. Caiu? Comece por “Precisam de um empurrão”."])}</b>
-            <span>Média de alunas ativas</span>
+            <b>Engajamento geral${ajudaQuadro("geral", ["Engajamento geral", "Quantos alunos ativos tiveram alguma atividade no período: abriram o app, assistiram ou comentaram.", "compare com o período anterior. Caiu? Comece por “Precisam de um empurrão”."])}</b>
+            <span>Média de alunos ativos</span>
             ${dGeral != null && dGeral !== 0 ? `<span class="eng-var ${dGeral > 0 ? "bom" : "ruim"}">${dGeral > 0 ? "↑" : "↓"} ${Math.abs(dGeral)}%</span><em>em relação ao período anterior</em>` : ""}
           </span>
         </div>
@@ -2545,11 +2541,13 @@ export function montar(app: HTMLElement) {
           ${cartao("empurrao", ICONE_ENG.empurrao, "Precisam de um empurrão", conta("empurrao"), r ? variacao(conta("empurrao"), r.grupos_ant.empurrao, false) : "", "sem atividade recente")}
           ${cartao("ritmo", ICONE_ENG.ritmo, "No ritmo", conta("ritmo"), r ? variacao(conta("ritmo"), r.grupos_ant.ritmo, true) : "", "acessando regularmente")}
           ${cartao("avancando", ICONE_ENG.avancando, "Avançando", conta("avancando"), r ? variacao(conta("avancando"), r.grupos_ant.avancando, true) : "", "alta participação")}
-          ${cartao("recem", ICONE_ENG.recem, "Recém-chegadas", conta("recem"), "", "cadastradas há até 7 dias")}
+          ${cartao("recem", ICONE_ENG.recem, "Recém-chegados", conta("recem"), "", "cadastradas há até 7 dias")}
           ${cartao("semcontato", ICONE_ENG.semcontato, "Sem contato há 7 dias", nSemContato, r ? variacao(nSemContato, r.sem_contato_ant, false) : "", "sem contato da equipe há 7+ dias")}
-          ${cartao("todas", ICONE_ENG.todas, "Todas as alunas", nTodas, "", "média de nota " + String(Math.round(notaMedia) / 10).replace(".", ","))}
+          ${cartao("todas", ICONE_ENG.todas, "Todos os alunos", nTodas, "", "média de nota " + String(Math.round(notaMedia) / 10).replace(".", ","))}
         </div>
       </div>
+`,
+      meio: `
       <div class="eng-meio">
         <section class="eng-cartao eng-evolucao">
           <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Evolução do engajamento</h3>
@@ -2558,19 +2556,252 @@ export function montar(app: HTMLElement) {
           ${r && !dias.some((d) => d.total) ? `<p class="eng-vazio"><b>Sem dados</b>Ainda não há dados suficientes para este período.</p>` : r ? `<div class="eng-graf"><span class="eng-eixo"><em>100%</em><em>75%</em><em>50%</em><em>25%</em><em>0%</em></span><div class="eng-barras">${barras}</div></div>` : `<p class="ini-vazio">Carregando…</p>`}
         </section>
         <section class="eng-cartao eng-dist">
-          <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Distribuição das alunas</h3></header>
+          <header><span class="eng-cab-ic">${ICONE_ENG.ritmo}</span><h3>Distribuição dos alunos</h3></header>
           <div class="eng-dist-corpo">
-            <span class="eng-rosca" style="background:${dist}"><span><b>${soma}</b>alunas</span></span>
+            <span class="eng-rosca" style="background:${dist}"><span><b>${soma}</b>alunos</span></span>
             <ul>${linhaDist("verde", "Avançando", nAv)}${linhaDist("ouro", "No ritmo", nRi)}${linhaDist("rosa", "Precisam de um empurrão", nEm)}</ul>
           </div>
         </section>
       </div>
+`,
+      listas: `
       <div class="eng-listas">
-        ${lista("empurrao", ICONE_ENG.empurrao, "Alunas que precisam de um empurrão", "Sem atividade nos últimos 7 dias.", "Sem atividade", "atencao")}
-        ${lista("ritmo", ICONE_ENG.recem, "Alunas no ritmo", "Acessando regularmente.", "No ritmo", "neutro")}
-        ${lista("avancando", ICONE_ENG.avancando, "Alunas avançando", "Alta participação e progresso.", "Avançando", "positivo")}
+        ${lista("empurrao", ICONE_ENG.empurrao, "Alunos que precisam de um empurrão", "Sem atividade nos últimos 7 dias.", "Sem atividade", "atencao")}
+        ${lista("ritmo", ICONE_ENG.recem, "Alunos no ritmo", "Acessando regularmente.", "No ritmo", "neutro")}
+        ${lista("avancando", ICONE_ENG.avancando, "Alunos avançando", "Alta participação e progresso.", "Avançando", "positivo")}
       </div>
       ${quadrosComLista(Q, [], true)}
+`,
+    };
+  }
+
+  /*
+   * Aba Engajamento completa (modelo aprovado em 23/11/2026): sub-abas
+   * Resumo · Alunos · Produtos e aulas · Vendas e recompra · App e
+   * hábitos · Ranking e prêmios · Mentoria. Os números que o painel não
+   * tem carregados vêm de `painel_engajamento()` (0143), calculados no
+   * banco. O que ainda não é medido aparece como "ainda não medido",
+   * nunca com número inventado.
+   */
+  type EngX = {
+    ativos: { hoje: number; d7: number; d30: number; d30_ant: number; base: number };
+    semanas: { ws: string; novos: number; ficaram: number; voltaram: number; pararam: number }[];
+    coortes: { mes: string; total: number; ret: Record<string, number | null> }[];
+    aulas: { id: string; abriram: number; concluiram: number; abriram_periodo: number; pct: number | null; horas: number; curtidas: number }[];
+    horas: [number, number, number][];
+    alunas: [string, number, number, number][];
+    jornada: { cadastrados: number; entraram: number; comecaram: number; concluiram_aula: number };
+    push: number;
+  };
+  let engX: { chave: string; r: EngX | null } | null = null;
+  let engXCarregando = "";
+  function carregarEngX() {
+    const { de, ate, chave } = periodoIni();
+    if ((engX && engX.chave === chave) || engXCarregando === chave) return;
+    engXCarregando = chave;
+    void (async () => {
+      const r = await supabase.rpc("painel_engajamento", { p_de: de, p_ate: ate });
+      engXCarregando = "";
+      engX = { chave, r: r.error ? null : (r.data as EngX) };
+      if (ui.tab === "engajamento") render();
+    })();
+  }
+  const ENG_ABAS: [string, string][] = [["resumo", "Resumo"], ["alunos", "Alunos"], ["produtos", "Produtos e aulas"], ["vendas", "Vendas e recompra"], ["app", "App e hábitos"], ["ranking", "Ranking e prêmios"], ["mentoria", "Mentoria"]];
+  const fmtN = (n: number) => Math.round(n).toLocaleString("pt-BR");
+  const pctDe = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
+  const egxMet = (rot: string, val: string, sub: string, ajuda = "") => `<div class="egx-met"><span class="egx-met-rot">${rot}${ajuda ? `<span class="egx-i" title="${h(ajuda)}" aria-label="${h(ajuda)}">ⓘ</span>` : ""}</span><b>${val}</b><span class="egx-met-sub">${sub}</span></div>`;
+  const egxCard = (titulo: string, sub: string, corpo: string, extra = "") => `<section class="vgx-card egx-card"><header class="vgx-scab"><h3>${titulo}</h3>${extra || (sub ? `<span>${sub}</span>` : "")}</header>${corpo}</section>`;
+  const egxBarra = (p: number, cls = "") => `<span class="egx-barra"><i class="${cls}" style="width:${Math.max(0, Math.min(100, p))}%"></i></span>`;
+  const egxVazio = (t: string) => `<p class="egx-vazio">${t}</p>`;
+  const engBaseAl = () => S.alunas.filter((a) => !a.bloqueada && !vencida(a));
+  const aulasDoCursoOrd = (c: Curso) => c.modulos.flatMap((m) => m.aulas.map((x) => ({ x, m })));
+  const engDoPeriodo = (r: EngX | null) => { const M = new Map<string, { dias: number; concl: number; com: number }>(); (r?.alunas || []).forEach(([id, dias, concl, com]) => M.set(id, { dias, concl, com })); return M; };
+  const concluiuProduto = (a: Aluna) => S.cursos.some((c) => { const ids = c.modulos.flatMap((m) => m.aulas.map((x) => x.id)); return ids.length > 0 && a.acesso.cursos.includes(c.id) && ids.every((id) => a.feitas.has(id)); });
+
+  function engResumo(r: EngX | null, base: ReturnType<typeof engBase>) {
+    if (!r) return egxVazio("Carregando…");
+    const A = r.ativos, J = r.jornada, al = engBaseAl();
+    const liberadas = al.reduce((s, a) => s + (a.liberadas || 0), 0), feitas = al.reduce((s, a) => s + (a.concluidas || 0), 0);
+    const dAt = A.d30_ant ? Math.round(((A.d30 - A.d30_ant) / A.d30_ant) * 100) : null;
+    const mets = `<div class="egx-mets">
+      ${egxMet("Ativos no mês", fmtN(A.d30), `${pctDe(A.d30, A.base)}% da base${dAt != null && dAt !== 0 ? ` · <i class="${dAt > 0 ? "egx-bom" : "egx-ruim"}">${dAt > 0 ? "+" : ""}${dAt}%</i>` : ""}`, "Alunos que abriram o app pelo menos uma vez nos 30 dias até a data final. Comparação: os 30 dias anteriores.")}
+      ${egxMet("Ativos na semana", fmtN(A.d7), `${pctDe(A.d7, A.base)}% da base`, "Abriram o app nos últimos 7 dias.")}
+      ${egxMet("Ativos no dia", fmtN(A.hoje), "no último dia do período", "Abriram o app no último dia do período escolhido.")}
+      ${egxMet("Volta todo dia", pctDe(A.hoje, A.d30) + "%", "ativos no dia ÷ ativos no mês", "Quanto maior, mais o app virou hábito. Apps de estudo ficam entre 10% e 15%.")}
+      ${egxMet("Conclusão média", pctDe(feitas, liberadas) + "%", "das aulas liberadas", "Aulas concluídas ÷ aulas liberadas, somando todos os alunos ativos.")}
+      ${egxMet("Avisos ligados", pctDe(r.push, A.base) + "%", fmtN(r.push) + " recebem no celular", "Alunos que aceitaram receber avisos no celular.")}
+    </div>`;
+    const S8 = r.semanas || [], maxS = Math.max(1, ...S8.map((s) => s.novos + s.ficaram + s.voltaram + s.pararam));
+    const ciclo = S8.length ? `<div class="egx-ciclo">${S8.map((s, i) => { const t = s.novos + s.ficaram + s.voltaram + s.pararam, hh = (n: number) => `height:${(n / maxS) * 100}%`; return `<span class="egx-cic" title="Semana de ${br(s.ws)}: ${s.novos} novos, ${s.ficaram} ficaram, ${s.voltaram} voltaram, ${s.pararam} pararam"><span class="egx-cic-col"><i class="pa" style="${hh(s.pararam)}"></i><i class="fi" style="${hh(s.ficaram)}"></i><i class="vo" style="${hh(s.voltaram)}"></i><i class="no" style="${hh(s.novos)}"></i></span><em>${i === S8.length - 1 ? "esta semana" : br(s.ws).slice(0, 5)}</em><small>${t}</small></span>`; }).join("")}</div>
+      <div class="egx-leg"><span><i class="no"></i>Novos</span><span><i class="fi"></i>Ficaram</span><span><i class="vo"></i>Voltaram</span><span><i class="pa"></i>Pararam</span></div>` : egxVazio("Sem dados ainda.");
+    const prodOk = al.filter(concluiuProduto).length;
+    const passos: [string, number][] = [["Cadastrados", J.cadastrados], ["Entraram no app", J.entraram], ["Começaram uma aula", J.comecaram], ["Concluíram uma aula", J.concluiram_aula], ["Concluíram um produto inteiro", prodOk]];
+    let pior = -1, piorQ = 0; passos.forEach(([, n], i) => { if (i && passos[i - 1][1] - n > piorQ) { piorQ = passos[i - 1][1] - n; pior = i; } });
+    const jornada = passos.map(([t, n], i) => `<div class="egx-lin"><span class="egx-lin-t">${t}</span>${egxBarra(pctDe(n, J.cadastrados))}<b>${pctDe(n, J.cadastrados)}%</b><small>${fmtN(n)}</small></div>${i === pior ? "" : ""}`).join("") + (pior > 0 ? `<p class="egx-aviso">Maior perda: entre <b>${passos[pior - 1][0].toLowerCase()}</b> e <b>${passos[pior][0].toLowerCase()}</b> (${fmtN(piorQ)} alunos).</p>` : "");
+    const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+    const cel = (n: number | null | undefined, t: number) => n == null ? `<td><span class="egx-cel vaz">em andamento</span></td>` : `<td><span class="egx-cel" style="--a:${(0.15 + (pctDe(n, t) / 100) * 0.85).toFixed(2)}">${pctDe(n, t)}%</span></td>`;
+    const coortes = (r.coortes || []).filter((c) => c.total > 0);
+    const turmas = coortes.length ? `<div class="egx-rola"><table class="egx-tab"><thead><tr><th>Entrada</th><th>Alunos</th><th>1º mês</th><th>2º mês</th><th>3º mês</th><th>6º mês</th></tr></thead><tbody>${coortes.map((c) => { const [y, m] = c.mes.split("-"); return `<tr><td>${MES[+m - 1]}/${y}</td><td>${fmtN(c.total)}</td>${cel(c.ret["1"], c.total)}${cel(c.ret["2"], c.total)}${cel(c.ret["3"], c.total)}${cel(c.ret["6"], c.total)}</tr>`; }).join("")}</tbody></table></div>` : egxVazio("Ainda não há turmas para comparar.");
+    return `${mets}
+      ${base.meio}
+      <div class="egx-duas">
+        ${egxCard("Ciclo de vida dos alunos", "semana a semana: quem chegou, ficou, voltou e parou", ciclo)}
+        ${egxCard("Jornada do aluno", "onde cada aluno para", `<div class="egx-corpo">${jornada}</div>`)}
+      </div>
+      ${egxCard("Quem continua entrando, por mês de entrada", "% da turma que abriu o app em cada mês", turmas)}`;
+  }
+
+  function engAlunos(r: EngX | null, base: ReturnType<typeof engBase>) {
+    const P = engDoPeriodo(r), al = engBaseAl();
+    const CR: [string, string, (a: Aluna) => number, boolean][] = [
+      ["mais", "Mais engajados", (a) => a.nota, false], ["menos", "Menos engajados", (a) => a.nota, true],
+      ["dias", "Mais dias com acesso", (a) => P.get(a.id)?.dias || 0, false], ["aulas", "Mais aulas concluídas", (a) => P.get(a.id)?.concl || 0, false],
+      ["com", "Mais comentam", (a) => P.get(a.id)?.com || 0, false], ["prod", "Mais produtos", (a) => a.acesso.cursos.length, false],
+    ];
+    const cr = CR.find((c) => c[0] === ui.engRank) || CR[0];
+    const L = [...al].sort((x, y) => (cr[3] ? cr[2](x) - cr[2](y) : cr[2](y) - cr[2](x)) || x.nome.localeCompare(y.nome));
+    const POR = 50, pags = Math.max(1, Math.ceil(L.length / POR)), pg = Math.min(ui.engPag || 1, pags), V = L.slice((pg - 1) * POR, pg * POR);
+    const tabela = `<div class="egx-pilulas" role="group" aria-label="Ordenar ranking por">${CR.map(([k, t]) => `<button type="button" class="egx-pil" data-a="eng-rank" data-v="${k}" aria-pressed="${cr[0] === k}">${t}</button>`).join("")}</div>
+      <div class="egx-rola"><table class="egx-tab"><thead><tr><th>#</th><th>Aluno</th><th>Nota</th><th>Dias com acesso</th><th>Aulas concluídas</th><th>Comentários</th><th>Produtos</th><th>Último acesso</th></tr></thead><tbody>
+      ${V.map((a, i) => { const p = P.get(a.id); return `<tr><td>${(pg - 1) * POR + i + 1}</td><td><button type="button" class="egx-nome" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button></td><td><span class="egx-nota ${a.nota >= 60 ? "bom" : a.nota >= 35 ? "med" : "ruim"}">${a.nota}</span></td><td>${p?.dias || 0}</td><td>${p?.concl || 0}</td><td>${p?.com || 0}</td><td>${a.acesso.cursos.length}</td><td>${a.ultimoAcessoEm ? haTempo(a.ultimoAcessoEm) : "nunca entrou"}</td></tr>`; }).join("") || `<tr><td colspan="8">Nenhum aluno ativo.</td></tr>`}
+      </tbody></table></div>
+      <footer class="vgx-cpe"><span>${L.length ? `${(pg - 1) * POR + 1}–${Math.min(pg * POR, L.length)} de ${fmtN(L.length)} · dias, aulas e comentários contam só o período escolhido` : ""}</span><span class="egx-pag"><button type="button" class="vgx-bt" data-a="eng-pag" data-v="${pg - 1}" ${pg <= 1 ? "disabled" : ""}>Anterior</button><button type="button" class="vgx-bt" data-a="eng-pag" data-v="${pg + 1}" ${pg >= pags ? "disabled" : ""}>Próxima</button></span></footer>`;
+    return `${base.topo}
+      ${egxCard("Ranking de alunos", "", tabela, `<span>nota de 0 a 100: aulas concluídas, último acesso e comentários</span>`)}
+      ${base.listas}`;
+  }
+
+  function engProdutos(r: EngX | null) {
+    if (!r) return egxVazio("Carregando…");
+    const AU = new Map(r.aulas.map((x) => [x.id, x]));
+    const nomeAula = new Map<string, { nome: string; curso: string; dur: number }>();
+    S.cursos.forEach((c) => c.modulos.forEach((m) => m.aulas.forEach((x) => nomeAula.set(x.id, { nome: x.nome, curso: c.nome, dur: x.duracao || 0 }))));
+    const comPorAula = new Map<string, number>(); S.comentarios.forEach((k) => { if (k.estado !== "removido") comPorAula.set(k.aula, (comPorAula.get(k.aula) || 0) + 1); });
+    const linhas = S.cursos.filter((c) => !c.rascunho).map((c) => {
+      const L = alunasDoCurso(c), ids = c.modulos.flatMap((m) => m.aulas.map((x) => x.id));
+      const comecaram = L.filter((x) => x.pct > 0).length, terminaram = L.filter((x) => x.pct >= 100).length;
+      const horas = ids.reduce((s, id) => s + (AU.get(id)?.horas || 0), 0), com = ids.reduce((s, id) => s + (comPorAula.get(id) || 0), 0);
+      return { c, n: L.length, comecaram, terminaram, horas, com, aulas: ids.length };
+    }).filter((x) => x.aulas > 0).sort((a, b) => b.n - a.n);
+    const chefe = linhas[0];
+    const tab = linhas.length ? `<div class="egx-rola"><table class="egx-tab"><thead><tr><th>Produto</th><th>Tipo</th><th>Com acesso</th><th>Começaram</th><th>Concluíram tudo</th><th>Horas assistidas</th><th>Comentários</th><th></th></tr></thead><tbody>
+      ${linhas.map((x) => `<tr><td><button type="button" class="egx-nome" data-a="eng-prod" data-v="${x.c.id}"><b>${h(x.c.nome)}</b></button></td><td>${npTipo(x.c.tipo)}</td><td>${fmtN(x.n)}</td><td>${egxBarra(pctDe(x.comecaram, x.n))} ${pctDe(x.comecaram, x.n)}%</td><td>${egxBarra(pctDe(x.terminaram, x.n))} ${pctDe(x.terminaram, x.n)}%</td><td>${String(Math.round(x.horas * 10) / 10).replace(".", ",")} h</td><td>${fmtN(x.com)}</td><td>${x === chefe ? `<span class="vgx-pill">Mais alunos</span>` : ""}</td></tr>`).join("")}
+      </tbody></table></div>` : egxVazio("Nenhum produto com aulas.");
+    const grupos: Record<string, string[]> = { est: [], atr: [], joi: [], rev: [] };
+    linhas.filter((x) => x.n > 0).forEach((x) => { const ini = pctDe(x.comecaram, x.n) >= 50, fim = pctDe(x.terminaram, Math.max(1, x.comecaram)) >= 30; grupos[ini ? (fim ? "est" : "atr") : fim ? "joi" : "rev"].push(x.c.nome); });
+    const quad = (k: string, t: string, d: string, cls: string) => `<div class="egx-quad ${cls}"><b>${t}</b><small>${d}</small><span>${grupos[k].map(h).join(" · ") || "—"}</span></div>`;
+    const mapa = `<div class="egx-quads">${quad("est", "Estrelas", "muitos começam e muitos terminam: use de vitrine", "bom")}${quad("atr", "Atraem mas não seguram", "muitos começam, poucos terminam: veja em que aula param", "med")}${quad("joi", "Joias escondidas", "poucos começam, mas quem começa termina: falta divulgar", "")}${quad("rev", "Revisar", "poucos começam e poucos terminam", "ruim")}</div>`;
+    const sel = linhas.find((x) => x.c.id === ui.engProd) || chefe;
+    let curva = egxVazio("Escolha um produto na tabela.");
+    if (sel && sel.n) {
+      const L = alunasDoCurso(sel.c), seq = aulasDoCursoOrd(sel.c);
+      const v = seq.map(({ x, m }) => ({ nome: x.nome, mod: m.num, n: L.filter((y) => y.a.feitas.has(x.id)).length }));
+      let qi = -1, qd = 0; v.forEach((p, i) => { if (i && v[i - 1].n - p.n > qd) { qd = v[i - 1].n - p.n; qi = i; } });
+      curva = `<div class="egx-curva">${v.map((p, i) => `<span title="Módulo ${p.mod} · ${h(p.nome)}: ${p.n} de ${sel.n} (${pctDe(p.n, sel.n)}%)" class="${i === qi ? "cai" : ""}" style="height:${Math.max(2, pctDe(p.n, sel.n))}%"></span>`).join("")}</div>
+        ${qi > 0 ? `<p class="egx-aviso">Maior queda: <b>${h(v[qi].nome)}</b> (Módulo ${v[qi].mod}): ${fmtN(qd)} alunos a menos que na aula anterior.</p>` : ""}`;
+    }
+    const top = (arr: [string, number][], suf: string) => arr.length ? arr.slice(0, 5).map(([id, n]) => `<div class="egx-lin"><span class="egx-lin-t">${h(nomeAula.get(id)?.nome || "Aula")}<small>${h(nomeAula.get(id)?.curso || "")}</small></span><b>${fmtN(n)}${suf}</b></div>`).join("") : egxVazio("Sem dados ainda.");
+    const vistas = r.aulas.filter((x) => nomeAula.has(x.id)).sort((a, b) => b.abriram - a.abriram);
+    const comentadas = [...comPorAula.entries()].filter(([id]) => nomeAula.has(id)).sort((a, b) => b[1] - a[1]);
+    const curtidas = r.aulas.filter((x) => nomeAula.has(x.id) && x.curtidas).sort((a, b) => b.curtidas - a.curtidas);
+    const desemp = vistas.slice(0, 12).map((x) => { const na = nomeAula.get(x.id)!; return `<tr><td><b>${h(na.nome)}</b><small class="egx-sub">${h(na.curso)}</small></td><td>${na.dur ? Math.round(na.dur / 60) + " min" : "—"}</td><td>${fmtN(x.abriram)}</td><td>${fmtN(x.concluiram)}</td><td>${x.pct == null ? "—" : `<span class="egx-nota ${x.pct >= 60 ? "bom" : x.pct >= 40 ? "med" : "ruim"}">${x.pct}%</span>`}</td><td>${String(x.horas).replace(".", ",")} h</td></tr>`; }).join("");
+    return `${egxCard("Aproveitamento por produto", "clique num produto para ver até onde os alunos chegam", tab)}
+      ${egxCard("Mapa dos produtos", "quantos começam × quantos terminam", mapa)}
+      ${sel ? egxCard("Até onde os alunos chegam · " + h(sel.c.nome), "% dos alunos com acesso que concluíram cada aula, na ordem", `<div class="egx-corpo">${curva}</div>`) : ""}
+      ${egxCard("Desempenho de cada aula", "assistido em média = quanto do vídeo as pessoas veem", desemp ? `<div class="egx-rola"><table class="egx-tab"><thead><tr><th>Aula</th><th>Duração</th><th>Abriram</th><th>Concluíram</th><th>Assistido em média</th><th>Horas assistidas</th></tr></thead><tbody>${desemp}</tbody></table></div>` : egxVazio("Sem dados ainda."))}
+      <div class="egx-tres">
+        ${egxCard("Aulas mais abertas", "", top(vistas.map((x) => [x.id, x.abriram]), ""))}
+        ${egxCard("Mais comentadas", "", top(comentadas, ""))}
+        ${egxCard("Mais curtidas", "", top(curtidas.map((x) => [x.id, x.curtidas]), ""))}
+      </div>`;
+  }
+
+  function engVendas() {
+    const al = engBaseAl();
+    const dist = [1, 2, 3].map((n) => al.filter((a) => (n < 3 ? a.acesso.cursos.length === n : a.acesso.cursos.length >= 3)).length);
+    const top = [...al].sort((x, y) => y.acesso.cursos.length - x.acesso.cursos.length).slice(0, 8);
+    return `<div class="egx-aviso grande"><b>As vendas ainda não estão ligadas ao painel.</b> Elas ficam na plataforma de pagamento (Hubla). Quando forem ligadas, cada compra fica presa ao aluno pelo e-mail ou WhatsApp e aqui aparecem: mais vendidos, curva ABC (os produtos que fazem 80% da receita), produto-chefe, caminho de compra (qual produto leva ao próximo), comprados juntos, taxa de recompra, valor total por cliente e “compraram e não abriram”.</div>
+      <div class="egx-duas">
+        ${egxCard("Quantos produtos cada aluno tem", "alunos ativos", `<div class="egx-corpo">${[["1 produto", dist[0]], ["2 produtos", dist[1]], ["3 ou mais", dist[2]]].map(([t, n]) => `<div class="egx-lin"><span class="egx-lin-t">${t}</span>${egxBarra(pctDe(+n, al.length))}<b>${fmtN(+n)}</b></div>`).join("")}</div>`)}
+        ${egxCard("Alunos com mais produtos", "", top.map((a) => `<div class="egx-lin"><button type="button" class="egx-nome" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<b>${h(a.nome)}</b></button><b>${a.acesso.cursos.length}</b></div>`).join("") || egxVazio("Nenhum aluno."))}
+      </div>`;
+  }
+
+  function engApp(r: EngX | null) {
+    if (!r) return egxVazio("Carregando…");
+    const A = r.ativos;
+    const M = new Map<string, number>(); r.horas.forEach(([d, hh, n]) => { const k = d + ":" + Math.floor(hh / 3); M.set(k, (M.get(k) || 0) + n); });
+    const mx = Math.max(1, ...M.values()), DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+    let pico = "", picoN = 0; M.forEach((n, k) => { if (n > picoN) { picoN = n; pico = k; } });
+    const mapa = `<div class="egx-mapa" role="img" aria-label="Atividade por dia da semana e hora"><span></span>${[0, 3, 6, 9, 12, 15, 18, 21].map((x) => `<span>${x}h</span>`).join("")}
+      ${DIAS.map((dn, i) => `<span>${dn}</span>${[0, 1, 2, 3, 4, 5, 6, 7].map((b) => { const n = M.get(i + 1 + ":" + b) || 0; return `<i title="${dn}, ${b * 3}h–${b * 3 + 3}h: ${n}" style="--a:${(0.06 + (n / mx) * 0.94).toFixed(2)}"></i>`; }).join("")}`).join("")}</div>
+      ${pico ? `<p class="egx-aviso">Mais movimento: <b>${DIAS[+pico.split(":")[0] - 1]}, das ${+pico.split(":")[1] * 3}h às ${+pico.split(":")[1] * 3 + 3}h</b>. Bom horário para ao vivo e avisos.</p>` : ""}`;
+    return `<div class="egx-mets">
+        ${egxMet("Avisos ligados", pctDe(r.push, A.base) + "%", fmtN(r.push) + " de " + fmtN(A.base) + " alunos")}
+        ${egxMet("Ativos no dia", fmtN(A.hoje), "último dia do período")}
+        ${egxMet("Ativos na semana", fmtN(A.d7), pctDe(A.d7, A.base) + "% da base")}
+        ${egxMet("Ativos no mês", fmtN(A.d30), pctDe(A.d30, A.base) + "% da base")}
+        ${egxMet("Volta todo dia", pctDe(A.hoje, A.d30) + "%", "ativos no dia ÷ no mês")}
+      </div>
+      ${egxCard("Quando os alunos usam", "aulas assistidas, concluídas e comentários no período, por dia e hora", `<div class="egx-corpo">${M.size ? mapa : egxVazio("Sem atividade no período.")}</div>`)}
+      <p class="egx-nota">Ainda não medidos: tempo dentro do app, aparelho usado (celular, computador, app instalado) e avisos abertos. Entram aqui quando o app passar a registrar.</p>`;
+  }
+
+  function engRanking(r: EngX | null) {
+    if (!r) return egxVazio("Carregando…");
+    const P = engDoPeriodo(r);
+    const L = engBaseAl().map((a) => { const p = P.get(a.id) || { dias: 0, concl: 0, com: 0 }; return { a, p, pts: p.concl * 10 + p.dias * 3 + p.com * 5 }; }).filter((x) => x.pts > 0).sort((x, y) => y.pts - x.pts);
+    const pod = (i: number, cls: string) => L[i] ? `<div class="egx-pod ${cls}">${aaAvatar(L[i].a, true)}<b>${h(L[i].a.nome)}</b><small>${i + 1}º lugar</small><strong>${fmtN(L[i].pts)}</strong></div>` : "";
+    const lista = L.slice(3, 20).map((x, i) => `<div class="egx-lin"><span class="egx-pos">${i + 4}</span><button type="button" class="egx-nome" data-a="ficha" data-id="${x.a.id}">${aaAvatar(x.a)}<span><b>${h(x.a.nome)}</b><small class="egx-sub">${x.p.concl} aulas · ${x.p.dias} dias · ${x.p.com} comentários</small></span></button><b>${fmtN(x.pts)}</b></div>`).join("");
+    const regra = (t: string, n: string) => `<div class="egx-lin"><span class="egx-lin-t">${t}</span><b>${n}</b></div>`;
+    return `<div class="egx-duas larga">
+        ${egxCard("Pódio do período", fmtN(L.length) + " alunos com pontos", L.length ? `<div class="egx-podio">${pod(1, "")}${pod(0, "um")}${pod(2, "")}</div>${lista}` : egxVazio("Ninguém pontuou no período."))}
+        <div class="egx-col">
+          ${egxCard("Regras de pontos", "", `${regra("Aula concluída", "10")}${regra("Dia com acesso ao app", "3")}${regra("Comentário", "5")}`)}
+          <p class="egx-nota">O ranking ainda não aparece para os alunos. Desafios com prêmio, níveis e conquistas entram na próxima etapa.</p>
+        </div>
+      </div>`;
+  }
+
+  function engMentoria(r: EngX | null) {
+    const j = curso(S.config.jornada);
+    if (!j) return egxVazio("Nenhum produto está marcado como a mentoria.");
+    const al = engBaseAl().filter(daMentoria);
+    const emDia = al.filter((a) => a.liberadas > 0 && a.concluidas >= a.liberadas).length;
+    const vence = S.alunas.filter((a) => !a.bloqueada && a.validade && a.validade >= hoje() && diasEntre(hoje(), a.validade) <= 30 && daMentoria(a)).sort((x, y) => y.nota - x.nota);
+    const P = engDoPeriodo(r), ativosP = al.filter((a) => (P.get(a.id)?.dias || 0) > 0).length;
+    const mods = j.modulos.filter((m) => m.aulas.length).map((m) => {
+      const ids = m.aulas.map((x) => x.id), comec = al.filter((a) => ids.some((id) => a.feitas.has(id))).length, fim = al.filter((a) => ids.every((id) => a.feitas.has(id))).length;
+      const v = m.aulas.map((x) => al.filter((a) => a.feitas.has(x.id)).length); let qi = -1, qd = 0; v.forEach((n, i) => { if (i && v[i - 1] - n > qd) { qd = v[i - 1] - n; qi = i; } });
+      return `<tr><td><b>Módulo ${m.num}${m.nome ? " · " + h(m.nome) : ""}</b></td><td>${egxBarra(pctDe(comec, al.length))} ${pctDe(comec, al.length)}%</td><td>${egxBarra(pctDe(fim, al.length))} ${pctDe(fim, al.length)}%</td><td>${qi > 0 ? h(m.aulas[qi].nome) + ` <small class="egx-sub">−${qd}</small>` : "—"}</td></tr>`;
+    }).join("");
+    return `<div class="egx-mets">
+        ${egxMet("Alunos na mentoria", fmtN(al.length), "com acesso válido")}
+        ${egxMet("Em dia", pctDe(emDia, al.length) + "%", "concluíram tudo o que já foi liberado")}
+        ${egxMet("Ativos no período", fmtN(ativosP), pctDe(ativosP, al.length) + "% da mentoria")}
+        ${egxMet("Vencem em 30 dias", fmtN(vence.length), "acesso perto do fim")}
+      </div>
+      ${egxCard("Cronograma por módulo · " + h(j.nome), "começaram = concluíram ao menos uma aula do módulo", mods ? `<div class="egx-rola"><table class="egx-tab"><thead><tr><th>Módulo</th><th>Começaram</th><th>Concluíram</th><th>Aula onde mais param</th></tr></thead><tbody>${mods}</tbody></table></div>` : egxVazio("Sem módulos com aulas."))}
+      ${egxCard("Acesso vence em breve", "quem mais aproveita, primeiro", vence.slice(0, 20).map((a) => `<div class="egx-lin"><button type="button" class="egx-nome" data-a="ficha" data-id="${a.id}">${aaAvatar(a)}<span><b>${h(a.nome)}</b><small class="egx-sub">vence em ${diasEntre(hoje(), a.validade)} dias · nota ${a.nota}</small></span></button><button type="button" class="vgx-bt" data-a="ficha" data-id="${a.id}">Abrir ficha</button></div>`).join("") || egxVazio("Ninguém da mentoria vence nos próximos 30 dias."))}
+      <p class="egx-nota">Presença nos encontros ao vivo ainda não é registrada; entra aqui quando o app passar a marcar.</p>`;
+  }
+
+  function telaEngajamento() {
+    carregarEngX();
+    const base = engBase();
+    const { chave } = periodoIni();
+    const r = engX && engX.chave === chave ? engX.r : null;
+    const aba = ENG_ABAS.some(([k]) => k === ui.engAba) ? ui.engAba : "resumo";
+    const corpo = aba === "alunos" ? engAlunos(r, base) : aba === "produtos" ? engProdutos(r) : aba === "vendas" ? engVendas() : aba === "app" ? engApp(r) : aba === "ranking" ? engRanking(r) : aba === "mentoria" ? engMentoria(r) : engResumo(r, base);
+    return `
+    <section class="tela ativa aa eng egx">
+      <div class="vgx-cab eng-cab">
+        <div><span class="vgx-sobre">Acompanhamento</span><h1>Engajamento</h1><p>Tudo o que os alunos fazem no app, em cada produto e na mentoria.</p></div>
+        <div class="vgx-dir">${seletorPeriodo()}</div>
+      </div>
+      <nav class="egx-abas" aria-label="Seções do engajamento">${ENG_ABAS.map(([k, t]) => `<button type="button" data-a="eng-aba" data-v="${k}" aria-pressed="${aba === k}">${t}</button>`).join("")}</nav>
+      ${engX && engX.chave === chave && !engX.r && aba !== "vendas" ? `<p class="egx-aviso">Não foi possível carregar parte dos números agora. Tente de novo em instantes.</p>` : ""}
+      ${corpo}
     </section>`;
   }
 
@@ -8060,6 +8291,10 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "ini-periodo": ui.periodoAberto = !ui.periodoAberto; break;
       case "eng-menu": ui.engMenu = ui.engMenu === d.id ? "" : d.id; break;
+      case "eng-aba": ui.engAba = d.v; ui.engPag = 1; window.scrollTo(0, 0); break;
+      case "eng-rank": ui.engRank = d.v; ui.engPag = 1; break;
+      case "eng-pag": ui.engPag = Math.max(1, +d.v || 1); break;
+      case "eng-prod": ui.engProd = d.v; break;
       case "cur-menu": ui.curMenu = ui.curMenu === d.id ? "" : d.id; break;
       case "cur-vista": ui.cursoVista = d.v; break;
       case "curso-aba": ui.cursoAba = d.v; ui.csAddMod = false; window.scrollTo(0, 0); break;
