@@ -24,6 +24,7 @@ function mostrarCarga() {
 export function fimDaCarga() {
   const el = document.querySelector<HTMLElement>(".versao-carga");
   if (!el) return;
+  el.classList.remove("ja");
   setTimeout(() => { el.classList.remove("on"); setTimeout(() => el.remove(), 450); }, 350);
 }
 

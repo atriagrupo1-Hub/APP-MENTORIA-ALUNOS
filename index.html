@@ -21,8 +21,29 @@
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Cinzel:wght@400;500;600&family=Lato:wght@300;400;700&display=swap"
       rel="stylesheet"
     />
+    <!-- Atualização do painel (versao.ts): a tela de carga com a logo já
+         aparece no primeiro desenho da página nova, antes do programa
+         carregar. Assim a troca de versão não pisca preto. -->
+    <style>
+      .versao-carga { position: fixed; inset: 0; z-index: 100002; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #0B0B0C; opacity: 0; transition: opacity .4s ease; }
+      .versao-carga.on { opacity: 1; }
+      .versao-carga.ja { transition: none; }
+      .versao-carga-centro { position: relative; width: 132px; height: 132px; display: grid; place-items: center; }
+      .versao-carga-anel { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(226, 198, 140, .14); border-top-color: #E2C68C; border-right-color: rgba(226, 198, 140, .55); animation: versao-gira 1.1s linear infinite; }
+      .versao-carga-logo { width: 84px; height: auto; mix-blend-mode: lighten; animation: versao-pulsa 1.6s ease-in-out infinite; }
+      .versao-carga-txt { margin: 0; font-family: Manrope, Lato, system-ui, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: #A7ADB6; }
+      @keyframes versao-gira { to { transform: rotate(360deg); } }
+      @keyframes versao-pulsa { 0%, 100% { opacity: .78; transform: scale(.97); } 50% { opacity: 1; transform: scale(1.03); } }
+    </style>
   </head>
   <body>
+    <script>
+      try {
+        if (sessionStorage.getItem("aion-atualizando")) {
+          document.write('<div class="versao-carga on ja" role="status"><div class="versao-carga-centro"><span class="versao-carga-anel" aria-hidden="true"></span><img src="/marca/logo-aion.png" alt="" class="versao-carga-logo" /></div><p class="versao-carga-txt">Atualizando o painel…</p></div>');
+        }
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
