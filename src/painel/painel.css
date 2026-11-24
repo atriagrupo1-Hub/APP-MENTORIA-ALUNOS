@@ -6931,3 +6931,5 @@ p.cx-rot { margin: 6px 0 0; }
 .eqn-cards button[aria-selected="true"] { color: var(--texto); background: rgba(214, 179, 106, .1); border-color: #d6b36a; }
 .eqn-cards button[aria-selected="true"] i { color: #1d1a14; background: #d6b36a; border-color: #d6b36a; }
 @media (max-width: 560px) { .eqn-cards { grid-template-columns: 1fr; } }
+
+.eqn-passos[hidden] { display: none; }
