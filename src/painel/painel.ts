@@ -696,6 +696,8 @@ export function montar(app: HTMLElement) {
   const acesso = { modo: "email" as seg.ModoLogin, aviso: "", depois2fa: "" as "" | "novaSenha" };
   /** Convite da equipe por link (0144): #/convite?t=... */
   const convite = { t: "", nome: "", email: "", erro: "" };
+  /** Entrou com a conta da Central, mas sem acesso ao painel AION ADM (0145). */
+  let semAcesso = false;
   /** Janela "Minha segurança". */
   let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string; etapa?: "intro" | "qr" | "pronto"; prefs?: boolean; exigir?: string[] }) = null;
   /** Alunos que recebem notificação no celular (têm inscrição de push); null = ainda não carregou. */
@@ -1147,7 +1149,11 @@ export function montar(app: HTMLElement) {
     const senha = (rot: string, attrs: string, mb = 14) => `<label class="grupo" style="margin-bottom:${mb}px"><span class="rotulo">${rot}</span>${seg.campoSenha(attrs + " required")}</label>`;
     const topo = (t: string, sub: string) => `<h1 style="margin:0 0 4px;font-size:24px;font-weight:700">${t}</h1><p style="margin:0 0 20px;font-size:14px;color:var(--texto-2)">${sub}</p>`;
     let corpo = "";
-    if (m === "codigo") {
+    if (semAcesso) {
+      corpo = `<div class="cartao" style="padding:22px">${topo("Sem acesso a este painel", "A sua conta não tem acesso ao AION ADM. Peça ao dono do painel ou entre em outro painel pela Central.")}
+        <a class="botao" style="display:block;width:100%;margin-top:8px;text-align:center;text-decoration:none" href="/central">Ir para a Central</a>
+        <p class="seg-rodape">${link("sair", "Sair desta conta")}</p></div>`;
+    } else if (m === "codigo") {
       corpo = `<form data-f="entrar" class="cartao" style="padding:22px">
         ${topo("Entrar com login e código", "Para quem da equipe ainda não criou e-mail e senha.")}
         ${campo("Login", `id="loginCampo" name="login" autocomplete="username" value="${h(loginSalvo())}"`)}
@@ -1222,6 +1228,7 @@ export function montar(app: HTMLElement) {
       <header class="tp">
         <div class="tp-linha">
           <button type="button" class="tp-marca" data-a="aba" data-v="inicio" aria-label="Ir para a Visão geral"><span class="tp-selo">AIŌN</span><span class="tp-rot">Administração</span></button>
+          <a class="tp-central" href="/central">Central · trocar de painel</a>
           <nav class="tp-nav" aria-label="Menu do painel">${GRUPOS_TP.map((g) => { const ids = g.abas.filter((id) => abas.some(([x]) => x === id)); if (!ids.length) return ""; const on = ids.includes(abaDaTela(ui.tab === "cursoNovo" ? "cursos" : ui.tab)); const alvo = ids.find((id) => !abaBloq(id)) || ids[0]; return `<button type="button" class="tp-item" data-a="aba" data-v="${alvo}" ${on ? 'aria-current="page"' : ""}>${g.nome}</button>`; }).join("")}</nav>
           <span class="tp-esp"></span>
           <div class="busca-geral tp-busca">
@@ -7932,7 +7939,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       }
       case "login-modo":
         ui.erroLogin = ""; acesso.aviso = "";
-        if (d.v === "sair") { acesso.depois2fa = ""; acesso.modo = "email"; void api.sair().finally(() => render()); return; }
+        if (d.v === "sair") { semAcesso = false; acesso.depois2fa = ""; acesso.modo = "email"; void api.sair().finally(() => render()); return; }
         acesso.modo = d.v as seg.ModoLogin; ui.focar = d.v === "codigo" ? "loginCampo" : "emailCampo";
         break;
       case "seguranca":
@@ -11050,6 +11057,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const dadosP = lerTudo(euP);
       dadosP.catch(() => {});
       eu = await euP;
+      // Central (0145): a conta é a mesma de todos os painéis; sem o AION ADM, não entra aqui (e não sai da Central).
+      if (eu) {
+        const { data: tem } = await supabase.rpc("tem_acesso_painel", { p_slug: "aion-adm", p_nivel: "ver" });
+        if (tem !== true) { eu = null; semAcesso = true; return; }
+        semAcesso = false;
+        void supabase.rpc("registrar_entrada_painel", { p_slug: "aion-adm" }).then(() => {});
+      }
       if (!eu) {
         if (acabouDeEntrar) ui.erroLogin = "Este acesso não é da equipe do painel.";
         await api.sair();

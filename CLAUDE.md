@@ -72,6 +72,10 @@ configuração evita a próxima interrupção.
   (`equipe_aal_ok()` dentro de eh_equipe/eh_admin/eh_dono/pode). Alunos
   continuam com login e código; o código deles fica visível para a equipe
   (decisão do dono, 20/11/2026: a Suporte envia o acesso).
+- CENTRAL (0145, /central): login único para todos os painéis; acesso por
+  painel em `acessos_painel` (ver/editar/admin, bloqueio por painel);
+  `paineis` cadastra os cards; Admin da Central = linha `central`/`admin`,
+  só o dono dá ou tira. `eh_equipe`/`painel_*` exigem `tem_acesso_painel('aion-adm')`.
 
 ## Publicação — regra permanente
 

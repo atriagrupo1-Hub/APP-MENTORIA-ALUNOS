@@ -31,7 +31,10 @@ const raiz = document.getElementById("root")!;
 // O painel da equipe e a área da aluna são as maquetes aprovadas ligadas
 // ao banco, sem React: cada porta carrega só o que é dela.
 const abrirPainel = () => void import("./index.css").then(() => import("./painel/painel")).then((m) => m.montar(raiz));
-if (porta.ehPainel) {
+// CENTRAL (0145): souaion.com/central — de onde se entra em todos os painéis.
+if (location.pathname === "/central" || location.pathname.startsWith("/central/")) {
+  void import("./central/central").then((m) => m.montar(raiz));
+} else if (porta.ehPainel) {
   // /admin?previa=1: a versão em edição, que se atualiza sozinha (ver previa.ts).
   void import("./previa").then((p) => (p.previaLigada() ? p.iniciar(raiz, abrirPainel) : abrirPainel()));
 } else if (demoLigada()) {

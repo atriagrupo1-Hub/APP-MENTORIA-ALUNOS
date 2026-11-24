@@ -14,6 +14,12 @@
  *   bloquear { id } / ativar { id } → corta na hora: status, usuarios_bloqueados, ban no Auth
  *   remover { id }
  * O dono principal não pode ter o acesso mudado, ser bloqueado nem removido.
+ *
+ * Central (0145): quem é Admin da Central também gerencia (menos o dono e
+ * outros Admins da Central). Só o dono cria ou tira Admin da Central.
+ *   convidar … paineis { slug: "ver"|"editar"|"admin" }, admin_central, destino: "central"|"admin"
+ *   salvar_paineis { id, paineis, admin_central? } · bloquear_painel { id, slug, bloqueado }
+ * Tudo que muda vai para `historico_central` e para o app_metadata (paineis, admin_central).
  */
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -72,10 +78,13 @@ Deno.serve(async (req) => {
   const { data: quem } = await admin.auth.getUser(token);
   const eu = quem?.user;
   if (!eu) return erro("sem_sessao", "Entre de novo no painel.", 401, origem);
-  const { data: meu } = await admin.from("profiles").select("papel, status, dono_principal").eq("id", eu.id).maybeSingle();
+  const { data: meu } = await admin.from("profiles").select("nome, papel, status, dono_principal").eq("id", eu.id).maybeSingle();
   const { data: bloq } = await admin.from("usuarios_bloqueados").select("user_id").eq("user_id", eu.id).maybeSingle();
-  if (!meu || meu.status !== "ativa" || meu.papel !== "dono" || !meu.dono_principal || bloq) {
-    return erro("sem_permissao", "Só o dono do painel gerencia colaboradores.", 403, origem);
+  const souDono = !!meu && meu.papel === "dono" && !!meu.dono_principal;
+  const { data: adm } = await admin.from("acessos_painel").select("nivel, bloqueado").eq("usuario_id", eu.id).eq("painel_slug", "central").maybeSingle();
+  const souAdminCentral = !!adm && adm.nivel === "admin" && !adm.bloqueado;
+  if (!meu || meu.status !== "ativa" || bloq || (!souDono && !souAdminCentral)) {
+    return erro("sem_permissao", "Só o dono e os Admins da Central gerenciam colaboradores.", 403, origem);
   }
   const { data: fatores } = await admin.auth.admin.mfa.listFactors({ userId: eu.id });
   if ((fatores?.factors ?? []).some((f) => f.status === "verified") && nivelDoToken(token) !== "aal2") {
@@ -85,7 +94,43 @@ Deno.serve(async (req) => {
   let c: Record<string, unknown> = {};
   try { c = await req.json(); } catch { return erro("corpo", "Pedido inválido.", 400, origem); }
   const acao = String(c.acao ?? "");
-  const painel = (() => { const o = origem && /^https?:\/\//.test(origem) ? origem : ""; return o ? o.replace(/\/$/, "") + "/admin" : PAINEL_PADRAO; })();
+  const base = (() => { const o = origem && /^https?:\/\//.test(origem) ? origem : ""; return o ? o.replace(/\/$/, "") : PAINEL_PADRAO.replace(/\/admin$/, ""); })();
+  const painel = base + (c.destino === "central" ? "/central" : "/admin");
+  async function historico(tipo: string, alvo: { id?: string; nome?: string } | null, detalhe = "", slug: string | null = null) {
+    await admin.from("historico_central").insert({ ator_id: eu!.id, ator_nome: meu!.nome, tipo, painel_slug: slug, alvo_id: alvo?.id ?? null, alvo_nome: alvo?.nome ?? null, detalhe });
+  }
+  const NIVEIS = ["ver", "editar", "admin"];
+  async function slugsValidos() { const { data } = await admin.from("paineis").select("slug"); return new Set((data ?? []).map((x) => x.slug as string)); }
+  /** Grava os painéis da pessoa e acerta o AION ADM (papel/áreas) quando o nível dele muda. */
+  async function gravarPaineis(id: string, paineis: Record<string, unknown>, adminCentral: boolean | undefined) {
+    const val = await slugsValidos();
+    const { data: antes } = await admin.from("acessos_painel").select("painel_slug, nivel, bloqueado").eq("usuario_id", id);
+    const A = new Map((antes ?? []).map((x) => [x.painel_slug as string, x]));
+    for (const slug of val) {
+      const n = String(paineis?.[slug] ?? "");
+      if (!(slug in (paineis ?? {}))) continue;
+      if (NIVEIS.includes(n)) await admin.from("acessos_painel").upsert({ usuario_id: id, painel_slug: slug, nivel: n, bloqueado: A.get(slug)?.bloqueado ?? false, atualizado_em: new Date().toISOString() });
+      else await admin.from("acessos_painel").delete().eq("usuario_id", id).eq("painel_slug", slug);
+    }
+    if (adminCentral !== undefined && souDono) {
+      if (adminCentral) await admin.from("acessos_painel").upsert({ usuario_id: id, painel_slug: "central", nivel: "admin", bloqueado: false });
+      else await admin.from("acessos_painel").delete().eq("usuario_id", id).eq("painel_slug", "central");
+    }
+    const novo = String(paineis?.["aion-adm"] ?? "");
+    if ("aion-adm" in (paineis ?? {}) && NIVEIS.includes(novo) && novo !== A.get("aion-adm")?.nivel) {
+      const { data: pf } = await admin.from("profiles").select("acesso_tipo, areas").eq("id", id).maybeSingle();
+      const tipo = novo === "admin" ? "admin" : novo === "ver" ? "leitura" : (pf?.acesso_tipo === "personalizado" || pf?.acesso_tipo === "conteudo") && Object.keys(pf?.areas ?? {}).length ? pf!.acesso_tipo : "personalizado";
+      const n = tipo === "personalizado" && !(pf?.acesso_tipo === "personalizado" && Object.keys(pf?.areas ?? {}).length) ? normalizarAcesso("personalizado", Object.fromEntries(AREAS.map((a) => [a, "editar"]))) : normalizarAcesso(tipo, pf?.areas);
+      await admin.from("profiles").update({ papel: n.papel, acesso_tipo: tipo, areas: n.areas }).eq("id", id);
+    }
+    await espelharPaineis(id);
+  }
+  async function espelharPaineis(id: string) {
+    const { data } = await admin.from("acessos_painel").select("painel_slug, nivel, bloqueado").eq("usuario_id", id);
+    const pain: Record<string, string> = {}; let ac = false;
+    for (const x of data ?? []) { if (x.painel_slug === "central") ac = x.nivel === "admin" && !x.bloqueado; else if (!x.bloqueado) pain[x.painel_slug] = x.nivel; }
+    await espelhar(id, { paineis: pain, admin_central: ac });
+  }
 
   /** Cria um link de convite novo para a pessoa (cancela os anteriores). */
   async function novoLink(userId: string) {
@@ -140,13 +185,22 @@ Deno.serve(async (req) => {
       const login = (email.split("@")[0].replace(/[^a-z0-9._-]/g, "").slice(0, 20) || "equipe") + "." + userId.slice(0, 4);
       const { error: ep } = await admin.from("profiles").upsert({ id: userId, nome, login, email, papel, status: "ativa", acesso_tipo: tipo, areas, funcao, produtos_vis: produtos, dono_principal: false });
       if (ep) { await admin.auth.admin.deleteUser(userId); throw new Error(ep.message); }
+      // Painéis: o que veio da Central; do AION ADM, o próprio AION ADM no nível do acesso escolhido.
+      const paineis = (c.paineis && typeof c.paineis === "object") ? c.paineis as Record<string, unknown> : { "aion-adm": tipo === "admin" ? "admin" : tipo === "leitura" ? "ver" : "editar" };
+      await gravarPaineis(userId, paineis, c.admin_central === true ? true : undefined);
       const link = modo === "link" ? await novoLink(userId) : null;
+      await historico("criou", { id: userId, nome }, modo === "link" ? "convite por link" : "convite por e-mail");
       return json({ ok: true, id: userId, link, painel, modo }, 200, origem);
     }
 
     const id = String(c.id ?? "");
     const alvo = await alvoValido(id);
     if (!alvo) return erro("nao_encontrado", "Colaborador não encontrado.", 404, origem);
+    // Admin da Central não mexe no dono nem em outro Admin da Central.
+    if (!souDono && id !== eu.id) {
+      const { data: ac } = await admin.from("acessos_painel").select("nivel").eq("usuario_id", id).eq("painel_slug", "central").maybeSingle();
+      if (alvo.dono_principal || ac?.nivel === "admin") return erro("sem_permissao", "Só o dono mexe em outro Admin da Central.", 403, origem);
+    }
     const { data: contaAlvo } = await admin.auth.admin.getUserById(id);
     const emailAlvo = contaAlvo?.user?.email ?? "";
 
@@ -181,6 +235,20 @@ Deno.serve(async (req) => {
       await espelhar(id, { funcao });
       return json({ ok: true }, 200, origem);
     }
+    if (acao === "salvar_paineis") {
+      if (c.admin_central !== undefined && !souDono) return erro("sem_permissao", "Só o dono cria ou tira Admin da Central.", 403, origem);
+      await gravarPaineis(id, (c.paineis ?? {}) as Record<string, unknown>, c.admin_central === undefined ? undefined : c.admin_central === true);
+      await historico("acesso", { id, nome: alvo.nome }, "mudou o acesso aos painéis");
+      return json({ ok: true }, 200, origem);
+    }
+    if (acao === "bloquear_painel") {
+      const slug = String(c.slug ?? ""), b = c.bloqueado === true;
+      const { error } = await admin.from("acessos_painel").update({ bloqueado: b, atualizado_em: new Date().toISOString() }).eq("usuario_id", id).eq("painel_slug", slug);
+      if (error) throw new Error(error.message);
+      await espelharPaineis(id);
+      await historico(b ? "bloqueou" : "desbloqueou", { id, nome: alvo.nome }, "só neste painel", slug);
+      return json({ ok: true }, 200, origem);
+    }
     if (acao === "salvar_acesso") {
       const tipo = String(c.acesso ?? "");
       if (!TIPOS.includes(tipo)) return erro("acesso", "Escolha o tipo de acesso.", 400, origem);
@@ -190,6 +258,9 @@ Deno.serve(async (req) => {
       const { error } = await admin.from("profiles").update(mud).eq("id", id);
       if (error) throw new Error(error.message);
       await espelhar(id, { papel: tipo, permissoes: areas, dono: false });
+      await admin.from("acessos_painel").upsert({ usuario_id: id, painel_slug: "aion-adm", nivel: tipo === "admin" ? "admin" : tipo === "leitura" ? "ver" : "editar" });
+      await espelharPaineis(id);
+      await historico("acesso", { id, nome: alvo.nome }, "mudou o acesso no AION ADM", "aion-adm");
       return json({ ok: true }, 200, origem);
     }
     if (acao === "bloquear") {
@@ -197,6 +268,7 @@ Deno.serve(async (req) => {
       await admin.from("usuarios_bloqueados").upsert({ user_id: id, por: eu.id });
       const { data } = await admin.auth.admin.getUserById(id);
       await admin.auth.admin.updateUserById(id, { ban_duration: "876000h", app_metadata: { ...(data?.user?.app_metadata ?? {}), bloqueado: true } });
+      await historico("bloqueou", { id, nome: alvo.nome }, "tudo");
       return json({ ok: true }, 200, origem);
     }
     if (acao === "ativar") {
@@ -204,9 +276,11 @@ Deno.serve(async (req) => {
       await admin.from("profiles").update({ status: "ativa" }).eq("id", id);
       const { data } = await admin.auth.admin.getUserById(id);
       await admin.auth.admin.updateUserById(id, { ban_duration: "none", app_metadata: { ...(data?.user?.app_metadata ?? {}), bloqueado: false } });
+      await historico("desbloqueou", { id, nome: alvo.nome }, "tudo");
       return json({ ok: true }, 200, origem);
     }
     if (acao === "remover") {
+      await historico("removeu", { id, nome: alvo.nome });
       const { error } = await admin.from("profiles").delete().eq("id", id);
       if (error) throw new Error(error.message);
       const { error: ea } = await admin.auth.admin.deleteUser(id);

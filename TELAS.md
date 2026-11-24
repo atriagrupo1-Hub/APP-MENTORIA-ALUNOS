@@ -67,3 +67,7 @@ Regras únicas que valem para várias telas (mudar = mexe em todas): família de
 - Criação de módulo: Informações do módulo (Identificação com "?" e exemplo em imagem, Número, Nome, Descrição, Texto do botão) → Capa do módulo (só 16:9, mesmo ajuste da capa do curso) → Aparência do módulo (igual à do curso + botão "Copiar aparência do curso" com carregamento) → Aulas do módulo → Liberação e publicação → "Criar módulo".
 - Aula (janela): Tipo (vídeo/áudio/e-book) → conteúdo (formatos aceitos explícitos; vídeo MP4/MOV/WEBM 16:9 1920×1080; barra de % durante o envio ao Cloudflare Stream; player para testar; aviso se não for 16:9; ou link YouTube/Cloudflare) → Nome, Descrição → Material complementar (+PDF/+Áudio/+Texto abre o campo; clicar no campo escolhe o arquivo).
 - "?" só aparece com o mouse em cima.
+
+## CENTRAL (Painel Geral) — `src/central/central.ts` + `src/central/central.css` (prefixo `ce-`)
+
+souaion.com/central. Login único (mesma sessão `aion-sessao` dos painéis), cards da tabela `paineis`, abas Colaboradores e Histórico (dono e Admin da Central). Banco: 0145 (`paineis`, `acessos_painel`, `historico_central`, `tem_acesso_painel`, `meus_paineis`, `central_colaboradores`, `registrar_entrada_painel`). Servidor: Edge Function `colaboradores` (`salvar_paineis`, `bloquear_painel`). AION ADM exige o painel `aion-adm` (tela "Sem acesso a este painel").
