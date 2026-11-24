@@ -329,5 +329,11 @@ export function criarColaboradores(D: ColabDeps) {
     return false;
   }
   function fecharPop() { if (pop) { pop = null; D.render(); } }
-  return { tela, janela, acao, campo, fecharPop, recarregar: () => { lista = null; }, temJanela: () => !!jan };
+  /** Depois de cadastrar pela janela "Adicionar membro": abre o "Cadastro realizado com sucesso!". */
+  async function abrirSucesso(id: string, link: string | null) {
+    await recarregar(); const c = colab(id);
+    if (c) await abrirCopiar(c, "Cadastro realizado com sucesso!", link);
+    D.render();
+  }
+  return { tela, janela, acao, campo, fecharPop, abrirSucesso, recarregar: () => { lista = null; }, temJanela: () => !!jan };
 }

@@ -7735,11 +7735,12 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const ajuda = (t: string) => `<span class="eqn-aj" tabindex="0" data-dica="${h(t)}" aria-label="${h(t)}">?</span>`;
       const IC_PF_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
       const SUG_COM = ["Instrutor", "Cardeal", "Missionário", "Teólogo", "Bispo", "Pastor", "Mentor", "Professor", "Doutor", "Especialista"];
-      const abasEq: [string, string][] = [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Perfil dos comentários"]];
+      // Membro novo (0144): só os dois perfis. O acesso ao painel é escolhido em Colaboradores (Acesso → editar).
+      const abasEq: [string, string][] = nova ? [["perfil", "Perfil profissional"], ["coment", "Perfil para comentários"]] : [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Perfil dos comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
         ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe." : "Atualize as informações do membro da equipe.")}
-        <div class="eqn-passos" role="tablist">${abasEq.map(([k, t], n) => `${n ? `<span class="eqn-passo-l" aria-hidden="true"></span>` : ""}<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
+        ${nova ? `<div class="eqn-cards" role="tablist">${abasEq.map(([k, t], n) => `<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i><span>${t}</span></button>`).join("")}</div>` : ""}<div class="eqn-passos" role="tablist"${nova ? " hidden" : ""}>${abasEq.map(([k, t], n) => `${n ? `<span class="eqn-passo-l" aria-hidden="true"></span>` : ""}<button type="button" role="tab" data-a="eqn-aba" data-v="${k}" aria-selected="${n === 0}"><i>${n + 1}</i>${t}</button>`).join("")}</div>
         <div class="eqn-pn eqn-perfil" data-eqn-p="perfil">
           <div class="eqn-pf-foto"><span class="eqn-pf-rot">Foto do perfil <i class="eqn-opc">(opcional)</i></span>
             <button type="button" class="eqn-circ eqn-circ2" id="eqnFoto" data-a="eqn-foto" aria-label="Adicionar ou alterar foto">${fotoAtual ? `<img src="${fotoAtual}" alt="" />` : IC_EQ.pessoa}</button>
@@ -7759,6 +7760,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           <input type="hidden" name="obsEq" value="${h(ct?.obs || "")}" />
           <input type="hidden" name="nome" value="${h(e?.nome ?? "")}" />
         </div>
+        ${nova ? "" : `
         <div class="eqn-pn" data-eqn-p="acesso" hidden>
         <div class="eqn-corpo">
           <div class="eqn-esq">
@@ -7773,6 +7775,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           </div>
         </div>
         </div>
+`}
         <div class="eqn-pn eqn-com" data-eqn-p="coment" hidden>
           <div class="eqn-com-av"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/><path d="M8 10h.01M12 10h.01M16 10h.01M8.5 13.5h7"/></svg><p>Quando esta pessoa responde um comentário, os alunos veem este nome e esta foto no aplicativo, na área de membros. Vazio usa o nome oficial e a foto do perfil.</p></div>
           <div class="eqn-com-g">
@@ -7788,7 +7791,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
               <div class="eqn-pc-c"><span class="eqn-circ eqn-pc-f" data-eqn-pcf>${(fotoCom || fotoAtual) ? `<img src="${fotoCom || fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><div class="eqn-pc-x"><div class="eqn-pc-h"><b data-eqn-pcn>${h(pc?.nome || "Nome para comentários")}</b><em>Agora</em></div><small>Resposta da equipe</small><i></i><i></i></div></div></div>
           </div>
         </div>
-        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}Salvar</button></div>
+        <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}${nova ? "Criar e copiar acesso" : "Salvar"}</button></div>
       </form>`;
     } else if (m.tipo === "vers") {
       const novo = m.id === "novo", x = novo ? null : S.versiculos.find((y) => y.id === m.id);
@@ -10292,25 +10295,19 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         return;
       }
       case "equipe-add": {
-        const login = v("login").trim().toLowerCase();
-        { const erro = eqnPerfilErro(form); if (erro) { toast(erro + " (etapa Perfil)"); return; } }
-        if (S.equipe.some((x) => x.login === login)) { toast("Esse login já está na equipe."); return; }
-        if (!/^[a-z0-9._-]{2,40}$/.test(login)) { toast("O login aceita letras sem acento, números, ponto e hífen, sem espaço."); return; }
-        // O código é quem cadastra que escolhe — nunca sorteado.
-        const codigo = v("codigo").trim();
-        if (!/^\d{4,6}$/.test(codigo)) { toast("Escolha um código de 4 a 6 números."); return; }
-        const papel = v("papel") === "Dono" ? "dono" : v("papel") === "Administrador" ? "admin" : "suporte";
-        const permissoes = papel === "dono" ? permsDoForm(form) : papel === "suporte" ? permsSupDoForm(form) ?? { lista: [], abas: GRUPOS_SUP.map(([id]) => id) } : undefined;
+        { const erro = eqnPerfilErro(form); if (erro) { toast(erro + " (etapa Perfil profissional)"); return; } }
+        const emailEq = v("emailEq").trim().toLowerCase();
         void executar(async () => {
-          const r = await chamarFuncao("cadastrar-colaborador", { nome: v("nome"), login, papel, codigo, permissoes });
-          if (r.id && fotoNova) { const fp = fotoNova; fotoNova = null; await rpc("salvar_foto_aluna", { p_aluna: String(r.id), p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[String(r.id)] = fp.foto; }
-          if (r.id && (v("celEq") || v("emailEq") || v("obsEq"))) { try { await rpc("salvar_contato_colaborador", { p_id: String(r.id), p_celular: v("celEq"), p_email: v("emailEq"), p_obs: v("obsEq") }); CONTATO_EQ.set(String(r.id), { cel: v("celEq").replace(/\D/g, ""), email: v("emailEq").toLowerCase(), obs: v("obsEq") }); } catch { toast("Membro criado, mas o celular/e-mail não foram salvos. Edite o membro para tentar de novo."); } }
-          if (r.id && (v("nomeCom").trim() || v("fotoCom"))) { try { await rpc("salvar_perfil_comentario", { p_id: String(r.id), p_nome: v("nomeCom").trim(), p_foto: v("fotoCom") || null }); PERFIL_COM.set(String(r.id), { nome: v("nomeCom").trim(), foto: v("fotoCom") }); } catch { toast("Membro criado, mas não consegui salvar o nome/foto de comentários. Edite o membro para tentar de novo."); } }
-          await registrar(null, "Adicionou " + v("nome") + " à equipe", r.id ? ["equipe", String(r.id)] : undefined);
-          if (r.id) pilha = [{ texto: "entrada de " + v("nome") + " na equipe", quando: new Date().toISOString(), fn: async () => { await rpc("remover_colaborador", { p_id: String(r.id) }); } }, ...pilha].slice(0, LIMITE_DESFAZER);
-          const cod = String(r.codigo ?? codigo), linkPainel = location.origin + "/admin", funcao = v("papel") || (papel === "dono" ? "Dono" : papel === "admin" ? "Administrador" : "Suporte");
-          const msgEq = "Olá, " + primeiroNome(v("nome")) + "! Você agora faz parte da equipe AIŌN como " + funcao + ".\n\nLink do painel: " + linkPainel + "\nLogin: " + login + "\nCódigo: " + cod;
-          ui.modal = { tipo: "codigo", titulo: v("nome") + " entrou na equipe", texto: "Passe estes dados para a pessoa entrar no painel.", codigo: cod, dados: JSON.stringify([["Função", funcao], ["Nome", v("nome")], ["Login", login], ["Código", cod], ["Link do painel", linkPainel]]), msg: msgEq };
+          // Convite por link (0144). Acesso inicial: só ver Visão geral e Engajamento; o dono ajusta em Colaboradores.
+          const r = await chamarFuncao("colaboradores", { acao: "convidar", modo: "link", nome: v("nome").trim(), email: emailEq, funcao: null, acesso: "personalizado", areas: { inicio: "ver", engajamento: "ver" }, produtos: null });
+          const id = String(r.id || "");
+          if (id && fotoNova) { const fp = fotoNova; fotoNova = null; try { await rpc("salvar_foto_aluna", { p_aluna: id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[id] = fp.foto; } catch { /* a foto pode ser posta depois */ } }
+          if (id && (v("celEq") || emailEq || v("obsEq"))) { try { await rpc("salvar_contato_colaborador", { p_id: id, p_celular: v("celEq"), p_email: emailEq, p_obs: v("obsEq") }); CONTATO_EQ.set(id, { cel: v("celEq"), email: emailEq, obs: v("obsEq") }); } catch { /* segue */ } }
+          if (id && (v("nomeCom").trim() || v("fotoCom"))) { try { await rpc("salvar_perfil_comentario", { p_id: id, p_nome: v("nomeCom").trim(), p_foto: v("fotoCom") || null }); PERFIL_COM.set(id, { nome: v("nomeCom").trim(), foto: v("fotoCom") || "" }); } catch { /* segue */ } }
+          await registrar(null, "Convidou " + v("nome") + " para a equipe", id ? ["equipe", id] : undefined);
+          ui.modal = null;
+          if (id) await CX.abrirSucesso(id, (r.link as string) || null);
+          return { msg: "Membro cadastrado. Ajuste o acesso em Colaboradores.", texto: "membro" };
         });
         return;
       }
