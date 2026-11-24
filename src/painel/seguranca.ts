@@ -7,7 +7,7 @@
  */
 import { supabase } from "@/data/supabase";
 
-export type ModoLogin = "email" | "codigo" | "esqueci" | "2fa" | "novaSenha";
+export type ModoLogin = "email" | "codigo" | "esqueci" | "2fa" | "novaSenha" | "convite";
 
 /** Situação de segurança de quem está no painel. */
 export type Situacao = {
@@ -22,10 +22,13 @@ const URL_SUPABASE = import.meta.env.VITE_SUPABASE_URL as string;
 const CHAVE = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) as string;
 
 /** O link do e-mail de recuperação volta para a página em que a pessoa está (o painel). */
-export const veioDoLinkDeSenha = typeof location !== "undefined" && /type=recovery/.test(location.hash);
+export const veioDoLinkDeSenha = typeof location !== "undefined" && /type=(recovery|invite)/.test(location.hash);
+
+export const BLOQUEADO = "Seu acesso a este painel foi bloqueado. Fale com o dono do painel.";
 
 function traduzir(m: string): string {
   if (/invalid login credentials/i.test(m)) return "E-mail ou senha incorretos.";
+  if (/banned/i.test(m)) return BLOQUEADO;
   if (/rate limit|too many/i.test(m)) return "Muitas tentativas. Aguarde alguns minutos e tente de novo.";
   if (/invalid (totp|code)|expired|challenge/i.test(m)) return "Código incorreto ou vencido. Confira no aplicativo e digite de novo.";
   if (/network|fetch/i.test(m)) return "Não conseguimos falar com o servidor. Confira sua conexão.";

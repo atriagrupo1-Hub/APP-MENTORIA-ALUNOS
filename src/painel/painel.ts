@@ -14,6 +14,7 @@
 import "./painel.css";
 import * as seg from "./seguranca";
 import { vigiarVersao, fimDaCarga } from "./versao";
+import { criarColaboradores } from "./colaboradores";
 import { supabase } from "@/data/supabase";
 import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
@@ -142,7 +143,7 @@ type Pessoa = {
   cor: string; abasBloq: string[]; perms: string[];
   principal: boolean; pode: { adicionar: boolean; remover: boolean; codigo: boolean; nome: boolean };
 };
-type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string; perms: string[]; abasBloq: string[] };
+type Eu = { id: string; nome: string; papel: Papel; login: string; cor: string; perms: string[]; abasBloq: string[]; acesso: string; areas: Record<string, string>; dono: boolean };
 
 type Dados = {
   /** O que a versão geral (0103) muda por cima da mentoria, como está no banco. */
@@ -641,7 +642,10 @@ async function quemSouEu(): Promise<Eu | null> {
     const { data } = await supabase.from("profiles").select("permissoes, abas_bloqueadas").eq("id", perfil.id).maybeSingle();
     perms = (data?.permissoes as string[] | null) ?? []; abasBloq = (data?.abas_bloqueadas as string[] | null) ?? [];
   }
-  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel], login: perfil.login ?? "", cor: "", perms, abasBloq };
+  // Acesso por área (0144): o que vê e o que edita. O banco confere de novo em cada gravação.
+  const { data: ac } = await supabase.rpc("meu_acesso");
+  const A = (ac || {}) as { acesso?: string | null; areas?: Record<string, string> | null; dono?: boolean };
+  return { id: perfil.id, nome: perfil.nome, papel: PAPEL[perfil.papel], login: perfil.login ?? "", cor: "", perms, abasBloq, acesso: A.acesso || "", areas: A.areas || {}, dono: !!A.dono };
 }
 
 /** Chama uma Edge Function com a sessão de quem está no painel. */
@@ -690,6 +694,8 @@ export function montar(app: HTMLElement) {
   let ocupado = false;
   /** Tela de entrada da equipe (0138): e-mail e senha, código antigo, esqueci a senha, 2FA, nova senha. */
   const acesso = { modo: "email" as seg.ModoLogin, aviso: "", depois2fa: "" as "" | "novaSenha" };
+  /** Convite da equipe por link (0144): #/convite?t=... */
+  const convite = { t: "", nome: "", email: "", erro: "" };
   /** Janela "Minha segurança". */
   let segInfo: null | (seg.Situacao & { qr?: string; segredo?: string; novoFator?: string; etapa?: "intro" | "qr" | "pronto"; prefs?: boolean; exigir?: string[] }) = null;
   /** Alunos que recebem notificação no celular (têm inscrição de push); null = ainda não carregou. */
@@ -804,12 +810,15 @@ export function montar(app: HTMLElement) {
   }
   const totalModulos = () => S.cursos.reduce((s, c) => s + c.modulos.length, 0);
   const totalAulas = (c: Curso) => c.modulos.reduce((s, m) => s + m.aulas.length, 0);
-  const podeEquipe = () => eu?.papel !== "Suporte";
   /** Quem a pessoa logada pode bloquear, remover e trocar o código. */
   /** Eu na lista da equipe (traz se sou o dono principal e o que posso). */
   const euEq = () => S.equipe.find((x) => x.souEu);
   /** Aba que o dono principal tirou deste dono secundário (aparece no menu com cadeado). */
-  const abaBloq = (id: string) => eu?.papel === "Suporte" ? id === "config" || eu.abasBloq.includes(id) : eu?.papel === "Dono" && !souPrincipal() && !!euEq()?.abasBloq.includes(id);
+  /** Acesso por área (0144): Colaboradores e Histórico só o dono; Administrador o resto; os outros, o que foi marcado. */
+  const SO_DONO = new Set(["equipe", "registro"]);
+  const veArea = (id: string) => !!eu && (eu.papel === "Dono" ? (eu.dono || !SO_DONO.has(id)) : SO_DONO.has(id) ? false : eu.papel === "Administrador" || ["ver", "editar"].includes(eu.areas[id] || ""));
+  const editaArea = (id: string) => !!eu && (eu.papel === "Dono" ? (eu.dono || !SO_DONO.has(id)) : SO_DONO.has(id) ? false : eu.papel === "Administrador" || eu.areas[id] === "editar");
+  const abaBloq = (id: string) => !veArea(id);
   /** Suporte (0093): o que cada membro pode fazer, por aba. Dono e administração: tudo. */
   const GRUPOS_SUP: [string, string, [string, string][]][] = [
     ["alunas", "Alunas", [["al_cadastrar", "Cadastrar aluna nova"], ["al_editar", "Editar nome, login e foto"], ["al_codigo", "Renovar o código de acesso"], ["al_liberar", "Liberar cursos, módulos e aulas"], ["al_tirar", "Tirar liberação"], ["al_validade", "Renovar e mudar a validade do acesso"], ["al_bloquear", "Bloquear e desbloquear aluna"], ["al_excluir", "Excluir aluna"]]],
@@ -833,10 +842,10 @@ export function montar(app: HTMLElement) {
     "cat-visivel": "cat_estado", "catx-pub-toggle": "cat_estado", "catx-publicar": "cat_estado", "capa-ia-abrir": "cur_editar", "capa-ia-gerar": "cur_editar", "capa-ia-usar": "cur_editar", "ia-gerar": "cur_editar", "ia-doc": "cur_editar", "ia-refazer": "cur_editar", "ia-pdf-montar": "cur_editar",
   };
   const ABA_DO_GRUPO: Record<string, string> = { al: "alunas", eng: "engajamento", com: "comentarios", cur: "cursos", cat: "layout" };
-  const podeS = (k: string) => eu?.papel !== "Suporte" || (eu.perms.includes(k) && !abaBloq(ABA_DO_GRUPO[k.split("_")[0]]));
+  const podeS = (k: string) => editaArea(ABA_DO_GRUPO[k.split("_")[0]] || "-");
   /** A aba do menu a que cada tela pertence. */
   const abaDaTela = (t: string) => t === "central" ? "inicio" : t === "ficha" ? "alunas" : t === "curso" || t === "aula" ? "cursos" : t === "catAba" ? "layout" : t;
-  const souPrincipal = () => eu?.papel === "Dono" && !!euEq()?.principal;
+  const souPrincipal = () => eu?.papel === "Dono" && !!eu.dono;
   /** Posso fazer isto na equipe? Dono principal: tudo; dono secundário: o que o principal marcou; administrador: o de sempre. */
   const euPode = (o: "adicionar" | "remover" | "codigo" | "nome") => eu?.papel !== "Dono" ? o !== "remover" : souPrincipal() || !!euEq()?.pode[o];
   // Igual ao pode_gerir() do banco: o principal gere os outros donos, administradores e suporte;
@@ -854,6 +863,13 @@ export function montar(app: HTMLElement) {
 
   /* ---------- avisos ---------- */
   let tToast: ReturnType<typeof setTimeout> | undefined;
+  const CX = criarColaboradores({
+    h, toast: (t) => toast(t), render: () => render(), chamar: (n, c) => chamarFuncao(n, c),
+    rpc: async (n, a) => { const r = await supabase.rpc(n, a); if (r.error) throw new Error(motivo(r.error)); return r.data; },
+    lerMensagens: async () => { const r = await supabase.from("configuracoes").select("mensagens_convite").limit(1).maybeSingle(); return (r.data?.mensagens_convite as Record<string, string> | null) ?? null; },
+    salvarMensagens: async (m) => { const r = await supabase.from("configuracoes").select("id").limit(1).maybeSingle(); if (!r.data) throw new Error("Configurações não encontradas."); falhou(await supabase.from("configuracoes").update({ mensagens_convite: m }).eq("id", r.data.id).select("id").single()); },
+    produtos: () => S.cursos.map((c) => ({ id: c.id, nome: c.nome })),
+  });
   function toast(msg: string) {
     toastEl.textContent = msg; toastEl.hidden = false;
     clearTimeout(tToast); tToast = setTimeout(() => { toastEl.hidden = true; }, 3400);
@@ -950,7 +966,7 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
   ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
-  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunos"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Equipe"], ["registro", "Registro"]];
+  const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunos"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Colaboradores"], ["registro", "Registro"]];
 
   function titulo(): [string, string] {
     const ativas = S.alunas.filter((a) => !a.bloqueada && !vencida(a)).length;
@@ -1147,6 +1163,17 @@ export function montar(app: HTMLElement) {
         ${erro}${aviso}${bt("Enviar link", "Enviando…")}
         <p class="seg-rodape">${link("email", "Voltar para o login")}</p>
       </form>`;
+    } else if (m === "convite") {
+      const primeiro = (convite.nome || "").trim().split(/\s+/)[0];
+      corpo = convite.erro ? `<div class="cartao" style="padding:22px">${topo("Convite", "")}<p class="erro">${h(convite.erro)}</p><p class="seg-rodape">${link("email", "Ir para a entrada do painel")}</p></div>`
+        : !convite.email ? `<div class="cartao" style="padding:22px"><p>Abrindo o seu convite…</p></div>`
+        : `<form data-f="convite-senha" class="cartao" style="padding:22px">
+        ${topo("Olá, " + h(primeiro) + "! Crie sua senha", "Seu acesso: " + h(convite.email))}
+        ${senha("Senha", `id="novaSenhaCampo" name="senha" autocomplete="new-password" minlength="8"`)}
+        ${senha("Repita a senha", `name="senha2" autocomplete="new-password" minlength="8"`, 0)}
+        <p style="margin:10px 0 0;font-size:12px;color:var(--texto-2)">Pelo menos 8 caracteres.</p>
+        ${erro}${bt("Criar senha e entrar", "Criando…")}
+      </form>`;
     } else if (m === "2fa") {
       corpo = `<form data-f="confirmar-2fa" class="cartao" style="padding:22px">
         ${topo("Verificação em duas etapas", "Abra o aplicativo autenticador do seu celular e digite o código de 6 números.")}
@@ -1168,7 +1195,6 @@ export function montar(app: HTMLElement) {
         ${senha("Senha", `id="senhaCampo" name="senha" autocomplete="current-password"`, 0)}
         ${erro}${aviso}${bt("Entrar", "Entrando…")}
         <p class="seg-rodape">${link("esqueci", "Esqueci a senha")}</p>
-        <p class="seg-rodape" style="font-size:13px;color:var(--texto-2)">Ainda não criou seu e-mail e senha? ${link("codigo", "Entrar com login e código")}</p>
       </form>`;
     }
     return `
@@ -1186,10 +1212,10 @@ export function montar(app: HTMLElement) {
   const IC_SINO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></svg>`;
   function painel() {
     const [t, cont] = titulo();
-    const restrita = (id: string) => (id === "equipe" && !podeEquipe()) || (id === "registro" && eu?.papel !== "Dono");
+    const restrita = (id: string) => ((id === "equipe" || id === "registro") && !souPrincipal()) || abaBloq(id);
     const abas = [...ABAS, ...ABAS_EXTRA].filter(([id]) => !restrita(id));
-    const telas: Record<string, () => string> = { inicio: telaInicio, central: telaCentral, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: telaEquipe, registro: telaRegistro };
-    if (restrita(ui.tab)) ui.tab = "inicio";
+    const telas: Record<string, () => string> = { inicio: telaInicio, central: telaCentral, alunas: npTela, ficha: telaFicha, engajamento: telaEngajamento, layout: npTela, catAba: telaCategoriaAba, config: telaConfig, lixeira: telaLixeira, reduzir: telaReduzir, cursos: npTela, cursoNovo: telaCursoNovo, curso: telaCurso, aula: telaAula, comentarios: telaComentarios, equipe: () => CX.tela(), registro: telaRegistro };
+    if (restrita(abaDaTela(ui.tab))) ui.tab = abas[0]?.[0] ?? "inicio";
     if (abaBloq(abaDaTela(ui.tab))) ui.tab = abas.find(([id]) => !abaBloq(id))?.[0] ?? "inicio";
     return `
     <div class="casca casca2">
@@ -1233,11 +1259,12 @@ export function montar(app: HTMLElement) {
         <div class="tp-trilha"${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "alunas" ? " hidden" : ""}>${(() => { const tela = ui.tab === "cursoNovo" ? "cursos" : ui.tab; const g = GRUPOS_TP.find((x) => x.abas.includes(abaDaTela(tela))); const nome = ([...ABAS, ...ABAS_EXTRA].find(([x]) => x === abaDaTela(tela)) || [, t])[1]; return `<span>Workspace</span><i>/</i><span>AIŌN</span><i>/</i>${g && g.nome !== nome ? `<span>${g.nome}</span><i>/</i>` : ""}<b>${h(nome)}</b>`; })()}</div>
         <div class="conteudo">
           ${ui.tab === "cursos" || ui.tab === "layout" || ui.tab === "curso" || ui.tab === "aula" || ui.tab === "config" || ui.tab === "catAba" || ui.tab === "cursoNovo" || ui.tab === "inicio" || ui.tab === "central" || ui.tab === "alunas" || ui.tab === "engajamento" || ui.tab === "comentarios" ? "" : `<div class="cabecalho"><div class="cab-tit"><div class="cab-linha"><h1>${h(t)}</h1>${ajudaAba()}</div><p class="contagem">${h(ui.tab === "layout" ? "Organize os cursos exibidos na área da aluna." : SUB_ABA[ui.tab] || cont)}</p></div><span style="flex:1"></span>${pilha.length && ui.tab !== "layout" && ui.tab !== "cursos" ? `<button class="botao-neutro" data-a="desfazer-abrir" title="Voltar as últimas alterações">↶ Desfazer (${pilha.length})</button>` : ""}${ui.tab === "inicio" || ui.tab === "engajamento" ? seletorPeriodo() : ui.tab === "registro" ? cabRegistro() : ui.tab === "equipe" && !euPode("adicionar") ? "" : ui.tab === "layout" && !S.catsAba.length ? "" : ACAO_ABA[ui.tab] || ""}</div>`}
+          ${veArea(abaDaTela(ui.tab)) && !editaArea(abaDaTela(ui.tab)) ? `<div class="so-ver" role="status">Seu acesso nesta tela é só para ver: alterações não são salvas.</div>` : ""}
           ${(telas[ui.tab] || telaInicio)()}
         </div>
       </div>
     </div>
-    ${modal()}`;
+    ${modal()}${CX.janela()}`;
   }
 
   const etiqueta = (txt: string, cor: string) => `<span class="etiqueta" style="color:${cor}">${h(txt)}</span>`;
@@ -6565,53 +6592,6 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   };
   /** Cabeçalho dos modais da equipe: ícone, título, explicação e o X. */
   const cabModal = (ic: string, titulo: string, sub: string, perigo = false) => `<div class="eq-mcab${perigo ? " perigo" : ""}"><span class="eq-mic">${ic}</span><h2>${h(titulo)}</h2><button type="button" class="eq-x" data-a="fechar" aria-label="Fechar">${xis}</button></div>${sub ? `<p class="eq-msub">${h(sub)}</p>` : ""}`;
-  function telaEquipe() {
-    const cls = (e: Pessoa) => e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
-    const filtros: [string, string, string][] = [["todos", "Todos", IC_EQ.grupo], ["dono", "Donos", IC_EQ.coroa], ["admin", "Administração", IC_EQ.grupo], ["sup", "Suporte", IC_EQ.fone]];
-    const q = norm(ui.eqBusca || "").trim();
-    const lista = S.equipe.filter((e) => (ui.filtroEq === "todos" || cls(e) === ui.filtroEq) && (!q || norm(e.nome + " " + e.login).includes(q)));
-    const o = ui.eqOrdem;
-    lista.sort((a, b) => o === "nome" ? a.nome.localeCompare(b.nome, "pt-BR") : o === "acesso" ? (b.ultimo || "").localeCompare(a.ultimo || "") : o === "antigos" ? a.criado.localeCompare(b.criado) : b.criado.localeCompare(a.criado));
-    const grade = ui.eqVista === "grade";
-    return `
-    <section class="tela ativa eq">
-      <div class="eq-filtros" role="group" aria-label="Filtrar por papel">${filtros.map(([v, t, ic]) => `<button type="button" class="eq-filtro" data-a="eq-filtro" data-v="${v}" aria-pressed="${ui.filtroEq === v}">${ic}<span>${t}</span><b>${v === "todos" ? S.equipe.length : S.equipe.filter((e) => cls(e) === v).length}</b></button>`).join("")}
-        <span class="cm-dir">
-          <label class="cur-busca eq-busca">${IC_CUR.lupa}<input class="campo" type="search" id="eqBusca" data-eq-busca value="${h(ui.eqBusca || "")}" placeholder="Buscar membro..." aria-label="Buscar membro" /></label>
-          <span class="eq-ordem">${IC_EQ.ordem}<select class="campo cm-sel" data-eq-ordem aria-label="Ordem">${[["recentes", "Mais recentes"], ["antigos", "Mais antigos"], ["nome", "Nome (A–Z)"], ["acesso", "Último acesso"]].map(([v, t]) => `<option value="${v}" ${v === o ? "selected" : ""}>${t}</option>`).join("")}</select></span>
-          <span class="kc-vista" role="group" aria-label="Forma de ver"><button type="button" data-a="eq-vista" data-v="grade" aria-pressed="${grade}" aria-label="Em cards">${IC_CUR.grade}</button><button type="button" data-a="eq-vista" data-v="lista" aria-pressed="${!grade}" aria-label="Em lista">${IC_CUR.lista}</button></span>
-        </span>
-      </div>
-      <div class="eq-lista${grade ? " grade" : ""}">${lista.map((e) => {
-        const pode = gere(e), papelCls = e.papel === "Dono" ? "dono" : e.papel === "Administrador" ? "admin" : "sup";
-        return `
-        <article class="eq-card${e.bloqueada ? " bloq" : ""}">
-          ${avatarEq(e.id, e.nome, e.cor, "eq-av " + papelCls, `<i class="${e.bloqueada ? "off" : "on"}" title="${e.bloqueada ? "Bloqueado" : "Ativo"}"></i>`)}
-          <div class="eq-info">
-            <div class="eq-col"><small>Nome</small><b>${h(e.nome)}</b></div>
-            <div class="eq-col"><small>Login</small><b>${h(SEG_EQ.get(e.id)?.senhaPropria ? SEG_EQ.get(e.id)!.email : e.login)}</b>${SEG_EQ.has(e.id) ? `<small class="eq-sub">${SEG_EQ.get(e.id)!.senhaPropria ? "E-mail e senha" : "Ainda entra com código"}</small>` : ""}</div>
-            <div class="eq-col"><small>Código</small><b class="eq-pontos" aria-label="Código escondido">••••</b></div>
-            <div class="eq-col"><small>Função</small><span>${h(e.papel === "Administrador" ? "Administração" : e.papel)}</span>${e.papel === "Dono" ? `<small class="eq-sub">${e.principal ? "Principal" : Object.values(e.pode).every(Boolean) ? "Controle total" : "Acesso limitado"}</small>` : ""}</div>
-            <div class="eq-col"><small>Status</small><span class="eq-st ${e.bloqueada ? "off" : "on"}"><i></i>${e.bloqueada ? "Bloqueado" : "Ativo"}</span>${SEG_EQ.get(e.id)?.tem2fa ? ` <span class="seg-selo on" title="Verificação em duas etapas ativa">2FA</span>` : ""}</div>
-            <div class="eq-col"><small>Último acesso</small><span class="eq-ult">${IC_EQ.cal}${h(ultimoAcesso(e.ultimo))}</span></div>
-          </div>
-          <div class="eq-acoes">
-            ${pode || (e.souEu && souPrincipal()) ? `<button type="button" class="al-botao" data-a="equipe-editar" data-id="${e.id}">${IC_EQ.lapis}Editar</button>` : ""}
-            ${e.codigo ? `<button type="button" class="al-botao" data-a="copiar-acesso-equipe" data-id="${e.id}">${IC_EQ.copia}Copiar acesso</button><button type="button" class="al-botao" data-a="ver-codigo" data-id="${e.id}">${IC_EQ.chave}Ver código</button>` : ""}
-            ${!pode ? "" : e.bloqueada
-              ? `<button type="button" class="al-botao eq-desb" data-a="equipe-desbloquear" data-id="${e.id}">${IC_EQ.aberto}Desbloquear</button>`
-              : `<button type="button" class="al-botao eq-bloq" data-a="equipe-bloquear" data-id="${e.id}">${IC_EQ.cad}Bloquear</button>`}
-            ${pode && (euPode("codigo") || euPode("remover") || SEG_EQ.get(e.id)?.tem2fa || SEG_EQ.get(e.id)?.senhaPropria) ? `<span class="est3 kb"><button type="button" class="eq-pts" data-a="estado-menu" data-v="kb-eq:${e.id}" aria-haspopup="menu" aria-expanded="${ui.estMenu === "kb-eq:" + e.id}" aria-label="Mais opções de ${h(e.nome)}">${IC_EQ.pontos}</button>${ui.estMenu === "kb-eq:" + e.id ? `<span class="est3-menu kb-menu" role="menu">
-                ${euPode("codigo") && !SEG_EQ.get(e.id)?.senhaPropria ? `<button type="button" role="menuitem" data-a="trocar-codigo" data-id="${e.id}">Gerar código novo</button>` : ""}
-                ${SEG_EQ.get(e.id)?.senhaPropria && SEG_EQ.get(e.id)?.email ? `<button type="button" role="menuitem" data-a="seg-link-membro" data-id="${e.id}">Enviar link de nova senha</button>` : ""}
-                ${SEG_EQ.get(e.id)?.tem2fa ? `<button type="button" role="menuitem" data-a="seg-zerar-2fa" data-id="${e.id}">Desligar 2FA</button>` : ""}
-                ${euPode("codigo") && euPode("remover") ? `<span class="kb-sep"></span>` : ""}
-                ${euPode("remover") ? `<button type="button" role="menuitem" class="perigo" data-a="equipe-remover" data-id="${e.id}">Remover da equipe</button>` : ""}
-              </span>` : ""}</span>` : `<span class="eq-pts-vazio"></span>`}
-          </div>
-        </article>`; }).join("") || `<div class="vazio">${!S.equipe.length ? "Ninguém na equipe ainda." : q ? "Ninguém encontrado." : "Ninguém com esse papel."}</div>`}</div>
-    </section>`;
-  }
 
 
   /*
@@ -7899,7 +7879,9 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     if (a !== "cur-menu") ui.curMenu = "";
     if (a !== "cur-al-menu") ui.curAlMenu = "";
     // Suporte (0093): sem a permissão, nem abre. O banco confere de novo ao salvar.
-    if (eu?.papel === "Suporte") {
+    if (a.startsWith("cx-")) { CX.acao(a, d, el, alvo); return; }
+    CX.acao(a, d, el, alvo);
+    if (eu && eu.papel !== "Dono") {
       const k = a === "estado-set" ? (/^(cat|catx):/.test(d.v || "") ? "cat_estado" : "cur_estado") : ACAO_PERM[a];
       if (k && !podeS(k)) { ui.estMenu = ""; toast("Acesso bloqueado."); render(); return; }
     }
@@ -9653,6 +9635,27 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     const v = (n: string) => { const el = form.elements.namedItem(n) as HTMLInputElement | null; return el ? el.value.trim() : ""; };
     const id = form.dataset.id ?? "";
     switch (f) {
+      case "convite-senha": {
+        if (ocupado) return;
+        const s1 = (form.elements.namedItem("senha") as HTMLInputElement).value, s2 = (form.elements.namedItem("senha2") as HTMLInputElement).value;
+        if (s1.length < 8) { ui.erroLogin = "A senha precisa ter pelo menos 8 caracteres."; render(); return; }
+        if (s1 !== s2) { ui.erroLogin = "As duas senhas não são iguais."; render(); return; }
+        ocupado = true; ui.erroLogin = ""; render();
+        void (async () => {
+          try {
+            const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entrar`, { method: "POST", headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ acao: "convite_aceitar", t: convite.t, senha: s1 }) });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok) { ui.erroLogin = String(j?.mensagem || "Não foi possível criar a senha agora."); }
+            else {
+              const erro = await seg.entrarComEmail(String(j.email || convite.email), s1);
+              if (erro) ui.erroLogin = erro;
+              else { history.replaceState(null, "", location.pathname); acesso.modo = "email"; gravarLocal("aion-painel-email", String(j.email || convite.email)); await abrirSessao(true); }
+            }
+          } catch { ui.erroLogin = "Não conseguimos falar com o servidor. Confira sua conexão."; }
+          ocupado = false; render();
+        })();
+        return;
+      }
       case "entrar-email": case "esqueci-senha": case "confirmar-2fa": case "nova-senha": {
         if (ocupado) return;
         ocupado = true; ui.erroLogin = ""; acesso.aviso = ""; render();
@@ -11047,14 +11050,33 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
   render();
   void (async () => {
     const { data } = await supabase.auth.getSession();
-    if (data.session && seg.veioDoLinkDeSenha) {
+    const tConvite = /^#\/convite\?t=([A-Za-z0-9_-]+)/.exec(location.hash)?.[1] || "";
+    if (tConvite) {
+      // Convite por link: quem abre cria a própria senha (sai de outra conta aberta neste navegador).
+      if (data.session) await api.sair();
+      acesso.modo = "convite"; convite.t = tConvite;
+      try {
+        const r = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entrar`, { method: "POST", headers: { apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ acao: "convite_ver", t: tConvite }) });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok) { convite.nome = String(j.nome || ""); convite.email = String(j.email || ""); } else convite.erro = String(j?.mensagem || "Este link de convite não vale mais.");
+      } catch { convite.erro = "Não conseguimos falar com o servidor. Confira sua conexão."; }
+    } else if (data.session && seg.veioDoLinkDeSenha) {
       // Veio do link "Esqueci minha senha": primeiro a senha nova (e o 2FA, se tiver).
       acesso.depois2fa = "novaSenha";
       acesso.modo = (await seg.falta2fa()) ? "2fa" : "novaSenha";
-    } else if (data.session) await abrirSessao(false);
+    } else if (data.session) {
+      // Renova a sessão: mudança de acesso feita pelo dono vale na hora; conta bloqueada não volta.
+      const rf = await supabase.auth.refreshSession();
+      if (rf.error) { await api.sair(); if (/banned/i.test(rf.error.message)) ui.erroLogin = seg.BLOQUEADO; }
+      else await abrirSessao(false);
+    }
     carregando = false;
-    ui.focar = eu ? null : acesso.modo === "novaSenha" ? "novaSenhaCampo" : acesso.modo === "2fa" ? "doisFaCampo" : "emailCampo";
+    ui.focar = eu ? null : acesso.modo === "novaSenha" || acesso.modo === "convite" ? "novaSenhaCampo" : acesso.modo === "2fa" ? "doisFaCampo" : "emailCampo";
     render();
     fimDaCarga();
+    // Colaboradores: o que se digita nas janelas fica guardado entre um desenho e outro.
+    document.addEventListener("input", (e) => { const t = e.target as HTMLElement; if (t.tagName !== "SELECT" && (t as HTMLInputElement).type !== "checkbox") CX.campo(t); });
+    document.addEventListener("change", (e) => { const t = e.target as HTMLElement; if (t.tagName === "SELECT" || (t as HTMLInputElement).type === "checkbox") CX.campo(t); });
+    window.addEventListener("scroll", () => CX.fecharPop(), { passive: true });
   })();
 }

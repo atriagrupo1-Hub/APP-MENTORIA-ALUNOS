@@ -103,6 +103,34 @@ async function caminhoAntigo(
   return { alunaId: alunaId as string, email: conta.user.email, falha: null };
 }
 
+async function sha256Hex(t: string) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+async function convite(acao: string, t: string, senha: string, origem: string | null): Promise<Response> {
+  const invalido = () => resposta({ erro: "convite_invalido", mensagem: "Este link de convite não vale mais. Peça um novo ao dono do painel." }, 400, origem);
+  if (!/^[A-Za-z0-9_-]{30,64}$/.test(t)) return invalido();
+  const adm = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { autoRefreshToken: false, persistSession: false } });
+  const { data: cv } = await adm.from("convites_equipe").select("id, user_id, expira_em, usado_em, cancelado_em, tentativas").eq("token_hash", await sha256Hex(t)).maybeSingle();
+  if (!cv || cv.usado_em || cv.cancelado_em || new Date(cv.expira_em).getTime() < Date.now() || cv.tentativas >= 10) return invalido();
+  await adm.from("convites_equipe").update({ tentativas: cv.tentativas + 1 }).eq("id", cv.id);
+  const { data: conta } = await adm.auth.admin.getUserById(cv.user_id);
+  const { data: perfil } = await adm.from("profiles").select("nome, status").eq("id", cv.user_id).maybeSingle();
+  if (!conta?.user || !perfil) return invalido();
+  if (perfil.status !== "ativa") return resposta({ erro: "bloqueado", mensagem: "Seu acesso a este painel foi bloqueado. Fale com o dono do painel." }, 403, origem);
+  const email = conta.user.email ?? "";
+  if (acao === "convite_ver") return resposta({ ok: true, nome: perfil.nome, email }, 200, origem);
+  if (senha.length < 8) return resposta({ erro: "senha_curta", mensagem: "A senha precisa ter pelo menos 8 caracteres." }, 400, origem);
+  const { error } = await adm.auth.admin.updateUserById(cv.user_id, { password: senha, email_confirm: true, app_metadata: { ...(conta.user.app_metadata ?? {}), senha_propria: true } });
+  if (error) {
+    const fraca = /weak|password/i.test(error.message);
+    return resposta({ erro: fraca ? "senha_fraca" : "indisponivel", mensagem: fraca ? "Escolha uma senha mais forte." : "Não foi possível criar a senha agora. Tente de novo." }, fraca ? 400 : 503, origem);
+  }
+  await adm.from("convites_equipe").update({ usado_em: new Date().toISOString() }).eq("id", cv.id);
+  return resposta({ ok: true, email }, 200, origem);
+}
+
 Deno.serve(async (req) => {
   const origem = req.headers.get("origin");
 
@@ -116,12 +144,20 @@ Deno.serve(async (req) => {
 
   let login = "";
   let codigo = "";
+  let corpo: Record<string, unknown> = {};
   try {
-    const corpo = await req.json();
+    corpo = await req.json();
     login = String(corpo?.login ?? "").trim();
     codigo = String(corpo?.codigo ?? "").trim();
   } catch {
     return resposta({ erro: "corpo_invalido" }, 400, origem);
+  }
+
+  // Convite da equipe por link (0144): a página #/convite?t=... ainda não tem
+  // sessão, por isso passa por aqui (a única função aberta). O banco guarda só
+  // o SHA-256 do token; vale 7 dias, uso único, até 10 tentativas.
+  if (corpo?.acao === "convite_ver" || corpo?.acao === "convite_aceitar") {
+    return await convite(String(corpo.acao), String(corpo?.t ?? ""), String(corpo?.senha ?? ""), origem);
   }
 
   if (!login || !codigo) {
@@ -241,11 +277,10 @@ Deno.serve(async (req) => {
     return resposta({ erro: "indisponivel" }, 503, origem);
   }
 
-  // 2b. Equipe que já criou e-mail e senha (0138) não entra mais por código:
-  //     o código sozinho não pode abrir uma conta da equipe.
-  if (!email.endsWith("@alunas.mentoria-aion.invalid")) {
-    const { data: conta } = await admin.auth.admin.getUserById(alunaId);
-    if (conta?.user?.app_metadata?.senha_propria === true) {
+  // 2b. A equipe não entra por código (0144): só e-mail e senha.
+  {
+    const { data: perfilEq } = await admin.from("profiles").select("papel").eq("id", alunaId).maybeSingle();
+    if (perfilEq && perfilEq.papel !== "aluna") {
       return resposta(
         {
           erro: "use_email_senha",

@@ -60,9 +60,14 @@ configuração evita a próxima interrupção.
   nas Edge Functions.
 - A Edge Function `entrar` é a única com `verify_jwt: false`, e precisa
   continuar assim.
-- Equipe entra com e-mail e senha (0138, `src/painel/seguranca.ts`, função
-  `conta-equipe`): cada pessoa cria os dois em "Minha segurança" (menu do
-  perfil); depois disso a `entrar` recusa o código dela. 2FA opcional; com
+- Equipe entra só com e-mail e senha (0144; código da equipe desligado na
+  `entrar`, decisão do dono 24/11/2026). Colaboradores (só o dono principal):
+  convite por link (`#/convite?t=`, token SHA-256, 7 dias, uso único, 10
+  tentativas, tratado na `entrar`) ou por e-mail; acesso por ÁREA em
+  `profiles.acesso_tipo`/`areas` (admin, personalizado, leitura, conteudo);
+  o banco confere com `painel_edita_area()` (pode/pode_grupo usam ela);
+  bloqueio = status + `usuarios_bloqueados` (regra RESTRITIVA em todas as
+  tabelas) + ban no Auth. Edge Function `colaboradores`. 2FA opcional; com
   2FA ativo o banco só trata a sessão como equipe em aal2
   (`equipe_aal_ok()` dentro de eh_equipe/eh_admin/eh_dono/pode). Alunos
   continuam com login e código; o código deles fica visível para a equipe

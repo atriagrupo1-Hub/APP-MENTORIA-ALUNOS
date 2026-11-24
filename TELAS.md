@@ -21,7 +21,7 @@ Prefixo = começo das classes CSS da tela. **Antes de criar/usar uma classe:**
 | Aula | `telaAula` | `ae-`, `pm-` | |
 | Categorias | `telaCategorias`, `telaCategoriaAba` | `ac-`, `cl-`, `catx-` | `.ac-ic`/`.ac-topo` já colidiram com a Visão geral |
 | Comentários | `telaComentarios` | `cm-` | |
-| Equipe / Registro | `telaEquipe`, `telaRegistro` | `eq-`, `reg-` | |
+| Colaboradores / Registro | `src/painel/colaboradores.ts` (`criarColaboradores`: tela, janelas), `telaRegistro` | `cx-`, `reg-` | Só o dono principal. Edge Function `colaboradores`; RPC `colaboradores_lista` (0144) |
 | Configurações (Experiência da aluna) | `telaConfig` | `cfg-` | |
 | Lixeira / Reduzir PDF | `telaLixeira`, `telaReduzir` | `lx-`, `rd-` | |
 
