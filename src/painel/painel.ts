@@ -14,7 +14,7 @@
 import "./painel.css";
 import * as seg from "./seguranca";
 import { vigiarVersao, fimDaCarga } from "./versao";
-import { criarColaboradores } from "./colaboradores";
+import { criarColaboradores, AREAS_GRUPOS, FUNCOES, TIPOS as TIPOS_ACESSO } from "./colaboradores";
 import { supabase } from "@/data/supabase";
 import { enderecoDaMentoria } from "@/enderecos";
 import * as api from "@/data/api";
@@ -869,6 +869,7 @@ export function montar(app: HTMLElement) {
     lerMensagens: async () => { const r = await supabase.from("configuracoes").select("mensagens_convite").limit(1).maybeSingle(); return (r.data?.mensagens_convite as Record<string, string> | null) ?? null; },
     salvarMensagens: async (m) => { const r = await supabase.from("configuracoes").select("id").limit(1).maybeSingle(); if (!r.data) throw new Error("Configurações não encontradas."); falhou(await supabase.from("configuracoes").update({ mensagens_convite: m }).eq("id", r.data.id).select("id").single()); },
     produtos: () => S.cursos.map((c) => ({ id: c.id, nome: c.nome })),
+    novoMembro: () => { fotoNova = null; ui.modal = { tipo: "equipe-nova" }; render(); },
   });
   function toast(msg: string) {
     toastEl.textContent = msg; toastEl.hidden = false;
@@ -964,7 +965,6 @@ export function montar(app: HTMLElement) {
   ACAO_ABA.comentarios = `<button class="al-botao cm-exportar" data-a="com-exportar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 14v5.5h14V14"/></svg>Exportar</button>`;
   ACAO_ABA.config = `<button type="button" class="al-botao-ouro cfg-salvar-topo" data-a="cfg-salvar">Salvar alterações</button>`;
   ACAO_ABA.cursos = `<button class="al-botao-ouro" data-a="curso-novo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Criar novo produto</button>`;
-  ACAO_ABA.equipe = `<button class="al-botao-ouro" data-a="equipe-nova"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Adicionar membro</button>`;
   const ABAS_EXTRA: [string, string][] = [["config", "Configurações"], ["lixeira", "Lixeira"], ["reduzir", "Reduzir PDF"]];
   const ABAS = [["inicio", "Visão geral"], ["alunas", "Alunos"], ["engajamento", "Engajamento"], ["cursos", "Todos os produtos"], ["layout", "Categorias"], ["comentarios", "Comentários"], ["equipe", "Colaboradores"], ["registro", "Registro"]];
 
@@ -7736,7 +7736,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
       const IC_PF_OLHO = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg>`;
       const SUG_COM = ["Instrutor", "Cardeal", "Missionário", "Teólogo", "Bispo", "Pastor", "Mentor", "Professor", "Doutor", "Especialista"];
       // Membro novo (0144): só os dois perfis. O acesso ao painel é escolhido em Colaboradores (Acesso → editar).
-      const abasEq: [string, string][] = nova ? [["perfil", "Perfil profissional"], ["coment", "Perfil para comentários"]] : [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Perfil dos comentários"]];
+      const abasEq: [string, string][] = nova ? [["perfil", "Perfil profissional"], ["coment", "Perfil para comentários"], ["acx", "Acesso"]] : [["perfil", "Perfil"], ["acesso", "Acesso ao painel"], ["coment", "Perfil dos comentários"]];
       corpo = `
       <form data-f="${nova ? "equipe-add" : "equipe-editar"}" ${e ? `data-id="${e.id}"` : ""} class="eq-form eqn${comPapel ? "" : " eqn-fixo"}" data-papel-fixo="${papelAtual}" novalidate>
         ${cabModal(nova ? ICONE_MENU.alunas : IC_EQ.lapis, nova ? "Adicionar membro da equipe" : "Editar " + e!.nome, nova ? "Cadastre um novo membro da sua equipe." : "Atualize as informações do membro da equipe.")}
@@ -7791,6 +7791,21 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
               <div class="eqn-pc-c"><span class="eqn-circ eqn-pc-f" data-eqn-pcf>${(fotoCom || fotoAtual) ? `<img src="${fotoCom || fotoAtual}" alt="" />` : IC_EQ.pessoa}</span><div class="eqn-pc-x"><div class="eqn-pc-h"><b data-eqn-pcn>${h(pc?.nome || "Nome para comentários")}</b><em>Agora</em></div><small>Resposta da equipe</small><i></i><i></i></div></div></div>
           </div>
         </div>
+        ${nova ? `<div class="eqn-pn eqn-acx" data-eqn-p="acx" hidden>
+          <div class="cx-modo" role="group" aria-label="Como convidar"><button type="button" data-a="eqn-modo" data-v="link" aria-pressed="true">Convidar por link</button><button type="button" data-a="eqn-modo" data-v="email" aria-pressed="false">Convidar por e-mail</button><input type="hidden" name="modoEq" value="link" /></div>
+          <div class="eqn-acx-quem"><span><small>Nome</small><b data-eqn-acx-nome>—</b></span><span><small>E-mail</small><b data-eqn-acx-email>—</b></span></div>
+          <p class="cx-nota" data-eqn-modo-nota>Sem senha aqui: você copia o acesso (nome, e-mail e link) e manda para a pessoa. Ela abre o link, o e-mail já vem reconhecido e ela mesma cria a senha.</p>
+          <label class="eqn-acx-campo"><span class="cx-rot">Função (o que a pessoa faz)</span><select class="campo" name="funcaoEq" data-eqn-funcao><option value="">Escolher função</option>${FUNCOES.map((x) => `<option>${x}</option>`).join("")}<option value="__outro">Outro…</option></select></label>
+          <label class="eqn-acx-campo" data-eqn-outro hidden><span class="cx-rot">Qual função?</span><input class="campo" name="funcaoOutro" maxlength="40" /></label>
+          <p class="cx-rot">Acesso (o que a pessoa pode ver e editar)</p>
+          <div class="cx-cards">${TIPOS_ACESSO.map(([k, t, dsc]) => `<button type="button" class="cx-card${k === "personalizado" ? " on" : ""}" data-a="eqn-tipo" data-v="${k}" aria-pressed="${k === "personalizado"}"><b>${t}</b><span>${dsc}</span></button>`).join("")}<input type="hidden" name="tipoEq" value="personalizado" /></div>
+          <div class="cx-areas eqn-areas">${AREAS_GRUPOS.map(([g, itens]) => `<div class="cx-grp"><div class="cx-grp-cab"><span>${g}</span><span class="cx-tudo">Tudo: <button type="button" data-a="eqn-grupo" data-v="${g}|">Sem acesso</button><button type="button" data-a="eqn-grupo" data-v="${g}|ver">Ver</button><button type="button" data-a="eqn-grupo" data-v="${g}|editar">Editar</button></span></div>
+            ${itens.map(([k, t]) => { const ini = k === "inicio" || k === "engajamento" ? "ver" : ""; return `<div class="cx-area"><span>${t}</span><span class="cx-seg eqn-seg" role="radiogroup" aria-label="${t}">${[["", "Sem acesso", "sem"], ["ver", "Ver", "ver"], ["editar", "Editar", "editar"]].map(([v, r, c]) => `<label class="${c}"><input type="radio" name="ar-${k}" value="${v}" data-grupo="${g}" ${v === ini ? "checked" : ""} />${r}</label>`).join("")}</span></div>`; }).join("")}</div>`).join("")}
+            <p class="cx-nota">Colaboradores e Histórico de acesso são só do dono. Minha conta e Minha segurança ficam para todos.</p></div>
+          <p class="cx-rot">Produtos que a pessoa enxerga</p>
+          <div class="cx-modo"><button type="button" data-a="eqn-prod" data-v="1" aria-pressed="true">Todos os produtos</button><button type="button" data-a="eqn-prod" data-v="0" aria-pressed="false">Escolher produtos</button><input type="hidden" name="prodTodos" value="1" /></div>
+          <div class="cx-prods" data-eqn-prods hidden>${S.cursos.map((c) => `<label><input type="checkbox" name="prodEq" value="${c.id}" /> ${h(c.nome)}</label>`).join("") || `<p class="cx-nota">Nenhum produto cadastrado.</p>`}</div>
+        </div>` : ""}
         <div class="eq-mbts"><button type="button" class="al-botao" data-a="fechar">Cancelar</button><span style="flex:1"></span><button type="button" class="al-botao eqn-proxb" data-a="eqn-prox">Próximo →</button><button class="al-botao-ouro" data-eqn-salvar ${nova ? "hidden" : ""}>${IC_EQ.mais}${nova ? "Criar e copiar acesso" : "Salvar"}</button></div>
       </form>`;
     } else if (m.tipo === "vers") {
@@ -9529,6 +9544,26 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         break;
       }
       case "eqn-foto": fotoPara = "eqn"; arquivoFoto.click(); return;
+      case "eqn-modo": case "eqn-tipo": case "eqn-grupo": case "eqn-prod": {
+        const f = el.closest("form") as HTMLFormElement | null; if (!f) return;
+        const set = (n: string, v: string) => { const i = f.elements.namedItem(n) as HTMLInputElement | null; if (i) i.value = v; };
+        if (a === "eqn-modo") {
+          set("modoEq", d.v); f.querySelectorAll<HTMLElement>('[data-a="eqn-modo"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === d.v)));
+          const nt = f.querySelector("[data-eqn-modo-nota]"); if (nt) nt.textContent = d.v === "link" ? "Sem senha aqui: você copia o acesso (nome, e-mail e link) e manda para a pessoa. Ela abre o link, o e-mail já vem reconhecido e ela mesma cria a senha." : "A pessoa recebe um e-mail com o link para criar a própria senha. Você também copia uma mensagem avisando que o acesso foi enviado por e-mail.";
+          const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv) sv.lastChild!.textContent = d.v === "link" ? "Criar e copiar acesso" : "Enviar convite por e-mail";
+        } else if (a === "eqn-tipo") {
+          set("tipoEq", d.v); f.querySelectorAll<HTMLElement>('[data-a="eqn-tipo"]').forEach((x) => { const on = x.dataset.v === d.v; x.setAttribute("aria-pressed", String(on)); x.classList.toggle("on", on); });
+          const nivel = (k: string) => d.v === "admin" ? "editar" : d.v === "leitura" ? "ver" : d.v === "conteudo" ? (k === "cursos" || k === "layout" ? "editar" : "") : null;
+          f.querySelectorAll<HTMLInputElement>('.eqn-areas input[type="radio"]').forEach((r) => { const k = r.name.slice(3), n = nivel(k); if (n !== null) r.checked = r.value === n; r.disabled = d.v !== "personalizado"; });
+          f.querySelectorAll<HTMLElement>('.eqn-areas [data-a="eqn-grupo"]').forEach((b) => { (b as HTMLButtonElement).disabled = d.v !== "personalizado"; });
+        } else if (a === "eqn-grupo") {
+          const [g, v] = d.v.split("|"); f.querySelectorAll<HTMLInputElement>(`.eqn-areas input[data-grupo="${g}"]`).forEach((r) => { r.checked = r.value === v; });
+        } else {
+          set("prodTodos", d.v); f.querySelectorAll<HTMLElement>('[data-a="eqn-prod"]').forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.v === d.v)));
+          const L = f.querySelector<HTMLElement>("[data-eqn-prods]"); if (L) L.hidden = d.v === "1";
+        }
+        return;
+      }
       case "eqn-aba": case "eqn-prox": {
         const f = el.closest("form") as HTMLFormElement | null; if (!f) return;
         const ks = [...f.querySelectorAll<HTMLElement>("[data-eqn-p]")].map((x) => x.dataset.eqnP!), atual = ks.find((k) => !f.querySelector<HTMLElement>(`[data-eqn-p="${k}"]`)!.hidden) || ks[0];
@@ -9539,6 +9574,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const px = f.querySelector<HTMLElement>('[data-a="eqn-prox"]'); if (px) px.hidden = alvo === ks[ks.length - 1];
         const sv = f.querySelector<HTMLElement>("[data-eqn-salvar]"); if (sv && f.dataset.f === "equipe-add") sv.hidden = alvo !== ks[ks.length - 1];
         if (alvo === "coment") eqnPvCom(f);
+        if (alvo === "acx") { const nm = f.querySelector("[data-eqn-acx-nome]"), em = f.querySelector("[data-eqn-acx-email]"), val = (n: string) => ((f.elements.namedItem(n) as HTMLInputElement | null)?.value || "").trim(); if (nm) nm.textContent = (val("pnome") + " " + val("snome")).trim() || "—"; if (em) em.textContent = val("emailEq").toLowerCase() || "—"; }
         return;
       }
       case "eqn-foto-com": {
@@ -10299,7 +10335,13 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
         const emailEq = v("emailEq").trim().toLowerCase();
         void executar(async () => {
           // Convite por link (0144). Acesso inicial: só ver Visão geral e Engajamento; o dono ajusta em Colaboradores.
-          const r = await chamarFuncao("colaboradores", { acao: "convidar", modo: "link", nome: v("nome").trim(), email: emailEq, funcao: null, acesso: "personalizado", areas: { inicio: "ver", engajamento: "ver" }, produtos: null });
+          const tipo = v("tipoEq") || "personalizado", modo = v("modoEq") === "email" ? "email" : "link";
+          const funcao = v("funcaoEq") === "__outro" ? v("funcaoOutro").trim().slice(0, 40) : v("funcaoEq");
+          const areas: Record<string, string> = {};
+          if (tipo === "personalizado") form.querySelectorAll<HTMLInputElement>('.eqn-areas input[type="radio"]:checked').forEach((r) => { if (r.value) areas[r.name.slice(3)] = r.value; });
+          const prods = v("prodTodos") === "1" ? null : [...form.querySelectorAll<HTMLInputElement>('input[name="prodEq"]:checked')].map((x) => x.value);
+          if (prods && !prods.length) throw new Error("Escolha pelo menos um produto, ou marque Todos os produtos.");
+          const r = await chamarFuncao("colaboradores", { acao: "convidar", modo, nome: v("nome").trim(), email: emailEq, funcao: funcao || null, acesso: tipo, areas, produtos: prods });
           const id = String(r.id || "");
           if (id && fotoNova) { const fp = fotoNova; fotoNova = null; try { await rpc("salvar_foto_aluna", { p_aluna: id, p_foto: fp.foto, p_original: fp.original, p_ajuste: fp.ajuste }); fotosCache[id] = fp.foto; } catch { /* a foto pode ser posta depois */ } }
           if (id && (v("celEq") || emailEq || v("obsEq"))) { try { await rpc("salvar_contato_colaborador", { p_id: id, p_celular: v("celEq"), p_email: emailEq, p_obs: v("obsEq") }); CONTATO_EQ.set(id, { cel: v("celEq"), email: emailEq, obs: v("obsEq") }); } catch { /* segue */ } }
@@ -10307,7 +10349,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
           await registrar(null, "Convidou " + v("nome") + " para a equipe", id ? ["equipe", id] : undefined);
           ui.modal = null;
           if (id) await CX.abrirSucesso(id, (r.link as string) || null);
-          return { msg: "Membro cadastrado. Ajuste o acesso em Colaboradores.", texto: "membro" };
+          return { msg: "Colaborador cadastrado.", texto: "colaborador" };
         });
         return;
       }
@@ -11074,6 +11116,7 @@ ${ehCursoTeste(c) ? `<div class="cv-pub">${blocoPubCurso(c)}</div>` : `        <
     // Colaboradores: o que se digita nas janelas fica guardado entre um desenho e outro.
     document.addEventListener("input", (e) => { const t = e.target as HTMLElement; if (t.tagName !== "SELECT" && (t as HTMLInputElement).type !== "checkbox") CX.campo(t); });
     document.addEventListener("change", (e) => { const t = e.target as HTMLElement; if (t.tagName === "SELECT" || (t as HTMLInputElement).type === "checkbox") CX.campo(t); });
+    document.addEventListener("change", (e) => { const t = e.target as HTMLSelectElement; if (!t.matches?.("[data-eqn-funcao]")) return; const o = t.closest("form")?.querySelector<HTMLElement>("[data-eqn-outro]"); if (o) { o.hidden = t.value !== "__outro"; if (!o.hidden) o.querySelector("input")?.focus(); } });
     window.addEventListener("scroll", () => CX.fecharPop(), { passive: true });
   })();
 }

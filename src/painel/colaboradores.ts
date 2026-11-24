@@ -19,6 +19,8 @@ export type ColabDeps = {
   lerMensagens: () => Promise<Record<string, string> | null>;
   salvarMensagens: (m: Record<string, string>) => Promise<void>;
   produtos: () => { id: string; nome: string }[];
+  /** + Novo colaborador: abre a janela de 3 etapas do painel (perfil, comentários, acesso). */
+  novoMembro: () => void;
 };
 
 type Colab = {
@@ -34,8 +36,8 @@ export const AREAS_GRUPOS: [string, [string, string][]][] = [
 ];
 const TODAS_AREAS = AREAS_GRUPOS.flatMap(([, l]) => l.map(([k]) => k));
 const RELATORIOS = new Set(["inicio", "engajamento"]);
-const FUNCOES = ["Gestor de tráfego", "Copywriter", "Editor de vídeo", "Designer", "Suporte", "Comercial", "Sócio", "Financeiro", "Gestor"];
-const TIPOS: [string, string, string][] = [
+export const FUNCOES = ["Gestor de tráfego", "Copywriter", "Editor de vídeo", "Designer", "Suporte", "Comercial", "Sócio", "Financeiro", "Gestor"];
+export const TIPOS: [string, string, string][] = [
   ["admin", "Administrador", "Vê e altera tudo do painel. Não vê Colaboradores nem o Histórico (só o dono)."],
   ["personalizado", "Personalizado", "Você escolhe, tela por tela, o que a pessoa não vê, só vê ou pode editar."],
   ["leitura", "Só leitura", "Vê todas as telas, não altera nada."],
@@ -254,7 +256,7 @@ export function criarColaboradores(D: ColabDeps) {
     switch (a) {
       case "cx-fechar": jan = null; break;
       case "cx-fechar-fundo": if (alvo !== el) return true; jan = null; break;
-      case "cx-novo": f = vazio(); jan = { tipo: "novo" }; break;
+      case "cx-novo": jan = null; D.novoMembro(); return true;
       case "cx-modo": f.modo = d.v; break;
       case "cx-tipo": f.tipo = d.v; break;
       case "cx-area": { const [k, v] = d.v.split("|"); f.areas[k] = v; break; }
